@@ -18,11 +18,11 @@
   const rowsPerPage = () => window.matchMedia('(max-height: 650px)').matches ? 4 : 5;
   const initialCriteria = ['価格','耐久性（構造・耐震・築年数）','立地（駅距離・通勤）','広さ・間取り','日当たり','周辺環境（スーパー・病院）','子育て環境（学校・公園）','維持費（税・管理費等）','災害リスク','資産価値'].map((name,i)=>({id:'standard-'+i,name,weight:2,auto:null}));
   const blankProperty = () => ({id:uid(),name:'',url:'',address:'',price:'',kind:kinds[0],age:'',area:'',layout:'',station:'',status:statuses[0],manufacturer:'',meetings:[],tags:[],notes:{good:[''],bad:['']},questions:[],photos:[],created:Date.now()});
-  const defaults = () => ({version:1,properties:[],criteria:initialCriteria,scores:{},selected:[],filter:{query:'',tag:'',sort:'new'},});
+  const defaults = () => ({version:1,properties:[],criteria:initialCriteria,scores:{},selected:[],filter:{query:'',tag:'',sort:'new',status:''},});
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'husband',overlay:'',formStep:0,draft:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'husband',overlay:'',formStep:0,draft:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
   function normalize(s) {
     if (!s || !Array.isArray(s.properties) || !Array.isArray(s.criteria)) throw Error('形式が違います');
@@ -40,7 +40,7 @@
   const propById = id => state.properties.find(p=>p.id===id);
   const curProp = () => {const visible=visibleProperties(); return visible.find(p=>p.id===ui.propertyId) || visible[0] || null;};
   function visibleProperties(){
-    let ps=state.properties.filter(p=>(p.name+' '+p.address+' '+(p.manufacturer||'')+' '+p.tags.join(' ')).toLowerCase().includes((state.filter.query||'').toLowerCase()) && (!state.filter.tag || p.tags.includes(state.filter.tag)));
+    let ps=state.properties.filter(p=>(p.name+' '+p.address+' '+(p.manufacturer||'')+' '+p.tags.join(' ')).toLowerCase().includes((state.filter.query||'').toLowerCase()) && (!state.filter.tag || p.tags.includes(state.filter.tag)) && (!state.filter.status || p.status===state.filter.status));
     if(state.filter.sort==='price')ps.sort((a,b)=>(num(a.price)??Infinity)-(num(b.price)??Infinity));
     else if(state.filter.sort==='name')ps.sort((a,b)=>a.name.localeCompare(b.name,'ja'));
     else ps.sort((a,b)=>b.created-a.created);
@@ -51,34 +51,47 @@
   function closeOverlay(){step(()=>{ui.overlay='';ui.draft=null;});}
   function openOverlay(kind, setup){step(()=>{ui.overlay=kind;if(setup)setup();});}
   function chooseTab(tab){step(()=>{ui.tab=tab;ui.overlay='';ui.draft=null;});}
-  function toolbar(title,sub){return '<header class="top"><div class="brand"><span class="eyebrow">OUR HOME JOURNAL</span><h1>'+esc(title)+'</h1></div><div class="header-actions"><button class="iconbtn" data-act="search" aria-label="検索・並び替え">⌕</button><button class="iconbtn" data-act="settings" aria-label="バックアップ・設定">⋯</button></div></header>';}
+  function tabIcon(key){
+    const paths={property:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',compare:'<path d="M12 3v18M5 7h14M7 7l-4 7h8L7 7Zm10 0-4 7h8l-4-7ZM4 18h16"/>',sim:'<rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8 11h2m4 0h2M8 15h2m4 0h2M8 19h2m4 0h2"/>',schedule:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 2v6m10-6v6M3 10h18"/>'};
+    return '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+paths[key]+'</svg>';
+  }
+  function toolbar(title){
+    const count=state.properties.filter(p=>p.status!=='見送り').length;
+    return '<header class="top modern-top"><div class="brand-block"><span class="brand-symbol" aria-hidden="true">'+tabIcon('property')+'</span><div class="brand"><h1>'+esc(ui.tab==='property'?'ほっぽさん':title)+'</h1><span class="eyebrow">HOME PLANNER</span></div></div><div class="header-actions">'+(ui.tab==='property'?'<span class="header-count">♥ <b>'+count+'件</b></span>':'')+'<button class="iconbtn settings-gear" data-act="settings" aria-label="バックアップ・設定">⚙</button></div></header>';
+  }
   function render(){
     if(!app)return;
-    const titles={property:'ほっぽさん',compare:'くらべる',sim:'未来を描く',schedule:'これからの予定'};
-    const nav=[['property','⌂','物件'],['compare','◎','比較'],['sim','∿','シミュレーション'],['schedule','▦','スケジュール']];
-    let body=ui.tab==='property'?propertyScreen():ui.tab==='compare'?compareScreen():pendingScreen();
-    app.innerHTML=toolbar(titles[ui.tab])+'<main class="main">'+body+'</main><nav class="bottom" aria-label="メインメニュー">'+nav.map(([key,sym,name])=>'<button class="tab '+(ui.tab===key?'active':'')+'" data-act="tab" data-value="'+key+'" aria-current="'+(ui.tab===key?'page':'false')+'"><span class="sym">'+sym+'</span>'+name+'</button>').join('')+'</nav>'+(ui.overlay?overlay(): '');
+    const titles={property:'ほっぽさん',compare:'比較',sim:'シミュレーション',schedule:'予定'};
+    const nav=[['property','物件'],['compare','比較'],['sim','シミュ'],['schedule','予定']];
+    const body=ui.tab==='property'?propertyScreen():ui.tab==='compare'?compareScreen():pendingScreen();
+    app.innerHTML=toolbar(titles[ui.tab])+'<main class="main">'+body+'</main><nav class="bottom" aria-label="メインメニュー">'+nav.map(([key,name])=>'<button class="tab '+(ui.tab===key?'active':'')+'" data-act="tab" data-value="'+key+'" aria-current="'+(ui.tab===key?'page':'false')+'"><span class="nav-icon">'+tabIcon(key)+'</span><span class="tab-label">'+name+'</span></button>').join('')+'</nav>'+(ui.overlay?overlay(): '');
     renderToast();hydratePhotos();
   }
   function empty(icon,title,desc,action,label){return '<section class="panel grow empty"><div class="big">'+icon+'</div><h2 class="section-title">'+esc(title)+'</h2><p>'+esc(desc)+'</p>'+ (action?'<button class="btn primary" data-act="'+action+'">'+esc(label)+'</button>':'')+'</section>';}
   function navPager(index,total,act){return '<div class="pager"><button class="page-arrow" data-act="'+act+'" data-value="-1" '+(total<2?'disabled':'')+' aria-label="前へ">‹</button><div class="counter">'+(total?index+1:0)+' / '+total+'</div>'+dots(index,Math.max(total,1))+'<button class="page-arrow" data-act="'+act+'" data-value="1" '+(total<2?'disabled':'')+' aria-label="次へ">›</button></div>';}
+  const homePageSize=()=>window.matchMedia('(max-height: 735px)').matches?2:window.matchMedia('(min-height: 945px)').matches?4:3;
+  function propertyCard(p){
+    const now=Date.now(),ms=(p.meetings||[]).filter(m=>m.at);
+    const future=ms.filter(m=>new Date(m.at).getTime()>=now).sort((a,b)=>a.at.localeCompare(b.at))[0];
+    const latest=future||ms.slice().sort((a,b)=>b.at.localeCompare(a.at))[0];
+    const date=latest?latest.at.slice(5,7).replace(/^0/,'')+'/'+latest.at.slice(8,10).replace(/^0/,''):'未登録';
+    const tag=p.status==='本命'?'favorite':p.status==='内見予定'?'planned':'';
+    const thumb=p.photos?.length?'<img data-photo="'+esc(p.photos[0])+'" alt="" loading="lazy">':'<span class="property-img-fallback" aria-hidden="true">'+tabIcon('property')+'</span>';
+    const name=esc(p.name||'名称未設定'),maker=esc(p.manufacturer||'メーカー未登録');
+    return '<button class="property-list-card" data-act="home-open" data-value="'+esc(p.id)+'" aria-label="'+name+'の詳細を開く"><span class="property-thumb">'+thumb+'</span><span class="property-card-body"><span class="property-first-row"><strong class="property-list-name" title="'+name+'">'+name+'</strong><span class="property-list-maker" title="'+maker+'">'+maker+'</span><span class="property-state '+tag+'">'+esc(p.status)+'</span></span><span class="property-second-row"><span class="prop-price">'+(num(p.price)!==null?digits.format(p.price)+'万':'価格未登録')+'</span><span class="prop-station">'+(num(p.station)!==null?'徒歩'+digits.format(p.station)+'分':'駅徒歩 −')+'</span><span class="prop-meeting">'+(latest?(future?'打合せ ':'前回 ')+date:'予定なし')+'</span></span></span><span class="property-chevron" aria-hidden="true">›</span></button>';
+  }
+  function homeResults(){
+    const ps=visibleProperties(),perPage=homePageSize(),total=Math.max(1,Math.ceil(ps.length/perPage));
+    ui.homePage=Math.min(ui.homePage,total-1);
+    const page=ps.slice(ui.homePage*perPage,(ui.homePage+1)*perPage);
+    const chips=[['','すべて'],['気になる','気になる'],['内見予定','内見予定'],['本命','本命']];
+    return '<div class="home-summary"><div class="home-summary-label"><strong>'+ps.length+'件</strong><span>比較中の物件</span></div><button class="summary-action" data-act="home-compare">比較する <span aria-hidden="true">→</span></button></div>'+
+      '<div class="status-chip-row" role="group" aria-label="検討状況で絞り込み">'+chips.map(([v,label])=>'<button class="status-chip '+((state.filter.status||'')===v?'is-active':'')+'" data-act="home-status" data-value="'+esc(v)+'">'+label+' <span>'+(v?state.properties.filter(p=>p.status===v).length:state.properties.length)+'</span></button>').join('')+'</div>'+
+      '<div class="property-list swipe-zone">'+(page.length?page.map(propertyCard).join(''):'<div class="home-no-match"><strong>該当する物件がありません</strong><span>検索や絞り込みを変更してください</span><button class="btn" data-act="filter-clear">条件をリセット</button></div>')+'</div>'+
+      (total>1?navPager(ui.homePage,total,'home-page'):'<div class="home-page-single" aria-label="1ページ目"></div>');
+  }
   function propertyScreen(){
-    let ps=visibleProperties(),p=ps.find(x=>x.id===ui.propertyId)||ps[0]||null;if(p)ui.propertyId=p.id;
-    if(!p)return state.properties.length?'<section class="screen">'+empty('⌕','一致する物件がありません','検索条件を変更するか、絞り込みを解除してください。','filter-clear','絞り込みを解除する')+'</section>':'<section class="screen">'+empty('⌂','家探しを、ここから。','物件を登録するとメモや比較を始められます。','add-property','最初の物件を登録')+'<button class="btn soft wide" data-act="seed">サンプル3件で試す</button></section>';
-    const pos=ps.findIndex(x=>x.id===p.id), meetings=p.meetings||[];
-    const now=Date.now();
-    const upcoming=meetings.filter(m=>m.at && new Date(m.at).getTime()>=now).sort((a,b)=>a.at.localeCompare(b.at))[0];
-    const latest=upcoming||meetings.filter(m=>m.at).sort((a,b)=>b.at.localeCompare(a.at))[0];
-    const when=latest?formatMeetingDate(latest.at):'日時未登録';
-    const maker=p.manufacturer||'メーカー未登録';
-    const info=[p.kind,p.layout,p.area!==''?p.area+'㎡':null].filter(Boolean).join(' ・ ');
-    const img=p.photos?.length?'<div class="estate-photo"><img data-photo="'+esc(p.photos[0])+'" alt="物件写真"></div>':'';
-    return '<section class="screen home-screen"><div class="toolbar between home-tools"><div class="row"><span class="kicker">PROPERTY</span><span class="meta">'+ps.length+'件</span></div><div class="row"><button class="btn compact" data-act="property-list">一覧</button><button class="btn primary compact" data-act="add-property">＋ 追加</button></div></div>'+
-      '<article class="panel estate grow swipe-zone"><div class="estate-top"><span class="pill status">'+esc(p.status)+'</span><span class="meta">'+(pos+1)+' / '+ps.length+'</span></div><div class="home-heading"><div class="home-title-wrap"><span class="home-eyebrow">MY HOME FILE</span><h2 class="estate-name">'+esc(p.name||'名称未設定')+'</h2><p class="maker-name">'+esc(maker)+'</p></div>'+img+'</div>'+
-      '<div class="price-block"><div><span class="micro-label">物件価格</span><div class="money">'+(num(p.price)!==null?digits.format(p.price)+'<small> 万円</small>':'未登録')+'</div></div><span class="price-foot">物件比較メモ</span></div>'+
-      '<div class="estate-facts"><div class="fact"><span>物件情報</span><strong>'+esc(info||'未登録')+'</strong></div><div class="fact"><span>所在地</span><strong>'+esc(p.address||'未登録')+'</strong></div></div>'+
-      '<div class="meeting-preview"><div class="meeting-preview-head"><span class="micro-label">'+(upcoming?'次の打ち合わせ':'打ち合わせ記録')+'</span><span class="meta">'+meetings.length+'件</span></div><strong>'+esc(latest?when:'打ち合わせ未登録')+'</strong><span>'+esc(latest?(latest.maker||maker):'予定やメモを登録できます')+'</span><button class="btn compact" data-act="open-meetings">'+(latest?'記録を見る':'＋ 登録する')+'</button></div>'+
-      '<div class="home-actions"><button class="btn primary flex1" data-act="property-detail">物件の詳細</button><button class="btn flex1" data-act="open-meetings">打ち合わせ</button></div></article>'+navPager(pos,ps.length,'property-nav')+'</section>';
+    return '<section class="screen home-screen"><div class="home-search-row"><label class="home-search-box"><span class="search-icon" aria-hidden="true">⌕</span><input data-home-query type="search" autocomplete="off" enterkeyhint="search" placeholder="エリア・駅・物件名で検索" aria-label="物件を検索" value="'+esc(state.filter.query||'')+'"></label><button class="home-filter-btn" data-act="search">☷ <span>絞り込み</span></button></div><button class="home-add-btn" data-act="add-property"><span aria-hidden="true">＋</span> 物件を追加</button><div class="home-results">'+homeResults()+'</div>'+(state.properties.length===0?'<button class="home-sample-link" data-act="seed">サンプル3件で試す</button>':'')+'</section>';
   }
   function detailScreen(){
     let p=curProp();if(!p)return '';
@@ -159,7 +172,7 @@
   function searchScreen(){
     const allTags=[...new Set(state.properties.flatMap(p=>p.tags))].sort();
     const f=state.filter;
-    return modalFrame('検索と並び替え','<div class="panel detail grow"><div class="field"><label>キーワード</label><input data-filter="query" value="'+esc(f.query||'')+'" placeholder="名前・住所・タグで検索"></div><div class="field"><label>タグ</label><select data-filter="tag"><option value="">すべて</option>'+allTags.map(tag=>'<option value="'+esc(tag)+'" '+(f.tag===tag?'selected':'')+'>'+esc(tag)+'</option>').join('')+'</select></div><div class="field"><label>並び順</label><select data-filter="sort"><option value="new" '+(f.sort==='new'?'selected':'')+'>新しい順</option><option value="price" '+(f.sort==='price'?'selected':'')+'>価格の低い順</option><option value="name" '+(f.sort==='name'?'selected':'')+'>物件名順</option></select></div></div><div class="form-foot"><button class="btn flex1" data-act="filter-clear">解除</button><button class="btn primary flex1" data-act="filter-apply">この条件で表示</button></div>');
+    return modalFrame('検索と並び替え','<div class="panel detail grow"><div class="field"><label>キーワード</label><input data-filter="query" value="'+esc(f.query||'')+'" placeholder="名前・住所・タグで検索"></div><div class="field"><label>タグ</label><select data-filter="tag"><option value="">すべて</option>'+allTags.map(tag=>'<option value="'+esc(tag)+'" '+(f.tag===tag?'selected':'')+'>'+esc(tag)+'</option>').join('')+'</select></div><div class="field"><label>検討状況</label><select data-filter="status"><option value="">すべて</option>'+statuses.map(x=>'<option value="'+esc(x)+'" '+(f.status===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></div><div class="field"><label>並び順</label><select data-filter="sort"><option value="new" '+(f.sort==='new'?'selected':'')+'>新しい順</option><option value="price" '+(f.sort==='price'?'selected':'')+'>価格の低い順</option><option value="name" '+(f.sort==='name'?'selected':'')+'>物件名順</option></select></div></div><div class="form-foot"><button class="btn flex1" data-act="filter-clear">解除</button><button class="btn primary flex1" data-act="filter-apply">この条件で表示</button></div>');
   }
   function settingsScreen(){
     return modalFrame('バックアップ・設定','<div class="panel detail grow"><div><span class="kicker">DATA</span><h2 class="section-title">大切な記録を守る</h2><p class="subtle">データはこの端末のブラウザに保存されます。端末変更・ブラウザのデータ消去に備えてバックアップしてください。</p></div><button class="btn primary wide" data-act="export">JSONをエクスポート（写真を含む）</button><label class="btn wide" for="json-import">JSONをインポート（現在のデータを置換）</label><input id="json-import" class="sr-only" type="file" accept="application/json,.json"><div class="info-box"><span>保存方式</span><strong>物件・採点: localStorage</strong><strong>写真: IndexedDB</strong></div><p class="subtle">現段階は端末ごとの個別保存です。夫婦共同編集・自動同期・通知は後続フェーズで対応します。</p></div>');
@@ -254,6 +267,10 @@
     let v=button.dataset.value, p=curProp();
     if(action==='tab')return chooseTab(v);
     if(action==='search')return openOverlay('search');
+    if(action==='home-status')return step(()=>{state.filter.status=v;ui.homePage=0;save();});
+    if(action==='home-page')return step(()=>changePage('homePage',Math.max(1,Math.ceil(visibleProperties().length/homePageSize())),Number(v)));
+    if(action==='home-open')return openOverlay('detail',()=>{ui.propertyId=v;ui.propertyPage=0;ui.noteIndex=0;});
+    if(action==='home-compare')return chooseTab('compare');
     if(action==='settings')return openOverlay('settings');
     if(action==='overlay-close')return closeOverlay();
     if(action==='add-property')return openOverlay('form',()=>prepareForm(null));
@@ -320,12 +337,12 @@
       return step(()=>{
         const target={...ui.draft};delete target._new;target.demo=false;const old=propById(target.id);
         if(old)Object.assign(old,target);else state.properties.unshift(target);
-        ui.propertyId=target.id;ui.overlay='';ui.tab='property';ui.draft=null;state.filter={query:'',tag:'',sort:'new'};save();message('物件を保存しました');
+        ui.propertyId=target.id;ui.overlay='';ui.tab='property';ui.draft=null;state.filter={query:'',tag:'',sort:'new',status:''};save();message('物件を保存しました');
       });
     }
     if(action==='property-delete'){if(!confirm('この物件と関連する写真・採点を削除しますか？'))return;return step(()=>{const id=ui.draft.id;const previous=propById(id);if(previous)previous.photos.forEach(removePhoto);state.properties=state.properties.filter(x=>x.id!==id);state.selected=state.selected.filter(x=>x!==id);delete state.scores[id];ui.propertyId=null;ui.overlay='';ui.draft=null;save();message('物件を削除しました');});}
-    if(action==='filter-apply')return step(()=>{ui.overlay='';ui.propertyId=null;ui.listPage=0;save();});
-    if(action==='filter-clear')return step(()=>{state.filter={query:'',tag:'',sort:'new'};ui.overlay='';ui.propertyId=null;save();});
+    if(action==='filter-apply')return step(()=>{ui.overlay='';ui.propertyId=null;ui.homePage=0;ui.listPage=0;save();});
+    if(action==='filter-clear')return step(()=>{state.filter={query:'',tag:'',sort:'new',status:''};ui.overlay='';ui.propertyId=null;save();});
     if(action==='seed'){if(!confirm('操作を試すための架空の物件を3件追加しますか？'))return;return step(()=>{
       [['サンプルA・駅近の家',3800,'新築戸建',8],['サンプルB・ゆったりの家',4200,'中古戸建',18],['サンプルC・街なかの住まい',4600,'新築マンション',5]].forEach(([name,price,kind,station])=>{let x=blankProperty();Object.assign(x,{name,price,kind,station,area:98,layout:'3LDK',status:statuses[0],demo:true});state.properties.push(x);});
       state.selected=state.properties.slice(-3).map(x=>x.id);ui.propertyId=state.selected[0];save();
@@ -359,12 +376,14 @@
     if(action==='export')return exportData();
   }
   app.addEventListener('click',e=>{if(Date.now()-lastSwipeAt<350){e.preventDefault();return;}let b=e.target.closest('[data-act]');if(!b || !app.contains(b))return;e.preventDefault();handler(b.dataset.act,b);});
+  app.addEventListener('keydown',e=>{if(e.target?.dataset?.homeQuery!==undefined && e.key==='Enter'){e.preventDefault();e.target.blur?.();step(()=>{ui.homePage=0;save();});}});
   app.addEventListener('input',e=>{
     let el=e.target,p=curProp();
     if(el.dataset.model && ui.draft){
       let k=el.dataset.model;ui.draft[k]=k==='tags'?el.value.split(/[,、]/).map(s=>s.trim()).filter(Boolean):el.value;
     }
     if(el.dataset.meetingModel && ui.meetingDraft){const key=el.dataset.meetingModel;if(key==='memo')ui.meetingDraft.notes[0]=el.value;else ui.meetingDraft[key]=el.value;}
+    if(el.dataset.homeQuery!==undefined){state.filter.query=el.value;ui.homePage=0;save();const list=app.querySelector('.home-results');if(list){list.innerHTML=homeResults();hydratePhotos();}}
     if(el.dataset.filter){state.filter[el.dataset.filter]=el.value;}
     if(el.dataset.criterionModel && ui.draft){let k=el.dataset.criterionModel;ui.draft[k]=k==='weight'?Number(el.value):el.value;}
     if(el.dataset.auto && ui.draft){ui.draft.auto ||= {field:'',dir:'low',good:'',mid:''};ui.draft.auto[el.dataset.auto]=el.value;}
@@ -438,7 +457,7 @@
     if(ui.overlay==='list'||ui.overlay==='choose')return step(()=>changePage('listPage',Math.max(1,Math.ceil((ui.overlay==='list'?visibleProperties().length:state.properties.length)/4)),d));
     if(ui.overlay==='criteria')return step(()=>changePage('criteriaPage',Math.max(1,Math.ceil(state.criteria.length/5)),d));
     if(ui.overlay)return;
-    if(ui.tab==='property')step(()=>moveProperty(d));
+    if(ui.tab==='property')step(()=>changePage('homePage',Math.max(1,Math.ceil(visibleProperties().length/homePageSize())),d));
     if(ui.tab==='compare')step(()=>changePage('comparePage',Math.ceil(state.criteria.length/rowsPerPage())+1,d));
   },{passive:true});
   let dbPromise;

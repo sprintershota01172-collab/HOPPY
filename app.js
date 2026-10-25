@@ -499,6 +499,73 @@
     return {points,monthly:payment,purchaseYear,ending:points.at(-1).cash,
       min:Math.min(...points.map(x=>x.cash)),nisa,otherInvest};
   }
+  function fpDecisionYear(){
+    const p=state.plan,kids=Math.min(3,Math.round(safeNum(p.children)));
+    const lastBirth=safeNum(p.firstChildYear)+Math.max(0,kids-1)*Math.max(1,safeNum(p.birthInterval,3));
+    return Math.max(simNowYear(),safeNum(p.purchaseYear,simNowYear()+2),kids?lastBirth:0);
+  }
+  function fpAnnualExtras(year,buy=true){
+    const p=state.plan;
+    return safeNum(p.annualTax)+safeNum(p.carTaxAnnual)+safeNum(p.travelAnnual)+
+      safeNum(p.annualEvents)+fpCustomAnnual(year)+(buy?safeNum(p.homeInsuranceAnnual):0);
+  }
+  function fpSpendingMonthly(year){
+    return fpBaseMonthly(year).reduce((sum,x)=>sum+x.value,0)+fpAnnualExtras(year,true)/12;
+  }
+  function fpForecast(price,extraInterest=0){
+    const p=state.plan,cost=Math.max(0,safeNum(price));
+    const rate=Math.max(0,safeNum(p.interest)+extraInterest);
+    const payment=mortgageMonthly(cost,p.downPayment,rate,p.loanYears);
+    const income=safeNum(p.husbandMonthly)+(safeNum(p.children)>0
+      ?Math.min(safeNum(p.wifeMonthly),safeNum(p.wifeReduced)):safeNum(p.wifeMonthly));
+    const housing=payment+safeNum(p.housingOngoing);
+    const ratio=income>0?housing/income:Infinity;
+    const recurring=fpSpendingMonthly(fpDecisionYear());
+    const investing=safeNum(p.nisaMonthly)+safeNum(p.otherInvestMonthly);
+    const spendable=income-recurring-investing-housing;
+    const upfront=safeNum(p.downPayment)+cost*.07;
+    const remaining=safeNum(p.cashSavings)+safeNum(p.support)-upfront;
+    const reserve=6*(recurring+housing);
+    return {price:cost,rate,payment,income,housing,ratio,spendable,upfront,remaining,reserve,recurring,investing};
+  }
+  function fpBudget(){
+    const p=state.plan,monthlyIncome=fpForecast(0).income;
+    const spending=fpSpendingMonthly(fpDecisionYear());
+    const investing=safeNum(p.nisaMonthly)+safeNum(p.otherInvestMonthly);
+    const cap=Math.min(monthlyIncome*.25,monthlyIncome-spending-investing-safeNum(p.cashBufferMonthly));
+    const loanPayment=Math.max(0,cap-safeNum(p.housingOngoing));
+    const term=Math.max(12,Math.round(safeNum(p.loanYears,35)*12));
+    const loanCap=rate=>{
+      const r=Math.max(0,rate)/1200;
+      return r===0?loanPayment*term:loanPayment*(1-Math.pow(1+r,-term))/r;
+    };
+    const amount=Math.max(0,Math.floor((loanCap(safeNum(p.interest))+safeNum(p.downPayment))/50)*50);
+    const stressAmount=Math.max(0,Math.floor((loanCap(safeNum(p.interest)+1)+safeNum(p.downPayment))/50)*50);
+    return {amount,stressAmount,monthlyIncome,housingLimit:monthlyIncome*.25,loanPayment,spending,investing,referenceYear:fpDecisionYear()};
+  }
+  function fpRating(price){
+    const info=fpForecast(price),budget=fpBudget(),stressed=fpForecast(price,1);
+    let level='good',label='予算内',reason='住居費と日常の支払いが将来の手取りの範囲内です。';
+    if(!Number.isFinite(info.ratio)||info.ratio>.30||price>budget.amount*1.2){
+      level='bad';label='予算超過';reason='将来の手取りに対して住居費や生活費の負担が大きくなっています。';
+    }else if(info.ratio>.25||price>budget.amount){
+      level='warn';label='慎重に';reason='保険・子育て・NISAを含めた参考予算を超えています。';
+    }
+    if(info.spendable<safeNum(state.plan.cashBufferMonthly)&&level==='good'){
+      level='warn';label='家計確認';reason='毎月の保険・子育て・積立を引くと、余裕費が不足します。';
+    }
+    if(info.remaining<0&&level==='good'){
+      level='warn';label='資金確認';reason='月々は目安内ですが、頭金・購入諸費用の現金が不足します。';
+    }
+    return {...info,budget,stressed,level,label,reason,monthlyDelta:stressed.payment-info.payment};
+  }
+  function fpBadgeClass(level){return level==='good'?'fp-good':level==='warn'?'fp-warn':'fp-bad';}
+  function fpRatingRow(p){
+    const price=num(p.price);
+    if(price===null)return '<div class="fp-home-row"><span class="fp-home-name">'+esc(p.name)+'</span><span class="fp-home-badge fp-neutral">価格未登録</span></div>';
+    const check=fpRating(price);
+    return '<button class="fp-home-row" data-act="fp-open-home" data-value="'+esc(p.id)+'"><span class="fp-home-name">'+esc(p.name)+'</span><span class="fp-home-price">'+yen(price)+'万</span><span class="fp-home-badge '+fpBadgeClass(check.level)+'">'+check.label+'</span><span class="fp-chevron">›</span></button>';
+  }
   function simGraph(series){
     const all=series.flatMap(x=>x.data.points.map(p=>p.cash)),low=Math.min(0,...all),high=Math.max(100,...all);
     const graphWidth=316,left=8,right=324,top=20,bottom=176,diff=Math.max(1,high-low);

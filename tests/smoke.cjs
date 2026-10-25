@@ -1,4 +1,4 @@
-// HOPPY phase 1 smoke tests (no npm dependencies).
+// ほっぽさん: regression smoke tests (no npm dependencies).
 // Run: node tests/smoke.cjs
 const fs=require('node:fs');
 const vm=require('node:vm');
@@ -33,12 +33,13 @@ function start(){
       listeners.click({target:{closest:()=>button},preventDefault:()=>{}});
     },
     input:(key,value)=>{
-      const el={dataset:key,value};
+      const el={dataset:key,value,hasAttribute:()=>false};
       listeners.input({target:el});
     }
   };
 }
 const a=start();
+assert.match(a.app.innerHTML,/ほっぽさん/);
 assert.match(a.app.innerHTML,/最初の物件を登録/);
 a.click('seed');
 assert.equal(a.state().properties.length,3);
@@ -55,8 +56,26 @@ a.click('property-list');
 assert.match(a.app.innerHTML,/物件一覧/);
 a.click('list-pick',p.id);
 a.click('property-detail');
-assert.match(a.app.innerHTML,/基本情報/);
+assert.match(a.app.innerHTML,/打合せ/);
+assert.match(a.app.innerHTML,/メーカー/);
 a.click('detail-page','1');
+assert.match(a.app.innerHTML,/打ち合わせを登録/);
+a.click('meeting-add');
+assert.match(a.app.innerHTML,/打ち合わせ日時/);
+a.input({meetingModel:'at'},'2026-11-14T15:30');
+a.input({meetingModel:'maker'},'ヘーベルハウス');
+a.input({meetingModel:'memo'},'構造と保証を確認した');
+a.click('meeting-save');
+assert.equal(a.state().properties.find(x=>x.id===p.id).meetings.length,1);
+assert.equal(a.state().properties.find(x=>x.id===p.id).meetings[0].notes[0],'構造と保証を確認した');
+assert.match(a.app.innerHTML,/2026\/11\/14 15:30/);
+a.click('meeting-edit');
+a.input({meetingModel:'memo'},'次回は見積もりを依頼する');
+a.click('meeting-save');
+assert.equal(a.state().properties.find(x=>x.id===p.id).meetings[0].notes[0],'次回は見積もりを依頼する');
+a.click('meeting-note-add');
+assert.equal(a.state().properties.find(x=>x.id===p.id).meetings[0].notes.length,2);
+a.click('detail-page','2');
 assert.match(a.app.innerHTML,/よかった点/);
 a.click('note-add');
 assert.equal(a.state().properties.find(x=>x.id===p.id).notes.good.length,2);
@@ -71,4 +90,4 @@ assert.match(a.app.innerHTML,/サンプル[ABC]/);
 const b=start();
 assert.equal(b.state().properties.length,3);
 assert.equal(b.state().scores[p.id][c.id].husband,2);
-console.log('HOPPY phase 1 smoke tests: PASS');
+console.log('ほっぽさん Phase 1 + meeting journal regression smoke tests: PASS');

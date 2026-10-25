@@ -467,10 +467,10 @@
       ]));
       pages.push(fpCompactPage('結婚式・特別支出',[
         f('結婚式支払年','weddingYear','年'),
-        f('結婚式自己負担','weddingCost','万円'),
-        f('新婚旅行費','honeymoonCost','万円'),
+        ...(p.events.some(x=>x.kind==='wedding')?[]:[f('結婚式自己負担','weddingCost','万円')]),
+        ...(p.events.some(x=>x.kind==='honeymoon')?[]:[f('新婚旅行費','honeymoonCost','万円')]),
         f('試算終了年','simulateUntil','年')
-      ]));
+      ],'イベント登録済みの結婚式・旅行費用は「イベント登録」で編集。以前の入力と二重に加算しません。'));
       const eventsCount=Math.max(1,Math.ceil((p.events||[]).length/2));
       for(let n=0;n<eventsCount;n++)pages.push({title:'イベント登録 '+(n+1)+' / '+eventsCount,html:fpEventEditor(n)});
       const count=Math.max(1,Math.ceil(p.expenses.length/2));
@@ -1063,7 +1063,8 @@
       page=Math.min(3,Math.max(0,ui.simResultPage||0));
     const heading=['購入後の家計','収支予測グラフ','計算根拠','アドバイス'][page];
     const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r6</span>'+
-      '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+
+      '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
+      '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));

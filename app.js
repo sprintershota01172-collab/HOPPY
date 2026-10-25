@@ -81,6 +81,19 @@
     if(!app)return;
     const titles={property:'ほっぽさん',compare:'比較',sim:'シミュレーション',schedule:'予定'};
     const nav=[['property','物件'],['compare','比較'],['sim','シミュ'],['schedule','予定']];
+    // Keep the underlying screen mounted while a full-screen view is open.
+    // Rebuilding it on every dialog/page change causes the home screen to flash
+    // behind the opening overlay and needlessly reloads photo thumbnails.
+    const liveMain=app.querySelector('main.main');
+    const liveHeader=app.querySelector('header.top');
+    const liveNav=app.querySelector('nav.bottom');
+    if(ui.overlay && liveMain && liveHeader && liveNav && liveNav.querySelector('[data-act="tab"][data-value="'+ui.tab+'"].active')){
+      const current=app.querySelector('.full');
+      if(current)current.outerHTML=overlay();
+      else app.insertAdjacentHTML('beforeend',overlay());
+      renderToast();hydratePhotos();
+      return;
+    }
     const body=ui.tab==='property'?propertyScreen():ui.tab==='compare'?compareScreen():ui.tab==='sim'?simulationScreen():pendingScreen();
     app.innerHTML=toolbar(titles[ui.tab])+'<main class="main">'+body+'</main><nav class="bottom" aria-label="メインメニュー">'+nav.map(([key,name])=>'<button class="tab '+(ui.tab===key?'active':'')+'" data-act="tab" data-value="'+key+'" aria-current="'+(ui.tab===key?'page':'false')+'"><span class="nav-icon">'+tabIcon(key)+'</span><span class="tab-label">'+name+'</span></button>').join('')+'</nav>'+(ui.overlay?overlay(): '');
     renderToast();hydratePhotos();

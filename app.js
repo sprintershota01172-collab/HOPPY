@@ -366,6 +366,23 @@
       '<p class="fp-extra-empty">＋ 追加から、習い事・学資保険・仕送りなどを登録できます。</p>')+
       '<p class="fp-field-hint">追加した費用はFPの予算・年間収支に反映されます。</p></div>';
   }
+  function fpEventEditor(index){
+    const items=(state.plan.events||[]).slice(index*2,index*2+2),total=state.plan.events.length;
+    const choices='<div class="fp-event-presets">'+
+      '<button data-act="fp-event-add" data-value="wedding">＋ 結婚式</button>'+
+      '<button data-act="fp-event-add" data-value="honeymoon">＋ 新婚旅行</button>'+
+      '<button data-act="fp-event-add" data-value="custom">＋ その他</button></div>';
+    const cards=items.map(x=>'<div class="fp-event-card">'+
+      '<div class="fp-event-title"><input data-event-id="'+esc(x.id)+'" data-event-key="name" aria-label="イベント名" maxlength="50" value="'+esc(x.name)+'">'+
+      '<button data-act="fp-event-delete" data-value="'+esc(x.id)+'" aria-label="イベントを削除">×</button></div>'+
+      '<div class="fp-event-fields"><label>発生年<input data-event-id="'+esc(x.id)+'" data-event-key="year" type="number" min="2020" max="2100" step="1" value="'+esc(x.year)+'"></label>'+
+      '<label>金額（万円）<input data-event-id="'+esc(x.id)+'" data-event-key="amount" type="number" min="0" step="any" value="'+esc(x.amount)+'"></label>'+
+      '<label>収支<select data-event-id="'+esc(x.id)+'" data-event-key="type"><option value="expense" '+(x.type==='expense'?'selected':'')+'>支出 −</option>'+
+      '<option value="income" '+(x.type==='income'?'selected':'')+'>収入 ＋</option></select></label></div></div>').join('');
+    return '<div class="fp-event-editor"><div class="fp-compact-title">予定イベント｜'+total+'件</div>'+choices+
+      (cards||'<div class="fp-event-empty">結婚式・新婚旅行などを登録。発生年の現金残高に反映します。</div>')+
+      '<p class="fp-field-hint">単位は万円。収入イベントも登録可能です。既存の式・旅行費用と重複しないよう自動調整します。</p></div>';
+  }
   function fpWizardPages(i){
     const p=state.plan;
     const f=(title,key,unit='万円/月')=>nField(title,key,unit);
@@ -454,6 +471,8 @@
         f('新婚旅行費','honeymoonCost','万円'),
         f('試算終了年','simulateUntil','年')
       ]));
+      const eventsCount=Math.max(1,Math.ceil((p.events||[]).length/2));
+      for(let n=0;n<eventsCount;n++)pages.push({title:'イベント登録 '+(n+1)+' / '+eventsCount,html:fpEventEditor(n)});
       const count=Math.max(1,Math.ceil(p.expenses.length/2));
       for(let n=0;n<count;n++)pages.push({title:'自由に追加 '+(n+1)+' / '+count,html:fpExtraEditor(n)});
     }
@@ -730,7 +749,13 @@
     for(let i=0;i<(p.expenses||[]).length;i++){
       const x=p.expenses[i],limit=x.cycle==='year'?1200:100;
       if(!Number.isFinite(Number(x.amount))||Number(x.amount)<0||Number(x.amount)>limit)
-        problems.push({label:x.name||'追加支出',amount:x.amount,unit:x.cycle==='year'?'万円/年':'万円/月',step:6,page:2+Math.floor(i/2)});
+        problems.push({label:x.name||'追加支出',amount:x.amount,unit:x.cycle==='year'?'万円/年':'万円/月',step:6,page:2+Math.max(1,Math.ceil((p.events||[]).length/2))+Math.floor(i/2)});
+    }
+    for(let i=0;i<(p.events||[]).length;i++){
+      const event=p.events[i];
+      if(!Number.isFinite(Number(event.amount))||Number(event.amount)<0||Number(event.amount)>5000||
+        !Number.isInteger(Number(event.year))||event.year<2020||event.year>2100)
+        problems.push({label:event.name||'イベント',amount:event.amount,unit:'万円',step:6,page:2+Math.floor(i/2)});
     }
     return problems;
   }
@@ -798,7 +823,7 @@
       result.push({label:x.name,amount:safeNum(x.amount)*(x.cycle==='year'?1:12)});
     }
     result.push({label:'頭金・購入諸費用',amount:point.upfront});
-    result.push({label:'結婚式・新婚旅行',amount:point.events});
+    for(const event of fpEventsForYear(year))if(event.type==='expense')result.push({label:event.name,amount:safeNum(event.amount)});
     return result.filter(x=>x.amount>0).sort((a,b)=>b.amount-a.amount);
   }
   function fpMetric(label,value){
@@ -1355,7 +1380,7 @@
     if(action==='sim-result-page')return step(()=>changePage('simResultPage',4,Number(v)));
     if(action==='fp-result-tab')return step(()=>{ui.simResultPage=Math.min(3,Math.max(0,Number(v)||0));ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
     if(action==='fp-legacy-utilities-clear')return step(()=>{state.plan.utilitiesMonthly=0;save();message('旧光熱費の合算額を削除しました');});
-    if(action==='fp-expense-add')return step(()=>{if(state.plan.expenses.length>=35)return message('追加支出は35項目までです');state.plan.expenses.push({id:uid(),name:'新しい支出',amount:0,cycle:'month',start:0,end:0});ui.simSubPage=2+Math.floor((state.plan.expenses.length-1)/2);save();});
+    if(action==='fp-expense-add')return step(()=>{if(state.plan.expenses.length>=35)return message('追加支出は35項目までです');state.plan.expenses.push({id:uid(),name:'新しい支出',amount:0,cycle:'month',start:0,end:0});ui.simSubPage=2+Math.max(1,Math.ceil(state.plan.events.length/2))+Math.floor((state.plan.expenses.length-1)/2);save();});
     if(action==='fp-expense-delete'){if(!confirm('この追加支出を削除しますか？'))return;return step(()=>{state.plan.expenses=state.plan.expenses.filter(x=>x.id!==v);ui.simSubPage=Math.min(ui.simSubPage,fpWizardPages(6).length-1);save();});}
     if(action==='fp-result-next')return step(()=>{ui.simResultPage=(ui.simResultPage+1)%4;ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
     if(action==='sim-choice')return step(()=>{ui.simChoice=v;save();});

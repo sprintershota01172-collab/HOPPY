@@ -338,3 +338,240 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .property-fields{column-gap:6px}
  .onepage-field input,.onepage-field select{padding-left:7px;padding-right:7px}
 }
+
+
+/* Hopposan UI v5 – compact premium aesthetic inspired by the user's tabi reference. */
+:root {
+  --paper:#f4f1ea;
+  --white:#fffdf8;
+  --ink:#2a3331;
+  --muted:#89918c;
+  --green:#437f79;
+  --sage:#e4f0ec;
+  --cream:#f1e9dc;
+  --gold:#9e8e73;
+  --line:#e4e0d8;
+  --navy:#1c3f66;
+  --danger:#b96f61;
+}
+html,body,.app-shell{background:var(--paper)}
+.app-shell{max-width:700px}
+.top.modern-top {
+  min-height:68px;
+  padding:calc(env(safe-area-inset-top) + 8px) 15px 9px;
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
+  gap:8px;
+}
+.brand-block{display:flex;align-items:center;gap:10px;min-width:0}
+.brand-symbol{
+  width:39px;height:39px;border-radius:12px;flex:none;
+  color:#fff;background:var(--navy);display:grid;place-items:center;
+}
+.brand-symbol svg{width:23px;height:23px}
+.brand h1{
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+  font-size:17px;font-weight:800;letter-spacing:.04em;line-height:1.2;white-space:nowrap;
+}
+.brand .eyebrow{
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif;
+  font-size:10px;letter-spacing:.13em;font-weight:750;color:#999b9a;white-space:nowrap;
+}
+.header-actions{display:flex;gap:6px;align-items:center}
+.header-count{
+  background:#eaf1eb;color:#457c76;border:1px solid #d9e7e0;border-radius:20px;
+  font-size:12px;padding:8px 10px;white-space:nowrap;font-weight:600;
+}
+.header-count:first-letter{color:#d7806e}
+.header-count b{font-size:12px}
+.settings-gear{border:0;background:transparent;border-radius:10px;font-size:25px;min-width:44px;min-height:44px}
+.main{padding:10px 14px 8px}
+.screen{gap:8px}
+.home-screen{gap:9px}
+.home-search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center;flex:none}
+.home-search-box{
+  min-width:0;height:44px;display:flex;align-items:center;gap:7px;
+  background:#fffdf9;border:1px solid #dedbd3;border-radius:12px;padding:0 10px;
+}
+.home-search-box:focus-within{border-color:#9ab8a7;box-shadow:0 0 0 2px #77b1a328}
+.search-icon{font-size:23px;line-height:1;color:#7d8d89;transform:rotate(-18deg);flex:none}
+.home-search-box input{
+  border:0;outline:0!important;box-shadow:none;background:transparent;
+  height:100%;min-width:0;width:100%;padding:0;color:var(--ink);
+  font-size:14px;font-weight:500;
+}
+.home-search-box input::placeholder{color:#939b96;opacity:1}
+.home-search-box input::-webkit-search-cancel-button{cursor:pointer}
+.home-filter-btn{
+  min-height:44px;height:44px;white-space:nowrap;display:flex;align-items:center;gap:6px;
+  border:1px solid var(--line);background:#fffdf9;color:#3b4642;
+  border-radius:12px;padding:0 11px;font-size:13px;font-weight:700;
+}
+.home-add-btn{
+  min-height:48px;background:var(--navy);color:#fff;border:0;
+  border-radius:12px;font-size:16px;font-weight:750;
+  letter-spacing:.04em;display:flex;align-items:center;justify-content:center;gap:7px;flex:none;
+}
+.home-add-btn span{font-size:20px;font-weight:400}
+.home-results{display:flex;flex:1;flex-direction:column;min-height:0;gap:10px;overflow:hidden}
+.home-summary{
+  flex:none;min-height:56px;background:#edf2ec;border:1px solid #dfe9df;
+  border-radius:14px;display:flex;align-items:center;justify-content:space-between;
+  gap:9px;padding:7px 10px;
+}
+.home-summary-label{display:flex;align-items:center;gap:7px;min-width:0;white-space:nowrap}
+.home-summary-label strong{color:#427d77;font-size:21px;font-weight:800;letter-spacing:-.035em}
+.home-summary-label span{color:#84918b;font-size:12px;font-weight:550;overflow:hidden;text-overflow:ellipsis}
+.summary-action{
+  min-height:42px;display:flex;align-items:center;justify-content:center;
+  flex:none;gap:6px;background:#4c8a84;border:0;border-radius:10px;
+  padding:0 12px;color:#fff;font-size:13px;font-weight:750;white-space:nowrap;
+}
+.status-chip-row{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:5px;flex:none;min-height:41px;
+}
+.status-chip{
+  min-width:0;min-height:41px;border-radius:19px;background:#fffcf7;
+  color:#636d68;border:1px solid #e2ded6;
+  padding:3px 4px;white-space:nowrap;font-size:12px;font-weight:600;
+  overflow:hidden;text-overflow:ellipsis;
+}
+.status-chip span{font-size:11px;color:#a0a49e;margin-left:2px}
+.status-chip.is-active{background:#e1eeea;border-color:#e1eeea;color:#37736e;font-weight:800}
+.status-chip.is-active span{color:#729d95}
+.property-list{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;overflow:hidden;align-content:start}
+.property-list-card{
+  width:100%;min-width:0;min-height:91px;max-height:91px;
+  display:flex;align-items:center;gap:9px;
+  padding:9px 9px;background:#fffdf9;color:var(--ink);
+  border:1px solid #e4e0d9;border-radius:14px;
+  box-shadow:0 2px 5px rgba(28,63,66,.022);
+  text-align:left;flex:none;position:relative;
+  transition:background .16s ease,transform .16s ease;
+}
+.property-list-card:active{background:#f3f4ef;transform:scale(.995)}
+.property-thumb{
+  width:63px;height:70px;flex:0 0 63px;display:block;
+  border-radius:9px;overflow:hidden;background:#e8efec;
+}
+.property-thumb img{display:block;width:100%;height:100%;object-fit:cover}
+.property-img-fallback{
+  display:grid;place-items:center;width:100%;height:100%;
+  background:linear-gradient(145deg,#e9f0eb,#d9e4dd);color:#7a9c8a;
+}
+.property-img-fallback svg{width:27px;height:27px}
+.property-card-body{display:flex;flex:1;min-width:0;flex-direction:column;gap:11px}
+.property-first-row,.property-second-row{
+  display:flex;align-items:center;min-height:20px;min-width:0;overflow:hidden;
+  white-space:nowrap;gap:7px;
+}
+.property-list-name{
+  flex:0 1 auto;min-width:0;max-width:42%;
+  font-size:14px;font-weight:800;
+  text-overflow:ellipsis;overflow:hidden;white-space:nowrap;
+}
+.property-list-maker{
+  flex:1;min-width:0;color:#77817b;
+  font-size:11px;font-weight:550;border-left:1px solid #dddcd5;
+  padding-left:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.property-state{
+  flex:none;max-width:61px;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;border-radius:18px;
+  font-size:10px;font-weight:750;padding:6px 8px;
+  color:#43827b;background:#eaf2ef;
+}
+.property-state.favorite{background:#f9eae5;color:#ca7966}
+.property-state.planned{background:#eaf0f3;color:#66829a}
+.property-second-row{
+  justify-content:space-between;gap:4px;
+  font-size:11px;color:#77817c;
+}
+.property-second-row>span{
+  display:block;min-width:0;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;font-size:11px;
+}
+.property-second-row .prop-price{
+  color:#2a3f3a;font-size:14px;font-weight:750;flex:0 1 31%;
+}
+.prop-station,.prop-meeting{border-left:1px solid #e2dfd7;padding-left:5px;flex:1}
+.property-chevron{flex:none;font-size:25px;color:#8b9490;width:12px;font-weight:300}
+.home-no-match{
+  display:grid;place-content:center;justify-items:center;
+  padding:16px;flex:1;gap:9px;text-align:center;color:var(--muted);font-size:13px;
+}
+.home-no-match strong{font-size:15px;color:#4f665a}
+.home-page-single{height:0;flex:none}
+.home-results .pager{margin-top:auto}
+.home-results .pager .page-arrow{width:44px;height:44px}
+.home-sample-link{
+  flex:none;min-height:44px;border:0;background:transparent;text-decoration:underline;
+  text-underline-offset:3px;color:#3d7974;font-weight:650;font-size:13px;
+}
+.bottom{background:#fcfaf6;border-top:1px solid #e7e1da;gap:4px;padding:5px 9px calc(env(safe-area-inset-bottom) + 5px)}
+.tab{
+  height:52px;min-width:0;min-height:44px;border-radius:12px;
+  background:transparent;display:flex;flex-direction:column;gap:3px;
+  align-items:center;justify-content:center;color:#939993;
+  font-size:12px;white-space:nowrap;word-break:normal;font-weight:650;
+}
+.tab .nav-icon{width:43px;height:25px;display:grid;place-items:center}
+.tab .tab-label{font-size:12px}
+.tab.active{background:#e5f0ec;color:#367872}
+.tab.active .nav-icon{color:#367872}
+.tab svg{width:20px;height:20px}
+.btn{font-size:13px;border-radius:10px;white-space:nowrap}
+.kicker,.micro-label{font-size:11px}
+.meta,.subtle,.pill{font-size:12px}
+.section-title{font-size:18px}
+.full-header strong{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.info-box span,.info-box strong{font-size:12px}
+.compare-cell,.compare-cell.topic,.compare-cell.heading,.compare-cell.rating .rating-small,.compare-cell.topic small{font-size:12px}
+.compare-cell.topic{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.compare-cell.topic small{font-size:10px}
+.compare-cell.heading{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.compare-cell.rating .rating-small{font-size:10px}
+.compare-cell.rating .rating-face{font-size:20px}
+.segment button{font-size:12px}
+.grid-tile span,.grid-tile strong,.criteria-line strong,.question-row span{font-size:12px}
+.form-view .field label,.onepage-field label{font-size:12px}
+.onepage-field input,.onepage-field select{font-size:14px}
+.notes-title .meta{font-size:12px}
+@media(max-height:735px){
+ .main{padding-top:6px;padding-bottom:4px}
+ .home-screen{gap:6px}
+ .home-results{gap:7px}
+ .home-summary{min-height:49px}
+ .status-chip-row{min-height:38px}
+ .status-chip{min-height:38px}
+ .property-list-card{min-height:84px;max-height:84px;padding:6px 8px}
+ .property-thumb{height:67px}
+ .property-card-body{gap:8px}
+ .home-add-btn{min-height:44px}
+ .bottom{padding-top:3px;padding-bottom:calc(env(safe-area-inset-bottom) + 2px)}
+ .tab{height:47px}
+}
+@media(max-width:365px){
+ .top.modern-top{padding-left:9px;padding-right:8px}
+ .brand-block{gap:6px}
+ .header-count{padding:7px}
+ .main{padding-left:9px;padding-right:9px}
+ .home-filter-btn{padding:0 8px;gap:3px;font-size:12px}
+ .property-thumb{width:50px;flex-basis:50px}
+ .property-list-card{gap:6px;padding:7px}
+ .property-card-body{gap:7px}
+ .property-list-name{font-size:12px;max-width:43%}
+ .property-list-maker{font-size:10px;padding-left:4px}
+ .property-state{font-size:9px;max-width:51px;padding:5px 4px}
+ .property-second-row .prop-price{font-size:12px}
+ .property-second-row>span{font-size:10px}
+ .status-chip{font-size:11px}
+ .summary-action{padding:0 9px;font-size:12px}
+ .home-summary-label span{font-size:11px}
+ .property-chevron{font-size:20px;width:9px}
+ .tab .tab-label{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+ .property-list-card{transition:none}
+}

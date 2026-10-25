@@ -1321,30 +1321,39 @@
       ledger.months.map(x=>{
         const signed=x.net>=0?'plus':'minus';
         return '<button data-act="fp-cash-month" data-value="'+x.month+'" class="'+(x.month===month?'active':'')+
-          '" aria-label="'+x.month+'月 '+(x.net<0?'赤字':'黒字')+yen(Math.abs(x.net),2)+'万円">'+
-          '<span class="fp-month-bar '+signed+'" style="height:'+Math.max(4,Math.abs(x.net)/maxNet*40).toFixed(1)+'px"></span>'+
+          '" aria-label="'+x.month+'月 '+(x.net<0?'赤字':'黒字')+fpYen(Math.abs(x.net))+'">'+
+          '<span class="fp-month-bar '+signed+'" style="height:'+Math.max(4,Math.abs(x.net)/maxNet*32).toFixed(1)+'px"></span>'+
           '<small>'+x.month+'</small></button>';
       }).join('')+'</div>';
-    const row=(label,value)=>'<div class="fp-cash-row"><span>'+esc(label)+'</span><strong>'+yen(value,2)+' 万円</strong></div>';
+    const row=(label,value)=>'<div class="fp-cash-row"><span>'+esc(label)+'</span><strong>'+fpYen(value)+'</strong></div>';
+    const p=state.plan,goal=safeNum(p.otherSavingsMonthly),
+      available=selected.net-goal,goalLabel=goal>0?(available>=0?'貯金目標まで確保可':'貯金目標まで不足'):'目標を設定できます';
+    const quick= '<div class="fp-month-quick" aria-label="自由費と貯金目標">'+
+      [['freeSpendingMonthly','自由費'],['otherSavingsMonthly','現金貯金目標']].map(([key,label])=>
+        '<label><span>'+label+'</span><div class="fp-month-quick-input">'+
+        '<input type="number" min="0" max="100000000" step="1" inputmode="numeric" data-fp-quick-key="'+key+
+        '" value="'+fpYenNumber(p[key])+'" aria-label="'+label+'（円/月）"><small>円/月</small></div></label>'
+      ).join('')+'</div>';
     return '<div class="fp-month-report grow">'+fpYearSelect(model)+
-      '<div class="fp-month-head"><span class="fp-breakdown-hint">色をタップ → 下に内訳</span>'+
+      '<div class="fp-month-head"><span class="fp-breakdown-hint">項目を選ぶと下に内訳を表示</span>'+
         '<div class="fp-month-switch" role="group" aria-label="月収支の表示形式">'+
           '<button data-act="fp-month-view" data-value="pie" class="'+(isPie?'active':'')+'">円グラフ</button>'+
           '<button data-act="fp-month-view" data-value="detail" class="'+(!isPie?'active':'')+'">明細</button></div></div>'+bars+
       '<div class="fp-month-hero"><div><span>'+point.year+'年 '+month+'月の現金収支</span>'+
-        '<strong class="'+(selected.net<0?'negative':'')+'">'+(selected.net>=0?'+':'')+yen(selected.net,2)+'<small>万円</small></strong></div>'+
-        '<div><span>この月末の現金</span><strong>'+yen(selected.endingCash,1)+'<small>万円</small></strong></div></div>'+
-      '<div class="fp-month-stats">'+
-        '<div><span>手取り収入</span><b>'+yen(selected.income,2)+'万</b></div>'+
-        '<div><span>生活・住宅・イベント支出</span><b>'+yen(selected.spending,2)+'万</b></div>'+
-        '<div><span>NISA等の積立</span><b>'+yen(selected.investing,2)+'万</b></div></div>'+
+        '<strong class="'+(selected.net<0?'negative':'')+'">'+(selected.net>=0?'+':'')+fpYen(selected.net)+'</strong></div>'+
+        '<div><span>この月末の現金</span><strong>'+fpYen(selected.endingCash)+'</strong></div></div>'+
+      '<div class="fp-month-summary">'+
+        '<span>手取り <b>'+fpYen(selected.income)+'</b></span>'+
+        '<span>支出 <b>'+fpYen(selected.spending)+'</b></span>'+
+        '<span>投資積立 <b>'+fpYen(selected.investing)+'</b></span></div>'+
+      quick+
       (isPie?fpMonthlyPie(selected,point):'<div class="fp-cash-rows">'+
         row('生活費・保険など',selected.household)+
         row('住宅費',selected.housing)+
         row('年払い・教育費の月割',selected.annualBudget)+
         row('イベント・住宅購入費',selected.eventExpenses+selected.purchase)+
         row('NISA / その他投資',selected.nisaAdd+selected.otherAdd)+'</div>')+
-      '<p class="fp-r-help">現金増減＝手取り−支出−積立。年払い・教育費や月未指定イベントは12か月に仮配分、住宅購入費は指定した購入月に計上。</p></div>';
+      '<p class="fp-r-help">'+goalLabel+'。現金貯金目標は支出に加えず、月末に残る現金と比較します。</p></div>';
   }
   function fpAssetsReport(model){
     const point=fpYearPoint(model),period=ui.fpAssetPeriod==='month'?'month':'year',
@@ -1556,7 +1565,7 @@
         fpPageNav(4,calcPage,'fp-calc-page',['収支式','ローン','支出明細','前提'])+
         fpCalculationData(price,current)+'</div>';
     }else content=fpAdviceScreen(price,current);
-    return '<section class="screen sim-screen fp-result-screen fp-report-screen">'+intro+
+    return '<section class="screen sim-screen fp-result-screen fp-report-screen '+((page===1||page===3&&ui.fpChartPage===3)?'fp-focus':'')+'">'+intro+
       '<h2 class="sim-result-title">'+heading+'</h2>'+(snapshot?'<div class="fp-snapshot-label">'+esc(fpHistoryDate(snapshot))+'</div>':'')+tabs+content+
       '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">↶ 条件を見直す</button>'+
       '<button class="btn primary" data-act="fp-result-next">'+(page===6?'まとめへ戻る':'次へ →')+'</button></div></section>';

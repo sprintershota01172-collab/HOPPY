@@ -530,7 +530,7 @@
     ui.simSubPage=Math.max(0,Math.min(pages.length-1,Number(ui.simSubPage)||0));
     const n=ui.simSubPage;
     const labels=i===2?['食費・住居','水道光熱','日常費','保険等']:i===4?['購入','維持費']:i===5?['資産','積立']:null;
-    return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR / r14</span>'+
+    return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR / r15</span>'+
       (p.hasRun?'<button class="fp-recall-btn" data-act="fp-view-budget">前回の診断を見る ↗</button>':'<span class="sim-progress-text">'+(i+1)+' / 7</span>')+
       '</div><div class="sim-progress">'+Array.from({length:7},(_,x)=>'<span class="'+(x<=i?'filled':'')+'"></span>').join('')+'</div>'+
       '<div class="sim-question"><h2>'+simQuestions[i][0]+'</h2><p>'+simQuestions[i][1]+'</p></div>'+
@@ -1136,7 +1136,7 @@
     return '<section class="fp-breakdown-panel" data-fp-inline-breakdown aria-label="'+esc(item.label)+'の内訳">'+
       '<div class="fp-breakdown-title"><span>選択項目の内訳 '+(annual?'年':'月')+'額</span>'+
       '<strong>'+esc(item.label)+' <b>'+yen(item.amount,2)+'万円</b></strong>'+
-      '<small>収入比 '+(percentage===null?'—':yen(percentage,1)+'%')+' ・ 円グラフの色をタップして切替</small></div>'+
+      '<small>収入比 '+(percentage===null?'—':yen(percentage,1)+'%')+' ・ '+rows.length+'項目を下まで確認できます</small></div>'+
       '<div class="fp-breakdown-list">'+(rowHtml||'<p class="fp-breakdown-empty">この項目の内訳はありません。</p>')+'</div>'+
       '<p class="fp-breakdown-footer">設定金額を変更すると家計・資産予測を再計算します。金額の右にある入力欄は元の登録単位です。'+
       (annual?'年間集計':'年払い・月未指定の支出は月割の概算')+'。</p></section>';
@@ -1147,6 +1147,33 @@
       '" aria-pressed="'+(active===item.id?'true':'false')+'">'+
       '<i style="background:'+item.color+'"></i><span>'+esc(item.label)+'</span>'+
       '<strong>'+yen(item.amount,period==='annual'?0:2)+'万</strong></button>';
+  }
+
+  // Selecting a pie segment changes only the detail card and selected visuals.
+  // The scrollable report, year/month selection, and navigation stay mounted.
+  function fpRefreshSelectedBreakdown(period,selectedCategory){
+    const host=app.querySelector(period==='annual'?'.fp-pie-panel':'.fp-month-report');
+    const panel=host?.querySelector?.('.fp-breakdown-panel');
+    if(!panel){render();return;}
+    const previousScroll=host.scrollTop;
+    const model=modelYears(safeNum(state.plan.propertyPrice),true);
+    const point=fpYearPoint(model);
+    const month=period==='monthly'
+      ?fpMonthlyLedger(point).months[Math.min(11,Math.max(0,(ui.fpCashMonth||1)-1))]:null;
+    const allocation=month?fpMonthlyAllocation(month):fpIncomeAllocation(point);
+    panel.outerHTML=fpPieBreakdownPanel(point,month,allocation.items,selectedCategory);
+    for(const el of host.querySelectorAll('[data-act="fp-breakdown-select"]')){
+      if(el.dataset.period!==period)continue;
+      const selected=el.dataset.value===selectedCategory;
+      if(el.classList?.contains('fp-pie-pick')){
+        el.classList.toggle('selected',selected);
+        el.setAttribute('aria-pressed',String(selected));
+      }
+      if(el.classList?.contains('fp-pie-arc')){
+        el.setAttribute('stroke-width',String((period==='annual'?29:28)+(selected?5:0)));
+      }
+    }
+    host.scrollTop=previousScroll;
   }
   function fpPieArcs(items,total,radius,strokeWidth,period,active){
     const circ=2*Math.PI*radius;let offset=0;
@@ -1431,7 +1458,7 @@
       budget=fpBudget(),rating=fpRating(price),warnings=fpPlanWarnings(),
       page=Math.min(6,Math.max(0,ui.simResultPage||0));
     const heading=['購入後の家計','月ごとの収支','現金と投資資産','年収支','収入の内訳','計算根拠','アドバイス'][page];
-    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r14</span>'+
+    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r15</span>'+
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button></div></div>';
@@ -1853,9 +1880,12 @@
     if(action==='fp-month-view')return step(()=>{ui.fpMonthView=v==='detail'?'detail':'pie';});
     if(action==='fp-breakdown-select'){
       if(!['living','housing','education','investing','remaining'].includes(v))return;
-      if(button.dataset.period==='annual')ui.fpBreakdownAnnual=v;
+      const period=button.dataset.period==='annual'?'annual':'monthly';
+      if(period==='annual')ui.fpBreakdownAnnual=v;
       else ui.fpBreakdownMonthly=v;
-      render();
+      // Only replace the inline breakdown. Recreating #app triggers the
+      // screen entrance animation and resets scroll on every category tap.
+      fpRefreshSelectedBreakdown(period,v);
       return;
     }
     if(action==='fp-breakdown-edit')return step(()=>{

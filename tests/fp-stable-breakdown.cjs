@@ -2,7 +2,7 @@
 // breakdown row within the same scrolling report, including on small phones.
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 let source=fs.readFileSync('app.js','utf8');
-const anchor="  save();render();\n  if('serviceWorker'";
+const anchor="  save();render();\n  // The startup wordmark";
 assert.ok(source.includes(anchor));
 source=source.replace(anchor,
  "  window.__fpStable={state,ui,modelYears,fpMonthlyLedger,fpPieBreakdownRows,fpPieBreakdownPanel};\n"+anchor);

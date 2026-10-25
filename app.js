@@ -40,7 +40,7 @@
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpChartPage:0,fpIncomePeriod:'year',fpIncomeMonth:1,fpCashMonth:1,fpAssetPeriod:'year',fpAssetMonth:1,fpHistoryPage:0,fpHistoryId:null,fpHistoryOpen:false,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpChartPage:0,fpIncomePeriod:'year',fpIncomeMonth:1,fpCashMonth:1,fpMonthView:'pie',fpAssetPeriod:'year',fpAssetMonth:1,fpHistoryPage:0,fpHistoryId:null,fpHistoryOpen:false,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
   if(state.plan.hasRun)ui.simStep=7;
   function normalize(s) {
@@ -1073,10 +1073,51 @@
     return '<div class="fp-r-rows">'+rows.map(([label,value])=>
       '<div><span>'+esc(label)+'</span><strong>'+value+'</strong></div>').join('')+'</div>';
   }
+  function fpMonthlyAllocation(month){
+    const income=Math.max(0,month.income),living=Math.max(0,month.household+month.annualBudget),
+      housing=Math.max(0,month.housing),events=Math.max(0,month.eventExpenses+month.purchase),
+      investing=Math.max(0,month.investing),spent=Math.max(0,month.spending),
+      totalOutflow=spent+investing,remaining=Math.max(0,month.net),over=Math.max(0,-month.net);
+    return {income,spent,investing,remaining,over,total:Math.max(1,income,totalOutflow),
+      percent:income>0?spent/income*100:null,items:[
+        {label:'生活・教育費',amount:living,color:'#6b9eaf'},
+        {label:'住宅費',amount:housing,color:'#2767ae'},
+        {label:'イベント・購入費',amount:events,color:'#d9a164'},
+        {label:'NISA等の積立',amount:investing,color:'#729477'},
+        {label:'現金に残る分',amount:remaining,color:'#d5dde2'}
+      ]};
+  }
+  function fpMonthlyPie(month){
+    const data=fpMonthlyAllocation(month),radius=67,circ=2*Math.PI*radius;
+    let offset=0;
+    const segments=data.items.filter(x=>x.amount>0).map(x=>{
+      const distance=Math.min(circ,x.amount/data.total*circ);
+      const piece='<circle cx="105" cy="105" r="'+radius+'" stroke="'+x.color+'" stroke-width="28" fill="none"'+
+        ' stroke-dasharray="'+distance.toFixed(4)+' '+Math.max(0,circ-distance).toFixed(4)+'"'+
+        ' stroke-dashoffset="'+(-offset).toFixed(4)+'" transform="rotate(-90 105 105)"/>';
+      offset+=distance;return piece;
+    }).join('');
+    const percent=data.percent===null?'—':yen(data.percent,1)+'%';
+    return '<div class="fp-month-pie" data-fp-month-pie>'+
+      '<svg viewBox="0 0 210 210" class="fp-month-donut" role="img" aria-label="'+
+        month.year+'年'+month.month+'月の手取り収入に対する支出割合：'+esc(percent)+'">'+
+        '<circle cx="105" cy="105" r="'+radius+'" stroke="#ecf0f2" stroke-width="28" fill="none"/>'+
+        segments+
+        '<text x="105" y="101" text-anchor="middle" font-size="28" font-weight="800" fill="#283a4b">'+esc(percent)+'</text>'+
+        '<text x="105" y="122" text-anchor="middle" font-size="10" fill="#758391">月の支出率</text></svg>'+
+      '<div class="fp-month-pie-legend">'+data.items.map(x=>
+        '<div><i style="background:'+x.color+'"></i><span>'+esc(x.label)+'</span><strong>'+yen(x.amount,2)+'万</strong></div>'
+      ).join('')+'</div></div>'+
+      '<p class="fp-month-pie-note">'+(data.percent===null?'手取り収入が0円のため、支出率は算出できません。':
+         data.over>0?'支出・積立が収入を'+yen(data.over,2)+'万円超過。円全体は支出＋積立を100％として表示。':
+         '円全体＝手取り収入100％。NISA積立などは支出率から除き、別色で表示。')+
+      '</p>';
+  }
   function fpMonthlyReport(model){
     const point=fpYearPoint(model),ledger=fpMonthlyLedger(point),
       month=Math.min(12,Math.max(1,ui.fpCashMonth||1)),selected=ledger.months[month-1],
-      maxNet=Math.max(1,...ledger.months.map(x=>Math.abs(x.net)));
+      maxNet=Math.max(1,...ledger.months.map(x=>Math.abs(x.net))),
+      isPie=ui.fpMonthView!=='detail';
     const bars='<div class="fp-month-nav" role="group" aria-label="月ごとの収支">'+
       ledger.months.map(x=>{
         const signed=x.net>=0?'plus':'minus';
@@ -1086,10 +1127,11 @@
           '<small>'+x.month+'</small></button>';
       }).join('')+'</div>';
     const row=(label,value)=>'<div class="fp-cash-row"><span>'+esc(label)+'</span><strong>'+yen(value,2)+' 万円</strong></div>';
-    const recurring=selected.household+selected.housing+selected.annualBudget;
     return '<div class="fp-month-report grow">'+fpYearSelect(model)+
-      '<div class="fp-month-head"><span>月を選ぶと収支が切り替わります</span>'+
-        '<b>年間の現金増減 '+yen(point.netCash,1)+'万円</b></div>'+bars+
+      '<div class="fp-month-head"><span>月を選んで収支を比較</span>'+
+        '<div class="fp-month-switch" role="group" aria-label="月収支の表示形式">'+
+          '<button data-act="fp-month-view" data-value="pie" class="'+(isPie?'active':'')+'">円グラフ</button>'+
+          '<button data-act="fp-month-view" data-value="detail" class="'+(!isPie?'active':'')+'">明細</button></div></div>'+bars+
       '<div class="fp-month-hero"><div><span>'+point.year+'年 '+month+'月の現金収支</span>'+
         '<strong class="'+(selected.net<0?'negative':'')+'">'+(selected.net>=0?'+':'')+yen(selected.net,2)+'<small>万円</small></strong></div>'+
         '<div><span>この月末の現金</span><strong>'+yen(selected.endingCash,1)+'<small>万円</small></strong></div></div>'+
@@ -1097,13 +1139,13 @@
         '<div><span>手取り収入</span><b>'+yen(selected.income,2)+'万</b></div>'+
         '<div><span>生活・住宅・イベント支出</span><b>'+yen(selected.spending,2)+'万</b></div>'+
         '<div><span>NISA等の積立</span><b>'+yen(selected.investing,2)+'万</b></div></div>'+
-      '<div class="fp-cash-rows">'+
+      (isPie?fpMonthlyPie(selected):'<div class="fp-cash-rows">'+
         row('生活費・保険など',selected.household)+
         row('住宅費',selected.housing)+
         row('年払い・教育費の月割',selected.annualBudget)+
         row('イベント・住宅購入費',selected.eventExpenses+selected.purchase)+
-        row('NISA / その他投資',selected.nisaAdd+selected.otherAdd)+'</div>'+
-      '<p class="fp-r-help">現金増減＝手取り−生活費・住宅費−臨時支出−投資積立。年払い・教育費や月未指定イベントは12か月で仮配分。購入費は1月計上。実際の引落月とは異なる概算です。</p></div>';
+        row('NISA / その他投資',selected.nisaAdd+selected.otherAdd)+'</div>')+
+      '<p class="fp-r-help">現金増減＝手取り−支出−積立。年払い・教育費や月未指定イベントは12か月に仮配分、住宅購入費は1月に計上。実際の支払月と異なる場合があります。</p></div>';
   }
   function fpAssetsReport(model){
     const point=fpYearPoint(model),period=ui.fpAssetPeriod==='month'?'month':'year',
@@ -1255,7 +1297,7 @@
     const p=state.plan,price=safeNum(p.propertyPrice),current=modelYears(price,true),rent=modelYears(price,false),
       budget=fpBudget(),rating=fpRating(price),warnings=fpPlanWarnings(),
       page=Math.min(6,Math.max(0,ui.simResultPage||0));
-    const heading=['購入後の家計','月ごとの収支','現金と投資資産','収支予測グラフ','収入の内訳','計算根拠','アドバイス'][page];
+    const heading=['購入後の家計','月ごとの収支','現金と投資資産','年収支','収入の内訳','計算根拠','アドバイス'][page];
     const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r9</span>'+
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
@@ -1276,7 +1318,7 @@
         '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">最初から見直す</button>'+
         '<button class="btn primary" data-act="fp-fix-input" data-value="'+warnings[0].step+':'+warnings[0].page+'">該当項目を修正 →</button></div></section>';
     }
-    const tabs='<div class="fp-result-nav">'+['まとめ','月収支','資産','グラフ','収入','計算','助言'].map((label,i)=>
+    const tabs='<div class="fp-result-nav">'+['まとめ','月収支','資産','年収支','収入','計算','助言'].map((label,i)=>
       '<button data-act="fp-result-tab" data-value="'+i+'" class="'+(page===i?'active':'')+'">'+label+'</button>').join('')+'</div>';
     let content='';
     if(page===0){
@@ -1661,6 +1703,7 @@
     if(action==='fp-pie-open')return step(()=>{ui.simResultPage=3;ui.fpChartPage=3;});
     if(action==='fp-result-tab')return step(()=>{ui.simResultPage=Math.min(6,Math.max(0,Number(v)||0));ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
     if(action==='fp-cash-month')return step(()=>{ui.fpCashMonth=Math.min(12,Math.max(1,Number(v)||1));});
+    if(action==='fp-month-view')return step(()=>{ui.fpMonthView=v==='detail'?'detail':'pie';});
     if(action==='fp-asset-period')return step(()=>{ui.fpAssetPeriod=v==='month'?'month':'year';});
     if(action==='fp-asset-month')return step(()=>{ui.fpAssetMonth=Math.min(12,Math.max(1,Number(v)||1));ui.fpAssetPeriod='month';});
     if(action==='fp-income-period')return step(()=>{ui.fpIncomePeriod=v==='month'?'month':'year';});

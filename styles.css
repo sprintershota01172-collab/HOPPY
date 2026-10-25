@@ -1650,3 +1650,25 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .fp-asset-tile{padding:5px 6px}
  .fp-asset-tile>strong{font-size:14px}
 }
+
+
+/* FP r9: month-end asset selection without vertical scrolling. */
+.fp-assets-toolbar{display:flex;gap:6px;align-items:center;justify-content:space-between;min-height:31px;flex:none}
+.fp-assets-toolbar>.fp-year-select{flex:1;min-width:0;min-height:31px}
+.fp-assets-toolbar .fp-year-select select{font-size:10px;min-height:27px}
+.fp-assets-toolbar>.fp-income-toggle{flex:none;min-width:116px;height:31px}
+.fp-assets-months{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:2px;flex:none;
+ background:#fff;border:1px solid #e5ebf1;padding:4px;border-radius:10px;min-height:28px}
+.fp-assets-months button{min-width:0;height:22px;padding:0;border:0;background:transparent;
+ color:#718292;font-size:9px;border-radius:5px}
+.fp-assets-months button.active{background:#2d6e9f;color:#fff;font-weight:800}
+.fp-assets-subline{color:#768491;font-size:8px;line-height:1.2}
+.fp-assets-report:has(.fp-assets-months)>.fp-r-chart{max-height:146px;min-height:85px}
+@media(max-height:760px){
+ .fp-assets-report:has(.fp-assets-months)>.fp-r-chart{max-height:112px;min-height:65px}
+ .fp-assets-report:has(.fp-assets-months) .fp-asset-tile{padding:5px 7px;gap:2px}
+}
+@media(max-height:630px){
+ .fp-assets-report:has(.fp-assets-months)>.fp-r-chart{max-height:83px;min-height:45px}
+ .fp-assets-subline{display:none}
+}

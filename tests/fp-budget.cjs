@@ -51,7 +51,7 @@ assert.match(app.innerHTML,/物件の予算評価/);
 const startingBudget=Number(app.innerHTML.match(/fp-r-summary-strip"><span>参考の購入予算<\/span><strong>([0-9,]+)/)?.[1]?.replace(/,/g,''));
 assert.ok(Number.isFinite(startingBudget) && startingBudget>3000, 'higher income should allow a larger benchmark');
 click('fp-result-tab','3');
-assert.match(app.innerHTML,/収支予測グラフ/);
+assert.match(app.innerHTML,/年収支/);
 assert.match(app.innerHTML,/fp-r-chart/);
 click('fp-chart-page','1');
 assert.match(app.innerHTML,/年間の収入と支出/);

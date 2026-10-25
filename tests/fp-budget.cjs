@@ -43,7 +43,9 @@ click('sim-next'); // annual expenses
 click('sim-next'); // results
 assert.equal(state().plan.hasRun,1);
 assert.match(app.innerHTML,/あなたの住宅予算/);
-assert.match(app.innerHTML,/返済負担から算出した参考予算/);
+assert.match(app.innerHTML,/参考の購入予算/);
+assert.match(app.innerHTML,/住宅ローンの毎月返済/);
+assert.match(app.innerHTML,/35年ローン/);
 assert.match(app.innerHTML,/金利＋1％なら/);
 assert.match(app.innerHTML,/物件の予算評価/);
 const startingBudget=Number(app.innerHTML.match(/fp-hero-number">([0-9,]+)/)?.[1]?.replace(/,/g,''));

@@ -164,7 +164,7 @@
       let max=ui.rater==='both'?h.total+w.total:h.total;
       return {p,pts,max,count,h,w};
     }).sort((a,b)=>(b.count>0?b.pts/b.max:-1)-(a.count>0?a.pts/a.max:-1));
-    return '<div class="panel rank-panel swipe-zone">'+results.map((r,i)=>'<div class="rank-row"><div class="rank-num">'+(r.count>0?i+1:'–')+'</div><div><div class="rank-name">'+esc(r.p.name)+'</div><span class="meta">'+(ui.rater==='both'?'夫 '+r.h.sum+'点 / 妻 '+r.w.sum+'点':r.count+' / '+state.criteria.length+'項目 採点')+'</span></div><div class="rank-score">'+(r.count?Math.round(r.pts/r.max*100)+'%':'未採点')+'</div></div>').join('')+'<p class="subtle">重要度で加重した得点率。未採点は0点扱いで、採点数も確認できます。</p></div>';
+    return '<div class="panel rank-panel swipe-zone">'+results.map((r,i)=>'<div class="rank-row '+(i===0&&r.count?'winner':'')+'"><div class="rank-num">'+(r.count>0?i+1:'–')+'</div><div><div class="rank-name">'+esc(r.p.name)+'</div><span class="meta">'+(ui.rater==='both'?'夫 '+r.h.sum+'点 / 妻 '+r.w.sum+'点':r.pts+' / '+r.max+'点 · '+r.count+'項目採点')+'</span></div><div class="rank-score">'+(r.count?Math.round(r.pts/r.max*100)+'%':'未採点')+'</div></div>').join('')+'<p class="subtle">重要度で加重した得点率。未採点は0点扱いで、採点数も確認できます。</p></div>';
   }
   function choosePropertiesScreen(){
     let ps=state.properties,n=Math.max(1,Math.ceil(ps.length/4));ui.listPage=Math.min(ui.listPage,n-1);

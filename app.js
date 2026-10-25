@@ -1547,6 +1547,19 @@
       '<span class="memo-property">⌂ '+esc(entry.propertyName)+'</span>'+
       '<span class="memo-preview">'+esc(preview||'本文なし')+'</span></button></div>';
   }
+  function homeSelectionAxis(){
+    const content=String(state.homeCriteriaMemo||''),preview=content.replace(/\s+/g,' ').trim();
+    return '<section class="home-axis-card" aria-label="家選びで譲れない判断軸">'+
+      '<div class="home-axis-header"><div><span class="home-axis-kicker">HOUSE CHECKPOINTS</span>'+
+      '<strong>家選びで忘れたくないこと</strong></div>'+
+      '<button type="button" data-act="home-axis-toggle" aria-expanded="'+(ui.axisEdit?'true':'false')+'">'+
+      (ui.axisEdit?'閉じる':'編集')+'</button></div>'+
+      (ui.axisEdit?'<label class="home-axis-edit"><span>優先順位・譲れない条件・不安な点</span>'+
+      '<textarea data-home-axis-memo rows="4" maxlength="4000" placeholder="例：予算上限、通勤、地盤・災害リスク、断熱、周辺環境、将来の売却しやすさ">'+esc(content)+'</textarea>'+
+      '<small>入力中に端末へ自動保存。家探し全体の共通メモです。</small></label>':
+      '<p class="home-axis-preview">'+esc(preview?truncate(preview,135):
+      '予算・通勤・耐震・断熱・災害リスクなど、判断軸をここに残す')+'</p>')+'</section>';
+  }
   function memoScreen(){
     if(ui.memoScope==='individual' && !state.properties.some(p=>p.id===ui.memoPropertyId)){
       ui.memoPropertyId=state.properties[0]?.id||'';
@@ -1563,7 +1576,7 @@
       '<div class="memo-scope-switch" role="group" aria-label="メモの表示方法">'+
       '<button data-act="memo-scope" data-value="individual" class="'+(specific?'active':'')+'">⌂ 個別のメモ</button>'+
       '<button data-act="memo-scope" data-value="all" class="'+(!specific?'active':'')+'">▤ すべてのメモ</button></div>'+
-      selector+
+      selector+homeSelectionAxis()+
       '<div class="memo-cards grow">'+(part.length?part.map(memoCard).join(''):
       '<div class="memo-empty"><span>✎</span><strong>まだメモがありません</strong><p>気づきや疑問を残しましょう</p><button class="btn primary" data-act="study-add">＋ メモを追加</button></div>')+'</div>'+
       (count>1?navPager(ui.memoPage,count,'memo-page'):'<div class="memo-count">'+filtered.length+' 件のメモ</div>')+
@@ -1743,6 +1756,7 @@
   function handler(action,button){
     let v=button.dataset.value, p=curProp();
     if(action==='tab')return chooseTab(v);
+    if(action==='home-axis-toggle')return step(()=>{ui.axisEdit=!ui.axisEdit;});
     if(action==='memo-scope')return step(()=>{ui.memoScope=v;ui.memoPage=0;ui.memoSwipeKey=null;});
     if(action==='memo-page')return step(()=>changePage('memoPage',Math.max(1,Math.ceil((ui.memoScope==='individual'?memoEntries().filter(x=>x.propertyId===ui.memoPropertyId):memoEntries()).length/3)),Number(v)));
     if(action==='memo-open')return step(()=>memoOpen(v));
@@ -2006,6 +2020,7 @@
     if(e.target?.dataset?.homeQuery!==undefined && e.key==='Enter'){e.preventDefault();e.target.blur?.();step(()=>{ui.homePage=0;save();});}});
   app.addEventListener('input',e=>{
     let el=e.target,p=curProp();
+    if(el.dataset?.homeAxisMemo!==undefined){state.homeCriteriaMemo=String(el.value).slice(0,4000);save();return;}
     if(el.dataset.model && ui.draft){
       let k=el.dataset.model;ui.draft[k]=k==='tags'?el.value.split(/[,、]/).map(s=>s.trim()).filter(Boolean):el.value;
     }
@@ -2091,6 +2106,7 @@
   });
   app.addEventListener('change',async e=>{
     const el=e.target;
+    if(el.dataset?.homeAxisMemo!==undefined){state.homeCriteriaMemo=String(el.value).slice(0,4000);save();return;}
     if(el.dataset?.fpBreakdownField!==undefined || el.dataset?.fpBreakdownExpense!==undefined || el.dataset?.fpBreakdownEvent!==undefined){
       if(!ui.fpHistoryLive){
         const snap=fpLatestSnapshot();

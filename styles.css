@@ -2320,3 +2320,15 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   padding-bottom:5px;scrollbar-width:none;
 }
 .fp-r-summary:has(.fp-capacity-card)::-webkit-scrollbar{display:none}
+
+
+/* Remove nonfunctional FP version/title strips; preserve contextual section labels. */
+.fp-wizard-screen .sim-intro .kicker,
+.fp-result-screen .sim-intro .kicker{display:none!important}
+.fp-wizard-screen .sim-intro{min-height:24px!important;justify-content:flex-end!important}
+.fp-result-screen .sim-intro{min-height:29px!important;justify-content:flex-end!important}
+.main>.screen{animation:none!important;transform:none!important;opacity:1!important}
+/* Compact capacity panel sits ahead of the month detail without causing a report scroll. */
+.fp-focus .fp-capacity-card{box-shadow:none!important}
+.fp-focus .fp-capacity-terms{font-size:8px}
+.fp-focus .fp-capacity-cell>strong{font-variant-numeric:tabular-nums}

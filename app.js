@@ -30,7 +30,7 @@
     carMaintenanceMonthly:0,otherLoanMonthly:0,otherLoanEndYear:0,childInsuranceMonthly:0,
     childLivingMonthly:0,daycareMonthly:0,childBenefitMonthly:0,
     annualTax:0,carTaxAnnual:0,travelAnnual:0,annualEvents:0,homeInsuranceAnnual:0,
-    otherSavingsMonthly:0,otherInvestMonthly:0,nisaBalance:0,investBalance:0,returnAnnual:0,
+    otherSavingsMonthly:0,otherInvestMonthly:0,nisaBalance:0,investBalance:0,returnAnnual:0,carLoanEndYear:0,
     cashBufferMonthly:3,expenses:[]
   });
   const defaults = () => ({version:2,properties:[],criteria:initialCriteria,scores:{},selected:[],filter:{query:'',tag:'',sort:'new',status:''},plan:defaultPlan(),studyNotes:[]});
@@ -311,7 +311,7 @@
     const mr=safeNum(rate)/1200;
     return mr===0?principal/months:principal*mr/(1-Math.pow(1+mr,-months));
   };
-  const nField=(label,key,unit,placeholder)=>'<label class="sim-field"><span>'+esc(label)+'</span><span class="sim-input-wrap"><input type="number" data-sim="'+key+'" value="'+esc(state.plan[key])+'" min="0" step="any" inputmode="decimal" placeholder="'+esc(placeholder||'')+'"><em>'+esc(unit)+'</em></span></label>';
+  const nField=(label,key,unit,placeholder)=>'<label class="sim-field"><span>'+esc(label)+'</span><span class="sim-input-wrap"><input type="number" data-sim="'+key+'" value="'+esc(state.plan[key])+'" min="'+(key==='returnAnnual'?-20:0)+'" '+(key==='returnAnnual'?'max="20"':'')+' step="any" inputmode="decimal" placeholder="'+esc(placeholder||'')+'"><em>'+esc(unit)+'</em></span></label>';
   const sSelect=(label,key,opts)=>'<label class="sim-field"><span>'+esc(label)+'</span><select data-sim="'+key+'">'+opts.map(([value,title])=>'<option value="'+esc(value)+'" '+(String(state.plan[key])===String(value)?'selected':'')+'>'+esc(title)+'</option>').join('')+'</select></label>';
 
   const simQuestions=[
@@ -363,6 +363,7 @@
       nField('通院・薬代','medicalMonthly','万円')+
       nField('車維持・車検積立','carMaintenanceMonthly','万円')+
       nField('自動車ローン','carMonthly','万円')+
+      nField('車ローン終了年（0=継続）','carLoanEndYear','年')+
       nField('その他のローン','otherLoanMonthly','万円')+
       nField('ローン終了年（0=継続）','otherLoanEndYear','年')+
       nField('現在の家賃','rentMonthly','万円')+'</div>';
@@ -394,7 +395,7 @@
       nField('毎月の現金貯金目標','otherSavingsMonthly','万円')+
       nField('運用利回り（仮定）','returnAnnual','％/年')+
       nField('毎月確保したい余裕費','cashBufferMonthly','万円')+'</div>'+
-      '<p class="fp-field-hint">現金貯金は収入−支出−投資積立から自動計算。貯金目標は二重に引きません。利回り0％が基本で、将来の運用益は保証されません。</p>';
+      '<p class="fp-field-hint">現金貯金は収入−支出−投資積立から自動計算。貯金目標は二重に引きません。利回り0％が基本（入力は−20〜＋20％を想定）。運用益は保証されません。NISAの非課税投資枠は自動判定しません。</p>';
     if(i===6)body=fpSection('年払い・大きな支出','額はすべて万円')+
       '<div class="sim-grid">'+nField('自動車税・年払い費用','carTaxAnnual','万円/年')+
       nField('旅行・帰省','travelAnnual','万円/年')+
@@ -423,7 +424,7 @@
     ['livingMonthly','その他の生活費'],['utilitiesMonthly','光熱・水道'],['telecomMonthly','通信'],['transportMonthly','交通'],
     ['subscriptionsMonthly','サブスク'],['leisureMonthly','レジャー'],['lifeInsuranceMonthly','生命保険'],
     ['medicalInsuranceMonthly','医療保険'],['carInsuranceMonthly','自動車保険'],
-    ['medicalMonthly','医療費'],['carMaintenanceMonthly','車維持費'],['carMonthly','車ローン']
+    ['medicalMonthly','医療費'],['carMaintenanceMonthly','車維持費']
   ];
   function fpChildCounts(year){
     const p=state.plan,kids=Math.min(3,Math.round(safeNum(p.children)));
@@ -445,6 +446,7 @@
   }
   function fpBaseMonthly(year){
     const p=state.plan,parts=fpDetailCategories.map(([key,label])=>({key,label,value:safeNum(p[key])}));
+    if(!safeNum(p.carLoanEndYear)||year<=safeNum(p.carLoanEndYear))parts.push({key:'carMonthly',label:'車ローン',value:safeNum(p.carMonthly)});
     if(!safeNum(p.otherLoanEndYear)||year<=safeNum(p.otherLoanEndYear)){
       parts.push({key:'otherLoanMonthly',label:'その他のローン',value:safeNum(p.otherLoanMonthly)});
     }
@@ -532,7 +534,7 @@
     const p=state.plan,monthlyIncome=fpForecast(0).income;
     const spending=fpSpendingMonthly(fpDecisionYear());
     const investing=safeNum(p.nisaMonthly)+safeNum(p.otherInvestMonthly);
-    const cap=Math.min(monthlyIncome*.25,monthlyIncome-spending-investing-safeNum(p.cashBufferMonthly));
+    const cap=Math.min(monthlyIncome*.25,monthlyIncome-spending-investing-safeNum(p.cashBufferMonthly)-safeNum(p.otherSavingsMonthly));
     const loanPayment=Math.max(0,cap-safeNum(p.housingOngoing));
     const term=Math.max(12,Math.round(safeNum(p.loanYears,35)*12));
     const loanCap=rate=>{
@@ -551,7 +553,7 @@
     }else if(info.ratio>.25||price>budget.amount){
       level='warn';label='慎重に';reason='保険・子育て・NISAを含めた参考予算を超えています。';
     }
-    if(info.spendable<safeNum(state.plan.cashBufferMonthly)&&level==='good'){
+    if(info.spendable<safeNum(state.plan.cashBufferMonthly)+safeNum(state.plan.otherSavingsMonthly)&&level==='good'){
       level='warn';label='家計確認';reason='毎月の保険・子育て・積立を引くと、余裕費が不足します。';
     }
     if(info.remaining<0&&level==='good'){

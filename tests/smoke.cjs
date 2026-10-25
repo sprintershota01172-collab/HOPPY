@@ -144,14 +144,21 @@ a.click('sim-next');
 assert.match(a.app.innerHTML,/これからの大きな支出/);
 a.input({sim:'weddingCost'},360);
 a.click('sim-next');
-assert.match(a.app.innerHTML,/将来の現金貯金/);
+assert.equal(a.state().plan.hasRun,1);
+assert.match(a.app.innerHTML,/あなたの住宅予算/);
+assert.match(a.app.innerHTML,/予算超過/);
+assert.match(a.app.innerHTML,/物件の予算評価/);
+assert.match(a.app.innerHTML,/金利＋1％/);
+a.click('fp-result-next');
+assert.match(a.app.innerHTML,/貯金の推移/);
 assert.match(a.app.innerHTML,/sim-chart/);
-a.click('sim-result-page','1');
-assert.match(a.app.innerHTML,/月々ローン返済/);
-a.click('sim-result-page','1');
-assert.match(a.app.innerHTML,/教育費の積立目標/);
+assert.match(a.app.innerHTML,/現金の残り/);
+a.click('fp-result-tab','2');
+assert.match(a.app.innerHTML,/教育費の準備/);
 a.click('sim-restart');
-assert.match(a.app.innerHTML,/ご家族のこれから/);
+assert.match(a.app.innerHTML,/前回の診断を見る/);
+a.click('fp-view-budget');
+assert.match(a.app.innerHTML,/あなたの住宅予算/);
 
 // Memo tab: linked and global notes, editing, summarization and deletion.
 a.click('tab','memo');

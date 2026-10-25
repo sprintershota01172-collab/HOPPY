@@ -155,3 +155,135 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 .segment{min-height:50px}
 .segment button{min-height:44px}
+
+
+/* Hopposan visual refresh — restrained editorial / architectural journal */
+:root{
+ --paper:#f1f0eb;--white:#fcfbf8;--ink:#26332e;--muted:#707870;
+ --green:#253e34;--sage:#e7e8e0;--cream:#efe5d3;--gold:#a98e62;
+ --line:#deded6;--danger:#9d534a;
+ --ease:cubic-bezier(.22,.61,.36,1);
+ font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+}
+.app-shell{background:var(--paper)}
+.top{padding-left:19px;padding-right:16px;padding-bottom:8px;background:var(--paper);border-bottom:1px solid #e6e5de}
+.brand{gap:0}
+.brand .eyebrow{font-family:Georgia,serif;letter-spacing:.13em;font-size:14px;font-weight:500;color:var(--gold)}
+.brand h1{letter-spacing:.035em;font-size:23px;font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-weight:700}
+.iconbtn{border:0;background:transparent;border-radius:10px;color:var(--green);font-size:22px}
+.main{padding:9px 14px 9px}
+.screen{gap:8px}
+.panel{background:var(--white);border:1px solid #e1e1d9;border-radius:14px;box-shadow:0 2px 10px rgba(29,42,31,.018)}
+.kicker,.micro-label{font-family:Georgia,"Yu Gothic",sans-serif;font-size:14px;letter-spacing:.08em;color:var(--gold);font-weight:700}
+.subtle,.meta{color:var(--muted)}
+.btn{border-radius:9px;min-height:44px;background:#fdfcf8;border:1px solid #d9dbd2;font-weight:600;box-shadow:none}
+.btn.primary{background:var(--green);color:#fff;border-color:var(--green)}
+.btn.soft{background:var(--sage);border-color:var(--sage)}
+.btn.gold{background:var(--cream);border-color:var(--cream)}
+.btn:active,.page-arrow:active,.tab:active{transform:scale(.985)}
+.pill{font-size:14px;border-radius:7px;background:#f0f1eb;border-color:#e5e6df;padding:5px 9px}
+.pill.status{background:#e9e5d9;border-color:#e9e5d9;color:var(--green)}
+.bottom{gap:1px;background:#fcfbf8;border-top:1px solid #e2e1d9;padding:5px 8px calc(env(safe-area-inset-bottom) + 3px)}
+.tab{height:52px;min-height:44px;border-radius:8px;color:#738077;font-weight:600;letter-spacing:-.03em;font-size:14px}
+.tab .sym{font-size:21px;line-height:1}
+.tab.active{background:#e8ece6;color:#27453a}
+.page-arrow{background:#fdfcf9;border-radius:9px;border:1px solid #ddddd5}
+.pager{gap:4px}
+.pager .counter{min-width:45px;font-size:14px}
+.pager .dots{gap:4px}
+.dots .dot{background:#cacdc6}.dots .dot.active{background:#335c49}
+.home-tools{min-height:44px}
+.home-tools .row{gap:5px}
+.estate{padding:14px 15px 12px;gap:9px;justify-content:space-between;border-radius:14px}
+.estate-top{min-height:24px}
+.home-heading{display:flex;align-items:stretch;min-height:58px;gap:11px;max-height:86px}
+.home-title-wrap{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.home-eyebrow{font:400 14px Georgia,serif;color:var(--gold);letter-spacing:.09em}
+.estate-name{font-size:23px;letter-spacing:-.02em;line-height:1.22;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.maker-name{font-size:14px;color:var(--muted);line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.estate-photo{width:86px;flex:0 0 86px;border-radius:6px;background:#e3e7dd;overflow:hidden}
+.estate-photo img{width:100%;height:100%;object-fit:cover}
+.price-block{border-block:1px solid var(--line);padding:9px 0;min-height:62px;display:flex;align-items:end;justify-content:space-between;gap:10px}
+.price-block .money{font-size:29px;font-weight:500;line-height:1.1;letter-spacing:.008em;color:var(--ink)}
+.price-block .money small{font-size:14px;font-weight:500}
+.price-foot{font-size:14px;white-space:nowrap;color:var(--muted)}
+.estate-facts{display:flex;flex-direction:column;gap:7px}
+.fact{display:grid;grid-template-columns:76px minmax(0,1fr);align-items:baseline;gap:7px;min-height:23px}
+.fact span{font-size:14px;color:var(--muted)}
+.fact strong{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meeting-preview{display:grid;grid-template-columns:minmax(0,1fr) auto;align-content:center;gap:4px 8px;padding:10px 11px;background:#f0f1e9;border:1px solid #e6e7dd;border-radius:9px;min-height:84px}
+.meeting-preview-head{grid-column:1 / -1;display:flex;align-items:center;justify-content:space-between}
+.meeting-preview strong{grid-column:1;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
+.meeting-preview span:not(.micro-label):not(.meta){grid-column:1;color:var(--muted);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meeting-preview .btn{grid-column:2;grid-row:2/span 2;align-self:center;min-width:75px}
+.home-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.home-actions .btn{width:100%}
+.full{padding:calc(env(safe-area-inset-top) + 8px) 13px calc(env(safe-area-inset-bottom) + 8px);gap:8px}
+.full-header{border-bottom:1px solid var(--line);padding-bottom:8px;min-height:51px}
+.full-header strong{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:18px}
+.full-body{gap:8px}
+.segment{background:#e9eae4;border-radius:9px;min-height:48px;padding:2px}
+.segment button{border-radius:7px;min-height:44px;font-size:14px;font-weight:650}
+.segment button.active{background:var(--white);box-shadow:0 1px 2px #0000000a}
+.detail{padding:12px;gap:8px}
+.info-box{border-radius:8px;background:#f9f8f3}
+.field{gap:4px}
+.field label{font-weight:600}
+.field input,.field select,.field textarea{border-radius:8px;background:#fffefa}
+.form-view{gap:8px}
+.form-foot{gap:7px}
+.note-text{border-radius:8px;background:#fdfcf9;line-height:1.58}
+.meeting-panel{display:flex;flex-direction:column;gap:9px}
+.meeting-empty{padding:10px;gap:8px}
+.meeting-record-head{display:flex;align-items:start;justify-content:space-between;gap:8px;flex:none;padding-bottom:9px;border-bottom:1px solid var(--line)}
+.meeting-date-block{display:flex;flex-direction:column;gap:3px;min-width:0}
+.meeting-date-block strong{font-size:18px;font-family:Georgia,"Yu Gothic",sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meeting-date-block span:last-child{font-size:14px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meeting-notepad{min-height:0;flex:1;display:flex;flex-direction:column;gap:7px}
+.meeting-note{flex:1;min-height:75px;max-height:none}
+.meeting-note-actions{display:grid;grid-template-columns:44px 44px 1fr auto;gap:6px;flex:none}
+.meeting-note-actions .btn{padding-left:5px;padding-right:5px}
+.meeting-nav{display:flex;align-items:center;justify-content:space-between;gap:5px;flex:none}
+.meeting-nav .btn{padding-inline:9px}
+.meeting-form{gap:10px}
+.meeting-form .field.grow{display:flex;flex:1;min-height:0}
+.meeting-form-note{flex:1!important;max-height:none!important;min-height:85px!important}
+@media(max-height:740px){
+ .top{padding-bottom:5px}
+ .main{padding-top:5px;padding-bottom:4px}
+ .estate{padding:10px 12px;gap:6px}
+ .home-heading{min-height:51px;max-height:64px}
+ .home-eyebrow,.price-foot{display:none}
+ .price-block{min-height:51px;padding-block:5px}
+ .estate-facts{gap:2px}
+ .fact{min-height:20px}
+ .meeting-preview{min-height:71px;padding:7px 9px;gap:2px 6px}
+ .home-actions{gap:6px}
+ .screen{gap:5px}
+ .bottom{padding-top:2px}
+ .tab{height:47px}
+ .full{gap:5px}
+ .meeting-panel{gap:6px}
+ .meeting-record-head{padding-bottom:5px}
+ .meeting-form{gap:6px}
+}
+@media(max-height:620px){
+ .home-heading{min-height:46px;max-height:54px}
+ .estate-photo{width:65px;flex-basis:65px}
+ .estate-name{font-size:20px}
+ .price-block .money{font-size:25px}
+ .fact:nth-child(2){display:none}
+ .meeting-preview .micro-label{display:none}
+ .meeting-preview{min-height:60px}
+ .tab{height:45px}
+ .meeting-date-block strong{font-size:16px}
+}
+@media(max-width:355px){
+ .estate{padding:10px;gap:6px}
+ .estate-name{font-size:20px}
+ .meeting-preview .btn{min-width:68px;padding-inline:5px}
+ .fact{grid-template-columns:60px minmax(0,1fr)}
+ .home-actions .btn{padding-inline:6px}
+ .meeting-nav .btn{padding-inline:5px}
+ .meeting-note-actions{gap:3px}
+}

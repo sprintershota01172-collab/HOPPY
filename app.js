@@ -1059,6 +1059,57 @@
     return '<div class="fp-r-rows">'+rows.map(([label,value])=>
       '<div><span>'+esc(label)+'</span><strong>'+value+'</strong></div>').join('')+'</div>';
   }
+  function fpMonthlyReport(model){
+    const point=fpYearPoint(model),ledger=fpMonthlyLedger(point),
+      month=Math.min(12,Math.max(1,ui.fpCashMonth||1)),selected=ledger.months[month-1],
+      maxNet=Math.max(1,...ledger.months.map(x=>Math.abs(x.net)));
+    const bars='<div class="fp-month-nav" role="group" aria-label="月ごとの収支">'+
+      ledger.months.map(x=>{
+        const signed=x.net>=0?'plus':'minus';
+        return '<button data-act="fp-cash-month" data-value="'+x.month+'" class="'+(x.month===month?'active':'')+
+          '" aria-label="'+x.month+'月 '+(x.net<0?'赤字':'黒字')+yen(Math.abs(x.net),2)+'万円">'+
+          '<span class="fp-month-bar '+signed+'" style="height:'+Math.max(4,Math.abs(x.net)/maxNet*40).toFixed(1)+'px"></span>'+
+          '<small>'+x.month+'</small></button>';
+      }).join('')+'</div>';
+    const row=(label,value)=>'<div class="fp-cash-row"><span>'+esc(label)+'</span><strong>'+yen(value,2)+' 万円</strong></div>';
+    const recurring=selected.household+selected.housing+selected.annualBudget;
+    return '<div class="fp-month-report grow">'+fpYearSelect(model)+
+      '<div class="fp-month-head"><span>月を選ぶと収支が切り替わります</span>'+
+        '<b>年間の現金増減 '+yen(point.netCash,1)+'万円</b></div>'+bars+
+      '<div class="fp-month-hero"><div><span>'+point.year+'年 '+month+'月の現金収支</span>'+
+        '<strong class="'+(selected.net<0?'negative':'')+'">'+(selected.net>=0?'+':'')+yen(selected.net,2)+'<small>万円</small></strong></div>'+
+        '<div><span>この月末の現金</span><strong>'+yen(selected.endingCash,1)+'<small>万円</small></strong></div></div>'+
+      '<div class="fp-month-stats">'+
+        '<div><span>手取り収入</span><b>'+yen(selected.income,2)+'万</b></div>'+
+        '<div><span>生活・住宅・イベント支出</span><b>'+yen(selected.spending,2)+'万</b></div>'+
+        '<div><span>NISA等の積立</span><b>'+yen(selected.investing,2)+'万</b></div></div>'+
+      '<div class="fp-cash-rows">'+
+        row('生活費・保険など',selected.household)+
+        row('住宅費',selected.housing)+
+        row('年払い・教育費の月割',selected.annualBudget)+
+        row('イベント・住宅購入費',selected.eventExpenses+selected.purchase)+
+        row('NISA / その他投資',selected.nisaAdd+selected.otherAdd)+'</div>'+
+      '<p class="fp-r-help">現金増減＝手取り−生活費・住宅費−臨時支出−投資積立。年払い・教育費や月未指定イベントは12か月で仮配分。購入費は1月計上。実際の引落月とは異なる概算です。</p></div>';
+  }
+  function fpAssetsReport(model){
+    const point=fpYearPoint(model),assets=fpAssetsForYear(model,point.year);
+    const series=model.points.map(x=>({year:x.year,cash:x.cash,nisa:x.nisa,invest:x.otherInvest}));
+    const item=(label,balance,diff)=>'<div class="fp-asset-tile"><span>'+esc(label)+'</span>'+
+      '<strong>'+yen(balance,1)+'<small>万円</small></strong>'+
+      '<small class="'+(diff<0?'negative':'')+'">前年から '+(diff>=0?'+':'')+yen(diff,1)+'万円</small></div>';
+    return '<div class="fp-assets-report grow">'+fpYearSelect(model)+
+      '<strong class="fp-r-subhead">現金・NISA・その他投資の残高推移</strong>'+
+      fpChartCanvas(series,['cash','nisa','invest'],'line')+
+      fpChartLegend(['現金','NISA','その他投資'])+
+      '<div class="fp-assets-grid">'+
+        item('現金預金',point.cash,assets.cashChange)+
+        item('NISA評価額',point.nisa,assets.nisaChange)+
+        item('その他の株式・投資',point.otherInvest,assets.otherChange)+
+        '<div class="fp-asset-tile total"><span>金融資産の合計</span><strong>'+yen(point.total,1)+'<small>万円</small></strong>'+
+        '<small>現金＋NISA＋その他投資</small></div></div>'+
+      '<p class="fp-r-help">NISA年間積立 '+yen(safeNum(state.plan.nisaMonthly)*12,1)+'万円、その他投資 '+yen(safeNum(state.plan.otherInvestMonthly)*12,1)+
+        '万円。投資評価額には入力した想定運用利回りを反映。現金から投資へ移す積立は消費ではありません。住宅そのものの資産価値とローン残債は合計に含みません。</p></div>';
+  }
   function fpIncomeReport(model){
     const point=fpYearPoint(model),income=fpYearlyIncome(point.year),
       monthly=ui.fpIncomePeriod==='month',m=Math.max(1,Math.min(12,ui.fpIncomeMonth||1)),

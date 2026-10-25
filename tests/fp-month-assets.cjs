@@ -4,7 +4,7 @@ let source=fs.readFileSync('app.js','utf8');
 const anchor="  save();render();\n  if('serviceWorker'";
 assert.ok(source.includes(anchor));
 source=source.replace(anchor,
- "  window.__cashTest={getPlan:()=>state.plan,modelYears,fpMonthlyLedger,fpAssetsForYear,fpMonthlyAssets,fpYearlyIncome};\n"+anchor);
+ "  window.__cashTest={getPlan:()=>state.plan,modelYears,fpMonthlyLedger,fpAssetsForYear,fpMonthlyAssets,fpYearlyIncome,fpMonthlyAllocation,fpMonthlyPie};\n"+anchor);
 const store={},listeners={},app={innerHTML:'',querySelector(){return null},querySelectorAll(){return []},
  contains(){return true},addEventListener(k,fn){listeners[k]=fn},insertAdjacentHTML(){}};
 let n=0,clock=1000;
@@ -51,6 +51,18 @@ assert.equal(led.months[1].eventExpenses,260,'timed February event + unallocated
 assert.equal(led.months[2].eventExpenses,10,'event with unknown month is spread');
 assert.equal(led.months[7].income,api.fpMonthlyAssets(model,2027,8).month&&api.fpYearlyIncome(2027).months[7].total);
 assert.ok(led.months[1].net<led.months[2].net,'February event causes larger deficit');
+for(const month of led.months){
+ const allocation=api.fpMonthlyAllocation(month);
+ assert.ok(Math.abs(allocation.spent-month.spending)<1e-8,'monthly spending sum '+month.month);
+ assert.ok(Math.abs(allocation.items.reduce((a,x)=>a+x.amount,0)-Math.max(month.income,month.spending+month.investing))<1e-8,
+   'donut segment sum '+month.month);
+ assert.equal(allocation.percent,month.income>0?month.spending/month.income*100:null);
+ assert.ok(api.fpMonthlyPie(month).includes('月の支出率'));
+}
+assert.ok(api.fpMonthlyAllocation(led.months[1]).percent>100,'exceptional wedding month exceeds ordinary income');
+const zeroIncome={...led.months[0],income:0,net:-led.months[0].spending-led.months[0].investing};
+assert.equal(api.fpMonthlyAllocation(zeroIncome).percent,null,'zero income handled without division by zero');
+assert.match(api.fpMonthlyPie(zeroIncome),/支出率は算出できません/);
 const firstMonth=api.fpMonthlyAssets(model,2027,1);
 assert.ok(firstMonth.nisa>model.points.find(x=>x.year===2026).nisa,'NISA balance grows with contributions and returns');
 assert.ok(firstMonth.otherInvest>model.points.find(x=>x.year===2026).otherInvest);
@@ -62,10 +74,21 @@ assert.match(app.innerHTML,/月ごとの収支/);
 assert.match(app.innerHTML,/この月末の現金/);
 assert.match(app.innerHTML,/NISA等の積立/);
 assert.match(app.innerHTML,/fp-month-nav/);
+assert.match(app.innerHTML,/data-fp-month-pie/);
+assert.match(app.innerHTML,/円グラフ/);
+assert.match(app.innerHTML,/月の支出率/);
+click('fp-month-view','detail');
+assert.match(app.innerHTML,/fp-cash-rows/);
+assert.doesNotMatch(app.innerHTML,/data-fp-month-pie/);
+click('fp-month-view','pie');
+assert.match(app.innerHTML,/data-fp-month-pie/);
 click('fp-cash-month','2');
 assert.match(app.innerHTML,/2月の現金収支/);
 changeYear(2027);
 assert.match(app.innerHTML,/2027年 2月の現金収支/);
+assert.match(app.innerHTML,/2027年2月の手取り収入に対する支出割合/);
+click('fp-result-tab','3');
+assert.match(app.innerHTML,/年収支/);
 click('fp-result-tab','2');
 assert.match(app.innerHTML,/現金と投資資産/);
 assert.match(app.innerHTML,/現金預金/);
@@ -82,4 +105,5 @@ assert.match(app.innerHTML,/2027年 年末/);
 const css=fs.readFileSync('styles.css','utf8');
 assert.match(css,/\.fp-month-report,.fp-assets-report\{[^}]*overflow:hidden!important/);
 assert.match(css,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)!important/);
+assert.match(css,/\.fp-month-pie\{/);
 console.log('HOPPY monthly income/outflow/net and separate cash/NISA/equity asset balance: PASS');

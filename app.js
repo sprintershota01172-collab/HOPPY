@@ -30,7 +30,7 @@
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'husband',overlay:'',formStep:0,draft:null,simStep:0,simResultPage:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,draft:null,simStep:0,simResultPage:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
   function normalize(s) {
     if (!s || !Array.isArray(s.properties) || !Array.isArray(s.criteria)) throw Error('形式が違います');
@@ -47,7 +47,7 @@
     }
     out.studyNotes = Array.isArray(s.studyNotes)?s.studyNotes.filter(n=>n&&typeof n.id==='string').slice(0,300).map(n=>({
       id:n.id,title:String(n.title||'家の学び').slice(0,65),text:String(n.text||'').slice(0,7000),originalText:String(n.originalText||n.text||'').slice(0,2500),
-      created:Number(n.created)||Date.now()
+      propertyId:typeof n.propertyId==='string'?n.propertyId:'',created:Number(n.created)||Date.now()
     })):[];
 
     return out;
@@ -70,17 +70,17 @@
   function openOverlay(kind, setup){step(()=>{ui.overlay=kind;if(setup)setup();});}
   function chooseTab(tab){step(()=>{ui.tab=tab;ui.overlay='';ui.draft=null;});}
   function tabIcon(key){
-    const paths={property:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',compare:'<path d="M12 3v18M5 7h14M7 7l-4 7h8L7 7Zm10 0-4 7h8l-4-7ZM4 18h16"/>',sim:'<rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8 11h2m4 0h2M8 15h2m4 0h2M8 19h2m4 0h2"/>',schedule:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 2v6m10-6v6M3 10h18"/>'};
+    const paths={property:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',compare:'<path d="M12 3v18M5 7h14M7 7l-4 7h8L7 7Zm10 0-4 7h8l-4-7ZM4 18h16"/>',sim:'<rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8 11h2m4 0h2M8 15h2m4 0h2M8 19h2m4 0h2"/>',schedule:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 2v6m10-6v6M3 10h18"/>',memo:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'};
     return '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+paths[key]+'</svg>';
   }
   function toolbar(title){
     const count=state.properties.filter(p=>p.status!=='見送り').length;
-    return '<header class="top modern-top"><div class="brand-block"><span class="brand-symbol" aria-hidden="true">'+tabIcon('property')+'</span><div class="brand"><h1>'+esc(ui.tab==='property'?'ほっぽさん':title)+'</h1><span class="eyebrow">HOME PLANNER</span></div></div><div class="header-actions">'+(ui.tab==='property'?'<button class="header-learn" data-act="study-open">学び</button><span class="header-count">♥ <b>'+count+'件</b></span>':'')+'<button class="iconbtn settings-gear" data-act="settings" aria-label="バックアップ・設定">⚙</button></div></header>';
+    return '<header class="top modern-top"><div class="brand-block"><span class="brand-symbol" aria-hidden="true">'+tabIcon('property')+'</span><div class="brand"><h1>'+esc(ui.tab==='property'?'ほっぽさん':title)+'</h1><span class="eyebrow">HOME PLANNER</span></div></div><div class="header-actions">'+(ui.tab==='property'?'<span class="header-count">♥ <b>'+count+'件</b></span>':'')+'<button class="iconbtn settings-gear" data-act="settings" aria-label="バックアップ・設定">⚙</button></div></header>';
   }
   function render(){
     if(!app)return;
-    const titles={property:'ほっぽさん',compare:'比較',sim:'シミュレーション',schedule:'予定'};
-    const nav=[['property','物件'],['compare','比較'],['sim','シミュ'],['schedule','予定']];
+    const titles={property:'ほっぽさん',compare:'比較',sim:'シミュレーション',schedule:'予定',memo:'メモ'};
+    const nav=[['property','物件'],['compare','比較'],['sim','シミュ'],['schedule','予定'],['memo','メモ']];
     // Keep the underlying screen mounted while a full-screen view is open.
     // Rebuilding it on every dialog/page change causes the home screen to flash
     // behind the opening overlay and needlessly reloads photo thumbnails.
@@ -94,7 +94,7 @@
       renderToast();hydratePhotos();
       return;
     }
-    const body=ui.tab==='property'?propertyScreen():ui.tab==='compare'?compareScreen():ui.tab==='sim'?simulationScreen():pendingScreen();
+    const body=ui.tab==='property'?propertyScreen():ui.tab==='compare'?compareScreen():ui.tab==='sim'?simulationScreen():ui.tab==='memo'?memoScreen():pendingScreen();
     app.innerHTML=toolbar(titles[ui.tab])+'<main class="main">'+body+'</main><nav class="bottom" aria-label="メインメニュー">'+nav.map(([key,name])=>'<button class="tab '+(ui.tab===key?'active':'')+'" data-act="tab" data-value="'+key+'" aria-current="'+(ui.tab===key?'page':'false')+'"><span class="nav-icon">'+tabIcon(key)+'</span><span class="tab-label">'+name+'</span></button>').join('')+'</nav>'+(ui.overlay?overlay(): '');
     renderToast();hydratePhotos();
   }
@@ -211,22 +211,24 @@
     return modalFrame('バックアップ・設定','<div class="panel detail grow"><div><span class="kicker">DATA</span><h2 class="section-title">大切な記録を守る</h2><p class="subtle">データはこの端末のブラウザに保存されます。端末変更・ブラウザのデータ消去に備えてバックアップしてください。</p></div><button class="btn primary wide" data-act="export">JSONをエクスポート（写真を含む）</button><label class="btn wide" for="json-import">JSONをインポート（現在のデータを置換）</label><input id="json-import" class="sr-only" type="file" accept="application/json,.json"><div class="info-box"><span>保存方式</span><strong>物件・採点: localStorage</strong><strong>写真: IndexedDB</strong></div><p class="subtle">現段階は端末ごとの個別保存です。夫婦共同編集・自動同期・通知は後続フェーズで対応します。</p></div>');
   }
   function compareScreen(){
-    const ps=selectedProperties(),n=Math.ceil(state.criteria.length/rowsPerPage())+1;ui.comparePage=Math.min(ui.comparePage,n-1);const rank=ui.comparePage===n-1;
-    return '<section class="screen"><div class="toolbar between"><div><span class="kicker">COMPARE</span><h2 class="section-title">'+(rank?'総合ランキング':'物件をくらべる')+'</h2></div><div class="row"><button class="btn compact" data-act="choose-properties">物件選択</button><button class="btn compact" data-act="criteria">項目</button></div></div><div class="segment"><button data-act="rater" data-value="husband" class="'+(ui.rater==='husband'?'active':'')+'">夫</button><button data-act="rater" data-value="wife" class="'+(ui.rater==='wife'?'active':'')+'">妻</button><button data-act="rater" data-value="both" class="'+(ui.rater==='both'?'active':'')+'">ふたり</button></div>'+(!ps.length?empty('◎','比較したい物件を選ぶ','最大3件まで横並びで採点できます。','choose-properties','物件を選ぶ'):rank?rankingScreen(ps):comparisonTable(ps))+'<div class="row between"><span class="meta">'+(rank?'合計点を表示':'○ 2点 / △ 1点 / × 0点')+'</span><span class="meta">'+(ui.comparePage+1)+' / '+n+'ページ</span></div>'+navPager(ui.comparePage,n,'compare-nav')+'</section>';
+    const ps=selectedProperties(),n=Math.ceil(state.criteria.length/rowsPerPage())+1;
+    ui.comparePage=Math.min(ui.comparePage,n-1);
+    const ranking=ui.comparePage===n-1;
+    return '<section class="screen compare-screen"><div class="toolbar between"><div><span class="kicker">HOME COMPARE</span><h2 class="section-title">'+(ranking?'総合ランキング':'物件をくらべる')+'</h2></div><div class="row"><button class="btn compact" data-act="choose-properties">物件選択</button><button class="btn compact" data-act="criteria">項目</button></div></div>'+
+      (!ps.length?empty('◎','比較したい物件を選ぶ','最大3件まで横並びで採点できます。','choose-properties','物件を選ぶ'):ranking?rankingScreen(ps):comparisonTable(ps))+
+      '<div class="row between"><span class="meta">'+(ranking?'項目ごとの重要度を反映':'○ 2点 / △ 1点 / × 0点')+'</span><span class="meta">'+(ui.comparePage+1)+' / '+n+'ページ</span></div>'+
+      navPager(ui.comparePage,n,'compare-nav')+'</section>';
   }
   function comparisonTable(ps){
     const items=state.criteria.slice(ui.comparePage*rowsPerPage(),ui.comparePage*rowsPerPage()+rowsPerPage());
     const head='<div class="compare-row"><div class="compare-cell topic">比較項目</div>'+Array.from({length:3},(_,i)=>'<div class="compare-cell heading" '+(ps[i]?'title="'+esc(ps[i].name)+'"':'')+'>'+esc(truncate(ps[i]?.name||'未選択',5))+'</div>').join('')+'</div>';
     const rows=Array.from({length:rowsPerPage()},(_,i)=>{
-      const c=items[i]; if(!c)return '<div class="compare-row"><div class="compare-cell placeholder"></div>'+Array.from({length:3},()=>'<div class="compare-cell placeholder"></div>').join('')+'</div>';
-      return '<div class="compare-row"><div class="compare-cell topic" title="'+esc(c.name)+'">'+esc(c.name.split(/[（(]/)[0])+'<small>★'+c.weight+'</small></div>'+Array.from({length:3},(_,k)=>{
-        let p=ps[k];if(!p)return '<div class="compare-cell placeholder">–</div>';
-        if(ui.rater==='both'){
-          const h=effective(p,c,'husband'),w=effective(p,c,'wife');
-          return '<button class="compare-cell rating" data-act="rating" data-property="'+esc(p.id)+'" data-criterion="'+esc(c.id)+'"><div class="both-ratings">夫 '+mark(h.value)+'<br>妻 '+mark(w.value)+'</div></button>';
-        }
-        let sc=effective(p,c,ui.rater);
-        return '<button class="compare-cell rating" data-act="rating" data-property="'+esc(p.id)+'" data-criterion="'+esc(c.id)+'"><span class="rating-face '+faceClass(sc.value)+'">'+mark(sc.value)+'</span><span class="rating-small">'+(sc.auto?'自動':'採点する')+'</span></button>';
+      const c=items[i];if(!c)return '<div class="compare-row"><div class="compare-cell placeholder"></div>'+Array.from({length:3},()=>'<div class="compare-cell placeholder"></div>').join('')+'</div>';
+      return '<div class="compare-row"><div class="compare-cell topic" title="'+esc(c.name)+'">'+esc(c.name.split(/[（(]/)[0])+'<small>★'+c.weight+'</small></div>'+
+      Array.from({length:3},(_,k)=>{
+        const p=ps[k];if(!p)return '<div class="compare-cell placeholder">–</div>';
+        const result=effective(p,c,'overall');
+        return '<button class="compare-cell rating" data-act="rating" data-property="'+esc(p.id)+'" data-criterion="'+esc(c.id)+'"><span class="rating-face '+faceClass(result.value)+'">'+mark(result.value)+'</span><span class="rating-small">'+(result.auto?'自動':'評価する')+'</span></button>';
       }).join('')+'</div>';
     }).join('');
     return '<div class="panel detail grow swipe-zone"><div class="compare-table">'+head+rows+'</div></div>';
@@ -234,11 +236,16 @@
   function mark(n){return n===2?'○':n===1?'△':n===0?'×':'−';}
   function faceClass(n){return n===2?'yes':n===1?'mid':n===0?'no':'';}
   function effective(p,c,who){
-    const manual=state.scores[p.id]?.[c.id]?.[who];
-    if(manual===0 || manual===1 || manual===2)return {value:manual,auto:false};
+    const saved=state.scores[p.id]?.[c.id]||{};
+    let manual=saved[who];
+    if(who==='overall' && ![0,1,2].includes(manual)){
+      const legacy=['husband','wife'].map(k=>saved[k]).filter(n=>[0,1,2].includes(n));
+      if(legacy.length)manual=Math.round(legacy.reduce((a,b)=>a+b,0)/legacy.length);
+    }
+    if([0,1,2].includes(manual))return {value:manual,auto:false};
     if(c.auto && ['price','age','area','station'].includes(c.auto.field)){
-      let v=num(p[c.auto.field]);let good=num(c.auto.good),mid=num(c.auto.mid);
-      if(v!==null && good!==null && mid!==null && good>=0 && mid>=0){
+      const v=num(p[c.auto.field]),good=num(c.auto.good),mid=num(c.auto.mid);
+      if(v!==null&&good!==null&&mid!==null&&good>=0&&mid>=0){
         return {value:c.auto.dir==='high'?(v>=good?2:v>=mid?1:0):(v<=good?2:v<=mid?1:0),auto:true};
       }
     }
@@ -250,14 +257,11 @@
     return {sum,covered,total};
   }
   function rankingScreen(ps){
-    const results=ps.map(p=>{
-      const h=scoreSummary(p,'husband'),w=scoreSummary(p,'wife');
-      let count=ui.rater==='both'?h.covered+w.covered:ui.rater==='husband'?h.covered:w.covered;
-      let pts=ui.rater==='both'?h.sum+w.sum:ui.rater==='husband'?h.sum:w.sum;
-      let max=ui.rater==='both'?h.total+w.total:h.total;
-      return {p,pts,max,count,h,w};
-    }).sort((a,b)=>(b.count>0?b.pts/b.max:-1)-(a.count>0?a.pts/a.max:-1));
-    return '<div class="panel rank-panel swipe-zone">'+results.map((r,i)=>'<div class="rank-row '+(i===0&&r.count?'winner':'')+'"><div class="rank-num">'+(r.count>0?i+1:'–')+'</div><div><div class="rank-name">'+esc(r.p.name)+'</div><span class="meta">'+(ui.rater==='both'?'夫 '+r.h.sum+'点 / 妻 '+r.w.sum+'点':r.pts+' / '+r.max+'点 · '+r.count+'項目採点')+'</span></div><div class="rank-score">'+(r.count?r.pts+'点<small> / '+r.max+'点</small>':'未採点')+'</div></div>').join('')+'<p class="subtle">重要度で加重した得点率。未採点は0点扱いで、採点数も確認できます。</p></div>';
+    const results=ps.map(p=>{const score=scoreSummary(p,'overall');return {p,pts:score.sum,max:score.total,count:score.covered};})
+      .sort((a,b)=>(b.count?b.pts/b.max:-1)-(a.count?a.pts/a.max:-1));
+    return '<div class="panel rank-panel swipe-zone">'+results.map((r,i)=>
+      '<div class="rank-row '+(i===0&&r.count?'winner':'')+'"><div class="rank-num">'+(r.count?i+1:'–')+'</div><div><div class="rank-name">'+esc(r.p.name)+'</div><span class="meta">'+r.count+'項目を評価済み</span></div><div class="rank-score">'+(r.count?r.pts+'点<small> / '+r.max+'点</small>':'未採点')+'</div></div>'
+    ).join('')+'<p class="subtle">重要度で加重した得点です。未採点は0点扱いです。</p></div>';
   }
   function choosePropertiesScreen(){
     let ps=state.properties,n=Math.max(1,Math.ceil(ps.length/4));ui.listPage=Math.min(ui.listPage,n-1);
@@ -274,9 +278,15 @@
     return modalFrame('比較項目の編集','<div class="panel detail grow form-view"><span class="kicker">STEP '+(stepN+1)+' / 2</span>'+body+'</div><div class="form-foot"><button class="btn flex1" data-act="criterion-back">'+(stepN?'戻る':'キャンセル')+'</button><button class="btn primary flex1" data-act="criterion-next">'+(stepN?'保存':'次へ')+'</button></div>'+(stepN===0 && !c._new?'<button class="btn danger wide" data-act="criterion-delete">この比較項目を削除</button>':''));
   }
   function ratingScreen(){
-    const p=propById(ui.scoreProperty),c=state.criteria.find(x=>x.id===ui.scoreCriterion),who=ui.scoreRater;if(!p||!c)return '';
-    const s=effective(p,c,who);
-    return modalFrame('評価する','<div class="panel detail grow form-view"><div><span class="kicker">'+esc(c.name)+'</span><h2 class="section-title">'+esc(p.name)+'</h2></div><div class="segment"><button class="'+(who==='husband'?'active':'')+'" data-act="score-rater" data-value="husband">夫の採点</button><button class="'+(who==='wife'?'active':'')+'" data-act="score-rater" data-value="wife">妻の採点</button></div><p class="subtle">現在: '+mark(s.value)+(s.auto?'（自動判定）':'')+'。あてはまる評価を選んでください。</p><button class="btn wide gold" data-act="score-set" data-value="2">○　よい（2点）</button><button class="btn wide" data-act="score-set" data-value="1">△　ふつう（1点）</button><button class="btn wide" data-act="score-set" data-value="0">×　気になる（0点）</button><button class="btn wide" data-act="score-set" data-value="clear">採点を解除（自動判定に戻す）</button></div>');
+    const p=propById(ui.scoreProperty),c=state.criteria.find(x=>x.id===ui.scoreCriterion);
+    if(!p||!c)return '';
+    const current=effective(p,c,'overall');
+    return modalFrame('評価する','<div class="panel detail grow form-view"><div><span class="kicker">'+esc(c.name)+'</span><h2 class="section-title">'+esc(p.name)+'</h2></div>'+
+      '<p class="subtle">現在：'+mark(current.value)+(current.auto?'（自動判定）':'')+'　評価を選んでください。</p>'+
+      '<button class="btn wide gold" data-act="score-set" data-value="2">○　よい（2点）</button>'+
+      '<button class="btn wide" data-act="score-set" data-value="1">△　ふつう（1点）</button>'+
+      '<button class="btn wide" data-act="score-set" data-value="0">×　気になる（0点）</button>'+
+      '<button class="btn wide" data-act="score-set" data-value="clear">評価を解除（自動判定）</button></div>');
   }
   function questionForm(){return modalFrame('営業担当に聞くこと','<div class="panel detail grow form-view"><div class="field"><label>質問（120文字まで）</label><textarea data-question-input maxlength="120" placeholder="例: 長期保証の適用条件は？"></textarea></div><p class="subtle">内見時に確認する質問をリストで管理できます。</p></div><button class="btn primary wide" data-act="question-save">質問を保存</button>');}
   const simNowYear=()=>new Date().getFullYear();
@@ -716,7 +726,6 @@
     if(action==='choose-properties')return openOverlay('choose',()=>ui.listPage=0);
     if(action==='select-property')return step(()=>{if(state.selected.includes(v))state.selected=state.selected.filter(x=>x!==v);else if(state.selected.length<3)state.selected.push(v);else return message('比較できる物件は最大3件です');save();});
     if(action==='compare-nav')return step(()=>changePage('comparePage',Math.ceil(state.criteria.length/rowsPerPage())+1,Number(v)));
-    if(action==='rater')return step(()=>{ui.rater=v;});
     if(action==='criteria')return openOverlay('criteria',()=>ui.criteriaPage=0);
     if(action==='criteria-nav')return step(()=>changePage('criteriaPage',Math.max(1,Math.ceil(state.criteria.length/5)),Number(v)));
     if(action==='criterion-add')return openOverlay('criterion-form',()=>{ui.formStep=0;ui.draft={id:uid(),name:'',weight:2,auto:null,_new:true};});
@@ -736,8 +745,7 @@
       return step(()=>{let x={...c};delete x._new;let old=state.criteria.find(c=>c.id===x.id);if(old)Object.assign(old,x);else state.criteria.push(x);ui.overlay='criteria';ui.draft=null;save();});
     }
     if(action==='criterion-delete'){if(!confirm('項目と、この項目の全採点を削除しますか？'))return;return step(()=>{const id=ui.draft.id;state.criteria=state.criteria.filter(c=>c.id!==id);Object.values(state.scores).forEach(a=>delete a[id]);ui.overlay='criteria';ui.draft=null;ui.comparePage=0;save();});}
-    if(action==='rating')return openOverlay('rating',()=>{ui.scoreProperty=button.dataset.property;ui.scoreCriterion=button.dataset.criterion;ui.scoreRater=ui.rater==='both'?'husband':ui.rater;});
-    if(action==='score-rater')return step(()=>ui.scoreRater=v);
+    if(action==='rating')return openOverlay('rating',()=>{ui.scoreProperty=button.dataset.property;ui.scoreCriterion=button.dataset.criterion;ui.scoreRater='overall';});
     if(action==='score-set')return step(()=>{setScore(ui.scoreProperty,ui.scoreCriterion,ui.scoreRater,v==='clear'?null:Number(v));ui.overlay='';});
     if(action==='export')return exportData();
   }

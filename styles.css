@@ -1373,3 +1373,88 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .fp-result-screen .fp-hero{padding:6px 9px!important}
  .fp-result-screen .fp-now-card{gap:2px}
 }
+
+
+/* FP r5 — annual outlook, explainability and risk review, zero-scroll iPhone UI. */
+.fp-report-screen{gap:5px!important;min-height:0!important;overflow:hidden!important}
+.fp-report-screen .fp-result-nav{min-height:34px!important;grid-template-columns:repeat(4,minmax(0,1fr))}
+.fp-report-screen .fp-result-nav button{font-size:10px!important}
+.fp-r-summary,.fp-r-chart-page,.fp-r-calc-page,.fp-r-body{
+ display:flex;flex-direction:column;gap:7px;min-height:0;overflow:hidden!important;
+}
+.fp-r-summary{gap:6px}
+.fp-r-summary .fp-repayment-card{flex:none}
+.fp-r-summary-strip{
+ display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:2px 5px;
+ background:#fff;border:1px solid #e6e9ee;border-radius:12px;padding:7px 10px;
+}
+.fp-r-summary-strip>span{font-size:10px;color:#717982;font-weight:700}
+.fp-r-summary-strip>strong{font-size:20px;color:#222d3b;white-space:nowrap;letter-spacing:-.04em}
+.fp-r-summary-strip>small{grid-column:1/3;font-size:9px;color:#778292}
+.fp-r-verdict{border:1px solid #e5e9ee;background:#fff;border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:3px}
+.fp-r-verdict>div{display:flex;justify-content:space-between;align-items:center;gap:5px}
+.fp-r-verdict>div>span{font-size:11px;font-weight:800;color:#273442}
+.fp-r-verdict b{font-size:10px;font-weight:800;border-radius:8px;padding:4px 8px;white-space:nowrap}
+.fp-r-verdict p{font-size:10px;line-height:1.35;color:#687380}
+.fp-r-compact-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;min-height:0;flex:none}
+.fp-r-metric{display:flex;flex-direction:column;gap:2px;min-width:0;background:#fff;border:1px solid #e8ebf0;border-radius:10px;padding:8px 9px}
+.fp-r-metric>span{font-size:9px;color:#7a8390;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fp-r-metric>strong{font-size:12px;font-weight:800;color:#273443;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fp-r-help{font-size:9px;color:#7b8692;line-height:1.4;min-height:0;margin:2px 0 0}
+.fp-r-chart-page,.fp-r-calc-page{gap:6px}
+.fp-r-chart-page>.fp-page-nav,.fp-r-calc-page>.fp-page-nav{width:100%;flex:none}
+.fp-r-chart-page>.fp-year-select{flex:none;min-height:28px}
+.fp-r-chart-page .fp-year-select select{min-height:27px}
+.fp-r-body{flex:1;gap:6px}
+.fp-r-subhead{font-size:11px;font-weight:800;color:#313e4c;white-space:nowrap;line-height:1.3}
+.fp-r-chart{display:block;width:100%;height:auto;max-height:190px;min-height:125px;flex:1;min-width:0;border-radius:10px;background:#fff;overflow:visible}
+.fp-r-legend{display:flex;justify-content:center;gap:12px;flex:none}
+.fp-r-legend>span{font-size:9px;color:#6c7985;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.fp-r-legend i{width:11px;height:4px;border-radius:5px;flex:none}
+.fp-r-calc-page .fp-year-select{flex:none;min-height:31px}
+.fp-r-calc-page .fp-year-select select{min-height:28px}
+.fp-r-rows{display:flex;flex-direction:column;gap:0;flex:none;background:#fff;border:1px solid #e8ebef;padding:2px 9px;border-radius:11px;min-height:0}
+.fp-r-rows>div{display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid #eff0f3;min-height:34px}
+.fp-r-rows>div:last-child{border-bottom:0}
+.fp-r-rows span{font-size:10px;min-width:0;color:#65717f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fp-r-rows strong{font-size:10px;flex:none;color:#243343;white-space:nowrap}
+.fp-r-calc-page .fp-r-body>.fp-page-nav{flex:none}
+.fp-r-assumptions{display:flex;flex-direction:column;gap:5px;min-height:0;overflow:hidden}
+.fp-r-assumptions>div{display:flex;gap:7px;align-items:flex-start;background:#fff;border:1px solid #e8ebef;padding:7px 8px;border-radius:9px}
+.fp-r-assumptions b{font-size:10px;flex:none;min-width:51px;color:#344355}
+.fp-r-assumptions span{font-size:9px;line-height:1.3;color:#6d7885}
+.fp-r-source-links{display:grid;grid-template-columns:1fr;gap:2px}
+.fp-r-source-links a{display:block;text-decoration:underline;text-underline-offset:2px;font-size:9px;color:#1767b5;line-height:1.4}
+.fp-r-advice-list{display:flex;flex-direction:column;gap:7px;min-height:0}
+.fp-r-advice{display:flex;flex-direction:column;gap:4px;padding:10px;background:#fff;border:1px solid #e8ebef;border-left:3px solid #91a4af;border-radius:10px;min-height:0}
+.fp-r-advice.good{border-left-color:#3f9b78}
+.fp-r-advice.warn{border-left-color:#d89b45}
+.fp-r-advice.bad{border-left-color:#c95556}
+.fp-r-advice strong{font-size:11px;line-height:1.3;color:#303b46}
+.fp-r-advice p{font-size:10px;line-height:1.4;color:#667584}
+@media(max-height:750px){
+ .fp-report-screen{gap:3px!important}
+ .fp-r-summary{gap:3px}
+ .fp-r-summary .fp-repayment-card{padding:8px 9px!important;gap:2px!important}
+ .fp-r-summary .fp-repayment-value{font-size:23px}
+ .fp-r-summary-strip{padding:6px 8px}
+ .fp-r-summary-strip>strong{font-size:18px}
+ .fp-r-verdict{padding:6px 8px}
+ .fp-r-metric{padding:6px 7px}
+ .fp-r-chart{max-height:155px;min-height:105px}
+ .fp-r-rows>div{min-height:29px}
+ .fp-r-advice{padding:7px 8px;gap:3px}
+ .fp-r-advice strong{font-size:10px}
+ .fp-r-advice p{font-size:9px}
+ .fp-r-assumptions>div{padding:5px 6px}
+}
+@media(max-height:610px){
+ .fp-report-screen .fp-r-summary .fp-repayment-note{display:none}
+ .fp-report-screen .fp-r-help{font-size:8px}
+ .fp-r-chart{max-height:115px;min-height:85px}
+ .fp-r-metric{padding:5px}
+ .fp-r-metric>strong{font-size:11px}
+ .fp-r-rows>div{min-height:25px}
+ .fp-r-advice-list{gap:4px}
+ .fp-r-advice p{line-height:1.3}
+}

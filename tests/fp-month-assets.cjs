@@ -86,7 +86,7 @@ assert.match(app.innerHTML,/data-fp-month-pie/);
 click('fp-cash-month','2');
 assert.match(app.innerHTML,/2月 ・ (収入から残るプラス|収入に対する不足)/);
 changeYear(2027);
-assert.match(app.innerHTML,/2027年 2月の現金収支/);
+assert.match(app.innerHTML,/2027年 2月 ・ (収入から残るプラス|収入に対する不足)/);
 assert.match(app.innerHTML,/2027年2月の手取り収入に対する支出割合/);
 click('fp-result-tab','3');
 assert.match(app.innerHTML,/年収支/);

@@ -18,7 +18,7 @@ const click=(act,value='',extra={})=>events.click({target:{closest(){return {dat
 const input=(key,value)=>events.input({target:{dataset:key,value,hasAttribute(){return false}}});
 const state=()=>JSON.parse(store['hoppy-phase1-v1']);
 click('seed');click('tab','sim');
-assert.match(app.innerHTML,/ご家族のこれから/);
+assert.match(app.innerHTML,/家族のこれから/);
 input({sim:'children'},0);click('sim-next');
 input({sim:'husbandMonthly'},40);
 input({sim:'wifeMonthly'},35);
@@ -67,7 +67,7 @@ click('fp-view-budget');
 assert.match(app.innerHTML,/あなたの住宅予算/);
 assert.equal(state().plan.hasRun,1);
 click('sim-restart');
-assert.match(app.innerHTML,/ご家族のこれから/);
+assert.match(app.innerHTML,/家族のこれから/);
 click('sim-next');
 input({sim:'husbandMonthly'},15);
 input({sim:'wifeMonthly'},12);

@@ -30,7 +30,7 @@
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'husband',overlay:'',formStep:0,draft:null,simStep:0,simResultPage:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'husband',overlay:'',formStep:0,draft:null,simStep:0,simResultPage:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
   function normalize(s) {
     if (!s || !Array.isArray(s.properties) || !Array.isArray(s.criteria)) throw Error('形式が違います');
@@ -46,7 +46,7 @@
       }
     }
     out.studyNotes = Array.isArray(s.studyNotes)?s.studyNotes.filter(n=>n&&typeof n.id==='string').slice(0,300).map(n=>({
-      id:n.id,title:String(n.title||'家の学び').slice(0,65),text:String(n.text||'').slice(0,2500),
+      id:n.id,title:String(n.title||'家の学び').slice(0,65),text:String(n.text||'').slice(0,7000),originalText:String(n.originalText||n.text||'').slice(0,2500),
       created:Number(n.created)||Date.now()
     })):[];
 
@@ -430,41 +430,123 @@
     ['契約・保証',/保証|契約|アフター|修繕|引渡|申込|キャンセル|点検|補償|担当|営業/],
     ['確認しておくこと',/確認|質問|聞く|不明|注意|気になる|疑問|比較|必要/]
   ];
+  function studyNormalizeLine(str){
+    let text=String(str||'').replace(/[０-９Ａ-Ｚａ-ｚ]/g,c=>String.fromCharCode(c.charCodeAt(0)-65248))
+      .replace(/\u3000/g,' ').replace(/[ \t]{2,}/g,' ').trim();
+    const spelling=[
+      [/シュミレーション/g,'シミュレーション'],
+      [/シュミレート/g,'シミュレート'],
+      [/アフターサビス/g,'アフターサービス'],
+      [/シロアリ対策\s*について/g,'シロアリ対策について'],
+      [/メーカ（?!ー）/g,'メーカー'],
+      [/瑕疵担保責任/g,'契約不適合責任（旧・瑕疵担保責任）']
+    ];
+    // Keep financial numbers, quotes, technical terms and negations intact.
+    for(const [a,b] of spelling)text=text.replace(a,b);
+    return text.replace(/[。]{2,}/g,'。').replace(/[、]{2,}/g,'、').replace(/\s+([、。！？?])/g,'$1');
+  }
+  function studyRawItems(text){
+    return String(text||'').replace(/\r\n?/g,'\n')
+      .split(/[\n]+|(?<=[。！？?!])(?=[^。！？?!])/)
+      .map(x=>studyNormalizeLine(x.replace(/^[\s◆◈⌂✓✔□？!※・●◉▶\-]+/g,'').replace(/^【[^】]+】\s*/g,'')))
+      .filter(Boolean).slice(0,80);
+  }
+  function studyCategory(sentence){
+    const question=/[?？]$|何を|いくら|どうして|どうする|確認したい|要確認|次回聞|質問|不明|未確認/;
+    const attention=/注意|懸念|心配|不安|リスク|高すぎ|デメリット|困る|問題|追加費用|難しい/;
+    if(question.test(sentence))return 'questions';
+    if(attention.test(sentence))return 'caution';
+    if(/金利|ローン|返済|費用|万円|円|見積|頭金|資金|値引|諸費用|税金/.test(sentence))return 'money';
+    if(/耐震|断熱|気密|性能|構造|鉄骨|木造|窓|結露|基礎|長期優良|ZEH|省エネ|換気/.test(sentence))return 'performance';
+    if(/土地|駅|通勤|学校|日当たり|日照|周辺|道路|ハザード|災害|浸水|立地|間取り/.test(sentence))return 'land';
+    if(/保証|契約|アフター|点検|引き渡し|引渡|工事|営業|担当/.test(sentence))return 'contract';
+    return 'other';
+  }
+  const studyGroups=[
+    ['money','◈ お金・住宅ローン'],
+    ['performance','⌂ 性能・家づくり'],
+    ['land','◇ 土地・暮らし'],
+    ['contract','▣ 契約・保証'],
+    ['questions','？ 次回の確認事項'],
+    ['caution','！ 注意・気になる点'],
+    ['other','✦ その他の学び']
+  ];
+  function studyEndPunctuation(sentence){
+    const t=sentence.trim().replace(/[。]+$/,'').trim();
+    if(!t)return '';
+    if(/[！!？?]$/.test(t))return t.replace(/[?]$/,'？').replace(/[!]$/,'！');
+    return t+'。';
+  }
+  function organizeStudyText(input){
+    const sentences=studyRawItems(input);
+    const seen=new Set(),groups=new Map(studyGroups.map(([key])=>[key,[]]));
+    for(let sentence of sentences){
+      sentence=studyEndPunctuation(sentence);
+      if(!sentence||seen.has(sentence))continue;
+      seen.add(sentence);
+      groups.get(studyCategory(sentence)).push(sentence);
+    }
+    const sections=[];
+    for(const [key,label] of studyGroups){
+      const list=groups.get(key);
+      if(list?.length)sections.push('【'+label+'】\n'+list.map(x=>(key==='questions'?'□ ':'・ ')+x).join('\n'));
+    }
+    return sections.join('\n\n');
+  }
   function studySummaryItems(){
     const result=[],seen=new Set();
     for(const note of state.studyNotes){
-      const sentences=String(note.text||'').split(/[\n。！？!?]+/).map(x=>x.trim()).filter(Boolean);
-      for(const sentence of sentences){
-        if(seen.has(sentence))continue;seen.add(sentence);
-        const cat=studyCategories.find(([name,re])=>re.test(sentence))?.[0]||'その他';
-        result.push({category:cat,text:sentence.length>105?sentence.slice(0,104)+'…':sentence,source:note.title,id:note.id});
-        if(result.length>=400)return result;
+      const sentences=studyRawItems(note.originalText||note.text);
+      for(let text of sentences){
+        text=studyEndPunctuation(text);
+        if(!text||seen.has(text))continue;seen.add(text);
+        result.push({category:studyCategory(text),text,source:note.title,id:note.id});
+        if(result.length>=400)break;
       }
+      if(result.length>=400)break;
     }
-    const order=studyCategories.map(x=>x[0]).concat('その他');
-    return result.sort((a,b)=>order.indexOf(a.category)-order.indexOf(b.category));
+    return result.sort((a,b)=>studyGroups.findIndex(x=>x[0]===a.category)-studyGroups.findIndex(x=>x[0]===b.category));
+  }
+  function studyDigestScreen(){
+    const items=studySummaryItems(),pageSize=5,total=Math.max(1,Math.ceil(items.length/pageSize));
+    ui.studyDigestPage=Math.min(ui.studyDigestPage,total-1);
+    const visible=items.slice(ui.studyDigestPage*pageSize,(ui.studyDigestPage+1)*pageSize);
+    const cards=visible.map(item=>{
+      const label=studyGroups.find(x=>x[0]===item.category)?.[1]||'✦ その他';
+      return '<article class="digest-item"><span class="digest-label">'+esc(label)+'</span><p>'+esc(item.text)+'</p><span class="digest-origin">↳ '+esc(truncate(item.source,28))+'</span></article>';
+    }).join('');
+    return modalFrame('✦ 学びのまとめ',
+      '<div class="study-digest-top"><div><span class="kicker">HOME KNOWLEDGE</span><h2>学びをすっきり整理</h2></div><button class="btn compact" data-act="study-digest-copy">⧉ コピー</button></div>'+
+      '<p class="study-hint">全部のメモから重複を省き、テーマごとに分類しました。</p>'+
+      '<div class="digest-list grow">'+(cards||'<div class="empty grow"><p>メモを追加すると、ここに要点が表示されます。</p></div>')+'</div>'+
+      (total>1?navPager(ui.studyDigestPage,total,'study-digest-page'):'<span class="study-counter">'+items.length+' 件のポイント</span>')+
+      '<button class="btn primary wide" data-act="study-digest-back">← メモ一覧へ</button>'+
+      '<p class="study-disclaimer">※ オフラインで利用できる文章整形と分類です。意味を推測するAI校正ではありません。</p>');
   }
   function studyScreen(){
-    const summary=ui.studyMode==='summary';
-    const items=summary?studySummaryItems():state.studyNotes;
-    const pageSize=summary?4:3,total=Math.max(1,Math.ceil(items.length/pageSize));
-    const key=summary?'studySummaryPage':'studyPage';
-    ui[key]=Math.min(ui[key],total-1);
-    const visible=items.slice(ui[key]*pageSize,(ui[key]+1)*pageSize);
-    const cards=summary?visible.map(item=>'<div class="study-summary-item"><span class="study-category">'+esc(item.category)+'</span><p>'+esc(item.text)+'</p><small>出典：'+esc(item.source)+'</small></div>').join(''):
-      visible.map(n=>'<div class="study-note-card"><div class="study-note-head"><strong>'+esc(n.title)+'</strong><button class="btn compact" data-act="study-edit" data-value="'+esc(n.id)+'">編集</button><button class="btn compact danger" data-act="study-delete" data-value="'+esc(n.id)+'">×</button></div><p>'+esc(truncate(n.text,110))+'</p></div>').join('');
-    return modalFrame('家の学び','<div class="segment"><button data-act="study-toggle" data-value="notes" class="'+(!summary?'active':'')+'">学びメモ</button><button data-act="study-summarize" class="'+(summary?'active':'')+'">ワンタップ整理</button></div>'+
-      '<div class="study-toolbar"><div><span class="kicker">HOME KNOWLEDGE</span><p class="subtle">'+(summary?'内容を分類・抜粋した要点です':'住宅会社で学んだことを残せます')+'</p></div><button class="btn primary" data-act="study-add">＋ 書く</button></div>'+
-      '<div class="study-note-list grow">'+(cards||(summary?'<div class="empty grow"><p>まとめるメモがありません</p></div>':'<div class="empty grow"><p>学んだことをメモしましょう</p></div>'))+'</div>'+
-      (total>1?navPager(ui[key],total,summary?'study-summary-page':'study-page'):'<span class="sim-progress-text study-counter">'+items.length+'件</span>')+
-      (summary?'<p class="study-disclaimer">※ AIによる要約ではなく、端末内でキーワード分類した抜粋です。原文も確認してください。</p>':'<button class="btn soft wide" data-act="study-summarize">記録をワンタップでまとめる</button>'));
+    const items=state.studyNotes,total=Math.max(1,Math.ceil(items.length/3));
+    ui.studyPage=Math.min(ui.studyPage,total-1);
+    const page=items.slice(ui.studyPage*3,(ui.studyPage+1)*3);
+    const cards=page.map(n=>'<article class="study-note-card"><div class="study-note-head"><span class="study-note-icon">▤</span><strong>'+esc(n.title)+'</strong><button class="btn compact study-fix-btn" data-act="study-quick-fix" data-value="'+esc(n.id)+'">✦ 修正</button><button class="btn compact danger" data-act="study-delete" data-value="'+esc(n.id)+'" aria-label="メモを削除">×</button></div><p>'+esc(truncate(n.text,105))+'</p><small class="study-source-foot">↳ タップで文章を整えられます</small></article>').join('');
+    return modalFrame('家の学び',
+      '<div class="study-toolbar"><div><span class="kicker">◈ HOME KNOWLEDGE</span><p class="subtle">家づくりの知識を、見やすく記録。</p></div><button class="btn primary" data-act="study-add">＋ メモ</button></div>'+
+      '<div class="study-note-list grow">'+(cards||'<div class="study-no-notes"><span>⌂</span><strong>家の学びを残しましょう</strong><p>疑問や気づきを自由に書いてください。</p><button class="btn primary" data-act="study-add">＋ 最初のメモを書く</button></div>')+'</div>'+
+      (total>1?navPager(ui.studyPage,total,'study-page'):'<span class="study-counter">'+items.length+' 件のメモ</span>')+
+      '<button class="btn study-summary-action" data-act="study-summarize">✦ すべてのメモを整理 <span>›</span></button>'+
+      '<p class="study-disclaimer">✓ メモは端末保存　✓ 整理・修正はオフライン対応</p>');
   }
   function studyForm(){
     const d=ui.studyDraft||{title:'',text:''};
-    return modalFrame(ui.studyEditId?'学びメモを編集':'学びをメモ','<div class="study-edit-form grow"><label class="field"><span>タイトル</span><input data-study="title" maxlength="65" value="'+esc(d.title)+'" placeholder="例：断熱性の違い"></label><label class="field grow"><span>学んだこと</span><textarea data-study="text" maxlength="2500" placeholder="家づくりで聞いた話・疑問・気付きを自由に記録">'+esc(d.text)+'</textarea></label><span class="subtle">メモは端末に保存され、後から追記できます。</span></div><div class="sim-footer"><button class="btn" data-act="study-back">戻る</button><button class="btn primary" data-act="study-save">保存する</button></div>');
+    const hasBackup=typeof d.beforeFix==='string';
+    return modalFrame(ui.studyEditId?'学びメモを修正':'学びをメモ',
+      '<div class="study-edit-form grow"><label class="field"><span>▤ タイトル</span><input data-study="title" maxlength="65" value="'+esc(d.title)+'" placeholder="例：断熱性能について"></label>'+
+      '<label class="field grow"><span>✎ メモ本文</span><textarea data-study="text" maxlength="7000" placeholder="例：営業さんに断熱と耐震の話を聞いた。保証の期間も確認したい。">'+esc(d.text)+'</textarea></label>'+
+      (hasBackup?'<span class="study-edited-banner">✓ 自動修正しました。保存前に文章を確認してください。</span>':'<span class="study-edit-help">✦ 「修正・整理」で表記を補正し、内容ごとに見出しを付けます。</span>')+
+      '<div class="study-fix-actions"><button class="btn study-fix-main" data-act="study-fix">✦ 修正・整理する</button>'+ (hasBackup?'<button class="btn study-undo-btn" data-act="study-undo">↶ 元に戻す</button>':'')+'</div></div>'+
+      '<div class="sim-footer"><button class="btn" data-act="study-back">戻る</button><button class="btn primary" data-act="study-save">保存する</button></div>');
   }
   function pendingScreen(){const sim=ui.tab==='sim';return '<section class="screen">'+empty(sim?'∿':'▦',sim?'人生設計はフェーズ2':'スケジュールはフェーズ3',sim?'貯金推移・住宅ローン・教育費をステップ式で追加予定です。':'内見カレンダー・リマインド通知を追加予定です。')+'</section>';}
-  function overlay(){return ui.overlay==='detail'?detailScreen():ui.overlay==='form'?propertyForm():ui.overlay==='list'?listScreen():ui.overlay==='search'?searchScreen():ui.overlay==='settings'?settingsScreen():ui.overlay==='choose'?choosePropertiesScreen():ui.overlay==='criteria'?criteriaScreen():ui.overlay==='criterion-form'?criterionForm():ui.overlay==='rating'?ratingScreen():ui.overlay==='question'?questionForm():ui.overlay==='meeting-form'?meetingForm():ui.overlay==='study'?studyScreen():ui.overlay==='study-form'?studyForm():'';}
+  function overlay(){return ui.overlay==='detail'?detailScreen():ui.overlay==='form'?propertyForm():ui.overlay==='list'?listScreen():ui.overlay==='search'?searchScreen():ui.overlay==='settings'?settingsScreen():ui.overlay==='choose'?choosePropertiesScreen():ui.overlay==='criteria'?criteriaScreen():ui.overlay==='criterion-form'?criterionForm():ui.overlay==='rating'?ratingScreen():ui.overlay==='question'?questionForm():ui.overlay==='meeting-form'?meetingForm():ui.overlay==='study'?studyScreen():ui.overlay==='study-form'?studyForm():ui.overlay==='study-digest'?studyDigestScreen():'';}
   function moveProperty(d){let ps=visibleProperties(),i=ps.findIndex(p=>p.id===ui.propertyId);if(ps.length){ui.propertyId=ps[(i+d+ps.length)%ps.length].id;ui.photoIndex=0;ui.propertyPage=0;}}
   function moveDetail(d){ui.propertyPage=Math.max(0,Math.min(3,ui.propertyPage+d));}
   function changePage(key,total,d){ui[key]=Math.max(0,Math.min(Math.max(0,total-1),ui[key]+d));}

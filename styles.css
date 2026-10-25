@@ -1201,3 +1201,96 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .fp-year-totals>div{padding:9px}
  .fp-asset-summary>div{padding:8px}
 }
+
+
+/* 2026-10-25 FP compact zero-scroll release: every group is reachable by page controls. */
+.fp-wizard-screen,.fp-result-screen{min-height:0;overflow:hidden!important;gap:5px!important}
+.fp-wizard-screen .sim-intro,.fp-result-screen .sim-intro{min-height:23px}
+.fp-wizard-screen .sim-question{padding:1px 0 2px;gap:2px}
+.fp-wizard-screen .sim-question h2,.fp-result-screen>.sim-result-title{font-size:15px;letter-spacing:-.02em}
+.fp-wizard-screen .sim-question p{font-size:9px;line-height:1.25}
+.fp-wizard-screen .sim-progress{height:3px;gap:3px}
+.fp-wizard-body{
+ display:flex!important;flex-direction:column!important;justify-content:flex-start!important;
+ overflow:hidden!important;min-height:0!important;padding:10px!important;
+ border-radius:15px!important;
+}
+.fp-compact-inner{min-height:0;display:flex;flex-direction:column;gap:8px;height:100%;overflow:hidden}
+.fp-compact-title{font-size:12px;font-weight:800;color:#242c2b;line-height:1.2}
+.fp-wizard-body .sim-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px!important;align-content:start}
+.fp-wizard-body .sim-field{gap:3px!important}
+.fp-wizard-body .sim-field>span:first-child{font-size:9px!important;font-weight:650}
+.fp-wizard-body .sim-input-wrap,.fp-wizard-body .sim-field select{height:36px!important;min-height:36px!important;border-radius:9px;padding:0 6px}
+.fp-wizard-body .sim-input-wrap input{font-size:13px!important}
+.fp-wizard-body .sim-input-wrap em{font-size:8px;white-space:nowrap}
+.fp-wizard-body .sim-field select{font-size:11px!important}
+.fp-wizard-body .fp-field-hint{font-size:9px;line-height:1.45;margin:2px 1px;color:#7c8584}
+.fp-page-nav{flex:none;display:flex;align-items:center;justify-content:center;gap:5px;min-height:32px;padding:2px;background:#e8ece9;border-radius:10px}
+.fp-page-nav>button{flex:1;min-width:0;height:29px;padding:0 3px;font-size:10px;font-weight:700;background:transparent;color:#60716a;border:0;border-radius:8px;white-space:nowrap}
+.fp-page-nav>button.active{background:#fff;color:#1e5d4c;box-shadow:0 1px 4px #192e2622}
+.fp-page-nav>button:disabled{opacity:.28}
+.fp-page-nav>span{font-size:10px;color:#53615e;min-width:44px;text-align:center;font-weight:700}
+.fp-wizard-screen .sim-footer{min-height:40px;grid-template-columns:1fr 1.35fr}
+.fp-wizard-screen .sim-footer .btn{min-height:40px;font-size:11px}
+.fp-wizard-body .fp-extra-section{margin:0;gap:7px;min-height:0}
+.fp-wizard-body .fp-extra-head strong{font-size:11px}
+.fp-wizard-body .fp-extra-head .btn{min-height:30px;font-size:10px}
+.fp-wizard-body .fp-extra-row{padding:7px;gap:5px}
+.fp-wizard-body .fp-extra-top input,.fp-wizard-body .fp-extra-remove{height:32px;min-height:32px;font-size:10px}
+.fp-wizard-body .fp-extra-values{gap:5px}
+.fp-wizard-body .fp-extra-values label{font-size:9px}
+.fp-wizard-body .fp-extra-values input,.fp-wizard-body .fp-extra-values select{height:30px;font-size:10px}
+.fp-extra-empty{font-size:10px;line-height:1.5;color:#75827c;padding:12px;background:#f5f7f5;border-radius:9px}
+.fp-wizard-body .fp-legacy-note{padding:8px;margin:0;font-size:9px}
+.fp-wizard-body .fp-legacy-note button{min-height:23px;margin-top:3px;font-size:9px}
+
+.fp-result-screen .fp-budget-content,
+.fp-result-screen .fp-cash-content,
+.fp-result-screen .fp-breakdown-content{overflow:hidden!important;overscroll-behavior:none!important;min-height:0;gap:5px}
+.fp-result-screen .fp-hero{min-height:95px;padding:9px 11px;gap:3px;border-radius:13px}
+.fp-result-screen .fp-hero-number{font-size:27px}
+.fp-result-screen .fp-now-card{padding:9px 11px;gap:5px;border-radius:13px}
+.fp-result-screen .fp-now-head strong{font-size:17px}
+.fp-result-screen .fp-stat-grid{padding-top:5px;gap:4px}
+.fp-result-screen .fp-stat-grid span{font-size:9px}
+.fp-result-screen .fp-stat-grid strong{font-size:12px}
+.fp-result-screen .fp-diagnostic,.fp-result-screen .fp-assumption{font-size:9px;line-height:1.35}
+.fp-result-screen .fp-section-head{min-height:18px}
+.fp-result-screen .fp-home-list{gap:3px}
+.fp-result-screen .fp-home-row{min-height:34px;padding:3px 7px;border-radius:9px}
+.fp-result-screen .fp-home-name,.fp-result-screen .fp-home-price{font-size:10px}
+.fp-result-screen .fp-home-badge{font-size:9px;padding:4px 6px}
+.fp-result-screen .fp-result-nav{min-height:34px}
+.fp-result-screen .fp-result-nav button{font-size:10px}
+.fp-result-screen .fp-bottom-actions .btn{min-height:40px;font-size:10px}
+.fp-result-screen .fp-year-select{min-height:31px}
+.fp-result-screen .fp-year-select select{min-height:28px;font-size:11px}
+.fp-result-screen .fp-year-totals{gap:4px}
+.fp-result-screen .fp-year-totals>div{gap:1px;padding:6px 8px;border-radius:9px}
+.fp-result-screen .fp-year-totals span{font-size:9px}
+.fp-result-screen .fp-year-totals strong{font-size:13px}
+.fp-result-screen .fp-expense-rows{padding:1px 8px}
+.fp-result-screen .fp-expense-line{min-height:29px}
+.fp-result-screen .fp-expense-line span,.fp-result-screen .fp-expense-line strong{font-size:10px}
+.fp-result-screen .fp-finance-card{padding:8px 10px!important;gap:3px}
+.fp-result-screen .fp-finance-card .sim-chart{height:115px;max-height:115px;min-height:90px}
+.fp-result-screen .fp-asset-summary>div{padding:6px 8px;gap:2px}
+.fp-result-screen .fp-asset-summary strong{font-size:13px}
+.fp-result-screen .fp-insight{padding:7px;gap:2px}
+.fp-result-screen .fp-insight strong{font-size:11px}
+.fp-result-screen .fp-cash-note{padding:6px;font-size:9px}
+.fp-result-screen .fp-education-content{gap:8px;padding:12px!important}
+.fp-result-screen .fp-education-total{font-size:29px}
+.fp-result-screen .fp-metric-line{min-height:35px}
+@media(max-height:700px){
+ .fp-wizard-body{padding:7px!important}
+ .fp-compact-inner{gap:5px}
+ .fp-wizard-body .sim-grid{gap:6px!important}
+ .fp-wizard-body .sim-input-wrap,.fp-wizard-body .sim-field select{height:33px!important;min-height:33px!important}
+ .fp-page-nav{min-height:28px}
+ .fp-page-nav>button{height:25px;font-size:9px}
+ .fp-result-screen .fp-hero{min-height:81px}
+ .fp-result-screen .fp-now-card{gap:3px}
+ .fp-result-screen .fp-finance-card .sim-chart{height:92px;min-height:80px}
+ .fp-result-screen .fp-home-row{min-height:29px}
+}

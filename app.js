@@ -39,7 +39,7 @@
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpLedgerPage:0,fpHomePage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
   function normalize(s) {
     if (!s || !Array.isArray(s.properties) || !Array.isArray(s.criteria)) throw Error('形式が違います');
@@ -620,6 +620,56 @@
     }
     return {...info,budget,stressed,level,label,reason,monthlyDelta:stressed.payment-info.payment};
   }
+  // Values in the FP model are in 10,000-yen units. Never silently interpret
+  // unexpectedly large inputs as yen or overwrite the user's stored records.
+  // Instead, point directly to the field that needs confirmation.
+  function fpPlanWarnings(){
+    const p=state.plan,problems=[];
+    const groups=[
+      {step:1,page:0,limit:150,keys:[['husbandMonthly','夫の月手取り'],['wifeMonthly','妻の月手取り'],['wifeReduced','妻の時短手取り']]},
+      {step:2,page:0,limit:100,keys:[['foodMonthly','食費'],['rentMonthly','家賃'],['managementMonthly','管理費'],['commonFeeMonthly','共益費'],['parkingMonthly','駐車場代']]},
+      {step:2,page:1,limit:100,keys:[['electricityMonthly','電気代'],['gasMonthly','ガス代'],['waterBiMonthly','水道代（2か月分）']]},
+      {step:2,page:2,limit:100,keys:[['livingMonthly','その他生活費'],['telecomMonthly','通信費'],['transportMonthly','交通費'],['subscriptionsMonthly','サブスク'],['leisureMonthly','外食・レジャー'],['medicalMonthly','医療費'],['carMaintenanceMonthly','車維持費']]},
+      {step:2,page:3,limit:100,keys:[['lifeInsuranceMonthly','生命保険'],['medicalInsuranceMonthly','医療保険'],['carInsuranceMonthly','自動車保険'],['carMonthly','自動車ローン'],['otherLoanMonthly','その他ローン']]},
+      {step:3,page:0,limit:100,keys:[['childInsuranceMonthly','子どもの保険'],['childEducationInsuranceMonthly','学資保険'],['childLivingMonthly','子どもの生活費'],['daycareMonthly','保育料']]},
+      {step:4,page:1,limit:100,keys:[['housingOngoing','固定資産税・修繕費']]},
+      {step:5,page:1,limit:100,keys:[['nisaMonthly','NISA積立'],['otherInvestMonthly','その他の投資'],['otherSavingsMonthly','現金貯金目標'],['cashBufferMonthly','余裕費']]},
+      {step:6,page:0,limit:1200,keys:[['annualTax','年払い税金'],['carTaxAnnual','自動車税'],['travelAnnual','旅行・帰省'],['annualEvents','年内イベント']]},
+      {step:6,page:1,limit:3000,keys:[['weddingCost','結婚式自己負担'],['honeymoonCost','新婚旅行費']]},
+      {step:4,page:0,limit:100000,keys:[['propertyPrice','物件価格'],['downPayment','頭金']]},
+      {step:5,page:0,limit:100000,keys:[['cashSavings','預貯金'],['support','援助'],['nisaBalance','NISA評価額'],['investBalance','その他投資残高']]}
+    ];
+    for(const group of groups)for(const [key,label] of group.keys){
+      const v=Number(p[key]);
+      if(!Number.isFinite(v)||v<0 || v>group.limit)
+        problems.push({label,amount:p[key],unit:group.step===6?'万円/年':'万円',step:group.step,page:group.page});
+    }
+    // Historical single-field utilities are used only until the split fields are populated.
+    if(!['electricityMonthly','gasMonthly','waterBiMonthly'].some(k=>safeNum(p[k])>0)&&safeNum(p.utilitiesMonthly)>100)
+      problems.push({label:'旧・光熱費合算',amount:p.utilitiesMonthly,unit:'万円/月',step:2,page:1});
+    if(!Number.isFinite(Number(p.loanYears))||Number(p.loanYears)<1||Number(p.loanYears)>50)
+      problems.push({label:'住宅ローン返済期間',amount:p.loanYears,unit:'年',step:4,page:1});
+    if(!Number.isFinite(Number(p.interest))||Number(p.interest)<0||Number(p.interest)>20)
+      problems.push({label:'金利',amount:p.interest,unit:'%',step:4,page:1});
+    for(let i=0;i<(p.expenses||[]).length;i++){
+      const x=p.expenses[i],limit=x.cycle==='year'?1200:100;
+      if(!Number.isFinite(Number(x.amount))||Number(x.amount)<0||Number(x.amount)>limit)
+        problems.push({label:x.name||'追加支出',amount:x.amount,unit:x.cycle==='year'?'万円/年':'万円/月',step:6,page:2+Math.floor(i/2)});
+    }
+    return problems;
+  }
+  function fpLoanSummary(price){
+    const p=state.plan,years=Math.max(1,Math.min(50,safeNum(p.loanYears,35))),
+      principal=Math.max(0,safeNum(price)-safeNum(p.downPayment)),
+      rate=safeNum(p.interest),payment=mortgageMonthly(price,p.downPayment,rate,years);
+    return '<div class="fp-repayment-card">'+
+      '<div class="fp-repayment-eyebrow">住宅ローンの毎月返済（元利均等）</div>'+
+      '<div class="fp-repayment-value">'+yen(payment,2)+'<span>万円 / 月</span></div>'+
+      '<div class="fp-repayment-terms">借入 '+yen(principal,0)+'万円　｜　'+yen(years,0)+'年ローン　｜　年利 '+yen(rate,2)+'%</div>'+
+      '<div class="fp-repayment-detail"><span>住居維持費を加えると</span><strong>'+yen(payment+safeNum(p.housingOngoing),2)+'万円 / 月</strong></div>'+
+      '<div class="fp-repayment-detail"><span>ローン総返済額</span><strong>'+yen(payment*years*12,0)+'万円</strong></div>'+
+      '<div class="fp-repayment-note">ボーナス返済なし・金利一定の仮定。諸費用・税・火災保険は別途。</div></div>';
+  }
   function fpBadgeClass(level){return level==='good'?'fp-good':level==='warn'?'fp-warn':'fp-bad';}
   function fpRatingRow(p){
     const price=num(p.price);
@@ -674,12 +724,29 @@
     const p=state.plan,price=safeNum(p.propertyPrice),linked=propById(p.propertyId);
     const budget=fpBudget(),assessment=fpRating(price),current=modelYears(price,true),rent=modelYears(price,false);
     const page=ui.simResultPage,eduKids=Math.min(3,Math.round(safeNum(p.children)));
+    const warnings=fpPlanWarnings();
     let eduTotal=0;
     for(let k=0;k<eduKids;k++)for(let age=0;age<22;age++)eduTotal+=educationAnnual(age,p);
     const heading=['あなたの住宅予算','支出の内訳','現金とNISAの推移','教育費の準備'][page];
     const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r3</span><button class="btn compact" data-act="sim-restart">回答を編集 <span aria-hidden="true">↗</span></button></div>';
     const steps='<div class="fp-result-nav">'+['予算','支出','資産','教育'].map((x,i)=>
       '<button data-act="fp-result-tab" data-value="'+i+'" class="'+(page===i?'active':'')+'">'+x+'</button>').join('')+'</div>';
+    if(warnings.length){
+      const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
+      ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
+      const visible=warnings.slice(ui.fpIssuePage*size,(ui.fpIssuePage+1)*size);
+      return '<section class="screen sim-screen fp-result-screen">'+intro+
+        '<h2 class="sim-result-title">入力した金額を確認してください</h2>'+
+        fpLoanSummary(price)+
+        '<div class="fp-validation-panel grow"><strong>単位が「万円」のため、次の入力値を確認してください</strong>'+
+        '<p>異常に大きい支出が含まれている可能性があります。データは変更していません。</p>'+
+        '<div class="fp-validation-list">'+visible.map(x=>
+          '<button data-act="fp-fix-input" data-value="'+x.step+':'+x.page+'">'+esc(x.label)+
+          '<strong>'+esc(String(x.amount))+' '+esc(x.unit)+'　›</strong></button>').join('')+'</div>'+
+        fpPageNav(count,ui.fpIssuePage,'fp-issue-page')+'</div>'+
+        '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">最初から見直す</button>'+
+        '<button class="btn primary" data-act="fp-fix-input" data-value="'+warnings[0].step+':'+warnings[0].page+'">該当項目を修正 →</button></div></section>';
+    }
     let content='';
     if(page===0){
       const homes=state.properties.slice().sort((a,b)=>b.created-a.created);
@@ -690,7 +757,8 @@
         fpPageNav(homePages,ui.fpHomePage,'fp-home-page'):
         '<div class="fp-no-property">物件を登録すると予算内か自動判定できます。</div>';
       content='<div class="fp-budget-content grow">'+
-        '<div class="fp-hero"><span class="fp-eyebrow">返済負担から算出した参考予算</span><div class="fp-hero-number">'+yen(budget.amount)+'<span>万円</span></div><span class="fp-hero-caption">手取り25％＋家計余力・金利 '+yen(budget.amount>=0?assessment.rate:0,1)+'％想定</span>'+
+        fpLoanSummary(price)+
+        '<div class="fp-hero"><span class="fp-eyebrow">参考の購入予算（生活費・積立を考慮）</span><div class="fp-hero-number">'+yen(budget.amount)+'<span>万円</span></div><span class="fp-hero-caption">手取り25％＋家計余力・金利 '+yen(budget.amount>=0?assessment.rate:0,1)+'％想定</span>'+
         '<div class="fp-budget-scale"><div class="fp-budget-fill"></div></div><span class="fp-secondary">金利＋1％なら　<strong>'+yen(budget.stressAmount)+'万円</strong>が目安</span></div>'+
         '<div class="fp-now-card"><div class="fp-now-head"><div><span class="fp-eyebrow">検討中の価格</span><strong>'+yen(price)+'万円</strong></div><span class="fp-verdict '+fpBadgeClass(assessment.level)+'">'+assessment.label+'</span></div>'+
         '<p class="fp-diagnostic">'+esc(assessment.reason)+'</p>'+
@@ -742,7 +810,8 @@
         '<div class="fp-metric-line"><span>大学</span><strong>'+(p.university==='private'?'私立':'国公立')+'</strong></div>'+
         '<div class="fp-metric-line"><span>月々の積立目安</span><strong>'+yen(eduTotal/years/12,1)+' 万円</strong></div>'+
         '<div class="fp-metric-line"><span>現在のNISA予定額</span><strong>'+yen(safeNum(p.nisaMonthly),1)+' 万円</strong></div>'+
-        '<p class="fp-assumption">※ 教育費は進学先や物価で大きく変わります。教育費積立はNISAの運用益を含まない概算です。</p></div>';
+        '<div class="fp-metric-line"><span>学資保険（1人／月）</span><strong>'+yen(safeNum(p.childEducationInsuranceMonthly),2)+' 万円</strong></div>'+
+        '<p class="fp-assumption">※ 教育費は進学先や物価によって変わります。学資保険の保険料は支出に計上し、満期金は未計上です。</p></div>';
     }
     return '<section class="screen sim-screen fp-result-screen">'+intro+'<h2 class="sim-result-title">'+heading+'</h2>'+steps+content+
       '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">↶ 条件を見直す</button><button class="btn primary" data-act="fp-result-next">'+(page===3?'予算に戻る':'次へ →')+'</button></div></section>';
@@ -1067,8 +1136,10 @@
     }
     if(action==='fp-form-page')return step(()=>{ui.simSubPage=Math.max(0,Math.min(fpWizardPages(ui.simStep).length-1,Number(v)||0));});
     if(action==='fp-ledger-page')return step(()=>{ui.fpLedgerPage=Math.max(0,Number(v)||0);});
+    if(action==='fp-issue-page')return step(()=>{ui.fpIssuePage=Math.max(0,Number(v)||0);});
+    if(action==='fp-fix-input')return step(()=>{const [screen,page]=String(v).split(':').map(Number);ui.simStep=Math.max(0,Math.min(6,screen||0));ui.simSubPage=Math.max(0,page||0);ui.fpIssuePage=0;});
     if(action==='fp-home-page')return step(()=>{ui.fpHomePage=Math.max(0,Number(v)||0);});
-    if(action==='sim-next')return step(()=>{if(ui.simStep===6)state.plan.hasRun=1;ui.simStep=Math.min(7,ui.simStep+1);ui.simSubPage=0;ui.simResultPage=0;save();});
+    if(action==='sim-next')return step(()=>{if(ui.simStep===6)state.plan.hasRun=1;ui.simStep=Math.min(7,ui.simStep+1);ui.simSubPage=0;ui.simResultPage=0;ui.fpIssuePage=0;save();});
     if(action==='sim-back')return step(()=>{ui.simStep=Math.max(0,ui.simStep-1);ui.simSubPage=0;});
     if(action==='sim-restart')return step(()=>{ui.simStep=0;ui.simSubPage=0;ui.simResultPage=0;});
     if(action==='sim-result-page')return step(()=>changePage('simResultPage',4,Number(v)));

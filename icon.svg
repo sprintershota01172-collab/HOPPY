@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<rect width="512" height="512" rx="114" fill="#345b4c"/>
+<path d="M96 275 256 132 416 275" fill="none" stroke="#f5e5b7" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M151 259v123h210V259" fill="none" stroke="#f5e5b7" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M228 381v-95h56v95" fill="#f5e5b7"/>
+<circle cx="256" cy="221" r="14" fill="#f5e5b7"/>
+<text x="256" y="456" text-anchor="middle" font-family="Georgia, serif" font-size="43" font-weight="bold" fill="#f5e5b7">hoppy.</text>
+</svg>

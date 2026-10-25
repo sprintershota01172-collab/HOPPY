@@ -21,6 +21,7 @@ jobs:
         run: |
           node --check app.js
           node tests/smoke.cjs
+          node tests/no-flash.cjs
       - uses: actions/configure-pages@v5
         with:
           enablement: true

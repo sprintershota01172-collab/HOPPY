@@ -64,7 +64,7 @@
   function navPager(index,total,act){return '<div class="pager"><button class="page-arrow" data-act="'+act+'" data-value="-1" '+(total<2?'disabled':'')+' aria-label="前へ">‹</button><div class="counter">'+(total?index+1:0)+' / '+total+'</div>'+dots(index,Math.max(total,1))+'<button class="page-arrow" data-act="'+act+'" data-value="1" '+(total<2?'disabled':'')+' aria-label="次へ">›</button></div>';}
   function propertyScreen(){
     let ps=visibleProperties(),p=curProp();if(p)ui.propertyId=p.id;
-    if(!p)return '<section class="screen">'+empty('⌂','家探しを、ここから。','物件を登録するとメモや比較を始められます。','add-property','最初の物件を登録')+'<button class="btn soft wide" data-act="seed">サンプル3件で試す</button></section>';
+    if(!p)return state.properties.length?'<section class="screen">'+empty('⌕','一致する物件がありません','検索条件を変更するか、絞り込みを解除してください。','filter-clear','絞り込みを解除する')+'</section>':'<section class="screen">'+empty('⌂','家探しを、ここから。','物件を登録するとメモや比較を始められます。','add-property','最初の物件を登録')+'<button class="btn soft wide" data-act="seed">サンプル3件で試す</button></section>';
     let pos=ps.findIndex(x=>x.id===p.id);if(pos<0){p=ps[0];ui.propertyId=p.id;pos=0;}
     let image=p.photos.length?'<img data-photo="'+esc(p.photos[0])+'" alt="物件の写真">':'<span class="house-illustration" aria-hidden="true">⌂</span>';
     return '<section class="screen"><div class="toolbar between"><div class="row"><span class="kicker">PROPERTY NOTE</span><span class="pill">'+ps.length+' 件</span></div><div class="row"><button class="btn compact" data-act="property-list">一覧</button><button class="btn primary compact" data-act="add-property">＋ 追加</button></div></div>'+

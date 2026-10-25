@@ -2,7 +2,7 @@
 // Education-insurance premiums multiply by the number of eligible children; monthly mortgage is explicit.
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 let src=fs.readFileSync('app.js','utf8');
-const marker="  save();render();\n  if('serviceWorker'";
+const marker="  save();render();\n  // The startup wordmark";
 assert.ok(src.includes(marker));
 src=src.replace(marker,"  window.__fpSafety={getPlan:()=>state.plan,fpBaseMonthly,fpPlanWarnings,mortgageMonthly,fpExpenseDetails,modelYears};\n"+marker);
 let seq=0,now=1000;

@@ -70,9 +70,12 @@ a.click('detail-close');
 a.click('edit-property');
 assert.match(a.app.innerHTML,/まとめて保存/);
 assert.doesNotMatch(a.app.innerHTML,/STEP [1-4] \/ 4/);
-for (const name of ['name','manufacturer','price','kind','age','area','layout','station','status','tags','address','url']) {
-  assert.match(a.app.innerHTML,new RegExp('data-model="'+name+'"'));
+const propertyFields=['name','manufacturer','price','kind','age','area','layout','station','status','tags','address','url'];
+for(let page=0;page<3;page++){
+  a.click('property-form-page',String(page));
+  for(const name of propertyFields.slice(page*4,page*4+4))assert.match(a.app.innerHTML,new RegExp('data-model="'+name+'"'));
 }
+a.click('property-form-page','0');
 a.input({model:'manufacturer'},'ヘーベルハウス');
 a.input({model:'price'},'4350');
 a.input({model:'address'},'愛知県名古屋市');

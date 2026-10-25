@@ -28,6 +28,7 @@ jobs:
           node tests/fp-ledger.cjs
           node tests/fp-safety.cjs
           node tests/fp-report.cjs
+          node tests/fp-history-events.cjs
       - uses: actions/configure-pages@v5
         with:
           enablement: true

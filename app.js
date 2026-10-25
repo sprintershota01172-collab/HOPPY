@@ -748,6 +748,168 @@
     result.push({label:'結婚式・新婚旅行',amount:point.events});
     return result.filter(x=>x.amount>0).sort((a,b)=>b.amount-a.amount);
   }
+  function fpMetric(label,value){
+    return '<div class="fp-r-metric"><span>'+esc(label)+'</span><strong>'+value+'</strong></div>';
+  }
+  function fpYearPoint(model){
+    return model.points.find(x=>x.year===ui.fpYear)||model.points.find(x=>x.year===fpDecisionYear())||model.points[0];
+  }
+  function fpChartCanvas(points,keys,mode){
+    // Responsive SVG generated locally: no external chart library or connection is needed.
+    const W=326,H=172,left=29,right=318,top=12,bottom=144;
+    const values=points.flatMap(p=>keys.map(k=>Number(p[k])||0));
+    const min=mode==='line'?Math.min(0,...values):0;
+    const max=Math.max(min+1,...values,0);
+    const scale=Math.max(1,max-min);
+    const yy=v=>bottom-(v-min)/scale*(bottom-top);
+    const xx=i=>left+(i/Math.max(1,points.length-1))*(right-left);
+    const grid=[0,.5,1].map(fr=>{
+      const v=min+scale*fr,y=yy(v);
+      return '<line x1="'+left+'" y1="'+y+'" x2="'+right+'" y2="'+y+'" stroke="#e6ebed" stroke-width=".8"/>'+
+        '<text x="2" y="'+(y+3)+'" font-size="8" fill="#8b97a1">'+yen(v,0)+'</text>';
+    }).join('');
+    const ticks=points.filter((p,i)=>i===0||i===points.length-1||i%5===0).map(p=>{
+      const i=points.indexOf(p);
+      return '<text x="'+xx(i)+'" y="165" text-anchor="middle" font-size="8" fill="#7c8793">'+p.year+'</text>';
+    }).join('');
+    const marks=keys.map((key,k)=>{
+      const color=['#1876d1','#89a9bd','#f59b6d'][k]||'#667';
+      if(mode==='bar'){
+        const width=Math.max(2,Math.min(6,210/Math.max(1,points.length))),shift=k===0?-width/2:width/2;
+        return points.map((p,i)=>{
+          const v=Math.max(0,Number(p[key])||0),y=yy(v);
+          return '<rect x="'+(xx(i)+shift-width/2).toFixed(2)+'" y="'+y.toFixed(2)+'" width="'+width.toFixed(2)+'" height="'+Math.max(0,bottom-y).toFixed(2)+'" rx="1" fill="'+color+'"/>';
+        }).join('');
+      }
+      const path=points.map((p,i)=>(i?'L':'M')+xx(i).toFixed(1)+','+yy(Number(p[key])||0).toFixed(1)).join(' ');
+      return '<path d="'+path+'" fill="none" stroke="'+color+'" stroke-width="'+(k===0?2.4:1.8)+'" stroke-linejoin="round" stroke-linecap="round"/>';
+    }).join('');
+    const zero=(min<0&&mode==='line')?'<line x1="'+left+'" x2="'+right+'" y1="'+yy(0)+'" y2="'+yy(0)+'" stroke="#d35959" stroke-width="1.2" stroke-dasharray="3 3"/>':'';
+    return '<svg class="fp-r-chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+(mode==='line'?'年ごとの推移':'各年の比較')+'">'+grid+zero+marks+ticks+'</svg>';
+  }
+  function fpChartLegend(items){
+    return '<div class="fp-r-legend">'+items.map((name,i)=>
+      '<span><i style="background:'+['#1876d1','#89a9bd','#f59b6d'][i]+'"></i>'+esc(name)+'</span>').join('')+'</div>';
+  }
+  function fpChartData(price,current,rent){
+    const mortgage=fpAmortization(price),option=ui.fpChartPage||0,
+      choice=Math.max(0,Math.min(2,option));
+    if(choice===0){
+      const joined=current.points.map((p,i)=>({year:p.year,house:p.cash,rent:rent.points[i]?.cash??0}));
+      const selected=fpYearPoint(current),other=rent.points.find(x=>x.year===selected.year);
+      return '<div class="fp-r-body grow"><strong class="fp-r-subhead">購入後の現金残高</strong>'+
+        fpChartCanvas(joined,['house','rent'],'line')+fpChartLegend(['購入後','賃貸を継続'])+
+        '<div class="fp-r-compact-stats">'+fpMetric('選択年の現金残高',yen(selected.cash,0)+'万円')+
+        fpMetric('賃貸との差額',yen(selected.cash-(other?.cash||0),0)+'万円')+'</div>'+
+        '<p class="fp-r-help">予測は各年末の現金。赤い点線＝残高0。持ち家の売却価値は含みません。</p></div>';
+    }
+    if(choice===1){
+      const joined=current.points.map(x=>({year:x.year,income:x.incomes,spent:x.expenses+x.investing}));
+      const selected=fpYearPoint(current);
+      return '<div class="fp-r-body grow"><strong class="fp-r-subhead">年間の収入と支出＋投資積立</strong>'+
+        fpChartCanvas(joined,['income','spent'],'bar')+fpChartLegend(['手取り・給付','支出＋積立'])+
+        '<div class="fp-r-compact-stats">'+fpMetric('選択年の年間収入',yen(selected.incomes,0)+'万円')+
+        fpMetric('選択年の現金増減',yen(selected.netCash,0)+'万円')+'</div>'+
+        '<p class="fp-r-help">現金増減＝収入−支出−NISA等の積立。積立は消費支出とは区別。</p></div>';
+    }
+    const pts=mortgage.points.map(x=>({year:x.year,balance:x.balance}));
+    const currentLoan=mortgage.points.find(x=>x.year===ui.fpYear)||mortgage.points.find(x=>x.year===mortgage.start)||mortgage.points[0];
+    return '<div class="fp-r-body grow"><strong class="fp-r-subhead">ローン残債・元金と利息</strong>'+
+      fpChartCanvas(pts,['balance'],'line')+fpChartLegend(['ローン残債'])+
+      '<div class="fp-r-compact-stats">'+fpMetric('選択年末の残債',yen(currentLoan.balance,0)+'万円')+
+      fpMetric('選択年の元金／利息',yen(currentLoan.principalPaid,0)+' / '+yen(currentLoan.interest,0)+'万円')+'</div>'+
+      '<p class="fp-r-help">元利均等、当初金利が期間中一定の場合の返済予定。繰上返済なし。</p></div>';
+  }
+  function fpCalcRows(rows){
+    return '<div class="fp-r-rows">'+rows.map(([label,value])=>
+      '<div><span>'+esc(label)+'</span><strong>'+value+'</strong></div>').join('')+'</div>';
+  }
+  function fpCalculationData(price,current){
+    const p=state.plan,point=fpYearPoint(current),mode=ui.fpCalcPage||0,loan=fpAmortization(price);
+    if(mode===0){
+      const previous=current.points.find(x=>x.year===point.year-1);
+      const opening=previous?previous.cash:safeNum(p.cashSavings)+safeNum(p.support);
+      return '<div class="fp-r-body grow">'+fpYearSelect(current)+
+        fpCalcRows([
+          ['期首現金残高',yen(opening,1)+'万円'],['年間手取り＋給付',yen(point.incomes,1)+'万円'],
+          ['生活費・住居費・特別支出', '− '+yen(point.expenses,1)+'万円'],
+          ['NISA等への投資積立','− '+yen(point.investing,1)+'万円'],
+          ['年間の現金増減',yen(point.netCash,1)+'万円'],
+          ['期末現金残高',yen(point.cash,1)+'万円']
+        ])+
+        '<p class="fp-r-help">期末現金＝期首現金＋年間収入−年間支出−年間投資積立。預貯金・NISA評価額は別々に計算。</p></div>';
+    }
+    if(mode===1){
+      const n=loan.years*12,r=loan.rate/1200;
+      return '<div class="fp-r-body grow">'+fpCalcRows([
+        ['物件価格',yen(price,0)+'万円'],['頭金',yen(safeNum(p.downPayment),0)+'万円'],
+        ['借入元金',yen(loan.principal,0)+'万円'],['返済期間',loan.years+'年 × 12か月'],
+        ['想定金利',yen(loan.rate,2)+'％/年'],['ローン月額',yen(loan.monthly,2)+'万円'],
+        ['ローン総返済',yen(loan.monthly*n,0)+'万円']
+      ])+
+        '<p class="fp-r-help">元利均等：月額＝元金×月利÷{1−(1＋月利)^−回数}。月利＝年利÷1200。金利0％なら元金÷回数。</p></div>';
+    }
+    if(mode===2){
+      const items=fpExpenseDetails(point,true);
+      const pageSize=window.matchMedia('(max-height:720px)').matches?4:6;
+      const count=Math.max(1,Math.ceil(items.length/pageSize));
+      ui.fpLedgerPage=Math.min(count-1,ui.fpLedgerPage);
+      return '<div class="fp-r-body grow">'+fpYearSelect(current)+
+        '<strong class="fp-r-subhead">年間の支出明細｜'+items.length+'項目</strong>'+
+        fpCalcRows(items.slice(ui.fpLedgerPage*pageSize,(ui.fpLedgerPage+1)*pageSize)
+          .map(x=>[x.label,yen(x.amount,1)+'万円']))+
+        fpPageNav(count,ui.fpLedgerPage,'fp-ledger-page')+
+        '<p class="fp-r-help">水道は2か月額×6回。住居費は購入前が家賃、購入後がローン＋維持費。追加支出も反映。</p></div>';
+    }
+    return '<div class="fp-r-body grow"><strong class="fp-r-subhead">計算の前提・参照先</strong>'+
+      '<div class="fp-r-assumptions">'+
+      '<div><b>収入</b><span>月の手取り×12＋賞与。出産年は妻の月収を最大10万円、以降は時短収入を仮定。妻賞与は出産年以降0と仮置き。</span></div>'+
+      '<div><b>住宅</b><span>購入年の1月からローン開始と仮定。購入時諸費用は物件価格の7％、固定資産税・修繕等は入力値で計算。</span></div>'+
+      '<div><b>教育・運用</b><span>教育費は独自の固定概算。保育料、保険、NISAは入力値。税優遇・物価上昇は自動計算せず、運用利回りは仮定。</span></div>'+
+      '<div><b>銀行審査</b><span>額面年収の登録がないため総返済負担率は判定しません。手取り比率とは別の指標です。</span></div></div>'+
+      '<div class="fp-r-source-links"><a href="https://www.fsa.go.jp/policy/nisa2/lifeplan-simulator/index.html" target="_blank" rel="noopener noreferrer">金融庁｜ライフプランの前提 ↗</a>'+
+      '<a href="https://www.flat35.com/loan/lineup/flat35/conditions/index.html" target="_blank" rel="noopener noreferrer">フラット35｜申込条件 ↗</a>'+
+      '<a href="https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1210.htm" target="_blank" rel="noopener noreferrer">国税庁｜住宅ローン控除 ↗</a></div></div>';
+  }
+  function fpAdviceData(price,current){
+    const p=state.plan,rating=fpRating(price),budget=fpBudget(),amort=fpAmortization(price);
+    const messages=[],negative=current.points.find(x=>x.cash<0),shortfall=budget.amount-price;
+    const push=(level,title,detail)=>messages.push({level,title,detail});
+    if(negative)push('bad','資金不足を見込む年：'+negative.year+'年',
+      '年末現金が'+yen(negative.cash,0)+'万円。教育費・住宅購入費・収入変化などの時期を再確認してください。');
+    else push('good','期間中の年末現金はプラス',
+      '年末残高の最小値は'+yen(current.min,0)+'万円。ただし月中の資金不足はこの年次モデルでは判定できません。');
+    if(rating.remaining<rating.reserve)push('bad','購入時の生活防衛資金を確認',
+      '諸費用と頭金後の現金 '+yen(rating.remaining,0)+'万円に対し、6か月分の目安は '+yen(rating.reserve,0)+'万円（独自目安）。');
+    else push('good','生活防衛資金は参考目安以上',
+      '諸費用と頭金後の現金は'+yen(rating.remaining,0)+'万円。半年分の生活費との比較です。');
+    if(shortfall<0)push('warn','想定価格が参考予算を超過',
+      '約'+yen(Math.abs(shortfall),0)+'万円上回ります。物件価格・積立額・返済期間の組合せを再試算してください。');
+    else push('good','購入価格は参考予算の範囲内',
+      '参考予算との差は'+yen(shortfall,0)+'万円。審査通過や将来の安全を保証する判定ではありません。');
+    const plus1=fpAmortization(price,1).monthly-amort.monthly;
+    push(plus1>1.5?'warn':'note','金利が年＋1％の場合',
+      '借入時からその金利が続く仮定では月＋'+yen(plus1,2)+'万円。実際の変動金利の見直し額とは異なります。');
+    if(safeNum(p.children)>0)push('note','育児期の収入を慎重に評価',
+      '出産年は妻の月手取り最大10万円、翌年以降は時短手取り'+yen(safeNum(p.wifeReduced),1)+'万円・妻賞与0円と仮定。実際の育休給付等は要確認。');
+    if(safeNum(p.carLoanEndYear)>=simNowYear())push('note','車ローン完済前後で再比較',
+      '車ローンは'+p.carLoanEndYear+'年まで年末基準で計上。購入年と返済終了時期を比較してください。');
+    push('note','審査基準と家計判定は別',
+      '額面年収が未入力のためフラット35の返済負担率基準は未判定。表示する手取り負担率はアプリ独自の目安です。');
+    push('note','未計上の税優遇と将来変動',
+      '住宅ローン控除は要件で異なるため未計上。物価、金利変更、購入月、教育費の進路差なども確認してください。');
+    return messages;
+  }
+  function fpAdviceScreen(price,current){
+    const items=fpAdviceData(price,current),size=3,count=Math.ceil(items.length/size);
+    ui.fpAdvicePage=Math.min(count-1,ui.fpAdvicePage||0);
+    const portion=items.slice(ui.fpAdvicePage*size,(ui.fpAdvicePage+1)*size);
+    return '<div class="fp-r-body grow"><strong class="fp-r-subhead">家計診断・改善ポイント</strong>'+
+      '<div class="fp-r-advice-list">'+portion.map(x=>
+        '<div class="fp-r-advice '+x.level+'"><strong>'+esc(x.title)+'</strong><p>'+esc(x.detail)+'</p></div>').join('')+'</div>'+
+      fpPageNav(count,ui.fpAdvicePage,'fp-advice-page')+
+      '<p class="fp-r-help">公的資料を参照した計算上の助言です。安全の保証や金融機関の事前審査ではありません。</p></div>';
+  }
   function simulationResultsScreen(){
     const p=state.plan,price=safeNum(p.propertyPrice),linked=propById(p.propertyId);
     const budget=fpBudget(),assessment=fpRating(price),current=modelYears(price,true),rent=modelYears(price,false);

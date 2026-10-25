@@ -23,6 +23,7 @@ jobs:
           node tests/smoke.cjs
           node tests/no-flash.cjs
           node tests/offline.cjs
+          node tests/memo-swipe.cjs
       - uses: actions/configure-pages@v5
         with:
           enablement: true

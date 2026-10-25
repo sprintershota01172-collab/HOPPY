@@ -58,8 +58,8 @@ p.interest=1.5;
 p.downPayment=400;
 assert.ok(api.fpBudget().amount>prior,'more down payment increases affordable property price');
 p.downPayment=100;
-p.otherSavingsMonthly=20;
-assert.ok(api.fpBudget().amount<prior,'higher savings goal reduces monthly borrowing capacity');
+p.otherSavingsMonthly=40;
+assert.ok(api.fpBudget().amount<prior,'a savings goal beyond the income-ratio cap reduces buying power');
 p.otherSavingsMonthly=5;
 
 click('tab','sim');

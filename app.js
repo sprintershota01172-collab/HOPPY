@@ -132,7 +132,7 @@
       return;
     }
     const body=ui.tab==='property'?propertyScreen():ui.tab==='compare'?compareScreen():ui.tab==='sim'?simulationScreen():ui.tab==='memo'?memoScreen():pendingScreen();
-    app.innerHTML=toolbar(titles[ui.tab])+'<main class="main">'+body+'</main><nav class="bottom" aria-label="メインメニュー">'+nav.map(([key,name])=>'<button class="tab '+(ui.tab===key?'active':'')+'" data-act="tab" data-value="'+key+'" aria-current="'+(ui.tab===key?'page':'false')+'"><span class="nav-icon">'+tabIcon(key)+'</span><span class="tab-label">'+name+'</span></button>').join('')+'</nav>'+(ui.overlay?overlay(): '')+fpBreakdownOverlay();
+    app.innerHTML=toolbar(titles[ui.tab])+'<main class="main">'+body+'</main><nav class="bottom" aria-label="メインメニュー">'+nav.map(([key,name])=>'<button class="tab '+(ui.tab===key?'active':'')+'" data-act="tab" data-value="'+key+'" aria-current="'+(ui.tab===key?'page':'false')+'"><span class="nav-icon">'+tabIcon(key)+'</span><span class="tab-label">'+name+'</span></button>').join('')+'</nav>'+(ui.overlay?overlay(): '');
     renderToast();hydratePhotos();
   }
   function empty(icon,title,desc,action,label){return '<section class="panel grow empty"><div class="big">'+icon+'</div><h2 class="section-title">'+esc(title)+'</h2><p>'+esc(desc)+'</p>'+ (action?'<button class="btn primary" data-act="'+action+'">'+esc(label)+'</button>':'')+'</section>';}
@@ -530,7 +530,7 @@
     ui.simSubPage=Math.max(0,Math.min(pages.length-1,Number(ui.simSubPage)||0));
     const n=ui.simSubPage;
     const labels=i===2?['食費・住居','水道光熱','日常費','保険等']:i===4?['購入','維持費']:i===5?['資産','積立']:null;
-    return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR / r12</span>'+
+    return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR / r13</span>'+
       (p.hasRun?'<button class="fp-recall-btn" data-act="fp-view-budget">前回の診断を見る ↗</button>':'<span class="sim-progress-text">'+(i+1)+' / 7</span>')+
       '</div><div class="sim-progress">'+Array.from({length:7},(_,x)=>'<span class="'+(x<=i?'filled':'')+'"></span>').join('')+'</div>'+
       '<div class="sim-question"><h2>'+simQuestions[i][0]+'</h2><p>'+simQuestions[i][1]+'</p></div>'+
@@ -1133,10 +1133,10 @@
       return '<div class="fp-breakdown-row"><div class="fp-breakdown-entry"><strong>'+esc(row.label)+'</strong>'+
         '<span>'+yen(row.amount,2)+'万円</span></div>'+editor+'</div>';
     }).join('');
-    return '<section class="fp-breakdown-panel" aria-label="'+esc(item.label)+'の内訳">'+
+    return '<section class="fp-breakdown-panel" data-fp-inline-breakdown aria-label="'+esc(item.label)+'の内訳">'+
       '<div class="fp-breakdown-title"><span>選択項目の内訳 '+(annual?'年':'月')+'額</span>'+
       '<strong>'+esc(item.label)+' <b>'+yen(item.amount,2)+'万円</b></strong>'+
-      '<small>収入比 '+(percentage===null?'—':yen(percentage,1)+'%')+' ・ 上のタブで項目を切替</small></div>'+
+      '<small>収入比 '+(percentage===null?'—':yen(percentage,1)+'%')+' ・ 円グラフの色をタップして切替</small></div>'+
       '<div class="fp-breakdown-list">'+(rowHtml||'<p class="fp-breakdown-empty">この項目の内訳はありません。</p>')+'</div>'+
       '<p class="fp-breakdown-footer">設定金額を変更すると家計・資産予測を再計算します。金額の右にある入力欄は元の登録単位です。'+
       (annual?'年間集計':'年払い・月未指定の支出は月割の概算')+'。</p></section>';
@@ -1147,39 +1147,6 @@
       '" aria-pressed="'+(active===item.id?'true':'false')+'">'+
       '<i style="background:'+item.color+'"></i><span>'+esc(item.label)+'</span>'+
       '<strong>'+yen(item.amount,period==='annual'?0:2)+'万</strong></button>';
-  }
-  // The breakdown is a direct child of #app, outside the clipped FP screen.
-  // Keeping the full-screen sheet separate from the pie prevents overflow:hidden
-  // ancestors from cutting off the breakdown on shorter iPhones.
-  function fpBreakdownOverlay(){
-    const opened=ui.fpBreakdownOpen;
-    if(!opened||ui.overlay||ui.fpHistoryOpen||ui.tab!=='sim'||ui.simStep!==7)return '';
-    if((opened.period==='monthly'&&ui.simResultPage!==1)||
-       (opened.period==='annual'&&(ui.simResultPage!==3||ui.fpChartPage!==3)))return '';
-    const period=opened.period;
-    const model=modelYears(safeNum(state.plan.propertyPrice),true);
-    const point=fpYearPoint(model);
-    const month=period==='monthly'?
-      fpMonthlyLedger(point).months[Math.max(0,Math.min(11,(ui.fpCashMonth||1)-1))]:null;
-    const allocation=month?fpMonthlyAllocation(month):fpIncomeAllocation(point);
-    const category=allocation.items.some(x=>x.id===opened.category)?opened.category:'living';
-    const shortNames={living:'生活・教育',housing:'住居',education:'イベント',investing:'積立',remaining:'現金'};
-    const chooser=allocation.items.map(item=>
-      '<button type="button" data-act="fp-breakdown-select" data-period="'+period+
-      '" data-value="'+item.id+'" class="fp-breakdown-sheet-tab '+(category===item.id?'active':'')+
-      '" aria-pressed="'+(category===item.id?'true':'false')+'">'+
-      '<i style="background:'+item.color+'"></i><span>'+esc(shortNames[item.id])+'</span></button>'
-    ).join('');
-    const when=point.year+'年'+(month?' '+month.month+'月':' 年間');
-    return '<section class="fp-breakdown-sheet" role="dialog" aria-modal="true" aria-label="'+
-      esc(when)+'の内訳" data-fp-breakdown-sheet>'+
-      '<div class="fp-breakdown-sheet-head"><div><span class="fp-breakdown-sheet-eyebrow">FP / '+esc(when)+'</span>'+
-      '<h2>収支の内訳</h2></div>'+
-      '<button type="button" class="fp-breakdown-sheet-close" data-act="fp-breakdown-close" aria-label="内訳を閉じる">閉じる ×</button></div>'+
-      '<div class="fp-breakdown-sheet-tabs" role="group" aria-label="内訳の分類">'+chooser+'</div>'+
-      fpPieBreakdownPanel(point,month,allocation.items,category)+
-      '<div class="fp-breakdown-sheet-bottom"><span>金額を編集するとFPの予測を再計算</span>'+
-      '<button type="button" data-act="fp-breakdown-close">円グラフに戻る</button></div></section>';
   }
   function fpPieArcs(items,total,radius,strokeWidth,period,active){
     const circ=2*Math.PI*radius;let offset=0;
@@ -1208,8 +1175,7 @@
       '<div class="fp-pie-key">'+data.items.map(x=>fpPiePick(x,'annual',chosen)).join('')+'</div></div>'+
       '<div class="fp-pie-totals"><span>年間手取り＋給付金 <strong>'+yen(data.income,0)+'万円</strong></span>'+
       '<span>年間支出＋投資積立 <strong>'+yen(data.spent,0)+'万円</strong></span></div>'+
-      '<p class="fp-r-help">支出＋積立率 '+esc(outflowPercent)+'。'+(data.over>0?'収入を'+yen(data.over,0)+'万円超過。':
-      '円全体＝年間収入100％。')+' 積立は消費ではなく資産への振替です。</p>';
+      fpPieBreakdownPanel(point,null,data.items,chosen);
   }
   function fpChartData(price,current,rent){
     const mortgage=fpAmortization(price),option=ui.fpChartPage||0,
@@ -1217,7 +1183,7 @@
     if(choice===3){
       const selected=fpYearPoint(current);
       return '<div class="fp-r-body grow fp-pie-panel"><div class="fp-pie-panel-head"><strong class="fp-r-subhead">収入に対する支出割合・'+selected.year+'年</strong>'+
-         '<button type="button" class="fp-breakdown-open" data-act="fp-breakdown-select" data-period="annual" data-value="'+(ui.fpBreakdownAnnual||'living')+'">項目別内訳を見る ›</button></div>'+
+         '<span class="fp-breakdown-hint">色をタップすると下の内訳が切り替わります</span></div>'+
          fpPieChart(selected)+'</div>';
     }
     if(choice===0){
@@ -1277,9 +1243,7 @@
       '<text x="105" y="101" text-anchor="middle" font-size="28" font-weight="800" fill="#283a4b">'+esc(percent)+'</text>'+
       '<text x="105" y="122" text-anchor="middle" font-size="10" fill="#758391">月の支出率</text></svg>'+
       '<div class="fp-month-pie-legend">'+data.items.map(x=>fpPiePick(x,'monthly',chosen)).join('')+'</div></div>'+
-      '<p class="fp-month-pie-note">'+(data.percent===null?'手取り0円のため支出率は算出できません。':
-         data.over>0?'支出・積立が収入を'+yen(data.over,2)+'万円超過。':
-         '円全体＝手取り収入100％。NISA等の積立は支出率から除外。')+'</p>';
+      fpPieBreakdownPanel(point,month,data.items,chosen);
   }
   function fpMonthlyReport(model){
     const point=fpYearPoint(model),ledger=fpMonthlyLedger(point),
@@ -1296,7 +1260,7 @@
       }).join('')+'</div>';
     const row=(label,value)=>'<div class="fp-cash-row"><span>'+esc(label)+'</span><strong>'+yen(value,2)+' 万円</strong></div>';
     return '<div class="fp-month-report grow">'+fpYearSelect(model)+
-      '<div class="fp-month-head"><button type="button" class="fp-breakdown-open" data-act="fp-breakdown-select" data-period="monthly" data-value="'+(ui.fpBreakdownMonthly||'living')+'">項目別内訳を見る ›</button>'+
+      '<div class="fp-month-head"><span class="fp-breakdown-hint">色をタップ → 下に内訳</span>'+
         '<div class="fp-month-switch" role="group" aria-label="月収支の表示形式">'+
           '<button data-act="fp-month-view" data-value="pie" class="'+(isPie?'active':'')+'">円グラフ</button>'+
           '<button data-act="fp-month-view" data-value="detail" class="'+(!isPie?'active':'')+'">明細</button></div></div>'+bars+
@@ -1466,7 +1430,7 @@
       budget=fpBudget(),rating=fpRating(price),warnings=fpPlanWarnings(),
       page=Math.min(6,Math.max(0,ui.simResultPage||0));
     const heading=['購入後の家計','月ごとの収支','現金と投資資産','年収支','収入の内訳','計算根拠','アドバイス'][page];
-    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r12</span>'+
+    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r13</span>'+
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button></div></div>';
@@ -1874,19 +1838,17 @@
     if(action==='fp-month-view')return step(()=>{ui.fpMonthView=v==='detail'?'detail':'pie';});
     if(action==='fp-breakdown-select'){
       if(!['living','housing','education','investing','remaining'].includes(v))return;
-      const period=button.dataset.period==='annual'?'annual':'monthly';
-      if(period==='annual')ui.fpBreakdownAnnual=v;
+      if(button.dataset.period==='annual')ui.fpBreakdownAnnual=v;
       else ui.fpBreakdownMonthly=v;
-      ui.fpBreakdownOpen={period,category:v};
       render();
-      app.querySelector('.fp-breakdown-sheet-close')?.focus?.({preventScroll:true});
-      return;
-    }
-    if(action==='fp-breakdown-close'){
-      ui.fpBreakdownOpen=null;render();
       return;
     }
     if(action==='fp-breakdown-edit')return step(()=>{
+      if(!ui.fpHistoryLive){
+        const snap=fpLatestSnapshot();
+        if(snap)state.plan=JSON.parse(JSON.stringify(snap.plan));
+        ui.fpHistoryLive=true;
+      }
       const [screen,page]=String(v).split(':').map(Number);
       ui.fpBreakdownOpen=null;
       ui.simStep=Math.max(0,Math.min(6,screen||0));
@@ -2039,7 +2001,6 @@
   }
   app.addEventListener('click',e=>{if(Date.now()-lastSwipeAt<350){e.preventDefault();return;}let b=e.target.closest('[data-act]');if(!b || !app.contains(b))return;e.preventDefault();handler(b.dataset.act,b);});
   app.addEventListener('keydown',e=>{
-    if(e.key==='Escape'&&ui.fpBreakdownOpen){e.preventDefault();ui.fpBreakdownOpen=null;render();return;}
     const circle=e.target.closest?.('.fp-pie-arc');
     if(circle&&(e.key==='Enter'||e.key===' ')){e.preventDefault();handler('fp-breakdown-select',circle);return;}
     if(e.target?.dataset?.homeQuery!==undefined && e.key==='Enter'){e.preventDefault();e.target.blur?.();step(()=>{ui.homePage=0;save();});}});
@@ -2131,6 +2092,11 @@
   app.addEventListener('change',async e=>{
     const el=e.target;
     if(el.dataset?.fpBreakdownField!==undefined || el.dataset?.fpBreakdownExpense!==undefined || el.dataset?.fpBreakdownEvent!==undefined){
+      if(!ui.fpHistoryLive){
+        const snap=fpLatestSnapshot();
+        if(snap)state.plan=JSON.parse(JSON.stringify(snap.plan));
+        ui.fpHistoryLive=true;
+      }
       const number=Number(el.value);
       if(!Number.isFinite(number)||number<0){message('0以上の金額を入力してください');render();return;}
       if(el.dataset.fpBreakdownField!==undefined){

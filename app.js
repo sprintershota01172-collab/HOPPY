@@ -14,7 +14,7 @@
   const fmt = n => n === '' || n == null ? '未登録' : digits.format(Number(n)) + '万円';
   const num = v => v === '' || v == null ? null : Number.isFinite(Number(v)) ? Number(v) : null;
   const truncate = (s,n) => String(s || '').length > n ? String(s).slice(0,n - 1) + '…' : String(s || '');
-  const dots = (index,count) => '<div class="dots" aria-label="' + (index+1) + ' / ' + count + 'ページ">' + Array.from({length:Math.min(count,12)},(_,i)=>'<span class="dot ' + (i===Math.min(index,11)?'active':'') + '"></span>').join('') + '</div>';
+  const dots = (index,count) => '<div class="dots" aria-label="' + (index+1) + ' / ' + count + 'ページ">' + Array.from({length:Math.min(count,6)},(_,i)=>'<span class="dot ' + (i===Math.round(index*(Math.min(count,6)-1)/Math.max(1,count-1))?'active':'') + '"></span>').join('') + '</div>';
   const initialCriteria = ['価格','耐久性（構造・耐震・築年数）','立地（駅距離・通勤）','広さ・間取り','日当たり','周辺環境（スーパー・病院）','子育て環境（学校・公園）','維持費（税・管理費等）','災害リスク','資産価値'].map((name,i)=>({id:'standard-'+i,name,weight:2,auto:null}));
   const blankProperty = () => ({id:uid(),name:'',url:'',address:'',price:'',kind:kinds[0],age:'',area:'',layout:'',station:'',status:statuses[0],tags:[],notes:{good:[''],bad:['']},questions:[],photos:[],created:Date.now()});
   const defaults = () => ({version:1,properties:[],criteria:initialCriteria,scores:{},selected:[],filter:{query:'',tag:'',sort:'new'},});
@@ -83,7 +83,7 @@
         content='<div class="panel detail grow swipe-zone"><div class="notes-title"><span class="kicker">営業担当に聞くこと</span><span class="meta">'+p.questions.length+' 件</span></div><div class="question-list">'+(subset.length?subset.map(q=>'<div class="question-row '+(q.done?'done':'')+'"><button class="checkbtn" data-act="question-toggle" data-value="'+esc(q.id)+'" aria-label="確認済みを切替">'+(q.done?'✓':'○')+'</button><span>'+esc(q.text)+'</span><button class="ellipsis" data-act="question-delete" data-value="'+esc(q.id)+'" aria-label="質問を削除">×</button></div>').join(''):'<div class="empty grow"><p>聞きたいことを登録しましょう。</p></div>')+'</div>'+navPager(Math.min(ui.questionPage,Math.max(0,Math.ceil(p.questions.length/4)-1)),Math.max(1,Math.ceil(p.questions.length/4)),'question-nav')+'<button class="btn primary wide" data-act="add-question">＋ 質問を追加</button></div>';
       } else {
         const note=notes[ui.noteIndex]||'';
-        content='<div class="panel detail grow swipe-zone"><div class="notes-title"><span class="kicker">'+(ui.noteKind==='good'?'よかった点':'気になる点')+'</span><span class="meta">'+note.length+' / 220文字</span></div><textarea class="note-text" data-note="'+ui.noteKind+'" maxlength="220" placeholder="ここにメモを書きます。1ページ220文字まで。">'+esc(note)+'</textarea><div class="note-actions"><button class="btn compact" data-act="note-delete" '+(notes.length<2?'disabled':'')+'>削除</button>'+navPager(ui.noteIndex,notes.length,'note-nav')+'<button class="btn compact primary" data-act="note-add">＋</button></div></div>';
+        content='<div class="panel detail grow swipe-zone"><div class="notes-title"><span class="kicker">'+(ui.noteKind==='good'?'よかった点':'気になる点')+'</span><span class="meta">'+note.length+' / 220文字</span></div><textarea class="note-text" data-note="'+ui.noteKind+'" maxlength="220" placeholder="ここにメモを書きます。1ページ220文字まで。">'+esc(note)+'</textarea><div class="note-actions"><button class="btn compact" data-act="note-delete" '+(notes.length<2?'disabled':'')+'>削除</button>'+'<button class="btn compact" data-act="note-nav" data-value="-1" '+(ui.noteIndex===0?'disabled':'')+'>‹</button><span class="meta">'+(ui.noteIndex+1)+' / '+notes.length+'</span><button class="btn compact" data-act="note-nav" data-value="1" '+(ui.noteIndex===notes.length-1?'disabled':'')+'>›</button><button class="btn compact primary" data-act="note-add">＋</button></div></div>';
       }
     }else{
       let n=p.photos.length;ui.photoIndex=Math.min(ui.photoIndex,Math.max(0,n-1));
@@ -100,7 +100,7 @@
     if(stepN===1)fields=field('物件価格（万円）','price','number','min="0" step="1" inputmode="numeric"')+select('種別','kind',kinds)+field('築年数（年）','age','number','min="0" step="1" inputmode="numeric"');
     if(stepN===2)fields=field('広さ（㎡）','area','number','min="0" step="0.1" inputmode="decimal"')+field('間取り','layout','text','placeholder="例: 3LDK" maxlength="50"')+field('最寄駅まで徒歩（分）','station','number','min="0" step="1" inputmode="numeric"');
     if(stepN===3)fields=select('検討ステータス','status',statuses)+'<div class="field"><label for="form-tags">タグ（カンマ区切り）</label><input id="form-tags" data-model="tags" value="'+esc(p.tags.join(', '))+'" placeholder="例: 駅近, 南向き" maxlength="160"></div>';
-    return modalFrame((p._new?'物件を追加':'物件を編集'),'<div class="panel detail grow form-view"><span class="kicker">STEP '+(stepN+1)+' / 4</span>'+fields+'</div><div class="form-foot"><button class="btn flex1" data-act="form-back">'+(stepN?'戻る':'キャンセル')+'</button><button class="btn primary flex1" data-act="form-next">'+(stepN===3?'保存する':'次へ')+'</button></div><p class="step-label">入力内容は端末内に保存されます</p>');
+    return modalFrame((p._new?'物件を追加':'物件を編集'),'<div class="panel detail grow form-view"><span class="kicker">STEP '+(stepN+1)+' / 4</span>'+fields+'</div><div class="form-foot"><button class="btn flex1" data-act="form-back">'+(stepN?'戻る':'キャンセル')+'</button><button class="btn primary flex1" data-act="form-next">'+(stepN===3?'保存する':'次へ')+'</button></div><p class="step-label">入力内容は端末内に保存されます</p>'+(stepN===3&&!p._new?'<button class="btn danger wide" data-act="property-delete">この物件を削除する</button>':''));
   }
   function modalFrame(title,content){return '<div class="full"><header class="full-header"><button class="btn compact" data-act="overlay-close">×</button><strong>'+esc(title)+'</strong><span style="width:44px"></span></header><section class="full-body">'+content+'</section></div>';}
   function listScreen(){
@@ -246,6 +246,7 @@
         ui.propertyId=target.id;ui.overlay='';ui.tab='property';ui.draft=null;state.filter={query:'',tag:'',sort:'new'};save();message('物件を保存しました');
       });
     }
+    if(action==='property-delete'){if(!confirm('この物件と関連する写真・採点を削除しますか？'))return;return step(()=>{const id=ui.draft.id;const previous=propById(id);if(previous)previous.photos.forEach(removePhoto);state.properties=state.properties.filter(x=>x.id!==id);state.selected=state.selected.filter(x=>x!==id);delete state.scores[id];ui.propertyId=null;ui.overlay='';ui.draft=null;save();message('物件を削除しました');});}
     if(action==='filter-apply')return step(()=>{ui.overlay='';ui.propertyId=null;ui.listPage=0;save();});
     if(action==='filter-clear')return step(()=>{state.filter={query:'',tag:'',sort:'new'};ui.overlay='';ui.propertyId=null;save();});
     if(action==='seed'){if(!confirm('操作を試すための架空の物件を3件追加しますか？'))return;return step(()=>{
@@ -289,7 +290,21 @@
     if(el.dataset.filter){state.filter[el.dataset.filter]=el.value;}
     if(el.dataset.criterionModel && ui.draft){let k=el.dataset.criterionModel;ui.draft[k]=k==='weight'?Number(el.value):el.value;}
     if(el.dataset.auto && ui.draft){ui.draft.auto ||= {field:'',dir:'low',good:'',mid:''};ui.draft.auto[el.dataset.auto]=el.value;}
-    if(el.dataset.note && p){p.notes[el.dataset.note][ui.noteIndex]=el.value;let span=app.querySelector('.notes-title .meta');if(span)span.textContent=el.value.length+' / 220文字';save();}
+    if(el.dataset.note && p){
+      const type=el.dataset.note;
+      if(el.scrollHeight>el.clientHeight+2 && el.value.length>1){
+        const caret=el.selectionStart||el.value.length;
+        const split=Math.max(1,Math.min(el.value.length-1,caret-1));
+        const carry=el.value.slice(split);
+        p.notes[type][ui.noteIndex]=el.value.slice(0,split);
+        const next=ui.noteIndex+1;
+        if(!p.notes[type][next])p.notes[type].splice(next,0,'');
+        p.notes[type][next]=(carry+p.notes[type][next]).slice(0,220);
+        ui.noteIndex=next;save();render();
+        const upcoming=app.querySelector('[data-note]');if(upcoming){upcoming.focus();upcoming.setSelectionRange(carry.length,carry.length);}return;
+      }
+      p.notes[type][ui.noteIndex]=el.value;let span=app.querySelector('.notes-title .meta');if(span)span.textContent=el.value.length+' / 220文字';save();
+    }
   });
   app.addEventListener('change',async e=>{
     const el=e.target;

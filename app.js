@@ -438,8 +438,7 @@
       [/シュミレート/g,'シミュレート'],
       [/アフターサビス/g,'アフターサービス'],
       [/シロアリ対策\s*について/g,'シロアリ対策について'],
-      [/メーカ（?!ー）/g,'メーカー'],
-      [/瑕疵担保責任/g,'契約不適合責任（旧・瑕疵担保責任）']
+      [/メーカ(?=[^ー]|$)/g,'メーカー']
     ];
     // Keep financial numbers, quotes, technical terms and negations intact.
     for(const [a,b] of spelling)text=text.replace(a,b);
@@ -565,25 +564,68 @@
   function handler(action,button){
     let v=button.dataset.value, p=curProp();
     if(action==='tab')return chooseTab(v);
-    if(action==='study-open')return openOverlay('study',()=>{ui.studyMode='notes';ui.studyPage=0;ui.studySummaryPage=0;});
-    if(action==='study-toggle')return step(()=>{ui.studyMode=v;ui.studyPage=0;ui.studySummaryPage=0;});
+    if(action==='study-open')return openOverlay('study',()=>{ui.studyMode='notes';ui.studyPage=0;});
     if(action==='study-page')return step(()=>changePage('studyPage',Math.max(1,Math.ceil(state.studyNotes.length/3)),Number(v)));
-    if(action==='study-summary-page')return step(()=>changePage('studySummaryPage',Math.max(1,Math.ceil(studySummaryItems().length/4)),Number(v)));
-    if(action==='study-add')return openOverlay('study-form',()=>{ui.studyEditId=null;ui.studyDraft={title:'',text:''};});
-    if(action==='study-edit')return openOverlay('study-form',()=>{const note=state.studyNotes.find(n=>n.id===v);if(!note)return;ui.studyEditId=v;ui.studyDraft={title:note.title,text:note.text};});
+    if(action==='study-digest-page')return step(()=>changePage('studyDigestPage',Math.max(1,Math.ceil(studySummaryItems().length/5)),Number(v)));
+    if(action==='study-digest-back')return step(()=>{ui.overlay='study';});
+    if(action==='study-add')return openOverlay('study-form',()=>{ui.studyEditId=null;ui.studyDraft={title:'',text:'',originalText:'',beforeFix:null};});
+    if(action==='study-edit')return openOverlay('study-form',()=>{
+      const note=state.studyNotes.find(n=>n.id===v);if(!note)return;
+      ui.studyEditId=v;ui.studyDraft={title:note.title,text:note.text,originalText:note.originalText||note.text,beforeFix:null};
+    });
+    if(action==='study-quick-fix')return openOverlay('study-form',()=>{
+      const note=state.studyNotes.find(n=>n.id===v);if(!note)return;
+      const original=note.originalText||note.text;
+      ui.studyEditId=v;ui.studyDraft={
+        title:note.title,text:organizeStudyText(original),originalText:original,beforeFix:note.text
+      };
+    });
+    if(action==='study-fix'){
+      const draft=ui.studyDraft;if(!draft?.text?.trim())return message('まずメモを入力してください');
+      const cleaned=organizeStudyText(draft.text);
+      if(!cleaned)return message('整理できる文章がありません');
+      return step(()=>{
+        if(draft.beforeFix===null || draft.beforeFix===undefined)draft.beforeFix=draft.text;
+        if(!draft.originalText)draft.originalText=draft.text;
+        draft.text=cleaned;
+        message('✦ 文章を整理しました。内容を確認して保存してください');
+      });
+    }
+    if(action==='study-undo')return step(()=>{
+      const draft=ui.studyDraft;
+      if(draft&&typeof draft.beforeFix==='string'){draft.text=draft.beforeFix;draft.beforeFix=null;}
+    });
     if(action==='study-back')return step(()=>{ui.overlay='study';ui.studyDraft=null;ui.studyEditId=null;});
     if(action==='study-save'){
-      const n=ui.studyDraft;if(!n?.text?.trim())return message('学んだ内容を書いてください');
-      return step(()=>{const title=n.title.trim()||'家の学び';if(ui.studyEditId){
-        const old=state.studyNotes.find(x=>x.id===ui.studyEditId);if(old){old.title=title;old.text=n.text.trim();}
-      }else state.studyNotes.unshift({id:uid(),title,text:n.text.trim(),created:Date.now()});
-      ui.studyPage=0;ui.studyDraft=null;ui.studyEditId=null;ui.overlay='study';save();message('学びメモを保存しました');});
+      const draft=ui.studyDraft;if(!draft?.text?.trim())return message('学んだ内容を書いてください');
+      return step(()=>{
+        const title=draft.title.trim()||'家の学び';
+        const original=String(draft.originalText||draft.beforeFix||draft.text).slice(0,2500);
+        if(ui.studyEditId){
+          const previous=state.studyNotes.find(x=>x.id===ui.studyEditId);
+          if(previous){previous.title=title;previous.text=draft.text.trim().slice(0,7000);previous.originalText=original;}
+        }else state.studyNotes.unshift({id:uid(),title,text:draft.text.trim().slice(0,7000),originalText:original,created:Date.now()});
+        ui.studyPage=0;ui.studyDraft=null;ui.studyEditId=null;ui.overlay='study';save();message('✓ 学びメモを保存しました');
+      });
     }
     if(action==='study-delete'){
       if(!confirm('この学びメモを削除しますか？'))return;
       return step(()=>{state.studyNotes=state.studyNotes.filter(n=>n.id!==v);ui.studyPage=0;save();});
     }
-    if(action==='study-summarize')return step(()=>{if(!state.studyNotes.length)return message('先にメモを登録してください');ui.studyMode='summary';ui.studySummaryPage=0;});
+    if(action==='study-summarize')return step(()=>{
+      if(!state.studyNotes.length)return message('先にメモを登録してください');
+      ui.studyDigestPage=0;ui.overlay='study-digest';
+    });
+    if(action==='study-digest-copy'){
+      const textToCopy=studyGroups.map(([key,label])=>{
+        const matches=studySummaryItems().filter(x=>x.category===key);
+        return matches.length?'【'+label+'】\n'+matches.map(x=>'・'+x.text+' ('+x.source+')').join('\n'):'';
+      }).filter(Boolean).join('\n\n');
+      if(navigator.clipboard?.writeText){
+        navigator.clipboard.writeText(textToCopy).then(()=>message('✓ 学びをコピーしました')).catch(()=>message('コピーできませんでした。端末の設定を確認してください'));
+      }else message('この環境ではコピーできません');
+      return;
+    }
     if(action==='sim-next')return step(()=>{ui.simStep=Math.min(5,ui.simStep+1);ui.simResultPage=0;save();});
     if(action==='sim-back')return step(()=>{ui.simStep=Math.max(0,ui.simStep-1);});
     if(action==='sim-restart')return step(()=>{ui.simStep=0;ui.simResultPage=0;});

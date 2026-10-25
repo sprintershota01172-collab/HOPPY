@@ -24,7 +24,14 @@
     cashSavings:300,support:0,livingMonthly:20,rentMonthly:8.2,carMonthly:1.18,
     propertyPrice:4400,propertyId:'',purchaseYear:2028,downPayment:0,interest:1.5,loanYears:35,
     housingOngoing:2.5,weddingYear:2027,weddingCost:350,honeymoonCost:98,
-    nisaMonthly:3,highSchool:'public',university:'public',simulateUntil:2045,hasRun:0
+    nisaMonthly:3,highSchool:'public',university:'public',simulateUntil:2045,hasRun:0,
+    utilitiesMonthly:0,telecomMonthly:0,transportMonthly:0,subscriptionsMonthly:0,leisureMonthly:0,
+    lifeInsuranceMonthly:0,medicalInsuranceMonthly:0,carInsuranceMonthly:0,medicalMonthly:0,
+    carMaintenanceMonthly:0,otherLoanMonthly:0,otherLoanEndYear:0,childInsuranceMonthly:0,
+    childLivingMonthly:0,daycareMonthly:0,childBenefitMonthly:0,
+    annualTax:0,carTaxAnnual:0,travelAnnual:0,annualEvents:0,homeInsuranceAnnual:0,
+    otherSavingsMonthly:0,otherInvestMonthly:0,nisaBalance:0,investBalance:0,returnAnnual:0,
+    cashBufferMonthly:3,expenses:[]
   });
   const defaults = () => ({version:2,properties:[],criteria:initialCriteria,scores:{},selected:[],filter:{query:'',tag:'',sort:'new',status:''},plan:defaultPlan(),studyNotes:[]});
   let state;
@@ -44,6 +51,10 @@
       for(const k of Object.keys(out.plan)) {
         if(k in s.plan && (typeof s.plan[k]==='string'||typeof s.plan[k]==='number'))out.plan[k]=s.plan[k];
       }
+      out.plan.expenses=Array.isArray(s.plan.expenses)?s.plan.expenses.slice(0,35).filter(x=>x&&typeof x.id==='string').map(x=>({
+        id:String(x.id).slice(0,80),name:String(x.name||'追加支出').slice(0,50),amount:Math.min(10000,Math.max(0,Number(x.amount)||0)),
+        cycle:x.cycle==='year'?'year':'month',start:Math.max(0,Math.floor(Number(x.start)||0)),end:Math.max(0,Math.floor(Number(x.end)||0))
+      })):[];
     }
     out.studyNotes = Array.isArray(s.studyNotes)?s.studyNotes.filter(n=>n&&typeof n.id==='string').slice(0,300).map(n=>({
       id:n.id,title:String(n.title||'家の学び').slice(0,65),text:String(n.text||'').slice(0,7000),originalText:String(n.originalText||n.text||'').slice(0,2500),
@@ -302,130 +313,191 @@
   };
   const nField=(label,key,unit,placeholder)=>'<label class="sim-field"><span>'+esc(label)+'</span><span class="sim-input-wrap"><input type="number" data-sim="'+key+'" value="'+esc(state.plan[key])+'" min="0" step="any" inputmode="decimal" placeholder="'+esc(placeholder||'')+'"><em>'+esc(unit)+'</em></span></label>';
   const sSelect=(label,key,opts)=>'<label class="sim-field"><span>'+esc(label)+'</span><select data-sim="'+key+'">'+opts.map(([value,title])=>'<option value="'+esc(value)+'" '+(String(state.plan[key])===String(value)?'selected':'')+'>'+esc(title)+'</option>').join('')+'</select></label>';
+
   const simQuestions=[
-    ['ご家族のこれから','お子さまの予定と働き方を教えてください。'],
-    ['世帯の手取り収入','月収と年間ボーナスを入力してください。'],
-    ['貯金と暮らしの支出','住宅以外の生活費を目安で入力してください。'],
-    ['購入したい住まい','物件を選ぶか、希望価格を入力してください。'],
-    ['これからの大きな支出','結婚式や積立予定を入力してください。']
+    ['家族のこれから','年齢と、お子さまの予定を入力'],
+    ['収入・働き方','夫婦の手取りと賞与、時短後の収入'],
+    ['毎月の家計','生活費・保険・通信・車などの支出'],
+    ['子育てと教育','子どもの保険・保育料・生活費'],
+    ['住まいとローン','購入価格、頭金、金利、維持費'],
+    ['NISAと貯金','現在の資産と毎月の積立を分けて管理'],
+    ['年払いと特別支出','税金・旅行・結婚式・追加費用']
   ];
+  function fpSection(label,subtitle){return '<div class="fp-form-heading"><strong>'+esc(label)+'</strong>'+(subtitle?'<span>'+esc(subtitle)+'</span>':'')+'</div>';}
+  function fpExtraEditor(){
+    const expenses=state.plan.expenses||[];
+    return '<div class="fp-extra-section"><div class="fp-extra-head"><strong>＋ 自由に追加する支出</strong><button class="btn compact" data-act="fp-expense-add" '+(expenses.length>=35?'disabled':'')+'>＋ 項目追加</button></div>'+
+      '<p class="fp-field-hint">習い事・学資保険・奨学金返済・介護・仕送りなど。毎月または年額で設定できます。</p>'+
+      expenses.map(x=>'<div class="fp-extra-row"><div class="fp-extra-top"><input aria-label="費目" data-fp-id="'+esc(x.id)+'" data-fp-key="name" maxlength="50" value="'+esc(x.name)+'" placeholder="例：習い事・学資保険"><button class="fp-extra-remove" data-act="fp-expense-delete" data-value="'+esc(x.id)+'" aria-label="この支出を削除">削除</button></div><div class="fp-extra-values">'+
+      '<label>金額<input aria-label="金額 万円" data-fp-id="'+esc(x.id)+'" data-fp-key="amount" type="number" min="0" max="10000" step=".1" inputmode="decimal" value="'+esc(x.amount)+'"></label>'+
+      '<label>周期<select aria-label="周期" data-fp-id="'+esc(x.id)+'" data-fp-key="cycle"><option value="month" '+(x.cycle==='month'?'selected':'')+'>万円/月</option><option value="year" '+(x.cycle==='year'?'selected':'')+'>万円/年</option></select></label>'+
+      '<label>開始年<input aria-label="開始年" data-fp-id="'+esc(x.id)+'" data-fp-key="start" type="number" min="0" max="2100" inputmode="numeric" value="'+(x.start||'')+'" placeholder="指定なし"></label>'+
+      '<label>終了年<input aria-label="終了年" data-fp-id="'+esc(x.id)+'" data-fp-key="end" type="number" min="0" max="2100" inputmode="numeric" value="'+(x.end||'')+'" placeholder="指定なし"></label></div></div>').join('')+
+      '</div>';
+  }
   function simulationScreen(){
     const i=ui.simStep;
-    if(i>=5)return simulationResultsScreen();
-    const p=state.plan;
-    let body='';
-    if(i===0)body='<div class="sim-grid">'+nField('夫の年齢','husbandAge','歳')+nField('妻の年齢','wifeAge','歳')+
+    if(i>=7)return simulationResultsScreen();
+    const p=state.plan;let body='';
+    if(i===0)body=fpSection('家族構成','人数と時短予定')+'<div class="sim-grid">'+
+      nField('夫の年齢','husbandAge','歳')+nField('妻の年齢','wifeAge','歳')+
       sSelect('子どもの人数','children',[[0,'予定なし'],[1,'1人'],[2,'2人'],[3,'3人']])+
       nField('第1子の予定年','firstChildYear','年')+nField('きょうだいの年齢差','birthInterval','年')+
-      nField('妻の時短中の月収','wifeReduced','万円')+'</div>';
-    if(i===1)body='<div class="sim-grid">'+nField('夫の手取り月収','husbandMonthly','万円')+nField('妻の手取り月収','wifeMonthly','万円')+
-      nField('夫の年間賞与','husbandBonus','万円')+nField('妻の年間賞与','wifeBonus','万円')+'</div>';
-    if(i===2)body='<div class="sim-grid">'+nField('今ある貯金','cashSavings','万円')+nField('今後受け取る援助','support','万円')+
-      nField('生活費（家賃を除く）','livingMonthly','万円/月')+nField('現在の家賃','rentMonthly','万円/月')+
-      nField('車ローン','carMonthly','万円/月')+'</div><p class="sim-hint">すでに貯金へ含めた親の援助は、二重計上しないよう「0」にしてください。</p>';
-    if(i===3){
+      nField('妻の時短中の月手取り','wifeReduced','万円')+'</div>';
+    if(i===1)body=fpSection('実際の手取り','額面年収ではなく手取りで入力')+'<div class="sim-grid">'+
+      nField('夫・月手取り','husbandMonthly','万円')+nField('妻・月手取り','wifeMonthly','万円')+
+      nField('夫・年間賞与','husbandBonus','万円')+nField('妻・年間賞与','wifeBonus','万円')+
+      nField('子ども関連の給付金','childBenefitMonthly','万円/人月')+'</div>'+
+      '<p class="fp-field-hint">給付金はお子さま1人あたりの任意入力です。年齢・所得等による受給条件は判定しません。未確定なら0にしてください。</p>';
+    if(i===2)body=fpSection('家計の基本支出','すべて月額・万円')+
+      '<p class="fp-field-hint">「その他の生活費」は下の項目と重ならない金額を入力してください。二重計上にご注意ください。</p>'+
+      '<div class="sim-grid">'+nField('その他の生活費','livingMonthly','万円')+
+      nField('電気・ガス・水道','utilitiesMonthly','万円')+
+      nField('通信・スマホ','telecomMonthly','万円')+
+      nField('交通・ガソリン','transportMonthly','万円')+
+      nField('サブスク','subscriptionsMonthly','万円')+
+      nField('外食・レジャー','leisureMonthly','万円')+
+      nField('夫婦の生命保険','lifeInsuranceMonthly','万円')+
+      nField('医療・がん保険','medicalInsuranceMonthly','万円')+
+      nField('自動車保険','carInsuranceMonthly','万円')+
+      nField('通院・薬代','medicalMonthly','万円')+
+      nField('車維持・車検積立','carMaintenanceMonthly','万円')+
+      nField('自動車ローン','carMonthly','万円')+
+      nField('その他のローン','otherLoanMonthly','万円')+
+      nField('ローン終了年（0=継続）','otherLoanEndYear','年')+
+      nField('現在の家賃','rentMonthly','万円')+'</div>';
+    if(i===3)body=fpSection('子どもの支出','指定した人数の子どもが対象')+
+      '<div class="sim-grid">'+nField('子どもの保険（1人）','childInsuranceMonthly','万円/月')+
+      nField('生活・衣服・習い事（1人）','childLivingMonthly','万円/月')+
+      nField('保育料・幼稚園（1人）','daycareMonthly','万円/月')+
+      sSelect('高校','highSchool',[['public','公立'],['private','私立']])+
+      sSelect('大学','university',[['public','国公立'],['private','私立']])+'</div>'+
+      '<p class="fp-field-hint">保育料は0〜5歳、生活費は0〜17歳、子どもの保険は0〜22歳で試算。学校の標準教育費は6歳以降に別途加算します。習い事を個別費用に入力する場合は生活費に含めないでください。</p>';
+    if(i===4){
       const options=[['','価格を直接入力'],...state.properties.filter(x=>num(x.price)!==null).map(x=>[x.id,truncate(x.name,17)+' / '+fmt(x.price)])];
-      body='<div class="sim-grid">'+sSelect('購入する物件','propertyId',options)+nField('購入価格','propertyPrice','万円')+
+      body=fpSection('住まいの予算','住宅ローンの返済と維持費')+
+        '<div class="sim-grid">'+sSelect('登録物件を選ぶ','propertyId',options)+
+        nField('購入予定価格','propertyPrice','万円')+
         nField('購入予定年','purchaseYear','年')+nField('頭金','downPayment','万円')+
-        nField('金利（仮定）','interest','%')+nField('ローン返済期間','loanYears','年')+
-        nField('税・修繕等','housingOngoing','万円/月')+'</div><p class="sim-hint">購入諸費用は物件価格の7％を仮定。金利は将来変わる可能性があります。</p>';
+        nField('金利（仮定）','interest','％')+nField('返済期間','loanYears','年')+
+        nField('固定資産税・修繕積立等','housingOngoing','万円/月')+
+        nField('住宅火災保険','homeInsuranceAnnual','万円/年')+'</div>'+
+        '<p class="fp-field-hint">購入諸費用は価格の7％を仮置き。固定資産税・修繕等と火災保険の二重入力にご注意ください。</p>';
     }
-    if(i===4)body='<div class="sim-grid">'+nField('結婚式の支払年','weddingYear','年')+nField('結婚式自己負担','weddingCost','万円')+
-      nField('新婚旅行費','honeymoonCost','万円')+nField('NISA積立','nisaMonthly','万円/月')+
-      sSelect('高校','highSchool',[['public','公立'],['private','私立']])+sSelect('大学','university',[['public','国公立'],['private','私立']])+'</div>';
-    return '<section class="screen sim-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR</span>'+(p.hasRun?'<button class="fp-recall-btn" data-act="fp-view-budget">前回の診断を見る ↗</button>':'<span class="sim-progress-text">'+(i+1)+' / 5</span>')+'</div>'+
-      '<div class="sim-progress">'+Array.from({length:5},(_,n)=>'<span class="'+(n<=i?'filled':'')+'"></span>').join('')+'</div>'+
+    if(i===5)body=fpSection('現在の資産・積立','NISA積立は支出として扱わず、現金から投資資産へ振り替え')+
+      '<div class="sim-grid">'+nField('現在の普通預金など','cashSavings','万円')+
+      nField('今後受け取る援助','support','万円')+
+      nField('現在のNISA評価額','nisaBalance','万円')+
+      nField('その他投資の現在残高','investBalance','万円')+
+      nField('毎月NISAへ積立','nisaMonthly','万円')+
+      nField('その他投資への積立','otherInvestMonthly','万円')+
+      nField('毎月の現金貯金目標','otherSavingsMonthly','万円')+
+      nField('運用利回り（仮定）','returnAnnual','％/年')+
+      nField('毎月確保したい余裕費','cashBufferMonthly','万円')+'</div>'+
+      '<p class="fp-field-hint">現金貯金は収入−支出−投資積立から自動計算。貯金目標は二重に引きません。利回り0％が基本で、将来の運用益は保証されません。</p>';
+    if(i===6)body=fpSection('年払い・大きな支出','額はすべて万円')+
+      '<div class="sim-grid">'+nField('自動車税・年払い費用','carTaxAnnual','万円/年')+
+      nField('旅行・帰省','travelAnnual','万円/年')+
+      nField('その他税金','annualTax','万円/年')+
+      nField('冠婚葬祭・家電など','annualEvents','万円/年')+
+      nField('結婚式支払年','weddingYear','年')+
+      nField('結婚式自己負担','weddingCost','万円')+
+      nField('新婚旅行費','honeymoonCost','万円')+
+      nField('試算終了年','simulateUntil','年')+'</div>'+
+      fpExtraEditor();
+    return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR</span>'+
+      (p.hasRun?'<button class="fp-recall-btn" data-act="fp-view-budget">前回の診断を見る ↗</button>':'<span class="sim-progress-text">'+(i+1)+' / 7</span>')+
+      '</div><div class="sim-progress">'+Array.from({length:7},(_,n)=>'<span class="'+(n<=i?'filled':'')+'"></span>').join('')+'</div>'+
       '<div class="sim-question"><h2>'+simQuestions[i][0]+'</h2><p>'+simQuestions[i][1]+'</p></div>'+
-      '<div class="panel sim-form grow">'+body+'</div>'+
-      '<div class="sim-footer"><button class="btn" data-act="sim-back" '+(i===0?'disabled':'')+'>戻る</button><button class="btn primary" data-act="sim-next">'+(i===4?'自動シミュレート':'次の質問へ →')+'</button></div></section>';
+      '<div class="panel sim-form grow fp-wizard-body">'+body+'</div>'+
+      '<div class="sim-footer"><button class="btn" data-act="sim-back" '+(i===0?'disabled':'')+'>戻る</button><button class="btn primary" data-act="sim-next">'+(i===6?'診断する':'次へ →')+'</button></div></section>';
   }
   function educationAnnual(age,p){
-    if(age<0||age>22)return 0;
-    if(age<3)return 45;
-    if(age<6)return 28;
+    if(age<6 || age>=22)return 0; // preschool is modeled separately as daycare
     if(age<12)return 34;
     if(age<15)return 55;
     if(age<18)return p.highSchool==='private'?135:60;
-    if(age<22)return p.university==='private'?185:125;
-    return 0;
+    return p.university==='private'?185:125;
+  }
+  const fpDetailCategories=[
+    ['livingMonthly','その他の生活費'],['utilitiesMonthly','光熱・水道'],['telecomMonthly','通信'],['transportMonthly','交通'],
+    ['subscriptionsMonthly','サブスク'],['leisureMonthly','レジャー'],['lifeInsuranceMonthly','生命保険'],
+    ['medicalInsuranceMonthly','医療保険'],['carInsuranceMonthly','自動車保険'],
+    ['medicalMonthly','医療費'],['carMaintenanceMonthly','車維持費'],['carMonthly','車ローン']
+  ];
+  function fpChildCounts(year){
+    const p=state.plan,kids=Math.min(3,Math.round(safeNum(p.children)));
+    let preschool=0,living=0,insured=0;
+    for(let k=0;k<kids;k++){
+      const age=year-(safeNum(p.firstChildYear)+k*Math.max(1,safeNum(p.birthInterval,3)));
+      if(age>=0&&age<6)preschool++;
+      if(age>=0&&age<18)living++;
+      if(age>=0&&age<23)insured++;
+    }
+    return {preschool,living,insured};
+  }
+  function fpCustomAnnual(year){
+    return (state.plan.expenses||[]).reduce((sum,x)=>{
+      if(x.start&&year<x.start)return sum;
+      if(x.end&&year>x.end)return sum;
+      return sum+safeNum(x.amount)*(x.cycle==='year'?1:12);
+    },0);
+  }
+  function fpBaseMonthly(year){
+    const p=state.plan,parts=fpDetailCategories.map(([key,label])=>({key,label,value:safeNum(p[key])}));
+    if(!safeNum(p.otherLoanEndYear)||year<=safeNum(p.otherLoanEndYear)){
+      parts.push({key:'otherLoanMonthly',label:'その他のローン',value:safeNum(p.otherLoanMonthly)});
+    }
+    const count=fpChildCounts(year);
+    parts.push({key:'childInsuranceMonthly',label:'子どもの保険',value:count.insured*safeNum(p.childInsuranceMonthly)});
+    parts.push({key:'childLivingMonthly',label:'子どもの生活費',value:count.living*safeNum(p.childLivingMonthly)});
+    parts.push({key:'daycareMonthly',label:'保育料・幼稚園',value:count.preschool*safeNum(p.daycareMonthly)});
+    return parts;
   }
   function modelYears(price,buy){
     const p=state.plan,start=simNowYear(),end=Math.max(start+9,Math.min(start+30,safeNum(p.simulateUntil,start+19))),
-      birthYear=safeNum(p.firstChildYear,2028),birthGap=Math.max(1,safeNum(p.birthInterval,3));
-    const purchaseYear=safeNum(p.purchaseYear,start+2),weddingYear=safeNum(p.weddingYear,start+1);
-    const monthly=mortgageMonthly(price,p.downPayment,p.interest,p.loanYears);
-    let cash=safeNum(p.cashSavings)+safeNum(p.support),invested=0;
+      purchaseYear=safeNum(p.purchaseYear,start+2),weddingYear=safeNum(p.weddingYear,start+1),
+      payment=mortgageMonthly(price,p.downPayment,p.interest,p.loanYears);
+    let cash=safeNum(p.cashSavings)+safeNum(p.support);
+    let nisa=safeNum(p.nisaBalance),otherInvest=safeNum(p.investBalance);
+    let investedContributions=0;
     const points=[],kids=Math.min(3,Math.round(safeNum(p.children)));
+    const annualGrowth=1+Math.min(.2,Math.max(-.2,Number(p.returnAnnual)||0)/100);
     for(let year=start;year<=end;year++){
-      const mother=kids&&year>=birthYear?(year===birthYear?Math.min(safeNum(p.wifeMonthly),10):safeNum(p.wifeReduced)):safeNum(p.wifeMonthly);
-      const wifeBonus=kids&&year>=birthYear?0:safeNum(p.wifeBonus);
-      const incomes=12*(safeNum(p.husbandMonthly)+mother)+safeNum(p.husbandBonus)+wifeBonus;
-      let out=12*(safeNum(p.livingMonthly)+safeNum(p.carMonthly));
-      const isOwner=buy&&year>=purchaseYear;
-      out+=12*(isOwner?(monthly+safeNum(p.housingOngoing)):safeNum(p.rentMonthly));
-      if(buy&&year===purchaseYear)out+=safeNum(p.downPayment)+safeNum(price)*0.07;
-      if(year===weddingYear)out+=safeNum(p.weddingCost)+safeNum(p.honeymoonCost);
+      const mother=kids&&year>=safeNum(p.firstChildYear)?(year===safeNum(p.firstChildYear)
+        ?Math.min(safeNum(p.wifeMonthly),10):safeNum(p.wifeReduced)):safeNum(p.wifeMonthly);
+      const wifeBonus=kids&&year>=safeNum(p.firstChildYear)?0:safeNum(p.wifeBonus);
+      const children=fpChildCounts(year);
+      const income=12*(safeNum(p.husbandMonthly)+mother)+safeNum(p.husbandBonus)+wifeBonus+
+        12*children.living*safeNum(p.childBenefitMonthly);
+      const monthlyParts=fpBaseMonthly(year);
+      const housing=buy&&year>=purchaseYear?payment+safeNum(p.housingOngoing):safeNum(p.rentMonthly);
+      const monthly=monthlyParts.reduce((sum,x)=>sum+x.value,0)+housing;
+      const annualFixed=safeNum(p.annualTax)+safeNum(p.carTaxAnnual)+safeNum(p.travelAnnual)+
+        safeNum(p.annualEvents)+(buy&&year>=purchaseYear?safeNum(p.homeInsuranceAnnual):0)+fpCustomAnnual(year);
+      let school=0,birth=0;
       for(let child=0;child<kids;child++){
-        let age=year-(birthYear+child*birthGap);
-        if(age===0)out+=50;
-        out+=educationAnnual(age,p);
+        const age=year-(safeNum(p.firstChildYear)+child*Math.max(1,safeNum(p.birthInterval,3)));
+        if(age===0)birth+=50;
+        school+=educationAnnual(age,p);
       }
-      const contribution=12*safeNum(p.nisaMonthly);
-      cash+=incomes-out-contribution;
-      invested+=contribution;
-      points.push({year,cash,invested,total:cash+invested});
+      const upfront=buy&&year===purchaseYear?safeNum(p.downPayment)+safeNum(price)*.07:0;
+      const events=year===weddingYear?safeNum(p.weddingCost)+safeNum(p.honeymoonCost):0;
+      const expenses=monthly*12+annualFixed+school+birth+upfront+events;
+      const nisaAdd=12*safeNum(p.nisaMonthly),otherAdd=12*safeNum(p.otherInvestMonthly);
+      const investing=nisaAdd+otherAdd;
+      cash+=income-expenses-investing;
+      nisa=Math.max(0,(nisa+nisaAdd)*annualGrowth);
+      otherInvest=Math.max(0,(otherInvest+otherAdd)*annualGrowth);
+      investedContributions+=investing;
+      const invested=nisa+otherInvest;
+      points.push({year,cash,invested,nisa,otherInvest,total:cash+invested,
+        incomes:income,expenses,investing,netCash:income-expenses-investing,
+        monthly,school,birth,annualFixed,upfront,events,housing,education:school,
+        monthlyParts,children,contributions:investedContributions});
     }
-    return {points,monthly,purchaseYear,ending:points.at(-1).cash,min:Math.min(...points.map(x=>x.cash))};
-  }
-
-  // Decision-support assumptions: housing <= 25% of the projected reduced
-  // household take-home pay; <=30% is a caution band, above 30% is over budget.
-  // Monetary inputs and outputs are 10,000 JPY, not bank lending limits.
-  function fpForecast(price,extraInterest=0){
-    const p=state.plan,cost=Math.max(0,safeNum(price));
-    const rate=Math.max(0,safeNum(p.interest)+extraInterest);
-    const payment=mortgageMonthly(cost,p.downPayment,rate,p.loanYears);
-    const income=safeNum(p.husbandMonthly)+(safeNum(p.children)>0
-      ?Math.min(safeNum(p.wifeMonthly),safeNum(p.wifeReduced)):safeNum(p.wifeMonthly));
-    const housing=payment+safeNum(p.housingOngoing);
-    const ratio=income>0?housing/income:Infinity;
-    const spendable=income-safeNum(p.livingMonthly)-safeNum(p.carMonthly)-safeNum(p.nisaMonthly)-housing;
-    const upfront=safeNum(p.downPayment)+cost*.07;
-    const remaining=safeNum(p.cashSavings)+safeNum(p.support)-upfront;
-    const reserve=6*(safeNum(p.livingMonthly)+safeNum(p.carMonthly)+housing);
-    return {price:cost,rate,payment,income,housing,ratio,spendable,upfront,remaining,reserve};
-  }
-  function fpBudget(){
-    const p=state.plan,monthlyIncome=fpForecast(0).income;
-    const loanPayment=Math.max(0,monthlyIncome*.25-safeNum(p.housingOngoing));
-    const term=Math.max(12,Math.round(safeNum(p.loanYears,35)*12));
-    const loanCap=rate=>{
-      const r=Math.max(0,rate)/1200;
-      return r===0?loanPayment*term:loanPayment*(1-Math.pow(1+r,-term))/r;
-    };
-    const amount=Math.max(0,Math.floor((loanCap(safeNum(p.interest))+safeNum(p.downPayment))/50)*50);
-    const stressAmount=Math.max(0,Math.floor((loanCap(safeNum(p.interest)+1)+safeNum(p.downPayment))/50)*50);
-    return {amount,stressAmount,monthlyIncome,housingLimit:monthlyIncome*.25,loanPayment};
-  }
-  function fpRating(price){
-    const info=fpForecast(price),budget=fpBudget(),stressed=fpForecast(price,1);
-    let level='good',label='予算内',reason='住居費が将来の手取り25％以内の目安です。';
-    if(!Number.isFinite(info.ratio)||info.ratio>.30||price>budget.amount*1.2){
-      level='bad';label='予算超過';reason='住居費が将来の手取り30％を超えるか、目安予算より大幅に高くなっています。';
-    }else if(info.ratio>.25||price>budget.amount){
-      level='warn';label='慎重に';reason='目安予算を上回っています。生活費や購入価格を再確認してください。';
-    }
-    if(info.remaining<0&&level==='good'){
-      level='warn';label='資金確認';reason='月々は目安内ですが、頭金・諸費用を支払うための現金が足りません。';
-    }
-    return {...info,budget,stressed,level,label,reason,monthlyDelta:stressed.payment-info.payment};
-  }
-  function fpBadgeClass(level){return level==='good'?'fp-good':level==='warn'?'fp-warn':'fp-bad';}
-  function fpRatingRow(p){
-    const price=num(p.price);
-    if(price===null)return '<div class="fp-home-row"><span class="fp-home-name">'+esc(p.name)+'</span><span class="fp-home-badge fp-neutral">価格未登録</span></div>';
-    const check=fpRating(price);
-    return '<button class="fp-home-row" data-act="fp-open-home" data-value="'+esc(p.id)+'"><span class="fp-home-name">'+esc(p.name)+'</span><span class="fp-home-price">'+yen(price)+'万</span><span class="fp-home-badge '+fpBadgeClass(check.level)+'">'+check.label+'</span><span class="fp-chevron">›</span></button>';
+    return {points,monthly:payment,purchaseYear,ending:points.at(-1).cash,
+      min:Math.min(...points.map(x=>x.cash)),nisa,otherInvest};
   }
   function simGraph(series){
     const all=series.flatMap(x=>x.data.points.map(p=>p.cash)),low=Math.min(0,...all),high=Math.max(100,...all);
@@ -811,14 +883,14 @@
       }else message('この環境ではコピーできません');
       return;
     }
-    if(action==='sim-next')return step(()=>{if(ui.simStep===4)state.plan.hasRun=1;ui.simStep=Math.min(5,ui.simStep+1);ui.simResultPage=0;save();});
+    if(action==='sim-next')return step(()=>{if(ui.simStep===6)state.plan.hasRun=1;ui.simStep=Math.min(7,ui.simStep+1);ui.simResultPage=0;save();});
     if(action==='sim-back')return step(()=>{ui.simStep=Math.max(0,ui.simStep-1);});
     if(action==='sim-restart')return step(()=>{ui.simStep=0;ui.simResultPage=0;});
     if(action==='sim-result-page')return step(()=>changePage('simResultPage',3,Number(v)));
     if(action==='fp-result-tab')return step(()=>{ui.simResultPage=Math.min(2,Math.max(0,Number(v)||0));});
     if(action==='fp-result-next')return step(()=>{ui.simResultPage=(ui.simResultPage+1)%3;});
     if(action==='sim-choice')return step(()=>{ui.simChoice=v;save();});
-    if(action==='fp-view-budget')return step(()=>{ui.tab='sim';ui.simStep=5;ui.simResultPage=0;ui.overlay='';});
+    if(action==='fp-view-budget')return step(()=>{ui.tab='sim';ui.simStep=7;ui.simResultPage=0;ui.overlay='';});
     if(action==='fp-open-home')return openOverlay('detail',()=>{ui.propertyId=v;ui.propertyPage=0;});
 
     if(action==='search')return openOverlay('search');

@@ -104,7 +104,7 @@
     return ps;
   }
   function selectedProperties(){return state.selected.map(propById).filter(Boolean).slice(0,3);}
-  function step(action){if(Date.now()<ui.lock)return;ui.lock=Date.now()+(ui.tab==='sim'&&ui.simStep>=7?60:(reduced.matches?100:450));action();render();}
+  function step(action){if(Date.now()<ui.lock)return;ui.lock=Date.now()+(ui.tab==='sim'?65:130);action();render();}
   function closeOverlay(){step(()=>{ui.overlay='';ui.draft=null;});}
   function openOverlay(kind, setup){step(()=>{ui.overlay=kind;if(setup)setup();});}
   function chooseTab(tab){step(()=>{ui.tab=tab;ui.overlay='';ui.fpBreakdownOpen=null;ui.draft=null;if(tab==='sim'&&state.plan.hasRun){ui.simStep=7;ui.simResultPage=1;ui.fpYear=simNowYear();ui.fpHistoryLive=true;ui.fpHistoryOpen=false;ui.fpHistoryId=state.planHistory[0]?.id||null;}});}
@@ -814,7 +814,7 @@
   function fpMortgageCapacityCard(){
     const b=fpBudget(),p=state.plan,reference=b.referenceYear;
     const rate=yen(b.rate,2),years=Math.round(b.loanYears),
-      homePrice=fpYen(b.amount),loan=fpYen(b.loanPrincipal);
+      homePrice=fpYen(b.amount),loan=fpYen(Math.max(0,b.amount-b.downPayment));
     const belowCost=b.housingBudget<b.maintenance;
     return '<section class="fp-capacity-card" aria-label="月々のローン返済目安と購入可能な物件価格">'+
       '<div class="fp-capacity-columns">'+
@@ -826,7 +826,7 @@
         fpYen(b.maintenance)+'/月 ＝ ローン返済 '+fpYen(b.loanPayment)+'/月</div>'+
       '<div class="fp-capacity-terms">'+reference+'年の家計を基準 ｜ 借入 '+loan+
       ' ＋ 頭金 '+fpYen(b.downPayment)+' ｜ 金利'+rate+'％・'+years+'年返済'+
-      ' ｜ 購入諸費用は別途（物件価格の7％を仮定）</div>'+
+      ' ｜ 価格は50万円単位で切下げ・諸費用は別途7％想定</div>'+
       (belowCost?'<p class="fp-capacity-warning">維持費が住居費の上限を超える試算です。返済予算を見直してください。</p>':'')+
       '<p class="fp-capacity-caution">家計から計算した参考上限です。融資承認額ではありません。</p></section>';
   }

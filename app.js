@@ -24,7 +24,7 @@
     cashSavings:300,support:0,livingMonthly:20,rentMonthly:8.2,carMonthly:1.18,
     propertyPrice:4400,propertyId:'',purchaseYear:2028,downPayment:0,interest:1.5,loanYears:35,
     housingOngoing:2.5,weddingYear:2027,weddingCost:350,honeymoonCost:98,
-    nisaMonthly:3,highSchool:'public',university:'public',simulateUntil:2045
+    nisaMonthly:3,highSchool:'public',university:'public',simulateUntil:2045,hasRun:0
   });
   const defaults = () => ({version:2,properties:[],criteria:initialCriteria,scores:{},selected:[],filter:{query:'',tag:'',sort:'new',status:''},plan:defaultPlan(),studyNotes:[]});
   let state;
@@ -110,7 +110,9 @@
     const eventType=latest?(latest.type==='内見'?'内見':'打合せ'):'';
     const thumb=p.photos?.length?'<img data-photo="'+esc(p.photos[0])+'" alt="" loading="lazy">':'<span class="property-img-fallback" aria-hidden="true">'+tabIcon('property')+'</span>';
     const name=esc(p.name||'名称未設定'),maker=esc(p.manufacturer||'メーカー未登録');
-    return '<button class="property-list-card" data-act="home-open" data-value="'+esc(p.id)+'" aria-label="'+name+'の詳細を開く"><span class="property-thumb">'+thumb+'</span><span class="property-card-body"><span class="property-first-row"><strong class="property-list-name" title="'+name+'">'+name+'</strong><span class="property-list-maker" title="'+maker+'">'+maker+'</span><span class="property-state '+tag+'">'+esc(p.status)+'</span></span><span class="property-second-row"><span class="prop-price">'+(num(p.price)!==null?digits.format(p.price)+'万':'価格未登録')+'</span><span class="prop-station">'+(num(p.station)!==null?'徒歩'+digits.format(p.station)+'分':'駅徒歩 −')+'</span><span class="prop-meeting">'+(latest?(future?eventType+' ':'済 ')+date:'予定なし')+'</span></span></span><span class="property-chevron" aria-hidden="true">›</span></button>';
+    const fpCheck=state.plan.hasRun&&num(p.price)!==null?fpRating(Number(p.price)):null;
+    const fpDot=fpCheck?'<i class="fp-card-dot '+fpBadgeClass(fpCheck.level)+'" title="FP判定：'+esc(fpCheck.label)+'"></i>':'';
+    return '<button class="property-list-card" data-act="home-open" data-value="'+esc(p.id)+'" aria-label="'+name+'の詳細を開く"><span class="property-thumb">'+thumb+'</span><span class="property-card-body"><span class="property-first-row"><strong class="property-list-name" title="'+name+'">'+name+'</strong><span class="property-list-maker" title="'+maker+'">'+maker+'</span><span class="property-state '+tag+'">'+esc(p.status)+'</span></span><span class="property-second-row"><span class="prop-price">'+fpDot+(num(p.price)!==null?digits.format(p.price)+'万':'価格未登録')+'</span><span class="prop-station">'+(num(p.station)!==null?'徒歩'+digits.format(p.station)+'分':'駅徒歩 −')+'</span><span class="prop-meeting">'+(latest?(future?eventType+' ':'済 ')+date:'予定なし')+'</span></span></span><span class="property-chevron" aria-hidden="true">›</span></button>';
   }
   function homeResults(){
     const ps=visibleProperties(),perPage=homePageSize(),total=Math.max(1,Math.ceil(ps.length/perPage));
@@ -374,6 +376,56 @@
       points.push({year,cash,invested,total:cash+invested});
     }
     return {points,monthly,purchaseYear,ending:points.at(-1).cash,min:Math.min(...points.map(x=>x.cash))};
+  }
+
+  // Decision-support assumptions: housing <= 25% of the projected reduced
+  // household take-home pay; <=30% is a caution band, above 30% is over budget.
+  // Monetary inputs and outputs are 10,000 JPY, not bank lending limits.
+  function fpForecast(price,extraInterest=0){
+    const p=state.plan,cost=Math.max(0,safeNum(price));
+    const rate=Math.max(0,safeNum(p.interest)+extraInterest);
+    const payment=mortgageMonthly(cost,p.downPayment,rate,p.loanYears);
+    const income=safeNum(p.husbandMonthly)+(safeNum(p.children)>0
+      ?Math.min(safeNum(p.wifeMonthly),safeNum(p.wifeReduced)):safeNum(p.wifeMonthly));
+    const housing=payment+safeNum(p.housingOngoing);
+    const ratio=income>0?housing/income:Infinity;
+    const spendable=income-safeNum(p.livingMonthly)-safeNum(p.carMonthly)-safeNum(p.nisaMonthly)-housing;
+    const upfront=safeNum(p.downPayment)+cost*.07;
+    const remaining=safeNum(p.cashSavings)+safeNum(p.support)-upfront;
+    const reserve=6*(safeNum(p.livingMonthly)+safeNum(p.carMonthly)+housing);
+    return {price:cost,rate,payment,income,housing,ratio,spendable,upfront,remaining,reserve};
+  }
+  function fpBudget(){
+    const p=state.plan,monthlyIncome=fpForecast(0).income;
+    const loanPayment=Math.max(0,monthlyIncome*.25-safeNum(p.housingOngoing));
+    const term=Math.max(12,Math.round(safeNum(p.loanYears,35)*12));
+    const loanCap=rate=>{
+      const r=Math.max(0,rate)/1200;
+      return r===0?loanPayment*term:loanPayment*(1-Math.pow(1+r,-term))/r;
+    };
+    const amount=Math.max(0,Math.floor((loanCap(safeNum(p.interest))+safeNum(p.downPayment))/50)*50);
+    const stressAmount=Math.max(0,Math.floor((loanCap(safeNum(p.interest)+1)+safeNum(p.downPayment))/50)*50);
+    return {amount,stressAmount,monthlyIncome,housingLimit:monthlyIncome*.25,loanPayment};
+  }
+  function fpRating(price){
+    const info=fpForecast(price),budget=fpBudget(),stressed=fpForecast(price,1);
+    let level='good',label='予算内',reason='住居費が将来の手取り25％以内の目安です。';
+    if(!Number.isFinite(info.ratio)||info.ratio>.30||price>budget.amount*1.2){
+      level='bad';label='予算超過';reason='住居費が将来の手取り30％を超えるか、目安予算より大幅に高くなっています。';
+    }else if(info.ratio>.25||price>budget.amount){
+      level='warn';label='慎重に';reason='目安予算を上回っています。生活費や購入価格を再確認してください。';
+    }
+    if(info.remaining<0&&level==='good'){
+      level='warn';label='資金確認';reason='月々は目安内ですが、頭金・諸費用を支払うための現金が足りません。';
+    }
+    return {...info,budget,stressed,level,label,reason,monthlyDelta:stressed.payment-info.payment};
+  }
+  function fpBadgeClass(level){return level==='good'?'fp-good':level==='warn'?'fp-warn':'fp-bad';}
+  function fpRatingRow(p){
+    const price=num(p.price);
+    if(price===null)return '<div class="fp-home-row"><span class="fp-home-name">'+esc(p.name)+'</span><span class="fp-home-badge fp-neutral">価格未登録</span></div>';
+    const check=fpRating(price);
+    return '<button class="fp-home-row" data-act="fp-open-home" data-value="'+esc(p.id)+'"><span class="fp-home-name">'+esc(p.name)+'</span><span class="fp-home-price">'+yen(price)+'万</span><span class="fp-home-badge '+fpBadgeClass(check.level)+'">'+check.label+'</span><span class="fp-chevron">›</span></button>';
   }
   function simGraph(series){
     const all=series.flatMap(x=>x.data.points.map(p=>p.cash)),low=Math.min(0,...all),high=Math.max(100,...all);
@@ -751,11 +803,13 @@
       }else message('この環境ではコピーできません');
       return;
     }
-    if(action==='sim-next')return step(()=>{ui.simStep=Math.min(5,ui.simStep+1);ui.simResultPage=0;save();});
+    if(action==='sim-next')return step(()=>{if(ui.simStep===4)state.plan.hasRun=1;ui.simStep=Math.min(5,ui.simStep+1);ui.simResultPage=0;save();});
     if(action==='sim-back')return step(()=>{ui.simStep=Math.max(0,ui.simStep-1);});
     if(action==='sim-restart')return step(()=>{ui.simStep=0;ui.simResultPage=0;});
     if(action==='sim-result-page')return step(()=>changePage('simResultPage',3,Number(v)));
     if(action==='sim-choice')return step(()=>{ui.simChoice=v;save();});
+    if(action==='fp-view-budget')return step(()=>{ui.tab='sim';ui.simStep=5;ui.simResultPage=0;ui.overlay='';});
+    if(action==='fp-open-home')return openOverlay('detail',()=>{ui.propertyId=v;ui.propertyPage=0;});
 
     if(action==='search')return openOverlay('search');
     if(action==='home-status')return step(()=>{state.filter.status=v;ui.homePage=0;save();});

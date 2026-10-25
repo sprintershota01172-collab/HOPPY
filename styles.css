@@ -1144,6 +1144,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .fp-form-heading strong{font-size:13px;font-weight:850;white-space:nowrap}
 .fp-form-heading span{font-size:10px;color:#8e929b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fp-field-hint{font-size:10px;line-height:1.55;color:#7d828e;margin:8px 2px}
+
+.fp-budget-group{margin:0 0 12px;padding:13px 12px 10px;background:#fff;border:1px solid #e7e9ec;border-radius:16px;box-shadow:0 2px 10px rgba(24,38,33,.025)}
+.fp-budget-group:last-child{margin-bottom:0}
+.fp-budget-group-head{display:flex;align-items:center;gap:8px;margin-bottom:12px;color:#273b33}
+.fp-budget-group-head b{display:grid;place-items:center;flex:none;width:25px;height:25px;border-radius:8px;background:#eef2ef;color:#51675c;font-size:10px;font-weight:800;letter-spacing:.02em}
+.fp-budget-group-head strong{font-size:13px;font-weight:800;flex:1;letter-spacing:.01em}
+.fp-budget-group-head span{font-size:10px;color:#8a9291}
+.fp-budget-group .sim-grid{gap:10px 8px}
+.fp-budget-group .fp-field-hint{margin:10px 1px 0}
+.fp-legacy-note{margin-top:10px;padding:10px;border-radius:10px;background:#fbf7ee;border:1px solid #f2ead9;font-size:10px;line-height:1.6;color:#776548}
+.fp-legacy-note button{display:block;margin-top:7px;padding:5px 0;border:0;background:transparent;color:#785c2f;text-decoration:underline;font-size:11px;font-weight:700;min-height:28px}
+
 .fp-extra-section{display:flex;flex-direction:column;gap:8px;margin-top:14px}
 .fp-extra-head{display:flex;align-items:center;justify-content:space-between;gap:7px}
 .fp-extra-head strong{font-size:12px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

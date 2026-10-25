@@ -748,7 +748,8 @@ html,body,.app-shell{background:var(--paper)}
   color:#fff!important;border:1px solid #203e60!important;
   border-radius:12px;letter-spacing:.035em;font-size:12px;font-weight:800;
 }
-.study-summary-action span{position:absolute;right:28px;font-size:20px;font-weight:400}
+.study-summary-action{position:relative}
+.study-summary-action span{position:absolute;right:13px;font-size:20px;font-weight:400}
 .study-fix-actions{
   display:grid;grid-template-columns:minmax(0,1fr) auto;
   flex:none;gap:7px;min-height:45px;align-items:stretch;

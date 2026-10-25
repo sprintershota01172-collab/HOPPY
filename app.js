@@ -1182,7 +1182,9 @@
       choice=Math.max(0,Math.min(3,option));
     if(choice===3){
       const selected=fpYearPoint(current);
-      return '<div class="fp-r-body grow fp-pie-panel"><strong class="fp-r-subhead">収入に対する支出割合・'+selected.year+'年</strong>'+fpPieChart(selected)+'</div>';
+      return '<div class="fp-r-body grow fp-pie-panel"><div class="fp-pie-panel-head"><strong class="fp-r-subhead">収入に対する支出割合・'+selected.year+'年</strong>'+
+         '<button type="button" class="fp-breakdown-open" data-act="fp-breakdown-select" data-period="annual" data-value="'+(ui.fpBreakdownAnnual||'living')+'">項目別内訳を見る ›</button></div>'+
+         fpPieChart(selected)+'</div>';
     }
     if(choice===0){
       const joined=current.points.map((p,i)=>({year:p.year,house:p.cash,rent:rent.points[i]?.cash??0}));
@@ -1260,7 +1262,7 @@
       }).join('')+'</div>';
     const row=(label,value)=>'<div class="fp-cash-row"><span>'+esc(label)+'</span><strong>'+yen(value,2)+' 万円</strong></div>';
     return '<div class="fp-month-report grow">'+fpYearSelect(model)+
-      '<div class="fp-month-head"><span>月を選んで収支を比較</span>'+
+      '<div class="fp-month-head"><button type="button" class="fp-breakdown-open" data-act="fp-breakdown-select" data-period="monthly" data-value="'+(ui.fpBreakdownMonthly||'living')+'">項目別内訳を見る ›</button>'+
         '<div class="fp-month-switch" role="group" aria-label="月収支の表示形式">'+
           '<button data-act="fp-month-view" data-value="pie" class="'+(isPie?'active':'')+'">円グラフ</button>'+
           '<button data-act="fp-month-view" data-value="detail" class="'+(!isPie?'active':'')+'">明細</button></div></div>'+bars+

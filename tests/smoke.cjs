@@ -167,6 +167,8 @@ a.input({fpId:expId,fpKey:'amount'},1.2);
 assert.equal(a.state().plan.expenses[0].amount,1.2);
 a.click('sim-next');
 assert.equal(a.state().plan.hasRun,1);
+assert.match(a.app.innerHTML,/月ごとの収支/);
+a.click('fp-result-tab','0');
 assert.match(a.app.innerHTML,/購入後の家計/);
 assert.match(a.app.innerHTML,/物件の予算評価/);
 assert.match(a.app.innerHTML,/金利＋1％なら/);
@@ -199,7 +201,7 @@ assert.match(a.app.innerHTML,/家計診断・改善ポイント/);
 a.click('sim-restart');
 assert.match(a.app.innerHTML,/前回の診断を見る/);
 a.click('fp-view-budget');
-assert.match(a.app.innerHTML,/購入後の家計/);
+assert.match(a.app.innerHTML,/月ごとの収支/);
 
 // Memo tab: linked and global notes, editing, summarization and deletion.
 a.click('tab','memo');

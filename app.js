@@ -440,7 +440,114 @@
     ['契約・保証',/保証|契約|アフター|修繕|引渡|申込|キャンセル|点検|補償|担当|営業/],
     ['確認しておくこと',/確認|質問|聞く|不明|注意|気になる|疑問|比較|必要/]
   ];
-  function studyNormalizeLine(str){
+
+  // The memo hub includes new notes and already-saved property notes without migrating or losing them.
+  function memoEntries(){
+    const result=[];
+    for(const note of state.studyNotes){
+      if(!String(note.text||'').trim())continue;
+      const pid=note.propertyId||'',p=propById(pid);
+      result.push({key:'study~'+note.id,title:note.title||'自由メモ',content:note.text,kind:'note',
+        propertyId:pid,propertyName:p?.name||'共通メモ',date:note.created||0,editable:true});
+    }
+    for(const p of state.properties){
+      for(const [kind,label] of [['good','◎ よかった点'],['bad','△ 気になる点']]){
+        for(let i=0;i<(p.notes?.[kind]||[]).length;i++){
+          const content=p.notes[kind][i];
+          if(!String(content||'').trim())continue;
+          result.push({key:'property~'+p.id+'~'+kind+'~'+i,title:label,kind:'legacy',
+            content,propertyId:p.id,propertyName:p.name,date:p.created||0,editable:true});
+        }
+      }
+      for(const q of p.questions||[]){
+        if(!String(q.text||'').trim())continue;
+        result.push({key:'question~'+p.id+'~'+q.id,title:'？ 質問・確認事項',kind:'question',
+          content:q.text,propertyId:p.id,propertyName:p.name,date:p.created||0,editable:true});
+      }
+      for(const m of p.meetings||[]){
+        (m.notes||[]).forEach((content,i)=>{
+          if(!String(content||'').trim())return;
+          result.push({key:'meeting~'+p.id+'~'+m.id+'~'+i,title:(m.type==='内見'?'◇ 内見':'▣ 打ち合わせ')+'メモ',
+            kind:'meeting',content,propertyId:p.id,propertyName:p.name,
+            date:m.at?new Date(m.at).getTime()||0:0,editable:true});
+        });
+      }
+    }
+    return result.sort((a,b)=>b.date-a.date || a.title.localeCompare(b.title,'ja'));
+  }
+  function memoCard(entry){
+    const tag=entry.kind==='note'?'✎ 自由':entry.kind==='meeting'?'▣ 記録':entry.kind==='question'?'？ 質問':'⌂ 物件';
+    const preview=entry.content.replace(/【[^】]+】/g,'').replace(/[\n\r]+/g,'  ').replace(/^[・□\s]+/,'').trim();
+    const shown=ui.memoSwipeKey===entry.key;
+    return '<div class="memo-swipe-wrap" data-memo-key="'+esc(entry.key)+'">'+
+      '<button class="memo-swipe-delete" data-act="memo-remove" data-value="'+esc(entry.key)+'" aria-label="このメモを削除">削除</button>'+
+      '<button class="memo-card '+(shown?'swiped':'')+'" data-act="memo-open" data-value="'+esc(entry.key)+'" aria-label="'+esc(entry.title)+'を開く">'+
+      '<span class="memo-card-top"><span class="memo-icon">▤</span><strong class="memo-title">'+esc(entry.title)+'</strong><span class="memo-chip">'+tag+'</span><span class="memo-chevron">›</span></span>'+
+      '<span class="memo-property">⌂ '+esc(entry.propertyName)+'</span>'+
+      '<span class="memo-preview">'+esc(preview||'本文なし')+'</span></button></div>';
+  }
+  function memoScreen(){
+    if(ui.memoScope==='individual' && !state.properties.some(p=>p.id===ui.memoPropertyId)){
+      ui.memoPropertyId=state.properties[0]?.id||'';
+    }
+    const all=memoEntries(),specific=ui.memoScope==='individual';
+    const filtered=specific?all.filter(x=>x.propertyId===ui.memoPropertyId):all;
+    const count=Math.max(1,Math.ceil(filtered.length/3));
+    ui.memoPage=Math.min(ui.memoPage,count-1);
+    const part=filtered.slice(ui.memoPage*3,ui.memoPage*3+3);
+    const selector=specific?'<label class="memo-property-pick"><span>物件</span><select data-memo-property aria-label="表示する物件">'+
+      state.properties.map(p=>'<option value="'+esc(p.id)+'" '+(p.id===ui.memoPropertyId?'selected':'')+'>'+esc(p.name)+'</option>').join('')+
+      '</select></label>':'<div class="memo-all-count">▤ '+filtered.length+'件のメモを一覧表示</div>';
+    return '<section class="screen memo-screen"><div class="memo-heading"><div><span class="kicker">HOME NOTES</span><h2>メモ</h2></div><button class="btn primary memo-new" data-act="study-add">＋ 新しいメモ</button></div>'+
+      '<div class="memo-scope-switch" role="group" aria-label="メモの表示方法">'+
+      '<button data-act="memo-scope" data-value="individual" class="'+(specific?'active':'')+'">⌂ 個別のメモ</button>'+
+      '<button data-act="memo-scope" data-value="all" class="'+(!specific?'active':'')+'">▤ すべてのメモ</button></div>'+
+      selector+
+      '<div class="memo-cards grow">'+(part.length?part.map(memoCard).join(''):
+      '<div class="memo-empty"><span>✎</span><strong>まだメモがありません</strong><p>気づきや疑問を残しましょう</p><button class="btn primary" data-act="study-add">＋ メモを追加</button></div>')+'</div>'+
+      (count>1?navPager(ui.memoPage,count,'memo-page'):'<div class="memo-count">'+filtered.length+' 件のメモ</div>')+
+      '<button class="memo-digest-btn" data-act="study-summarize">✦ '+(specific?'この物件のメモを整理':'全メモをまとめて整理')+' <span>›</span></button>'+
+      '<p class="memo-footnote">← 左にスワイプで削除　・　自動整理はオフライン対応</p></section>';
+  }
+  function memoRemove(key){
+    const [type,pid,arg,index]=String(key).split('~');
+    if(type==='study'){
+      const n=state.studyNotes.find(x=>x.id===pid);if(!n)return false;
+      state.studyNotes=state.studyNotes.filter(x=>x.id!==pid);
+    }else{
+      const p=propById(pid);if(!p)return false;
+      if(type==='property'){
+        const notes=p.notes?.[arg];if(!notes||!Number.isInteger(Number(index)))return false;
+        if(notes.length===1)notes[0]='';else notes.splice(Number(index),1);
+      }else if(type==='question'){
+        p.questions=p.questions.filter(q=>q.id!==arg);
+      }else if(type==='meeting'){
+        const meeting=p.meetings.find(m=>m.id===arg);if(!meeting)return false;
+        if(meeting.notes.length===1)meeting.notes[0]='';else meeting.notes.splice(Number(index),1);
+      }else return false;
+    }
+    ui.memoSwipeKey=null;ui.memoPage=0;save();
+    return true;
+  }
+  function memoOpen(key){
+    const [kind,pid,arg,index]=String(key).split('~');
+    ui.memoSwipeKey=null;
+    if(kind==='study'){
+      const note=state.studyNotes.find(n=>n.id===pid);if(!note)return;
+      ui.studyEditId=note.id;
+      ui.studyDraft={title:note.title,text:note.text,propertyId:note.propertyId||'',originalText:note.originalText||note.text,beforeFix:null};
+      ui.overlay='study-form';
+      return;
+    }
+    const p=propById(pid);if(!p)return;
+    ui.propertyId=p.id;
+    ui.propertyPage=kind==='meeting'?1:2;
+    ui.overlay='detail';
+    if(kind==='property'){ui.noteKind=arg;ui.noteIndex=Number(index);}
+    if(kind==='question'){ui.noteKind='questions';ui.questionPage=Math.max(0,Math.floor(p.questions.findIndex(q=>q.id===arg)/4));}
+    if(kind==='meeting'){ui.meetingIndex=Math.max(0,p.meetings.findIndex(m=>m.id===arg));ui.meetingNoteIndex=Number(index);}
+  }
+    function studyNormalizeLine(str){
     let text=String(str||'').replace(/[０-９Ａ-Ｚａ-ｚ]/g,c=>String.fromCharCode(c.charCodeAt(0)-65248))
       .replace(/\u3000/g,' ').replace(/[ \t]{2,}/g,' ').replace(/([ぁ-ゟァ-ヿ一-龥]) +(?=[ぁ-ゟァ-ヿ一-龥])/g,'$1').trim();
     const spelling=[
@@ -574,6 +681,13 @@
   function handler(action,button){
     let v=button.dataset.value, p=curProp();
     if(action==='tab')return chooseTab(v);
+    if(action==='memo-scope')return step(()=>{ui.memoScope=v;ui.memoPage=0;ui.memoSwipeKey=null;});
+    if(action==='memo-page')return step(()=>changePage('memoPage',Math.max(1,Math.ceil((ui.memoScope==='individual'?memoEntries().filter(x=>x.propertyId===ui.memoPropertyId):memoEntries()).length/3)),Number(v)));
+    if(action==='memo-open')return step(()=>memoOpen(v));
+    if(action==='memo-remove'){
+      if(!confirm('このメモを削除しますか？'))return;
+      return step(()=>{if(memoRemove(v))message('メモを削除しました');});
+    }
     if(action==='study-open')return openOverlay('study',()=>{ui.studyMode='notes';ui.studyPage=0;});
     if(action==='study-page')return step(()=>changePage('studyPage',Math.max(1,Math.ceil(state.studyNotes.length/3)),Number(v)));
     if(action==='study-digest-page')return step(()=>changePage('studyDigestPage',Math.max(1,Math.ceil(studySummaryItems().length/3)),Number(v)));
@@ -758,6 +872,7 @@
     }
     if(el.dataset.meetingModel && ui.meetingDraft){const key=el.dataset.meetingModel;if(key==='memo')ui.meetingDraft.notes[0]=el.value;else ui.meetingDraft[key]=el.value;}
     if(el.dataset.homeQuery!==undefined){state.filter.query=el.value;ui.homePage=0;save();const list=app.querySelector('.home-results');if(list){list.innerHTML=homeResults();hydratePhotos();}}
+    if(el.dataset.memoProperty!==undefined){ui.memoPropertyId=el.value;ui.memoPage=0;ui.memoSwipeKey=null;render();return;}
     if(el.dataset.study && ui.studyDraft){ui.studyDraft[el.dataset.study]=el.value;}
     if(el.dataset.sim){
       const k=el.dataset.sim, val=el.value;
@@ -818,6 +933,7 @@
   });
   app.addEventListener('change',async e=>{
     const el=e.target;
+    if(el.dataset?.memoProperty!==undefined){ui.memoPropertyId=el.value;ui.memoPage=0;ui.memoSwipeKey=null;render();return;}
     if(el.dataset?.sim){
       const k=el.dataset.sim,val=el.value;
       state.plan[k]=['propertyId','highSchool','university'].includes(k)?val:(val!==''&&Number.isFinite(Number(val))?Number(val):0);

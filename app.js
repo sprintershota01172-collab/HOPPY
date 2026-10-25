@@ -619,6 +619,42 @@
     parts.push({key:'daycareMonthly',label:'保育料・幼稚園',value:count.preschool*safeNum(p.daycareMonthly)});
     return parts;
   }
+  const fpIncomeCategories=[
+    ['husbandPay','夫の給与'],['wifePay','妻の給与'],
+    ['husbandBonus','夫の賞与'],['wifeBonus','妻の賞与'],
+    ['childBenefits','子どもの給付金'],['eventIncome','臨時収入・その他']
+  ];
+  function fpMonthlyIncome(year,month){
+    const p=state.plan,m=Math.round(Number(month)||1);
+    const kids=Math.min(3,Math.round(safeNum(p.children)));
+    const afterBirth=kids>0&&year>=safeNum(p.firstChildYear);
+    const wife=afterBirth?(year===safeNum(p.firstChildYear)?
+      Math.min(safeNum(p.wifeMonthly),10):safeNum(p.wifeReduced)):safeNum(p.wifeMonthly);
+    const bonusPay=(amount,m1,m2)=>{
+      const months=[m1,m2].map(Number).filter(n=>Number.isInteger(n)&&n>=1&&n<=12);
+      const used=months.length?months:[12];
+      return used.filter(n=>n===m).length/used.length*safeNum(amount);
+    };
+    const eventIncome=(p.events||[]).filter(x=>x.type==='income'&&x.year===year)
+      .reduce((sum,x)=>sum+(!x.month?safeNum(x.amount)/12:(x.month===m?safeNum(x.amount):0)),0);
+    const fields={
+      husbandPay:safeNum(p.husbandMonthly),
+      wifePay:wife,
+      husbandBonus:bonusPay(p.husbandBonus,p.husbandBonusMonth1,p.husbandBonusMonth2),
+      wifeBonus:afterBirth?0:bonusPay(p.wifeBonus,p.wifeBonusMonth1,p.wifeBonusMonth2),
+      childBenefits:fpChildCounts(year).living*safeNum(p.childBenefitMonthly),
+      eventIncome
+    };
+    const total=Object.values(fields).reduce((sum,x)=>sum+x,0);
+    return {year,month:m,fields,total};
+  }
+  function fpYearlyIncome(year){
+    const months=Array.from({length:12},(_,i)=>fpMonthlyIncome(year,i+1));
+    const fields=Object.fromEntries(fpIncomeCategories.map(([key])=>[
+      key,months.reduce((sum,x)=>sum+x.fields[key],0)
+    ]));
+    return {year,months,fields,total:months.reduce((sum,x)=>sum+x.total,0)};
+  }
   // Fixed-rate equivalent, level-payment amortization in 万円.
   // Rate shocks are alternative rates assumed from loan origination, not future repricing schedules.
   function fpAmortization(price,rateShift=0){
@@ -650,12 +686,8 @@
     const points=[],kids=Math.min(3,Math.round(safeNum(p.children)));
     const annualGrowth=1+Math.min(.2,Math.max(-.2,Number(p.returnAnnual)||0)/100);
     for(let year=start;year<=end;year++){
-      const mother=kids&&year>=safeNum(p.firstChildYear)?(year===safeNum(p.firstChildYear)
-        ?Math.min(safeNum(p.wifeMonthly),10):safeNum(p.wifeReduced)):safeNum(p.wifeMonthly);
-      const wifeBonus=kids&&year>=safeNum(p.firstChildYear)?0:safeNum(p.wifeBonus);
       const children=fpChildCounts(year);
-      const income=12*(safeNum(p.husbandMonthly)+mother)+safeNum(p.husbandBonus)+wifeBonus+
-        12*children.living*safeNum(p.childBenefitMonthly)+fpEventsAnnual(year,'income');
+      const income=fpYearlyIncome(year).total;
       const monthlyParts=fpBaseMonthly(year);
       const loan=buy&&year>=purchaseYear?loanByYear.get(year):null;
       const housing=buy&&year>=purchaseYear?(loan?loan.payment/12:0)+safeNum(p.housingOngoing):fpRentMonthly(p);

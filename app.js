@@ -102,7 +102,7 @@
   function step(action){if(Date.now()<ui.lock)return;ui.lock=Date.now()+(reduced.matches?100:680);action();render();}
   function closeOverlay(){step(()=>{ui.overlay='';ui.draft=null;});}
   function openOverlay(kind, setup){step(()=>{ui.overlay=kind;if(setup)setup();});}
-  function chooseTab(tab){step(()=>{ui.tab=tab;ui.overlay='';ui.draft=null;if(tab==='sim'&&state.plan.hasRun){ui.simStep=7;ui.fpHistoryOpen=false;}});}
+  function chooseTab(tab){step(()=>{ui.tab=tab;ui.overlay='';ui.draft=null;if(tab==='sim'&&state.plan.hasRun){ui.simStep=7;ui.fpHistoryOpen=false;ui.fpHistoryId=state.planHistory[0]?.id||null;}});}
   function tabIcon(key){
     const paths={property:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',compare:'<path d="M12 3v18M5 7h14M7 7l-4 7h8L7 7Zm10 0-4 7h8l-4-7ZM4 18h16"/>',sim:'<rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8 11h2m4 0h2M8 15h2m4 0h2M8 19h2m4 0h2"/>',schedule:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 2v6m10-6v6M3 10h18"/>',memo:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'};
     return '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+paths[key]+'</svg>';

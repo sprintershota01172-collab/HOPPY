@@ -30,7 +30,7 @@
     telecomMonthly:0,transportMonthly:0,subscriptionsMonthly:0,leisureMonthly:0,
     lifeInsuranceMonthly:0,medicalInsuranceMonthly:0,carInsuranceMonthly:0,medicalMonthly:0,
     carMaintenanceMonthly:0,otherLoanMonthly:0,otherLoanEndYear:0,childInsuranceMonthly:0,
-    childLivingMonthly:0,daycareMonthly:0,childBenefitMonthly:0,
+    childLivingMonthly:0,daycareMonthly:0,childBenefitMonthly:0,childEducationInsuranceMonthly:0,
     annualTax:0,carTaxAnnual:0,travelAnnual:0,annualEvents:0,homeInsuranceAnnual:0,
     otherSavingsMonthly:0,otherInvestMonthly:0,nisaBalance:0,investBalance:0,returnAnnual:0,carLoanEndYear:0,
     cashBufferMonthly:3,expenses:[]
@@ -388,9 +388,10 @@
       f('子どもの保険（1人）','childInsuranceMonthly'),
       f('生活・衣服・習い事（1人）','childLivingMonthly'),
       f('保育料・幼稚園（1人）','daycareMonthly'),
+      f('学資保険（1人）','childEducationInsuranceMonthly'),
       sSelect('高校','highSchool',[['public','公立'],['private','私立']]),
       sSelect('大学','university',[['public','国公立'],['private','私立']])
-    ],'保険0〜22歳、生活費0〜17歳、保育料0〜5歳で計算します。'));
+    ],'学資保険は誕生〜17歳まで人数分計上。満期金は自動加算しません（別途登録）。'));
     if(i===4){
       const options=[['','価格を直接入力'],...state.properties.filter(x=>num(x.price)!==null).map(x=>[x.id,truncate(x.name,17)+' / '+fmt(x.price)])];
       pages.push(fpCompactPage('購入予定',[
@@ -480,14 +481,15 @@
   ];
   function fpChildCounts(year){
     const p=state.plan,kids=Math.min(3,Math.round(safeNum(p.children)));
-    let preschool=0,living=0,insured=0;
+    let preschool=0,living=0,insured=0,educationInsured=0;
     for(let k=0;k<kids;k++){
       const age=year-(safeNum(p.firstChildYear)+k*Math.max(1,safeNum(p.birthInterval,3)));
       if(age>=0&&age<6)preschool++;
       if(age>=0&&age<18)living++;
       if(age>=0&&age<23)insured++;
+      if(age>=0&&age<18)educationInsured++;
     }
-    return {preschool,living,insured};
+    return {preschool,living,insured,educationInsured};
   }
   function fpCustomAnnual(year){
     return (state.plan.expenses||[]).reduce((sum,x)=>{
@@ -508,6 +510,7 @@
     }
     const count=fpChildCounts(year);
     parts.push({key:'childInsuranceMonthly',label:'子どもの保険',value:count.insured*safeNum(p.childInsuranceMonthly)});
+    parts.push({key:'childEducationInsuranceMonthly',label:'学資保険',value:count.educationInsured*safeNum(p.childEducationInsuranceMonthly)});
     parts.push({key:'childLivingMonthly',label:'子どもの生活費',value:count.living*safeNum(p.childLivingMonthly)});
     parts.push({key:'daycareMonthly',label:'保育料・幼稚園',value:count.preschool*safeNum(p.daycareMonthly)});
     return parts;

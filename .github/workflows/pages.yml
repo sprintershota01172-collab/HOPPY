@@ -26,6 +26,7 @@ jobs:
           node tests/memo-swipe.cjs
           node tests/fp-budget.cjs
           node tests/fp-capacity-startup.cjs
+          node tests/fp-viewport.cjs
           node tests/fp-interest-surplus.cjs
           node tests/fp-ledger.cjs
           node tests/fp-safety.cjs

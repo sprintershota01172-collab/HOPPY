@@ -40,7 +40,7 @@
   const propById = id => state.properties.find(p=>p.id===id);
   const curProp = () => {const visible=visibleProperties(); return visible.find(p=>p.id===ui.propertyId) || visible[0] || null;};
   function visibleProperties(){
-    let ps=state.properties.filter(p=>(p.name+' '+p.address+' '+p.tags.join(' ')).toLowerCase().includes((state.filter.query||'').toLowerCase()) && (!state.filter.tag || p.tags.includes(state.filter.tag)));
+    let ps=state.properties.filter(p=>(p.name+' '+p.address+' '+(p.manufacturer||'')+' '+p.tags.join(' ')).toLowerCase().includes((state.filter.query||'').toLowerCase()) && (!state.filter.tag || p.tags.includes(state.filter.tag)));
     if(state.filter.sort==='price')ps.sort((a,b)=>(num(a.price)??Infinity)-(num(b.price)??Infinity));
     else if(state.filter.sort==='name')ps.sort((a,b)=>a.name.localeCompare(b.name,'ja'));
     else ps.sort((a,b)=>b.created-a.created);
@@ -141,7 +141,7 @@
   function listScreen(){
     let ps=visibleProperties(),n=Math.max(1,Math.ceil(ps.length/4));ui.listPage=Math.min(ui.listPage,n-1);
     let cells=ps.slice(ui.listPage*4,ui.listPage*4+4);
-    return modalFrame('物件一覧','<div class="row between"><span class="subtle">'+ps.length+'件の物件</span><button class="btn compact" data-act="search">⌕ 絞り込み</button></div>'+(cells.length?'<div class="grid4">'+cells.map(p=>'<button class="grid-tile" data-act="list-pick" data-value="'+esc(p.id)+'"><span class="pill status">'+esc(p.status)+'</span><strong>'+esc(p.name)+'</strong><span>'+esc(truncate(p.address,20))+'</span><strong>'+esc(fmt(p.price))+'</strong></button>').join('')+'</div>':empty('⌕','該当する物件がありません','条件を変えて検索してください。'))+navPager(ui.listPage,n,'list-nav')+'<button class="btn primary wide" data-act="add-property">＋ 物件を登録</button>');
+    return modalFrame('物件一覧','<div class="row between"><span class="subtle">'+ps.length+'件の物件</span><button class="btn compact" data-act="search">⌕ 絞り込み</button></div>'+(cells.length?'<div class="grid4">'+cells.map(p=>'<button class="grid-tile" data-act="list-pick" data-value="'+esc(p.id)+'"><span class="pill status">'+esc(p.status)+'</span><strong>'+esc(p.name)+'</strong><span>'+esc(truncate(p.manufacturer||p.address,20))+'</span><strong>'+esc(fmt(p.price))+'</strong></button>').join('')+'</div>':empty('⌕','該当する物件がありません','条件を変えて検索してください。'))+navPager(ui.listPage,n,'list-nav')+'<button class="btn primary wide" data-act="add-property">＋ 物件を登録</button>');
   }
   function searchScreen(){
     const allTags=[...new Set(state.properties.flatMap(p=>p.tags))].sort();

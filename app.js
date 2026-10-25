@@ -127,15 +127,28 @@
     return modalFrame(m._new?'打ち合わせを登録':'打ち合わせを編集','<div class="panel detail grow meeting-form"><div><span class="kicker">MEETING NOTE</span><p class="subtle">日時とメーカーを登録して、内容を残します。</p></div><div class="field"><label for="meeting-at">打ち合わせ日時</label><input id="meeting-at" type="datetime-local" data-meeting-model="at" value="'+esc(m.at)+'"></div><div class="field"><label for="meeting-maker">メーカー・担当会社</label><input id="meeting-maker" type="text" data-meeting-model="maker" maxlength="70" value="'+esc(m.maker||'')+'" placeholder="例: ヘーベルハウス"></div><div class="field grow"><label for="meeting-memo">打ち合わせメモ（1ページ目）</label><textarea id="meeting-memo" class="meeting-form-note" data-meeting-model="memo" maxlength="220" placeholder="話した内容、聞きたいこと、次回までの宿題">'+esc(preview)+'</textarea></div><p class="subtle">長いメモは保存後にページ追加できます。</p></div><div class="form-foot"><button class="btn flex1" data-act="meeting-cancel">戻る</button><button class="btn primary flex1" data-act="meeting-save">保存する</button></div>');
   }
   function propertyForm(){
-    const p=ui.draft;const stepN=ui.formStep;
-    const field=(label,key,type,extra)=>'<div class="field"><label for="form-'+key+'">'+label+'</label><input id="form-'+key+'" data-model="'+key+'" type="'+(type||'text')+'" value="'+esc(p[key]??'')+'" '+(extra||'')+'></div>';
-    const select=(label,key,opts)=>'<div class="field"><label for="form-'+key+'">'+label+'</label><select id="form-'+key+'" data-model="'+key+'">'+opts.map(x=>'<option '+(p[key]===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></div>';
-    let fields='';
-    if(stepN===0)fields=field('物件名 *','name','text','maxlength="70" required placeholder="例: ○○の家"')+field('住宅メーカー・販売会社','manufacturer','text','maxlength="70" placeholder="例: ヘーベルハウス"')+field('住所','address','text','maxlength="120"');
-    if(stepN===1)fields=field('物件価格（万円）','price','number','min="0" step="1" inputmode="numeric"')+select('種別','kind',kinds)+field('築年数（年）','age','number','min="0" step="1" inputmode="numeric"');
-    if(stepN===2)fields=field('広さ（㎡）','area','number','min="0" step="0.1" inputmode="decimal"')+field('間取り','layout','text','placeholder="例: 3LDK" maxlength="50"')+field('最寄駅まで徒歩（分）','station','number','min="0" step="1" inputmode="numeric"');
-    if(stepN===3)fields=select('検討ステータス','status',statuses)+field('掲載URL','url','url','placeholder="https://..."')+'<div class="field"><label for="form-tags">タグ（カンマ区切り）</label><input id="form-tags" data-model="tags" value="'+esc(p.tags.join(', '))+'" placeholder="例: 駅近, 南向き" maxlength="160"></div>';
-    return modalFrame((p._new?'物件を追加':'物件を編集'),'<div class="panel detail grow form-view"><span class="kicker">STEP '+(stepN+1)+' / 4</span>'+fields+'</div><div class="form-foot"><button class="btn flex1" data-act="form-back">'+(stepN?'戻る':'キャンセル')+'</button><button class="btn primary flex1" data-act="form-next">'+(stepN===3?'保存する':'次へ')+'</button></div><p class="step-label">入力内容は端末内に保存されます</p>'+(stepN===3&&!p._new?'<button class="btn danger wide" data-act="property-delete">この物件を削除する</button>':''));
+    const p=ui.draft;
+    const field=(label,key,type,extra)=>'<div class="field onepage-field"><label for="form-'+key+'">'+label+'</label><input id="form-'+key+'" data-model="'+key+'" type="'+(type||'text')+'" value="'+esc(p[key]??'')+'" '+(extra||'')+'></div>';
+    const select=(label,key,opts)=>'<div class="field onepage-field"><label for="form-'+key+'">'+label+'</label><select id="form-'+key+'" data-model="'+key+'">'+opts.map(x=>'<option '+(p[key]===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></div>';
+    const fields=[
+      field('物件名 *','name','text','maxlength="70" required placeholder="○○の家"'),
+      field('住宅メーカー','manufacturer','text','maxlength="70" placeholder="ヘーベルハウス"'),
+      field('価格（万円）','price','number','min="0" step="1" inputmode="numeric" placeholder="4400"'),
+      select('種別','kind',kinds),
+      field('築年数','age','number','min="0" step="1" inputmode="numeric" placeholder="0"'),
+      field('広さ（㎡）','area','number','min="0" step="0.1" inputmode="decimal" placeholder="100"'),
+      field('間取り','layout','text','maxlength="50" placeholder="3LDK"'),
+      field('駅徒歩（分）','station','number','min="0" step="1" inputmode="numeric" placeholder="12"'),
+      select('検討状況','status',statuses),
+      '<div class="field onepage-field"><label for="form-tags">タグ</label><input id="form-tags" data-model="tags" value="'+esc(p.tags.join(', '))+'" placeholder="駅近, 南向き" maxlength="160"></div>',
+      field('住所','address','text','maxlength="120" placeholder="愛知県…"'),
+      field('物件URL','url','url','placeholder="https://..."')
+    ].join('');
+    return modalFrame(p._new?'物件を追加':'基本情報を編集',
+      '<div class="property-editor"><div class="property-fields" role="group" aria-label="基本情報をまとめて入力">'+fields+'</div></div>'+
+      '<div class="property-editor-actions"><button class="btn flex1" data-act="form-cancel">キャンセル</button><button class="btn primary flex1" data-act="form-save">まとめて保存</button></div>'+
+      (!p._new?'<button class="property-delete-inline" data-act="property-delete">この物件を削除</button>':'')
+    );
   }
   function modalFrame(title,content){return '<div class="full"><header class="full-header"><button class="btn compact" data-act="overlay-close">×</button><strong>'+esc(title)+'</strong><span style="width:44px"></span></header><section class="full-body swipe-zone">'+content+'</section></div>';}
   function listScreen(){
@@ -301,9 +314,8 @@
     if(action==='photo-nav')return step(()=>changePage('photoIndex',p.photos.length,Number(v)));
     if(action==='photo-delete'){if(!confirm('この写真を削除しますか？'))return;return step(()=>{let id=p.photos.splice(ui.photoIndex,1)[0];removePhoto(id);ui.photoIndex=Math.max(0,ui.photoIndex-1);save();});}
     if(action==='external'){try{const u=new URL(v);if(!['https:','http:'].includes(u.protocol))throw Error('invalid');window.open(u.href,'_blank','noopener,noreferrer');}catch(_){message('有効なURLではありません');}return;}
-    if(action==='form-back')return step(()=>{if(ui.formStep)ui.formStep--;else {ui.overlay='';ui.draft=null;}});
-    if(action==='form-next'){
-      if(ui.formStep<3){if(ui.formStep===0&&!ui.draft.name.trim())return message('物件名を入力してください');return step(()=>ui.formStep++);}
+    if(action==='form-cancel')return step(()=>{ui.overlay='';ui.draft=null;});
+    if(action==='form-save'){
       let error=validateProperty();if(error)return message(error);
       return step(()=>{
         const target={...ui.draft};delete target._new;target.demo=false;const old=propById(target.id);

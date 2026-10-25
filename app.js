@@ -27,7 +27,7 @@
   function normalize(s) {
     if (!s || !Array.isArray(s.properties) || !Array.isArray(s.criteria)) throw Error('形式が違います');
     const out = defaults();
-    out.properties = s.properties.filter(p=>p && typeof p.id==='string').map(p=>({...blankProperty(),...p,notes:{good:Array.isArray(p.notes?.good)?p.notes.good:[''],bad:Array.isArray(p.notes?.bad)?p.notes.bad:['']},questions:Array.isArray(p.questions)?p.questions:[],meetings:Array.isArray(p.meetings)?p.meetings.filter(m=>m && typeof m.id==='string').map(m=>({id:m.id,at:typeof m.at==='string'?m.at:'',maker:String(m.maker||''),notes:Array.isArray(m.notes)&&m.notes.length?m.notes.map(x=>String(x).slice(0,220)):['']})):[],photos:Array.isArray(p.photos)?p.photos:[],tags:Array.isArray(p.tags)?p.tags:[]}));
+    out.properties = s.properties.filter(p=>p && typeof p.id==='string').map(p=>({...blankProperty(),...p,notes:{good:Array.isArray(p.notes?.good)?p.notes.good:[''],bad:Array.isArray(p.notes?.bad)?p.notes.bad:['']},questions:Array.isArray(p.questions)?p.questions:[],meetings:Array.isArray(p.meetings)?p.meetings.filter(m=>m && typeof m.id==='string').map(m=>({id:m.id,at:typeof m.at==='string'?m.at:'',maker:String(m.maker||''),type:m.type==='内見'?'内見':'打ち合わせ',notes:Array.isArray(m.notes)&&m.notes.length?m.notes.map(x=>String(x).slice(0,220)):['']})):[],photos:Array.isArray(p.photos)?p.photos:[],tags:Array.isArray(p.tags)?p.tags:[]}));
     out.criteria = s.criteria.filter(c=>c && typeof c.id==='string' && typeof c.name==='string').map(c=>({...c,weight:Math.min(3,Math.max(1,Number(c.weight)||1))}));
     out.scores = s.scores && typeof s.scores==='object' ? s.scores : {};
     out.selected = Array.isArray(s.selected)?s.selected.filter(id=>out.properties.some(p=>p.id===id)).slice(0,3):[];
@@ -69,24 +69,26 @@
   }
   function empty(icon,title,desc,action,label){return '<section class="panel grow empty"><div class="big">'+icon+'</div><h2 class="section-title">'+esc(title)+'</h2><p>'+esc(desc)+'</p>'+ (action?'<button class="btn primary" data-act="'+action+'">'+esc(label)+'</button>':'')+'</section>';}
   function navPager(index,total,act){return '<div class="pager"><button class="page-arrow" data-act="'+act+'" data-value="-1" '+(total<2?'disabled':'')+' aria-label="前へ">‹</button><div class="counter">'+(total?index+1:0)+' / '+total+'</div>'+dots(index,Math.max(total,1))+'<button class="page-arrow" data-act="'+act+'" data-value="1" '+(total<2?'disabled':'')+' aria-label="次へ">›</button></div>';}
-  const homePageSize=()=>window.matchMedia('(max-height: 735px)').matches?2:window.matchMedia('(min-height: 945px)').matches?4:3;
+  const homePageSize=()=>window.matchMedia('(max-height: 620px)').matches?2:window.matchMedia('(max-height: 750px)').matches?3:4;
   function propertyCard(p){
     const now=Date.now(),ms=(p.meetings||[]).filter(m=>m.at);
     const future=ms.filter(m=>new Date(m.at).getTime()>=now).sort((a,b)=>a.at.localeCompare(b.at))[0];
     const latest=future||ms.slice().sort((a,b)=>b.at.localeCompare(a.at))[0];
     const date=latest?latest.at.slice(5,7).replace(/^0/,'')+'/'+latest.at.slice(8,10).replace(/^0/,''):'未登録';
     const tag=p.status==='本命'?'favorite':p.status==='内見予定'?'planned':'';
+    const eventType=latest?(latest.type==='内見'?'内見':'打合せ'):'';
     const thumb=p.photos?.length?'<img data-photo="'+esc(p.photos[0])+'" alt="" loading="lazy">':'<span class="property-img-fallback" aria-hidden="true">'+tabIcon('property')+'</span>';
     const name=esc(p.name||'名称未設定'),maker=esc(p.manufacturer||'メーカー未登録');
-    return '<button class="property-list-card" data-act="home-open" data-value="'+esc(p.id)+'" aria-label="'+name+'の詳細を開く"><span class="property-thumb">'+thumb+'</span><span class="property-card-body"><span class="property-first-row"><strong class="property-list-name" title="'+name+'">'+name+'</strong><span class="property-list-maker" title="'+maker+'">'+maker+'</span><span class="property-state '+tag+'">'+esc(p.status)+'</span></span><span class="property-second-row"><span class="prop-price">'+(num(p.price)!==null?digits.format(p.price)+'万':'価格未登録')+'</span><span class="prop-station">'+(num(p.station)!==null?'徒歩'+digits.format(p.station)+'分':'駅徒歩 −')+'</span><span class="prop-meeting">'+(latest?(future?'打合せ ':'前回 ')+date:'予定なし')+'</span></span></span><span class="property-chevron" aria-hidden="true">›</span></button>';
+    return '<button class="property-list-card" data-act="home-open" data-value="'+esc(p.id)+'" aria-label="'+name+'の詳細を開く"><span class="property-thumb">'+thumb+'</span><span class="property-card-body"><span class="property-first-row"><strong class="property-list-name" title="'+name+'">'+name+'</strong><span class="property-list-maker" title="'+maker+'">'+maker+'</span><span class="property-state '+tag+'">'+esc(p.status)+'</span></span><span class="property-second-row"><span class="prop-price">'+(num(p.price)!==null?digits.format(p.price)+'万':'価格未登録')+'</span><span class="prop-station">'+(num(p.station)!==null?'徒歩'+digits.format(p.station)+'分':'駅徒歩 −')+'</span><span class="prop-meeting">'+(latest?(future?eventType+' ':'済 ')+date:'予定なし')+'</span></span></span><span class="property-chevron" aria-hidden="true">›</span></button>';
   }
   function homeResults(){
     const ps=visibleProperties(),perPage=homePageSize(),total=Math.max(1,Math.ceil(ps.length/perPage));
     ui.homePage=Math.min(ui.homePage,total-1);
     const page=ps.slice(ui.homePage*perPage,(ui.homePage+1)*perPage);
     const chips=[['','すべて'],['気になる','気になる'],['内見予定','内見予定'],['本命','本命']];
+    const textScope=state.properties.filter(p=>(p.name+' '+p.address+' '+(p.manufacturer||'')+' '+p.tags.join(' ')).toLowerCase().includes((state.filter.query||'').toLowerCase())&&(!state.filter.tag||p.tags.includes(state.filter.tag)));
     return '<div class="home-summary"><div class="home-summary-label"><strong>'+ps.length+'件</strong><span>比較中の物件</span></div><button class="summary-action" data-act="home-compare">比較する <span aria-hidden="true">→</span></button></div>'+
-      '<div class="status-chip-row" role="group" aria-label="検討状況で絞り込み">'+chips.map(([v,label])=>'<button class="status-chip '+((state.filter.status||'')===v?'is-active':'')+'" data-act="home-status" data-value="'+esc(v)+'">'+label+' <span>'+(v?state.properties.filter(p=>p.status===v).length:state.properties.length)+'</span></button>').join('')+'</div>'+
+      '<div class="status-chip-row" role="group" aria-label="検討状況で絞り込み">'+chips.map(([v,label])=>'<button class="status-chip '+((state.filter.status||'')===v?'is-active':'')+'" data-act="home-status" data-value="'+esc(v)+'">'+label+' <span>'+(v?textScope.filter(p=>p.status===v).length:textScope.length)+'</span></button>').join('')+'</div>'+
       '<div class="property-list swipe-zone">'+(page.length?page.map(propertyCard).join(''):'<div class="home-no-match"><strong>該当する物件がありません</strong><span>検索や絞り込みを変更してください</span><button class="btn" data-act="filter-clear">条件をリセット</button></div>')+'</div>'+
       (total>1?navPager(ui.homePage,total,'home-page'):'<div class="home-page-single" aria-label="1ページ目"></div>');
   }
@@ -129,7 +131,7 @@
     if(!ms.length)return '<div class="panel detail grow meeting-panel"><div class="empty grow meeting-empty"><span class="kicker">MEETING JOURNAL</span><h2 class="section-title">打ち合わせの記録</h2><p>日時とメーカー、聞いた内容を物件ごとに残せます。</p><button class="btn primary" data-act="meeting-add">＋ 打ち合わせを登録</button></div></div>';
     const m=ms[ui.meetingIndex], notes=m.notes||[''];
     ui.meetingNoteIndex=Math.min(ui.meetingNoteIndex,Math.max(0,notes.length-1));
-    return '<div class="panel detail grow meeting-panel swipe-zone"><div class="meeting-record-head"><div class="meeting-date-block"><span class="micro-label">打ち合わせ日時</span><strong>'+esc(formatMeetingDate(m.at))+'</strong><span>'+esc(m.maker||p.manufacturer||'メーカー未登録')+'</span></div><div class="row"><button class="btn compact" data-act="meeting-edit">編集</button><button class="btn compact" data-act="meeting-delete" aria-label="削除">×</button></div></div>'+
+    return '<div class="panel detail grow meeting-panel swipe-zone"><div class="meeting-record-head"><div class="meeting-date-block"><span class="micro-label">'+esc(m.type==='内見'?'内見日時':'打ち合わせ日時')+'</span><strong>'+esc(formatMeetingDate(m.at))+'</strong><span>'+esc(m.maker||p.manufacturer||'メーカー未登録')+'</span></div><div class="row"><button class="btn compact" data-act="meeting-edit">編集</button><button class="btn compact" data-act="meeting-delete" aria-label="削除">×</button></div></div>'+
       '<div class="meeting-notepad"><div class="notes-title"><span class="kicker">打ち合わせメモ</span><span class="meta">'+(ui.meetingNoteIndex+1)+' / '+notes.length+'ページ</span></div><textarea class="note-text meeting-note" data-meeting-note maxlength="220" placeholder="担当者の説明、次回聞くこと、見積もりの内容などを記録">'+esc(notes[ui.meetingNoteIndex]||'')+'</textarea>'+
       '<div class="meeting-note-actions"><button class="btn compact" data-act="meeting-note-nav" data-value="-1" '+(ui.meetingNoteIndex===0?'disabled':'')+'>‹</button><button class="btn compact" data-act="meeting-note-nav" data-value="1" '+(ui.meetingNoteIndex===notes.length-1?'disabled':'')+'>›</button><button class="btn compact" data-act="meeting-note-add">＋ ページ</button><button class="btn compact danger" data-act="meeting-note-delete" '+(notes.length===1?'disabled':'')+'>削除</button></div></div>'+
       '<div class="meeting-nav"><button class="btn compact" data-act="meeting-nav" data-value="-1" '+(ui.meetingIndex===0?'disabled':'')+'>‹ 前の記録</button><span class="meta">'+(ui.meetingIndex+1)+' / '+ms.length+'件</span><button class="btn compact" data-act="meeting-nav" data-value="1" '+(ui.meetingIndex===ms.length-1?'disabled':'')+'>次の記録 ›</button></div><button class="btn primary wide" data-act="meeting-add">＋ 打ち合わせを追加</button></div>';
@@ -137,7 +139,7 @@
   function meetingForm(){
     const m=ui.meetingDraft;
     const preview=(m.notes&&m.notes[0])||'';
-    return modalFrame(m._new?'打ち合わせを登録':'打ち合わせを編集','<div class="panel detail grow meeting-form"><div><span class="kicker">MEETING NOTE</span><p class="subtle">日時とメーカーを登録して、内容を残します。</p></div><div class="field"><label for="meeting-at">打ち合わせ日時</label><input id="meeting-at" type="datetime-local" data-meeting-model="at" value="'+esc(m.at)+'"></div><div class="field"><label for="meeting-maker">メーカー・担当会社</label><input id="meeting-maker" type="text" data-meeting-model="maker" maxlength="70" value="'+esc(m.maker||'')+'" placeholder="例: ヘーベルハウス"></div><div class="field grow"><label for="meeting-memo">打ち合わせメモ（1ページ目）</label><textarea id="meeting-memo" class="meeting-form-note" data-meeting-model="memo" maxlength="220" placeholder="話した内容、聞きたいこと、次回までの宿題">'+esc(preview)+'</textarea></div><p class="subtle">長いメモは保存後にページ追加できます。</p></div><div class="form-foot"><button class="btn flex1" data-act="meeting-cancel">戻る</button><button class="btn primary flex1" data-act="meeting-save">保存する</button></div>');
+    return modalFrame(m._new?'予定・打ち合わせを登録':'予定・打ち合わせを編集','<div class="panel detail grow meeting-form"><div><span class="kicker">VISIT & MEETING</span><p class="subtle">予定とメーカー、メモをまとめて記録します。</p></div><div class="field"><label for="meeting-type">種類</label><select id="meeting-type" data-meeting-model="type"><option value="打ち合わせ" '+((m.type||'打ち合わせ')==='打ち合わせ'?'selected':'')+'>打ち合わせ</option><option value="内見" '+(m.type==='内見'?'selected':'')+'>内見</option></select></div><div class="field"><label for="meeting-at">日時</label><input id="meeting-at" type="datetime-local" data-meeting-model="at" value="'+esc(m.at)+'"></div><div class="field"><label for="meeting-maker">メーカー・担当会社</label><input id="meeting-maker" type="text" data-meeting-model="maker" maxlength="70" value="'+esc(m.maker||'')+'" placeholder="例: ヘーベルハウス"></div><div class="field grow"><label for="meeting-memo">打ち合わせメモ（1ページ目）</label><textarea id="meeting-memo" class="meeting-form-note" data-meeting-model="memo" maxlength="220" placeholder="話した内容、聞きたいこと、次回までの宿題">'+esc(preview)+'</textarea></div><p class="subtle">長いメモは保存後にページ追加できます。</p></div><div class="form-foot"><button class="btn flex1" data-act="meeting-cancel">戻る</button><button class="btn primary flex1" data-act="meeting-save">保存する</button></div>');
   }
   function propertyForm(){
     const p=ui.draft;
@@ -276,14 +278,14 @@
     if(action==='add-property')return openOverlay('form',()=>prepareForm(null));
     if(action==='edit-property')return openOverlay('form',()=>prepareForm(p));
     if(action==='open-meetings')return openOverlay('detail',()=>{ui.propertyPage=1;ui.meetingIndex=0;ui.meetingNoteIndex=0;});
-    if(action==='meeting-add')return openOverlay('meeting-form',()=>{ui.meetingDraft={id:uid(),at:'',maker:p.manufacturer||'',notes:[''],_new:true};});
+    if(action==='meeting-add')return openOverlay('meeting-form',()=>{ui.meetingDraft={id:uid(),at:'',type:p.status==='内見予定'?'内見':'打ち合わせ',maker:p.manufacturer||'',notes:[''],_new:true};});
     if(action==='meeting-edit')return openOverlay('meeting-form',()=>{ui.meetingDraft={...JSON.parse(JSON.stringify(p.meetings[ui.meetingIndex]))};});
     if(action==='meeting-cancel')return step(()=>{ui.overlay='detail';ui.meetingDraft=null;});
     if(action==='meeting-save'){
       const m=ui.meetingDraft;
       if(!m || !m.at || !Number.isFinite(new Date(m.at).getTime()))return message('打ち合わせ日時を入力してください');
       return step(()=>{
-        const record={id:m.id,at:m.at,maker:String(m.maker||'').trim(),notes:m.notes?.length?m.notes:['']};
+        const record={id:m.id,at:m.at,type:m.type==='内見'?'内見':'打ち合わせ',maker:String(m.maker||'').trim(),notes:m.notes?.length?m.notes:['']};
         const idx=p.meetings.findIndex(x=>x.id===record.id);
         if(idx<0){p.meetings.push(record);ui.meetingIndex=p.meetings.length-1;}
         else{p.meetings[idx]=record;ui.meetingIndex=idx;}

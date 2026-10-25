@@ -541,7 +541,7 @@
     ui.simSubPage=Math.max(0,Math.min(pages.length-1,Number(ui.simSubPage)||0));
     const n=ui.simSubPage;
     const labels=i===2?['食費・住居','水道光熱','日常費','保険等']:i===4?['購入','維持費']:i===5?['資産','積立']:null;
-    return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR / r18</span>'+
+    return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR / r19</span>'+
       (p.hasRun?'<button class="fp-recall-btn" data-act="fp-view-budget">前回の診断を見る ↗</button>':'<span class="sim-progress-text">'+(i+1)+' / 7</span>')+
       '</div><div class="sim-progress">'+Array.from({length:7},(_,x)=>'<span class="'+(x<=i?'filled':'')+'"></span>').join('')+'</div>'+
       '<div class="sim-question"><h2>'+simQuestions[i][0]+'</h2><p>'+simQuestions[i][1]+'</p></div>'+
@@ -1366,16 +1366,11 @@
   function fpMonthlyReport(model){
     const point=fpYearPoint(model),ledger=fpMonthlyLedger(point),
       month=Math.min(12,Math.max(1,ui.fpCashMonth||1)),selected=ledger.months[month-1],
-      maxNet=Math.max(1,...ledger.months.map(x=>Math.abs(x.net))),
       isPie=ui.fpMonthView!=='detail';
-    const bars='<div class="fp-month-nav" role="group" aria-label="月ごとの収支">'+
-      ledger.months.map(x=>{
-        const signed=x.net>=0?'plus':'minus';
-        return '<button data-act="fp-cash-month" data-value="'+x.month+'" class="'+(x.month===month?'active':'')+
-          '" aria-label="'+x.month+'月 '+(x.net<0?'赤字':'黒字')+fpYen(Math.abs(x.net))+'">'+
-          '<span class="fp-month-bar '+signed+'" style="height:'+Math.max(4,Math.abs(x.net)/maxNet*32).toFixed(1)+'px"></span>'+
-          '<small>'+x.month+'</small></button>';
-      }).join('')+'</div>';
+    const monthPicker='<label class="fp-month-select"><span>表示月</span>'+
+      '<select data-fp-cash-month aria-label="収支を表示する月">'+
+      ledger.months.map(x=>'<option value="'+x.month+'" '+(x.month===month?'selected':'')+'>'+
+      x.month+'月</option>').join('')+'</select></label>';
     const row=(label,value)=>'<div class="fp-cash-row"><span>'+esc(label)+'</span><strong>'+fpYen(value)+'</strong></div>';
     const p=state.plan,goal=safeNum(p.otherSavingsMonthly),
       available=selected.net-goal,goalLabel=goal>0?(available>=0?'貯金目標まで確保可':'貯金目標まで不足'):'目標を設定できます',
@@ -1390,10 +1385,10 @@
         '" value="'+fpYenNumber(p[key])+'" aria-label="'+label+'（円/月）"><small>円/月</small></div></label>'
       ).join('')+'</div>';
     return '<div class="fp-month-report grow">'+fpYearSelect(model)+fpMortgageCapacityCard()+
-      '<div class="fp-month-head"><span class="fp-breakdown-hint">項目を選ぶと下に内訳を表示</span>'+
+      '<div class="fp-month-head">'+monthPicker+
         '<div class="fp-month-switch" role="group" aria-label="月収支の表示形式">'+
           '<button data-act="fp-month-view" data-value="pie" class="'+(isPie?'active':'')+'">円グラフ</button>'+
-          '<button data-act="fp-month-view" data-value="detail" class="'+(!isPie?'active':'')+'">明細</button></div></div>'+bars+
+          '<button data-act="fp-month-view" data-value="detail" class="'+(!isPie?'active':'')+'">明細</button></div></div>'+
       '<div class="fp-month-hero fp-month-surplus"><div><span>'+point.year+'年 '+month+'月 ・ '+(selected.net>=0?'収入から残るプラス':'収入に対する不足')+'</span>'+
         '<strong class="'+(selected.net<0?'negative':'positive')+'">'+(selected.net>0?'+':'')+fpYen(selected.net)+'</strong></div>'+
         '<div><span>手取り収入に対する割合</span><strong class="fp-surplus-percent '+(selected.net<0?'negative':'positive')+'">'+surplusPct+'</strong>'+
@@ -1561,7 +1556,7 @@
     const p=state.plan,price=safeNum(p.propertyPrice),current=modelYears(price,true),rent=modelYears(price,false),
       budget=fpBudget(),rating=fpRating(price),warnings=fpPlanWarnings(),
       page=Math.min(6,Math.max(0,ui.simResultPage||0));
-    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r18</span>'+
+    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r19</span>'+
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button></div></div>';
@@ -2302,6 +2297,10 @@
     if(el.dataset?.memoProperty!==undefined){ui.memoPropertyId=el.value;ui.memoPage=0;ui.memoSwipeKey=null;render();return;}
     if(el.dataset?.study && ui.studyDraft){ui.studyDraft[el.dataset.study]=el.value;}
     if(el.dataset?.fpYear!==undefined){ui.fpYear=Math.floor(Number(el.value)||0);ui.fpLedgerPage=0;render();return;}
+    if(el.dataset?.fpCashMonth!==undefined){
+      ui.fpCashMonth=Math.min(12,Math.max(1,Math.floor(Number(el.value)||1)));
+      ui.fpEditingRow=null;render();return;
+    }
     if(el.dataset?.eventId && el.dataset?.eventKey){
       const item=state.plan.events.find(x=>x.id===el.dataset.eventId);
       if(item){

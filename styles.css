@@ -2456,3 +2456,172 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .fp-surplus-strip>strong{font-size:17px}
   .fp-surplus-strip>b{font-size:12px}
 }
+
+
+/* FP r19 — readable, unambiguous loan budget vs chosen-home payments. */
+.fp-capacity-card{
+  display:flex!important;flex-direction:column!important;
+  gap:4px!important;padding:8px 9px!important;
+  height:auto!important;max-height:none!important;
+  min-height:0!important;overflow:visible!important;
+  border-radius:11px!important;
+}
+.fp-capacity-heading{
+  display:flex;align-items:center;justify-content:space-between;gap:7px;
+  min-width:0;
+}
+.fp-capacity-heading strong{
+  color:#1d5264;font-size:11px;font-weight:800;
+  white-space:nowrap;
+}
+.fp-capacity-heading>span{
+  color:#668394;font-size:9px;white-space:nowrap;
+}
+.fp-capacity-card .fp-capacity-columns{gap:6px!important}
+.fp-capacity-card .fp-capacity-cell{
+  justify-content:flex-start!important;min-width:0!important;gap:2px!important;
+}
+.fp-capacity-card .fp-capacity-cell.price{padding-left:8px!important}
+.fp-capacity-card .fp-capacity-cell>span{
+  display:block!important;color:#456274!important;
+  font-size:10px!important;line-height:1.2!important;
+  font-weight:750!important;white-space:normal!important;
+  overflow-wrap:anywhere;
+}
+.fp-capacity-card .fp-capacity-cell>strong{
+  display:block!important;color:#174f74!important;
+  font-size:clamp(15px,4vw,19px)!important;
+  letter-spacing:-.055em!important;
+  line-height:1.2!important;
+  white-space:nowrap!important;
+  font-variant-numeric:tabular-nums;
+}
+.fp-capacity-card .fp-capacity-cell.price>strong{color:#1c6755!important}
+.fp-capacity-card .fp-capacity-cell>small{
+  display:block!important;
+  font-size:8px!important;line-height:1.3!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere;
+}
+.fp-capacity-card .fp-capacity-cell.price>.fp-capacity-interest{
+  display:block!important;
+  color:#397b68!important;
+  font-weight:750!important;
+  font-size:9px!important;line-height:1.25!important;
+}
+.fp-capacity-conditions{
+  display:flex;flex-wrap:wrap;align-items:center;
+  gap:3px 10px;min-width:0;
+  color:#566d7d;
+}
+.fp-capacity-conditions>span{
+  font-size:9px;line-height:1.25;font-weight:750;
+  white-space:nowrap;
+}
+.fp-capacity-example{
+  display:flex;flex-direction:column;gap:3px;
+  min-width:0;border:1px solid #d6e3eb;
+  border-radius:8px;background:#eef5f9;
+  padding:5px 7px;
+}
+.fp-capacity-example-main{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;
+  min-width:0;align-items:center;
+}
+.fp-capacity-example-main>span{
+  font-size:10px;font-weight:750;color:#355c72;
+  min-width:0;line-height:1.3;
+  overflow-wrap:anywhere;
+}
+.fp-capacity-example-main>strong{
+  color:#21537a;font-size:13px;font-weight:850;
+  white-space:nowrap;letter-spacing:-.045em;
+}
+.fp-capacity-example-status{
+  text-align:right;font-size:9px;line-height:1.25;font-weight:750;
+  white-space:normal;
+}
+.fp-capacity-example-status.over{color:#b14b3a}
+.fp-capacity-example-status.within{color:#258369}
+.fp-capacity-footnote{
+  margin:0!important;color:#718594;
+  font-size:8px!important;line-height:1.32!important;
+  overflow-wrap:anywhere;min-width:0;
+}
+/* Keep the month picker in the same row as the pie/details toggle.
+   There is deliberately no bar graph. */
+.fp-focus .fp-month-head{
+  display:flex!important;align-items:center!important;
+  justify-content:space-between!important;gap:6px!important;
+  flex:0 0 30px!important;
+  min-height:30px!important;max-height:30px!important;
+}
+.fp-month-select{
+  display:flex;align-items:center;gap:6px;
+  min-width:0;font-weight:750;color:#566e80;
+}
+.fp-month-select>span{
+  font-size:10px!important;line-height:1;
+  white-space:nowrap;
+}
+.fp-month-select select{
+  min-width:68px;height:28px;min-height:28px;
+  padding:0 8px;
+  border:1px solid #d8e4eb;border-radius:8px;
+  background:#fff;color:#215c88;
+  font-size:13px;font-weight:750;
+  touch-action:manipulation;
+}
+.fp-focus .fp-month-nav,
+.fp-focus .fp-month-bar{display:none!important}
+.fp-focus .fp-month-surplus{
+  display:grid!important;align-items:center!important;
+  flex:0 0 auto!important;
+  min-height:67px!important;
+  height:auto!important;max-height:none!important;
+  padding:8px 10px!important;
+  overflow:visible!important;
+}
+.fp-focus .fp-month-surplus>div{
+  justify-content:center!important;
+  min-width:0!important;gap:3px!important;
+}
+.fp-focus .fp-month-surplus span{
+  display:block!important;
+  line-height:1.35!important;
+  overflow-wrap:anywhere!important;
+}
+.fp-focus .fp-month-surplus strong{
+  display:block!important;
+  line-height:1.2!important;
+  white-space:nowrap!important;
+}
+.fp-focus .fp-month-surplus small{
+  display:block!important;
+  font-size:9px!important;
+  line-height:1.2!important;
+  max-width:100%!important;
+  overflow:visible!important;
+  white-space:normal!important;
+  text-overflow:clip!important;
+}
+/* Allow the relevant numbers to remain visible on shorter iPhones. */
+@media(max-height:760px){
+  .fp-capacity-card{padding:6px 8px!important;gap:3px!important}
+  .fp-capacity-card .fp-capacity-cell>span{font-size:9px!important}
+  .fp-capacity-card .fp-capacity-cell>strong{font-size:16px!important}
+  .fp-capacity-card .fp-capacity-cell>small{font-size:8px!important}
+  .fp-capacity-conditions>span{font-size:8px}
+  .fp-capacity-footnote{font-size:8px!important}
+  .fp-focus .fp-month-surplus{min-height:59px!important;padding:6px 8px!important}
+}
+@media(max-width:385px){
+  .fp-capacity-heading strong{font-size:10px}
+  .fp-capacity-heading>span{font-size:8px}
+  .fp-capacity-card .fp-capacity-cell>strong{font-size:15px!important}
+  .fp-capacity-card .fp-capacity-cell.price>.fp-capacity-interest{font-size:8px!important}
+  .fp-capacity-example-main>span{font-size:9px}
+  .fp-capacity-example-main>strong{font-size:12px}
+  .fp-month-select>span{font-size:9px!important}
+  .fp-month-select select{min-width:63px;padding:0 5px}
+}

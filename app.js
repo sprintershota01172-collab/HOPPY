@@ -615,12 +615,15 @@
     if(el.dataset.homeQuery!==undefined){state.filter.query=el.value;ui.homePage=0;save();const list=app.querySelector('.home-results');if(list){list.innerHTML=homeResults();hydratePhotos();}}
     if(el.dataset.study && ui.studyDraft){ui.studyDraft[el.dataset.study]=el.value;}
     if(el.dataset.sim){
-      const k=el.dataset.sim; const val=el.value;
+      const k=el.dataset.sim, val=el.value;
       state.plan[k]=['propertyId','highSchool','university'].includes(k)?val:(val!==''&&Number.isFinite(Number(val))?Number(val):0);
+      if(k==='propertyId'){
+        const linked=propById(val);
+        if(linked && num(linked.price)!==null)state.plan.propertyPrice=Number(linked.price);
+        const priceInput=app.querySelector('[data-sim="propertyPrice"]');
+        if(priceInput)priceInput.value=state.plan.propertyPrice;
+      }
       save();
-      if(k==='propertyId'){const p=propById(val);if(p&&Number.isFinite(Number(p.price)))state.plan.propertyPrice=Number(p.price);}
-      const priceInput=app.querySelector('[data-sim="propertyPrice"]');
-      if(k==='propertyId'&&priceInput)priceInput.value=state.plan.propertyPrice;
     }
     if(el.dataset.filter){state.filter[el.dataset.filter]=el.value;}
     if(el.dataset.criterionModel && ui.draft){let k=el.dataset.criterionModel;ui.draft[k]=k==='weight'?Number(el.value):el.value;}
@@ -670,6 +673,17 @@
   });
   app.addEventListener('change',async e=>{
     const el=e.target;
+    if(el.dataset?.sim){
+      const k=el.dataset.sim,val=el.value;
+      state.plan[k]=['propertyId','highSchool','university'].includes(k)?val:(val!==''&&Number.isFinite(Number(val))?Number(val):0);
+      if(k==='propertyId'){
+        const linked=propById(val);
+        if(linked&&num(linked.price)!==null)state.plan.propertyPrice=Number(linked.price);
+        const priceInput=app.querySelector('[data-sim="propertyPrice"]');
+        if(priceInput)priceInput.value=state.plan.propertyPrice;
+      }
+      save();
+    }
     if(el.id==='photo-upload'){
       let p=curProp();if(!p)return;
       try{for(const f of Array.from(el.files||[]).slice(0,12)){

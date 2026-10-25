@@ -100,7 +100,7 @@ click('fp-breakdown-select','education','annual');
 assert.match(app.innerHTML,/data-fp-breakdown-sheet/);
 assert.match(app.innerHTML,/年間の内訳|内訳/);
 assert.match(app.innerHTML,/イベント/);
-const yearOptions=app.innerHTML.match(/class="fp-breakdown-sheet-tab/g)||[];
+const yearOptions=app.innerHTML.match(/class="fp-breakdown-sheet-tab(?: active)?"/g)||[];
 assert.equal(yearOptions.length,5,'all categories selectable without scrolling parent');
 click('fp-breakdown-close');
 assert.doesNotMatch(app.innerHTML,/data-fp-breakdown-sheet/);

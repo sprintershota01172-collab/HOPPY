@@ -1518,3 +1518,59 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .fp-pie-key>div{font-size:8px}
  .fp-pie-totals span{padding:5px}
 }
+
+
+/* FP r8 — income statement with yearly/monthly switch; all content without scrolling. */
+.fp-report-screen .fp-result-nav{
+ display:grid!important;
+ grid-template-columns:repeat(5,minmax(0,1fr))!important;
+ gap:3px!important;
+}
+.fp-report-screen .fp-result-nav button{font-size:9px!important;letter-spacing:0;padding:0 1px;min-width:0}
+.fp-income-report{display:flex;flex-direction:column;gap:7px;min-height:0;overflow:hidden!important}
+.fp-income-toolbar{display:flex;gap:6px;justify-content:space-between;align-items:center;min-height:33px;flex:none}
+.fp-income-toolbar .fp-year-select{flex:1;min-width:0;min-height:33px}
+.fp-income-toolbar .fp-year-select select{font-size:10px;min-height:30px;width:auto;max-width:100%}
+.fp-income-toggle{display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:3px;background:#e7edef;border-radius:10px;min-width:127px;flex:none;height:33px}
+.fp-income-toggle button{border:0;border-radius:7px;background:transparent;color:#657784;font-size:10px;font-weight:750;white-space:nowrap}
+.fp-income-toggle button.active{background:#fff;color:#215a86;box-shadow:0 1px 4px #1c31471e}
+.fp-income-total{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 12px;min-height:60px;flex:none;
+ background:linear-gradient(120deg,#283b51,#3a5066);border-radius:13px;color:#fff}
+.fp-income-total span{font-size:10px;color:#d2dfe8;font-weight:750}
+.fp-income-total strong{font-size:24px;letter-spacing:-.04em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fp-income-total small{font-size:10px;letter-spacing:0;margin-left:3px}
+.fp-income-lines{display:flex;flex-direction:column;gap:5px;min-height:0;flex:none}
+.fp-income-line{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto 3px;gap:3px 8px;
+ padding:5px 9px;background:#fff;border:1px solid #e5ebef;border-radius:9px;min-height:33px}
+.fp-income-line>span{font-size:10px;color:#667788;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;align-self:center}
+.fp-income-line>strong{font-size:12px;color:#273d4f;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fp-income-track{grid-column:1/3;min-width:0;height:3px;background:#edf1f4;border-radius:5px;overflow:hidden}
+.fp-income-track i{display:block;height:100%;border-radius:5px;background:#4f86aa}
+.fp-income-line:nth-child(2n) .fp-income-track i{background:#84aaba}
+.fp-income-timeline{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:2px;min-height:69px;max-height:69px;
+ padding:4px 3px 3px;flex:none;background:#fff;border:1px solid #e6ecef;border-radius:10px}
+.fp-income-timeline button{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;
+ padding:1px 0;background:transparent;border:0;border-radius:5px;min-width:0}
+.fp-income-timeline button span{display:block;width:65%;max-width:13px;background:#88adc0;border-radius:3px 3px 0 0;min-height:3px}
+.fp-income-timeline button.selected{background:#edf5fb}
+.fp-income-timeline button.selected span{background:#2a6bb0}
+.fp-income-timeline button small{font-size:8px;color:#6d7d89;line-height:1}
+.fp-income-report .fp-r-help{font-size:9px;line-height:1.35}
+.fp-event-fields{grid-template-columns:1fr 1fr 1fr 1fr;gap:4px}
+.fp-event-fields label{font-size:8px}
+.fp-event-fields input,.fp-event-fields select{font-size:10px;padding:0 3px}
+@media(max-height:760px){
+ .fp-income-report{gap:4px}
+ .fp-income-total{min-height:50px;padding:7px 9px}
+ .fp-income-total strong{font-size:21px}
+ .fp-income-line{min-height:29px;padding:4px 7px;gap:2px 5px}
+ .fp-income-line strong{font-size:11px}
+ .fp-income-timeline{min-height:57px;max-height:57px}
+ .fp-income-report .fp-r-help{font-size:8px;line-height:1.25}
+}
+@media(max-height:630px){
+ .fp-income-lines{gap:3px}
+ .fp-income-line{padding:3px 6px;min-height:25px}
+ .fp-income-total{min-height:43px}
+ .fp-income-timeline{min-height:48px;max-height:48px}
+}

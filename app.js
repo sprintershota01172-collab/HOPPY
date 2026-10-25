@@ -497,7 +497,7 @@
       '<span><strong>'+esc(fpHistoryDate(x))+'</strong><small>物件価格 '+yen(Number(x.plan.propertyPrice)||0,0)+'万円・'+yen(Number(x.plan.loanYears)||35,0)+'年ローン</small></span>'+
       '<b>'+(x.id===(fpLatestSnapshot()?.id)?'表示中':'表示 ›')+'</b></button>').join('');
     return '<section class="screen sim-screen fp-result-screen fp-history-screen">'+
-      '<div class="sim-intro"><span class="kicker">FP • HISTORY / r6</span><button class="btn compact" data-act="fp-history-close">閉じる ×</button></div>'+
+      '<div class="sim-intro"><span class="kicker">FP • HISTORY / r7</span><button class="btn compact" data-act="fp-history-close">閉じる ×</button></div>'+
       '<h2 class="sim-result-title">過去の診断結果</h2>'+
       '<p class="fp-r-help">条件を保存した時点の結果を確認できます。過去の入力条件は変更されません。</p>'+
       '<div class="fp-history-items grow">'+cards+'</div>'+
@@ -519,7 +519,7 @@
     ui.simSubPage=Math.max(0,Math.min(pages.length-1,Number(ui.simSubPage)||0));
     const n=ui.simSubPage;
     const labels=i===2?['食費・住居','水道光熱','日常費','保険等']:i===4?['購入','維持費']:i===5?['資産','積立']:null;
-    return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR / r6</span>'+
+    return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR / r7</span>'+
       (p.hasRun?'<button class="fp-recall-btn" data-act="fp-view-budget">前回の診断を見る ↗</button>':'<span class="sim-progress-text">'+(i+1)+' / 7</span>')+
       '</div><div class="sim-progress">'+Array.from({length:7},(_,x)=>'<span class="'+(x<=i?'filled':'')+'"></span>').join('')+'</div>'+
       '<div class="sim-question"><h2>'+simQuestions[i][0]+'</h2><p>'+simQuestions[i][1]+'</p></div>'+
@@ -1065,7 +1065,7 @@
       budget=fpBudget(),rating=fpRating(price),warnings=fpPlanWarnings(),
       page=Math.min(3,Math.max(0,ui.simResultPage||0));
     const heading=['購入後の家計','収支予測グラフ','計算根拠','アドバイス'][page];
-    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r6</span>'+
+    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r7</span>'+
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button></div></div>';

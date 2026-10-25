@@ -170,6 +170,8 @@ assert.match(a.app.innerHTML,/金利＋1％/);
 a.click('fp-result-next');
 assert.match(a.app.innerHTML,/支出の内訳/);
 assert.match(a.app.innerHTML,/年間の支出明細/);
+// The annual ledger is intentionally paginated to avoid vertical scroll.
+for(let page=1;!a.app.innerHTML.includes('学資保険') && page<30;page++)a.click('fp-ledger-page',String(page));
 assert.match(a.app.innerHTML,/学資保険/);
 a.click('fp-result-tab','2');
 assert.match(a.app.innerHTML,/現金とNISAの推移/);

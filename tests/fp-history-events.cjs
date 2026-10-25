@@ -54,7 +54,7 @@ assert.match(a.app.innerHTML,/月ごとの収支/);
 a.click('fp-result-tab','0');
 assert.match(a.app.innerHTML,/fp-pie-shortcut/);
 a.click('fp-pie-open');
-assert.match(a.app.innerHTML,/選択項目の内訳 年額/);
+assert.match(a.app.innerHTML,/生活費・保険等の内訳/);
 assert.match(a.app.innerHTML,/data-fp-inline-breakdown/);
 assert.match(a.app.innerHTML,/fp-pie-chart/);
 a.click('fp-history-open');

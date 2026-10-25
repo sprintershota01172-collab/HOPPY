@@ -707,7 +707,7 @@ html,body,.app-shell{background:var(--paper)}
 .main > .screen,
 .full > .full-header,
 .full > .full-body{
-  animation:hoppo-subtle-enter .22s cubic-bezier(.22,.61,.36,1) both;
+  animation:hoppo-subtle-enter .22s cubic-bezier(.22,.61,.36,1) both !important;
 }
 @media(prefers-reduced-motion:reduce){
   .main > .screen,.full > .full-header,.full > .full-body{

@@ -333,7 +333,7 @@
     if(i===4)body='<div class="sim-grid">'+nField('結婚式の支払年','weddingYear','年')+nField('結婚式自己負担','weddingCost','万円')+
       nField('新婚旅行費','honeymoonCost','万円')+nField('NISA積立','nisaMonthly','万円/月')+
       sSelect('高校','highSchool',[['public','公立'],['private','私立']])+sSelect('大学','university',[['public','国公立'],['private','私立']])+'</div>';
-    return '<section class="screen sim-screen"><div class="sim-intro"><span class="kicker">LIFE SIMULATOR</span><span class="sim-progress-text">'+(i+1)+' / 5</span></div>'+
+    return '<section class="screen sim-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR</span>'+(p.hasRun?'<button class="fp-recall-btn" data-act="fp-view-budget">前回の診断を見る ↗</button>':'<span class="sim-progress-text">'+(i+1)+' / 5</span>')+'</div>'+
       '<div class="sim-progress">'+Array.from({length:5},(_,n)=>'<span class="'+(n<=i?'filled':'')+'"></span>').join('')+'</div>'+
       '<div class="sim-question"><h2>'+simQuestions[i][0]+'</h2><p>'+simQuestions[i][1]+'</p></div>'+
       '<div class="panel sim-form grow">'+body+'</div>'+

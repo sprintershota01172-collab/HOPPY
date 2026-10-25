@@ -455,7 +455,7 @@
     ui.simSubPage=Math.max(0,Math.min(pages.length-1,Number(ui.simSubPage)||0));
     const n=ui.simSubPage;
     const labels=i===2?['食費・住居','水道光熱','日常費','保険等']:i===4?['購入','維持費']:i===5?['資産','積立']:null;
-    return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR / r2</span>'+
+    return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR / r3</span>'+
       (p.hasRun?'<button class="fp-recall-btn" data-act="fp-view-budget">前回の診断を見る ↗</button>':'<span class="sim-progress-text">'+(i+1)+' / 7</span>')+
       '</div><div class="sim-progress">'+Array.from({length:7},(_,x)=>'<span class="'+(x<=i?'filled':'')+'"></span>').join('')+'</div>'+
       '<div class="sim-question"><h2>'+simQuestions[i][0]+'</h2><p>'+simQuestions[i][1]+'</p></div>'+
@@ -674,7 +674,7 @@
     let eduTotal=0;
     for(let k=0;k<eduKids;k++)for(let age=0;age<22;age++)eduTotal+=educationAnnual(age,p);
     const heading=['あなたの住宅予算','支出の内訳','現金とNISAの推移','教育費の準備'][page];
-    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r2</span><button class="btn compact" data-act="sim-restart">回答を編集 <span aria-hidden="true">↗</span></button></div>';
+    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r3</span><button class="btn compact" data-act="sim-restart">回答を編集 <span aria-hidden="true">↗</span></button></div>';
     const steps='<div class="fp-result-nav">'+['予算','支出','資産','教育'].map((x,i)=>
       '<button data-act="fp-result-tab" data-value="'+i+'" class="'+(page===i?'active':'')+'">'+x+'</button>').join('')+'</div>';
     let content='';

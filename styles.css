@@ -2625,3 +2625,25 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .fp-month-select>span{font-size:9px!important}
   .fp-month-select select{min-width:63px;padding:0 5px}
 }
+
+
+/* iOS select controls should not zoom the viewport when the month changes. */
+.fp-month-select select{font-size:16px!important}
+.fp-focus .fp-capacity-card{max-width:100%!important}
+.fp-focus .fp-capacity-card .fp-capacity-columns{min-width:0!important}
+.fp-focus .fp-capacity-card .fp-capacity-example-main>span{min-width:0!important}
+/* Avoid forcibly clipping the right-hand savings label or its month-end amount. */
+.fp-focus .fp-month-surplus>div+div{overflow:visible!important;min-height:0!important}
+.fp-focus .fp-month-surplus small{flex:0 0 auto!important}
+/* In short landscape screens, make the report pane itself the safety valve
+   rather than hiding any of the calculated figures. */
+@media(max-height:600px){
+  .fp-focus .fp-month-report{
+    overflow-y:auto!important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .fp-focus .fp-month-report>.fp-breakdown-panel{
+    flex:0 0 auto!important;min-height:125px!important;
+  }
+}

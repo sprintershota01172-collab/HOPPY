@@ -1,115 +1,83 @@
-// Regression: FP pie slice details must never live inside the clipped chart pane.
-// The detail sheet is a direct app-shell child with its own scrolling list.
-const assert=require('node:assert/strict');
-const fs=require('node:fs');
-const vm=require('node:vm');
-
-let source=fs.readFileSync('app.js','utf8');
+// HOPPY FP inline allocation: no screen change, current year, editable details.
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+let src=fs.readFileSync('app.js','utf8');
 const anchor="  save();render();\n  if('serviceWorker'";
-assert.ok(source.includes(anchor));
-source=source.replace(anchor,"  window.__fpBreakdownTest={state,ui,modelYears,fpYearPoint,fpMonthlyLedger,fpIncomeAllocation,fpMonthlyAllocation,fpPieBreakdownRows,fpMonthlyPie,fpPieChart};\n"+anchor);
+assert.ok(src.includes(anchor));
+src=src.replace(anchor,
+  "  window.__breakdownTest={getState:()=>state,ui,modelYears,fpYearPoint,fpMonthlyLedger,fpIncomeAllocation,fpMonthlyAllocation,fpPieBreakdownRows};\n"+anchor);
+const saved={},listeners={};
+let sequence=0,tick=1000;
+class FakeDate extends Date{static now(){return tick+=2000;}}
+const app={innerHTML:'',querySelector(){return null},querySelectorAll(){return []},
+  contains(){return true},addEventListener(k,f){listeners[k]=f},insertAdjacentHTML(){}};
+const win={matchMedia(){return {matches:false}},crypto:{randomUUID(){return String(++sequence)}},addEventListener(){}};
+vm.runInNewContext(src,{document:{getElementById(){return app}},window:win,
+ localStorage:{getItem(k){return saved[k]||null},setItem(k,v){saved[k]=v}},navigator:{},
+ location:{protocol:'http:',hostname:'invalid.test'},Date:FakeDate,crypto:win.crypto,confirm(){return true},
+ setTimeout(){return 0},clearTimeout(){},Intl,console,URL,Number,Math,Array,JSON,String,Promise},{filename:'app.js'});
+const api=win.__breakdownTest,p=api.getState().plan;
+const click=(act,value='',period='')=>listeners.click({target:{closest(){return {dataset:{act,value,period}}}},preventDefault(){}});
+const selectYear=y=>listeners.change({target:{dataset:{fpYear:''},value:String(y)}});
+const change=(field,value)=>listeners.change({target:{dataset:{fpBreakdownField:field},value:String(value)}});
+Object.assign(p,{children:0,propertyPrice:4500,purchaseYear:2028,purchaseMonth:9,
+ foodMonthly:3.3,livingMonthly:4.4,rentMonthly:8,managementMonthly:.5,parkingMonthly:.5,
+ housingOngoing:2,nisaMonthly:3,otherInvestMonthly:2,downPayment:0,
+ waterBiMonthly:.6,electricityMonthly:1.2,annualTax:6,
+ carTaxAnnual:4,travelAnnual:6,weddingCost:0,honeymoonCost:0,simulateUntil:2038,
+ events:[{id:'eve',year:2028,month:10,type:'expense',amount:80,name:'引越祝い',kind:'custom'}],
+ expenses:[{id:'extra',name:'習い事',amount:1,cycle:'month',start:0,end:0}]});
 
-const store={},listeners={};
-let now=1000,sequence=0;
-class FakeDate extends Date{static now(){return now+=1600;}}
-const app={
-  innerHTML:'',querySelector(){return null},querySelectorAll(){return []},
-  contains(){return true},addEventListener(name,fn){listeners[name]=fn},
-  insertAdjacentHTML(){}
-};
-const win={
-  matchMedia(){return{matches:false}},
-  crypto:{randomUUID(){return 'test-'+(++sequence)}},
-  addEventListener(){}
-};
-vm.runInNewContext(source,{
- document:{getElementById(){return app}},window:win,
- localStorage:{getItem(k){return store[k]||null},setItem(k,v){store[k]=v}},
- navigator:{},location:{protocol:'http:',hostname:'invalid.test'},Date:FakeDate,
- crypto:win.crypto,confirm(){return true},setTimeout(){return 0},clearTimeout(){},
- Intl,console,URL,Number,Math,Array,JSON,String,Promise
-},{filename:'app.js'});
-const api=win.__fpBreakdownTest,p=api.state.plan;
-const click=(act,value='',period='')=>listeners.click({
-  target:{closest(){return{dataset:{act,value,period}}}},
-  preventDefault(){}
-});
-const change=dataset=>listeners.change({target:{dataset,value:'4.5'}});
-
-Object.assign(p,{
-  children:0,propertyPrice:4500,purchaseYear:2028,simulateUntil:2035,
-  foodMonthly:3,livingMonthly:8,carMonthly:1,waterBiMonthly:.7,
-  electricityMonthly:1.2,annualTax:6,carTaxAnnual:4,travelAnnual:8,
-  nisaMonthly:3,otherInvestMonthly:1,weddingCost:0,honeymoonCost:0,
-  expenses:[{id:'extra',name:'習い事',amount:2,cycle:'month',start:0,end:0}],
-  events:[{id:'wedding',name:'結婚式',amount:250,year:2028,month:2,type:'expense',kind:'wedding'}]
-});
-
-// All plotted slices reconcile with the contents of the sheet.
 let reconciled=0;
 for(const year of [2026,2028,2030]){
-  const point=api.modelYears(p.propertyPrice,true).points.find(x=>x.year===year);
-  const annual=api.fpIncomeAllocation(point);
-  for(const slice of annual.items){
-    const sum=api.fpPieBreakdownRows(point,null,slice.id).reduce((a,b)=>a+b.amount,0);
-    assert.ok(Math.abs(sum-slice.amount)<1e-7,year+' annual '+slice.id);
-    reconciled++;
+ const point=api.modelYears(p.propertyPrice,true).points.find(x=>x.year===year);
+ const annual=api.fpIncomeAllocation(point);
+ for(const item of annual.items){
+  const sum=api.fpPieBreakdownRows(point,null,item.id).reduce((a,x)=>a+x.amount,0);
+  assert.ok(Math.abs(sum-item.amount)<1e-7,year+' annual '+item.id+' '+sum+' != '+item.amount);
+  reconciled++;
+ }
+ for(const month of api.fpMonthlyLedger(point).months){
+  for(const item of api.fpMonthlyAllocation(month).items){
+   const sum=api.fpPieBreakdownRows(point,month,item.id).reduce((a,x)=>a+x.amount,0);
+   assert.ok(Math.abs(sum-item.amount)<1e-7,year+' '+month.month+' '+item.id+' '+sum+' != '+item.amount);
+   reconciled++;
   }
-  for(const record of api.fpMonthlyLedger(point).months){
-    for(const slice of api.fpMonthlyAllocation(record).items){
-      const sum=api.fpPieBreakdownRows(point,record,slice.id).reduce((a,b)=>a+b.amount,0);
-      assert.ok(Math.abs(sum-slice.amount)<1e-7,year+'/'+record.month+' '+slice.id);
-      reconciled++;
-    }
-  }
+ }
 }
-
-click('tab','sim');
-for(let i=0;i<7;i++)click('sim-next');
-click('fp-result-tab','1');
+click('tab','sim');for(let i=0;i<7;i++)click('sim-next');
+assert.match(app.innerHTML,/月ごとの収支/,'FP opens directly to monthly cashflow');
+assert.equal(api.ui.fpYear,new Date().getFullYear(),'selected year starts with the current year');
+assert.match(app.innerHTML,/data-fp-inline-breakdown/,'details are within the monthly report');
 assert.match(app.innerHTML,/fp-month-pie/);
-assert.match(app.innerHTML,/項目別内訳を見る/);
-assert.doesNotMatch(app.innerHTML,/fp-breakdown-panel/,'monthly pie must not force an inline detail panel');
-click('fp-breakdown-select','living','monthly');
-assert.match(app.innerHTML,/data-fp-breakdown-sheet/);
-assert.match(app.innerHTML,/fp-breakdown-list/);
-assert.match(app.innerHTML,/食費/);
-assert.ok(app.innerHTML.indexOf('data-fp-breakdown-sheet')>app.innerHTML.indexOf('</nav>'),
-  'sheet must be a child of #app after the bottom navigation');
-for(const key of ['housing','education','investing','remaining']){
-  click('fp-breakdown-select',key,'monthly');
-  assert.match(app.innerHTML,new RegExp('class="fp-breakdown-sheet-tab active"[^>]*data-value="'+key+'"|data-value="'+key+'" class="fp-breakdown-sheet-tab active"'),
-    'category tab '+key);
-}
+assert.doesNotMatch(app.innerHTML,/data-fp-breakdown-sheet/,'no full-screen sheet');
+assert.ok(app.innerHTML.indexOf('fp-month-pie')<app.innerHTML.indexOf('data-fp-inline-breakdown'),
+  'selected detail is placed below the monthly pie');
+
+click('fp-breakdown-select','housing','monthly');
+assert.match(app.innerHTML,/家賃/,'rent displayed before buying');
+assert.match(app.innerHTML,/data-fp-breakdown-field="rentMonthly"/);
+selectYear(2028);click('fp-cash-month','9');
+click('fp-breakdown-select','housing','monthly');
+assert.match(app.innerHTML,/住宅ローン返済/,'mortgage displayed from purchase month');
+assert.match(app.innerHTML,/住宅維持費/);
 click('fp-breakdown-select','investing','monthly');
 assert.match(app.innerHTML,/data-fp-breakdown-field="nisaMonthly"/);
-const prior=p.nisaMonthly;
-change({fpBreakdownField:'nisaMonthly'});
-assert.equal(p.nisaMonthly,4.5,'editing the amount updates source data');
-assert.match(app.innerHTML,/data-fp-breakdown-sheet/,'editor retains sheet');
-const after=api.modelYears(p.propertyPrice,true).points.find(x=>x.year===2028);
-assert.equal(after.investing,12*(4.5+p.otherInvestMonthly),'forecast recalculates monthly contributions');
-assert.notEqual(prior,p.nisaMonthly);
+change('nisaMonthly',4.5);
+assert.equal(p.nisaMonthly,4.5,'inline editing saved original field');
+assert.match(app.innerHTML,/data-fp-inline-breakdown/,'editing does not navigate');
+assert.match(app.innerHTML,/NISA積立/);
+assert.equal(api.modelYears(p.propertyPrice,true).points.find(x=>x.year===2028).investing,
+  12*(4.5+p.otherInvestMonthly),'forecast recalculated');
 
-click('fp-breakdown-close');
-assert.doesNotMatch(app.innerHTML,/data-fp-breakdown-sheet/,'close returns to chart');
-click('fp-result-tab','3');
-click('fp-chart-page','3');
-assert.match(app.innerHTML,/fp-pie-figure/);
-assert.doesNotMatch(app.innerHTML,/fp-breakdown-panel/,'annual pie must not force an inline detail panel');
+click('fp-result-tab','3');click('fp-chart-page','3');
+assert.match(app.innerHTML,/fp-pie-chart/);
+assert.match(app.innerHTML,/data-fp-inline-breakdown/,'annual details remain under pie');
 click('fp-breakdown-select','education','annual');
-assert.match(app.innerHTML,/data-fp-breakdown-sheet/);
-assert.match(app.innerHTML,/年間の内訳|内訳/);
-assert.match(app.innerHTML,/イベント/);
-const yearOptions=app.innerHTML.match(/class="fp-breakdown-sheet-tab(?: active)?\s*"/g)||[];
-assert.equal(yearOptions.length,5,'all categories selectable without scrolling parent');
-click('fp-breakdown-close');
-assert.doesNotMatch(app.innerHTML,/data-fp-breakdown-sheet/);
+assert.match(app.innerHTML,/頭金・住宅購入諸費用/);
+assert.ok(app.innerHTML.indexOf('fp-pie-figure')<app.innerHTML.indexOf('data-fp-inline-breakdown'));
 
 const css=fs.readFileSync('styles.css','utf8');
-assert.match(css,/\.app-shell\s*>\s*\.fp-breakdown-sheet\s*\{[^}]*position:absolute!important/);
-assert.match(css,/\.fp-breakdown-sheet\s+\.fp-breakdown-list\s*\{[^}]*overflow-y:auto!important/);
-assert.match(css,/\.fp-breakdown-sheet\s+\.fp-breakdown-list\s*\{[^}]*touch-action:pan-y/);
-assert.match(css,/env\(safe-area-inset-bottom/);
-assert.match(css,/\.fp-breakdown-sheet\s+\.fp-breakdown-edit input\s*\{[^}]*font-size:16px/);
-console.log('HOPPY full-screen FP breakdown sheet:',reconciled,'reconciled slices; navigation, editing, scroll CSS PASS');
+assert.match(css,/\.fp-month-report:has\(\.fp-breakdown-panel\)/);
+assert.match(css,/\.fp-breakdown-panel \.fp-breakdown-list\s*\{[^}]*overflow-y:auto!important/);
+assert.match(css,/\.fp-breakdown-panel \.fp-breakdown-edit input\s*\{[^}]*font-size:16px/);
+console.log('HOPPY inline monthly/annual breakdown: '+reconciled+' reconciled slices and editable inputs PASS');

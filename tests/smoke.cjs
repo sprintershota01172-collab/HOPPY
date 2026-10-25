@@ -46,7 +46,7 @@ assert.match(a.app.innerHTML,/status-chip-row/);
 a.click('seed');
 assert.equal(a.state().properties.length,3);
 assert.equal(a.state().selected.length,3);
-assert.match(a.app.innerHTML,/サンプルA/);
+assert.match(a.app.innerHTML,/サンプルC/);
 assert.match(a.app.innerHTML,/property-list-card/);
 a.click('home-status','気になる');
 assert.match(a.app.innerHTML,/is-active/);

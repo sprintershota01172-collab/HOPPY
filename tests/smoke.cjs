@@ -177,7 +177,7 @@ a.click('fp-result-next');
 assert.match(a.app.innerHTML,/現金と投資資産/);
 assert.match(a.app.innerHTML,/NISA評価額/);
 a.click('fp-result-next');
-assert.match(a.app.innerHTML,/収支予測グラフ/);
+assert.match(a.app.innerHTML,/年収支/);
 assert.match(a.app.innerHTML,/購入後の現金残高/);
 assert.match(a.app.innerHTML,/fp-r-chart/);
 a.click('fp-chart-page','1');

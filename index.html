@@ -16,7 +16,12 @@
 </head>
 <body>
   <div id="app" class="app-shell">
-    <div class="boot"><span class="brand-mark">H.</span><strong>ほっぽさん</strong><small>わたしたちの家探し</small></div>
+    <div class="boot" aria-hidden="true"><span class="boot-orbit"></span></div>
+  </div>
+  <div id="hoppo-launch" class="hoppo-launch" role="status" aria-live="off" aria-label="ホッポさんを起動しています">
+    <div class="hoppo-launch-mark" aria-hidden="true"><span class="hoppo-launch-halo"></span><span class="hoppo-launch-core"></span></div>
+    <strong class="hoppo-launch-name">ホッポさん</strong>
+    <small class="hoppo-launch-sub">OUR HOME PLAN</small>
   </div>
   <!-- Service worker updates take effect on the next visit. Avoid reloading
        the active app while the user is moving between screens or editing. -->

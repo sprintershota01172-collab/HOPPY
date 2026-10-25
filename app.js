@@ -1460,6 +1460,31 @@
     if(action==='fp-pie-open')return step(()=>{ui.simResultPage=1;ui.fpChartPage=3;});
     if(action==='fp-result-tab')return step(()=>{ui.simResultPage=Math.min(3,Math.max(0,Number(v)||0));ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
     if(action==='fp-legacy-utilities-clear')return step(()=>{state.plan.utilitiesMonthly=0;save();message('旧光熱費の合算額を削除しました');});
+    if(action==='fp-event-add'){
+      if(state.plan.events.length>=30)return message('イベントは30件までです');
+      const kind=['wedding','honeymoon'].includes(v)?v:'custom';
+      const existing=kind!=='custom'?state.plan.events.find(x=>x.kind===kind):null;
+      if(existing)return step(()=>{ui.simStep=6;ui.simSubPage=2+Math.floor(state.plan.events.indexOf(existing)/2);});
+      return step(()=>{
+        const year=Math.max(simNowYear(),Math.floor(safeNum(state.plan.weddingYear,simNowYear())));
+        const record={id:uid(),name:kind==='wedding'?'結婚式':kind==='honeymoon'?'新婚旅行':'新しいイベント',
+          year,amount:kind==='wedding'?safeNum(state.plan.weddingCost):kind==='honeymoon'?safeNum(state.plan.honeymoonCost):0,
+          type:'expense',kind};
+        if(kind==='wedding')state.plan.weddingCost=0;
+        if(kind==='honeymoon')state.plan.honeymoonCost=0;
+        state.plan.events.push(record);
+        ui.simStep=6;ui.simSubPage=2+Math.floor((state.plan.events.length-1)/2);
+        save();
+      });
+    }
+    if(action==='fp-event-delete'){
+      if(!confirm('このイベントを削除しますか？'))return;
+      return step(()=>{
+        state.plan.events=state.plan.events.filter(x=>x.id!==v);
+        ui.simSubPage=Math.min(ui.simSubPage,fpWizardPages(6).length-1);
+        save();
+      });
+    }
     if(action==='fp-expense-add')return step(()=>{if(state.plan.expenses.length>=35)return message('追加支出は35項目までです');state.plan.expenses.push({id:uid(),name:'新しい支出',amount:0,cycle:'month',start:0,end:0});ui.simSubPage=2+Math.max(1,Math.ceil(state.plan.events.length/2))+Math.floor((state.plan.expenses.length-1)/2);save();});
     if(action==='fp-expense-delete'){if(!confirm('この追加支出を削除しますか？'))return;return step(()=>{state.plan.expenses=state.plan.expenses.filter(x=>x.id!==v);ui.simSubPage=Math.min(ui.simSubPage,fpWizardPages(6).length-1);save();});}
     if(action==='fp-result-next')return step(()=>{ui.simResultPage=(ui.simResultPage+1)%4;ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
@@ -1587,6 +1612,18 @@
     if(el.dataset.memoProperty!==undefined){ui.memoPropertyId=el.value;ui.memoPage=0;ui.memoSwipeKey=null;render();return;}
     if(el.dataset.study && ui.studyDraft){ui.studyDraft[el.dataset.study]=el.value;}
     if(el.dataset?.fpYear!==undefined){ui.fpYear=Math.floor(Number(el.value)||0);ui.fpLedgerPage=0;render();return;}
+    if(el.dataset?.eventId && el.dataset?.eventKey){
+      const item=state.plan.events.find(x=>x.id===el.dataset.eventId);
+      if(item){
+        const k=el.dataset.eventKey,value=el.value;
+        if(k==='name')item.name=String(value).slice(0,50);
+        if(k==='year')item.year=Math.max(2020,Math.min(2100,Math.floor(Number(value)||simNowYear())));
+        if(k==='amount')item.amount=Math.max(0,Number(value)||0);
+        if(k==='type')item.type=value==='income'?'income':'expense';
+        save();
+      }
+      return;
+    }
     if(el.dataset?.fpId && el.dataset?.fpKey){
       const entry=state.plan.expenses.find(x=>x.id===el.dataset.fpId);
       if(entry){const k=el.dataset.fpKey;entry[k]=k==='name'?String(el.value).slice(0,50):k==='cycle'?(el.value==='year'?'year':'month'):(k==='amount'?Math.max(0,Math.min(10000,Number(el.value)||0)):Math.max(0,Math.min(2100,Math.floor(Number(el.value)||0))));save();}
@@ -1654,6 +1691,18 @@
     if(el.dataset?.memoProperty!==undefined){ui.memoPropertyId=el.value;ui.memoPage=0;ui.memoSwipeKey=null;render();return;}
     if(el.dataset?.study && ui.studyDraft){ui.studyDraft[el.dataset.study]=el.value;}
     if(el.dataset?.fpYear!==undefined){ui.fpYear=Math.floor(Number(el.value)||0);ui.fpLedgerPage=0;render();return;}
+    if(el.dataset?.eventId && el.dataset?.eventKey){
+      const item=state.plan.events.find(x=>x.id===el.dataset.eventId);
+      if(item){
+        const k=el.dataset.eventKey,value=el.value;
+        if(k==='name')item.name=String(value).slice(0,50);
+        if(k==='year')item.year=Math.max(2020,Math.min(2100,Math.floor(Number(value)||simNowYear())));
+        if(k==='amount')item.amount=Math.max(0,Number(value)||0);
+        if(k==='type')item.type=value==='income'?'income':'expense';
+        save();
+      }
+      return;
+    }
     if(el.dataset?.fpId && el.dataset?.fpKey){
       const entry=state.plan.expenses.find(x=>x.id===el.dataset.fpId);
       if(entry){const k=el.dataset.fpKey;entry[k]=k==='name'?String(el.value).slice(0,50):k==='cycle'?(el.value==='year'?'year':'month'):(k==='amount'?Math.max(0,Math.min(10000,Number(el.value)||0)):Math.max(0,Math.min(2100,Math.floor(Number(el.value)||0))));save();}

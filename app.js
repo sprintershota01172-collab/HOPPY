@@ -281,7 +281,7 @@
     if(action==='score-set')return step(()=>{setScore(ui.scoreProperty,ui.scoreCriterion,ui.scoreRater,v==='clear'?null:Number(v));ui.overlay='';});
     if(action==='export')return exportData();
   }
-  app.addEventListener('click',e=>{let b=e.target.closest('[data-act]');if(!b || !app.contains(b))return;e.preventDefault();handler(b.dataset.act,b);});
+  app.addEventListener('click',e=>{if(Date.now()-lastSwipeAt<350){e.preventDefault();return;}let b=e.target.closest('[data-act]');if(!b || !app.contains(b))return;e.preventDefault();handler(b.dataset.act,b);});
   app.addEventListener('input',e=>{
     let el=e.target,p=curProp();
     if(el.dataset.model && ui.draft){
@@ -302,7 +302,14 @@
         p.notes[type][ui.noteIndex]=text.slice(0,split);
         const next=ui.noteIndex+1;
         if(p.notes[type].length<=next)p.notes[type].push('');
-        p.notes[type][next]=(carry+p.notes[type][next]).slice(0,220);
+        let remaining=carry,index=next;
+        while(remaining && index<30){
+          if(p.notes[type].length<=index)p.notes[type].push('');
+          const combined=remaining+p.notes[type][index];
+          p.notes[type][index]=combined.slice(0,220);
+          remaining=combined.slice(220);index++;
+        }
+        if(remaining)message('メモが30ページに達しています');
         ui.noteIndex=next;save();render();
         const upcoming=app.querySelector('[data-note]');
         if(upcoming){upcoming.focus();upcoming.setSelectionRange(carry.length,carry.length);}
@@ -326,11 +333,12 @@
     }
     if(el.id==='json-import'&&el.files?.[0]){await importData(el.files[0]);}
   });
-  let touch=null;
-  app.addEventListener('touchstart',e=>{const zone=e.target.closest('.swipe-zone');if(!zone||e.target.closest('input,textarea,select,button,label')){touch=null;return;}touch={x:e.changedTouches[0].clientX,y:e.changedTouches[0].clientY};},{passive:true});
+  let touch=null, lastSwipeAt=0;
+  app.addEventListener('touchstart',e=>{const zone=e.target.closest('.swipe-zone');if(!zone||e.target.closest('input,textarea,select,label')){touch=null;return;}touch={x:e.changedTouches[0].clientX,y:e.changedTouches[0].clientY};},{passive:true});
   app.addEventListener('touchend',e=>{
     if(!touch)return;let dx=e.changedTouches[0].clientX-touch.x,dy=e.changedTouches[0].clientY-touch.y;touch=null;
     if(Math.abs(dx)<55||Math.abs(dy)>Math.abs(dx)*.7)return;
+    lastSwipeAt=Date.now();
     const d=dx<0?1:-1;
     if(ui.overlay==='detail'){
       const p=curProp();if(ui.propertyPage===2&&p.photos.length>1)return step(()=>changePage('photoIndex',p.photos.length,d));

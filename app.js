@@ -809,31 +809,38 @@
       downPayment:safeNum(p.downPayment),rate:safeNum(p.interest),loanYears:safeNum(p.loanYears,35),
       loanPayment,spending,investing,referenceYear:fpDecisionYear()};
   }
-  // Transparent monthly-payment-to-home-price bridge. FP budgets are estimates,
-  // not bank underwriting; fees and available upfront cash must be checked separately.
+  // Households choose a safe payment budget; banks determine actual eligibility.
+  // Show the budget separately from the simulated payment for the chosen home.
   function fpMortgageCapacityCard(){
-    const b=fpBudget(),p=state.plan,reference=b.referenceYear;
-    const rate=yen(b.rate,2),years=Math.round(b.loanYears),
-      downPaid=Math.min(b.amount,b.downPayment),homePrice=fpYen(b.amount),
-      loan=fpYen(Math.max(0,b.amount-b.downPayment)),
-      payments=Math.max(12,Math.round(b.loanYears*12)),
-      monthlyForShownPrice=mortgageMonthly(b.amount,b.downPayment,b.rate,b.loanYears),
-      totalWithInterest=downPaid+monthlyForShownPrice*payments,
-      interestTotal=Math.max(0,totalWithInterest-b.amount);
-    const belowCost=b.housingBudget<b.maintenance;
-    return '<section class="fp-capacity-card" aria-label="月々のローン返済目安と購入可能な物件価格">'+
+    const b=fpBudget(),p=state.plan,reference=b.referenceYear,
+      price=safeNum(p.propertyPrice),term=Math.max(12,Math.round(b.loanYears*12)),
+      downForBudget=Math.min(b.amount,b.downPayment),
+      paymentForBudget=mortgageMonthly(b.amount,b.downPayment,b.rate,b.loanYears),
+      budgetTotal=downForBudget+paymentForBudget*term,
+      selectedMonthly=mortgageMonthly(price,b.downPayment,b.rate,b.loanYears),
+      over=selectedMonthly-b.loanPayment,within=over<=1e-8;
+    return '<section class="fp-capacity-card" aria-label="返済予算と登録物件のローン返済予測">'+
+      '<div class="fp-capacity-heading"><strong>住宅ローン｜家計の試算</strong>'+
+      '<span>'+reference+'年の家計を基準</span></div>'+
       '<div class="fp-capacity-columns">'+
-      '<div class="fp-capacity-cell payment"><span>月々ローン返済に使える目安</span><strong>'+
-      fpYen(b.loanPayment)+'</strong><small>毎月のローン返済額</small></div>'+
-      '<div class="fp-capacity-cell price"><span>その金額で購入できる物件価格</span><strong>'+
-      homePrice+'</strong><small class="fp-capacity-interest">（金利込み総支払額 '+fpYen(totalWithInterest)+'）</small></div></div>'+
-      '<div class="fp-capacity-formula">住居費の予算 '+fpYen(b.housingBudget)+'/月 − 維持費 '+
-        fpYen(b.maintenance)+'/月 ＝ ローン返済 '+fpYen(b.loanPayment)+'/月</div>'+
-      '<div class="fp-capacity-terms">'+reference+'年の家計を基準 ｜ 借入 '+loan+
-      ' ＋ 頭金 '+fpYen(b.downPayment)+' ｜ 金利'+rate+'％・'+years+'年返済'+
-      ' ｜ 利息総額 '+fpYen(interestTotal)+' ｜ 物件価格は50万円単位で切下げ</div>'+
-      (belowCost?'<p class="fp-capacity-warning">維持費が住居費の上限を超える試算です。返済予算を見直してください。</p>':'')+
-      '<p class="fp-capacity-caution">（金利込み総支払額）は頭金＋全期間の元利均等返済額。維持費・諸費用（物件価格の約7％）は別途。金利一定の試算で融資承認額ではありません。</p></section>';
+      '<div class="fp-capacity-cell payment"><span>① 返済に回せる上限</span>'+
+      '<strong>'+fpYen(b.loanPayment)+'</strong><small>/ 月・実際の請求額ではありません</small></div>'+
+      '<div class="fp-capacity-cell price"><span>② この上限で'+Math.round(b.loanYears)+'年返済なら</span>'+
+      '<strong>'+fpYen(b.amount)+'</strong>'+
+      '<small class="fp-capacity-interest">（金利込み総支払額 '+fpYen(budgetTotal)+'）</small></div></div>'+
+      '<div class="fp-capacity-conditions"><span>年利 '+yen(b.rate,2)+'%</span>'+
+      '<span>返済 '+Math.round(b.loanYears)+'年</span><span>頭金 '+fpYen(b.downPayment)+'</span></div>'+
+      '<div class="fp-capacity-example">'+
+      '<div class="fp-capacity-example-main"><span>入力した物件 '+fpYen(price)+' の返済予測</span>'+
+      '<strong>'+fpYen(selectedMonthly)+' / 月</strong></div>'+
+      '<div class="fp-capacity-example-status '+(within?'within':'over')+'">'+
+      (within?'家計上限以内（余裕 '+fpYen(Math.max(0,-over))+' / 月）':
+        '家計上限を '+fpYen(over)+' / 月超過')+'</div></div>'+
+      '<p class="fp-capacity-footnote">住居費の予算 '+fpYen(b.housingBudget)+'/月 − 維持費 '+
+        fpYen(b.maintenance)+'/月 = 返済上限 '+fpYen(b.loanPayment)+'/月。'+
+        '物件価格は50万円単位で切下げ。維持費・諸費用（物件価格の約7%）は総支払額と別。'+
+        '金利一定の概算で、融資承認額ではありません。</p>'+
+      '</section>';
   }
   function fpRating(price){
     const info=fpForecast(price),budget=fpBudget(),stressed=fpForecast(price,1);

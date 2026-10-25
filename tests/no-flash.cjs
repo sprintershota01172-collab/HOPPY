@@ -17,7 +17,7 @@ const app = {
   contains(){return true;},
   querySelectorAll(){return [];},
   querySelector(selector){
-    if(selector==='main.main' && markup.includes('<main class="main">'))return {};
+    if(selector==='main.main' && markup.includes('<main class="main"'))return {};
     if(selector==='header.top' && markup.includes('<header class="top'))return {};
     if(selector==='nav.bottom' && markup.includes('<nav class="bottom"'))return {
       querySelector(q){return q.includes('data-value="property"')&&markup.includes('class="tab active" data-act="tab" data-value="property"')?{}:null;}

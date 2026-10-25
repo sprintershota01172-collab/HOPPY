@@ -679,8 +679,11 @@
     if(page===0){
       const homes=state.properties.slice().sort((a,b)=>b.created-a.created);
       const futureWarning=current.min<0?'<div class="fp-alert"><b>！</b>将来の貯金が一時的にマイナスになる年があります。大きな支出の時期も再確認してください。</div>':'';
-      const propertyList=homes.length?'<div class="fp-home-list">'+homes.slice(0,8).map(fpRatingRow).join('')+'</div>':
-        '<div class="fp-no-property">物件を登録すると、ここで予算内か自動判定できます。</div>';
+      const homePages=Math.max(1,Math.ceil(homes.length/2));
+      ui.fpHomePage=Math.min(homePages-1,ui.fpHomePage);
+      const propertyList=homes.length?'<div class="fp-home-list">'+homes.slice(ui.fpHomePage*2,ui.fpHomePage*2+2).map(fpRatingRow).join('')+'</div>'+
+        fpPageNav(homePages,ui.fpHomePage,'fp-home-page'):
+        '<div class="fp-no-property">物件を登録すると予算内か自動判定できます。</div>';
       content='<div class="fp-budget-content grow">'+
         '<div class="fp-hero"><span class="fp-eyebrow">返済負担から算出した参考予算</span><div class="fp-hero-number">'+yen(budget.amount)+'<span>万円</span></div><span class="fp-hero-caption">手取り25％＋家計余力・金利 '+yen(budget.amount>=0?assessment.rate:0,1)+'％想定</span>'+
         '<div class="fp-budget-scale"><div class="fp-budget-fill"></div></div><span class="fp-secondary">金利＋1％なら　<strong>'+yen(budget.stressAmount)+'万円</strong>が目安</span></div>'+
@@ -688,20 +691,24 @@
         '<p class="fp-diagnostic">'+esc(assessment.reason)+'</p>'+
         '<div class="fp-stat-grid"><div><span>月々の住居費</span><strong>'+yen(assessment.housing,1)+'万</strong></div><div><span>手取り負担率</span><strong>'+yen(assessment.ratio*100,1)+'％</strong></div><div><span>現金貯金の余力</span><strong>'+yen(assessment.spendable,1)+'万</strong></div></div></div>'+
         '<div class="fp-section-head"><strong>物件の予算評価</strong><span>'+homes.length+'件</span></div>'+
-        propertyList+(homes.length>8?'<p class="fp-more-homes">ほか '+(homes.length-8)+' 件。物件一覧で価格を確認できます。</p>':'')+
+        propertyList+
         '<p class="fp-assumption">※ 手取り25％の住居費目安と、毎月の保険・子育て・NISA・現金貯金目標を考慮。銀行の融資可能額ではありません。</p>'+
         futureWarning+'</div>';
     }else if(page===1){
       const point=current.points.find(x=>x.year===ui.fpYear)||current.points.find(x=>x.year===fpDecisionYear())||current.points[0];
       const items=fpExpenseDetails(point,true);
       const total=items.reduce((sum,x)=>sum+x.amount,0);
+      const pageSize=window.matchMedia('(max-height:720px)').matches?4:6;
+      const count=Math.max(1,Math.ceil(items.length/pageSize));
+      ui.fpLedgerPage=Math.min(count-1,ui.fpLedgerPage);
+      const visible=items.slice(ui.fpLedgerPage*pageSize,(ui.fpLedgerPage+1)*pageSize);
       content='<div class="fp-breakdown-content grow">'+fpYearSelect(current)+
         '<div class="fp-year-totals"><div><span>手取り・給付金</span><strong>'+yen(point.incomes,0)+'万円</strong></div>'+
         '<div><span>年間支出</span><strong>'+yen(point.expenses,0)+'万円</strong></div>'+
         '<div><span>NISA等の投資積立</span><strong>'+yen(point.investing,0)+'万円</strong></div>'+
         '<div><span>現金貯金の増減</span><strong class="'+(point.netCash<0?'fp-negative':'')+'">'+yen(point.netCash,0)+'万円</strong></div></div>'+
         '<div class="fp-section-head"><strong>年間の支出明細</strong><span>'+items.length+'項目</span></div>'+
-        '<div class="fp-expense-rows">'+items.map(x=>'<div class="fp-expense-line"><span>'+esc(x.label)+'</span><strong>'+yen(x.amount,1)+' 万円</strong></div>').join('')+'</div>'+
+        '<div class="fp-expense-rows">'+visible.map(x=>'<div class="fp-expense-line"><span>'+esc(x.label)+'</span><strong>'+yen(x.amount,1)+' 万円</strong></div>').join('')+'</div>'+fpPageNav(count,ui.fpLedgerPage,'fp-ledger-page')+
         '<p class="fp-assumption">年間支出 '+yen(total,1)+' 万円。NISA・その他投資への積立は支出と区別し、現金から投資資産へ振替えます。現金貯金目標も支出には含みません。</p>'+
         '<p class="fp-assumption">※ 年間額は1〜12月の計算です。給与変化・税金・教育費・給付金は入力条件と簡易モデルによります。</p></div>';
     }else if(page===2){
@@ -1060,11 +1067,11 @@
     if(action==='sim-back')return step(()=>{ui.simStep=Math.max(0,ui.simStep-1);ui.simSubPage=0;});
     if(action==='sim-restart')return step(()=>{ui.simStep=0;ui.simSubPage=0;ui.simResultPage=0;});
     if(action==='sim-result-page')return step(()=>changePage('simResultPage',4,Number(v)));
-    if(action==='fp-result-tab')return step(()=>{ui.simResultPage=Math.min(3,Math.max(0,Number(v)||0));});
+    if(action==='fp-result-tab')return step(()=>{ui.simResultPage=Math.min(3,Math.max(0,Number(v)||0));ui.fpLedgerPage=0;ui.fpHomePage=0;});
     if(action==='fp-legacy-utilities-clear')return step(()=>{state.plan.utilitiesMonthly=0;save();message('旧光熱費の合算額を削除しました');});
     if(action==='fp-expense-add')return step(()=>{if(state.plan.expenses.length>=35)return message('追加支出は35項目までです');state.plan.expenses.push({id:uid(),name:'新しい支出',amount:0,cycle:'month',start:0,end:0});ui.simSubPage=2+Math.floor((state.plan.expenses.length-1)/2);save();});
     if(action==='fp-expense-delete'){if(!confirm('この追加支出を削除しますか？'))return;return step(()=>{state.plan.expenses=state.plan.expenses.filter(x=>x.id!==v);ui.simSubPage=Math.min(ui.simSubPage,fpWizardPages(6).length-1);save();});}
-    if(action==='fp-result-next')return step(()=>{ui.simResultPage=(ui.simResultPage+1)%4;});
+    if(action==='fp-result-next')return step(()=>{ui.simResultPage=(ui.simResultPage+1)%4;ui.fpLedgerPage=0;ui.fpHomePage=0;});
     if(action==='sim-choice')return step(()=>{ui.simChoice=v;save();});
     if(action==='fp-view-budget')return step(()=>{ui.tab='sim';ui.simStep=7;ui.simResultPage=0;ui.overlay='';});
     if(action==='fp-open-home')return openOverlay('detail',()=>{ui.propertyId=v;ui.propertyPage=0;});
@@ -1187,7 +1194,7 @@
     if(el.dataset.homeQuery!==undefined){state.filter.query=el.value;ui.homePage=0;save();const list=app.querySelector('.home-results');if(list){list.innerHTML=homeResults();hydratePhotos();}}
     if(el.dataset.memoProperty!==undefined){ui.memoPropertyId=el.value;ui.memoPage=0;ui.memoSwipeKey=null;render();return;}
     if(el.dataset.study && ui.studyDraft){ui.studyDraft[el.dataset.study]=el.value;}
-    if(el.dataset?.fpYear!==undefined){ui.fpYear=Math.floor(Number(el.value)||0);render();return;}
+    if(el.dataset?.fpYear!==undefined){ui.fpYear=Math.floor(Number(el.value)||0);ui.fpLedgerPage=0;render();return;}
     if(el.dataset?.fpId && el.dataset?.fpKey){
       const entry=state.plan.expenses.find(x=>x.id===el.dataset.fpId);
       if(entry){const k=el.dataset.fpKey;entry[k]=k==='name'?String(el.value).slice(0,50):k==='cycle'?(el.value==='year'?'year':'month'):(k==='amount'?Math.max(0,Math.min(10000,Number(el.value)||0)):Math.max(0,Math.min(2100,Math.floor(Number(el.value)||0))));save();}
@@ -1254,7 +1261,7 @@
     const el=e.target;
     if(el.dataset?.memoProperty!==undefined){ui.memoPropertyId=el.value;ui.memoPage=0;ui.memoSwipeKey=null;render();return;}
     if(el.dataset?.study && ui.studyDraft){ui.studyDraft[el.dataset.study]=el.value;}
-    if(el.dataset?.fpYear!==undefined){ui.fpYear=Math.floor(Number(el.value)||0);render();return;}
+    if(el.dataset?.fpYear!==undefined){ui.fpYear=Math.floor(Number(el.value)||0);ui.fpLedgerPage=0;render();return;}
     if(el.dataset?.fpId && el.dataset?.fpKey){
       const entry=state.plan.expenses.find(x=>x.id===el.dataset.fpId);
       if(entry){const k=el.dataset.fpKey;entry[k]=k==='name'?String(el.value).slice(0,50):k==='cycle'?(el.value==='year'?'year':'month'):(k==='amount'?Math.max(0,Math.min(10000,Number(el.value)||0)):Math.max(0,Math.min(2100,Math.floor(Number(el.value)||0))));save();}

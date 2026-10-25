@@ -34,8 +34,8 @@ input({sim:'foodMonthly',simYen:'true'},'28000');
 input({sim:'freeSpendingMonthly',simYen:'true'},'50000');
 assert.equal(p.foodMonthly,2.8);
 assert.equal(p.freeSpendingMonthly,5);
-assert.equal(api.modelYears(p.propertyPrice,true).points.find(x=>x.year===2026).netCash,
- startingNet-(2.8+5)*12);
+assert.ok(Math.abs(api.modelYears(p.propertyPrice,true).points.find(x=>x.year===2026).netCash-
+ (startingNet-(2.8+5)*12))<1e-7,'spending reduces annual cash forecast');
 for(let i=0;i<4;i++)click('sim-next');
 assert.match(app.innerHTML,/月ごとの収支/);
 assert.match(app.innerHTML,/class="fp-month-quick"/);

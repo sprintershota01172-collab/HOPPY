@@ -435,7 +435,7 @@
         f('電気代','electricityMonthly'),f('ガス代','gasMonthly'),
         f('水道（2か月の請求額）','waterBiMonthly','万円/2か月')
       ],'水道は2か月ごとの請求額を入力。月平均＝÷2、年間＝×6。',safeNum(p.utilitiesMonthly)>0?
-        '<div class="fp-legacy-note">旧・光熱費合算 '+yen(p.utilitiesMonthly,2)+'万円/月。上の内訳を入力すると合算額の代わりに使います。<button data-act="fp-legacy-utilities-clear">旧合算を削除</button></div>':''));
+        '<div class="fp-legacy-note">旧・光熱費合算 '+fpYen(p.utilitiesMonthly)+'/月。上の内訳を入力すると合算額の代わりに使います。<button data-act="fp-legacy-utilities-clear">旧合算を削除</button></div>':''));
       pages.push(fpCompactPage('毎日の支払い',[
         f('その他の生活費','livingMonthly'),f('自由費','freeSpendingMonthly'),f('通信・スマホ','telecomMonthly'),
         f('交通・ガソリン','transportMonthly'),f('サブスク','subscriptionsMonthly'),
@@ -458,7 +458,7 @@
       sSelect('大学','university',[['public','国公立'],['private','私立']])
     ],'学資保険は誕生〜17歳まで人数分計上。満期金は自動加算しません（別途登録）。'));
     if(i===4){
-      const options=[['','価格を直接入力'],...state.properties.filter(x=>num(x.price)!==null).map(x=>[x.id,truncate(x.name,17)+' / '+fmt(x.price)])];
+      const options=[['','価格を直接入力'],...state.properties.filter(x=>num(x.price)!==null).map(x=>[x.id,truncate(x.name,17)+' / '+fpYen(x.price)])];
       pages.push(fpCompactPage('購入予定',[
         sSelect('登録物件から選択','propertyId',options),
         f('購入予定価格','propertyPrice','万円'),f('購入予定年','purchaseYear','年'),
@@ -886,7 +886,7 @@
       rate=safeNum(p.interest),payment=mortgageMonthly(price,p.downPayment,rate,years);
     return '<div class="fp-repayment-card">'+
       '<div class="fp-repayment-eyebrow">住宅ローンの毎月返済（元利均等）</div>'+
-      '<div class="fp-repayment-value">'+yen(payment,2)+'<span>万円 / 月</span></div>'+
+      '<div class="fp-repayment-value">'+fpYen(payment)+'<span>/ 月</span></div>'+
       '<div class="fp-repayment-terms">借入 '+fpYen(principal)+'　｜　'+yen(years,0)+'年ローン　｜　年利 '+yen(rate,2)+'%</div>'+
       '<div class="fp-repayment-detail"><span>住居維持費を加えると</span><strong>'+fpYen(payment+safeNum(p.housingOngoing))+' / 月</strong></div>'+
       '<div class="fp-repayment-detail"><span>ローン総返済額</span><strong>'+fpYen(payment*years*12)+'</strong></div>'+
@@ -1386,8 +1386,8 @@
         item('その他の株式・投資',selected.otherInvest,monthly?monthlyAsset.otherChange:yearAsset.otherChange)+
         '<div class="fp-asset-tile total"><span>金融資産の合計</span><strong>'+fpYen(selected.total)+'</strong>'+
         '<small>現金＋NISA＋その他投資</small></div></div>'+
-      '<p class="fp-r-help">NISAの積立 '+fpYen(safeNum(state.plan.nisaMonthly))+'/月、その他投資 '+yen(safeNum(state.plan.otherInvestMonthly),2)+
-        '万円/月。折れ線は年末残高。投資の月末評価額は年率の仮定から近似計算、時価実績ではありません。住宅価値とローン残債は含みません。</p></div>';
+      '<p class="fp-r-help">NISAの積立 '+fpYen(safeNum(state.plan.nisaMonthly))+'/月、その他投資 '+fpYen(safeNum(state.plan.otherInvestMonthly))+
+        '/月。折れ線は年末残高。投資の月末評価額は年率の仮定から近似計算、時価実績ではありません。住宅価値とローン残債は含みません。</p></div>';
   }
   function fpIncomeReport(model){
     const point=fpYearPoint(model),income=fpYearlyIncome(point.year),
@@ -1460,7 +1460,7 @@
     }
     return '<div class="fp-r-body grow"><strong class="fp-r-subhead">計算の前提・参照先</strong>'+
       '<div class="fp-r-assumptions">'+
-      '<div><b>収入</b><span>月の手取り×12＋賞与。出産年は妻の月収を最大10万円、以降は時短収入を仮定。妻賞与は出産年以降0と仮置き。</span></div>'+
+      '<div><b>収入</b><span>月の手取り×12＋賞与。出産年は妻の月収を最大100,000円、以降は時短収入を仮定。妻賞与は出産年以降0と仮置き。</span></div>'+
       '<div><b>住宅</b><span>指定した購入年月からローン返済に切替。購入時諸費用は物件価格の7％、固定資産税・修繕等は入力値で計算。</span></div>'+
       '<div><b>教育・運用</b><span>教育費は独自の固定概算。保育料、保険、NISAは入力値。税優遇・物価上昇は自動計算せず、運用利回りは仮定。</span></div>'+
       '<div><b>銀行審査</b><span>額面年収の登録がないため総返済負担率は判定しません。手取り比率とは別の指標です。</span></div></div>'+
@@ -1488,7 +1488,7 @@
     push(shocks[1].increase>1.5?'warn':'note','金利上昇時の返済増加',
       shocks.map(x=>'＋'+x.shift+'%：月＋'+fpYen(x.increase)).join('／')+'。借入時から一定金利とした比較で、実際の変動金利の改定額ではありません。');
     if(safeNum(p.children)>0)push('note','育児期の収入を慎重に評価',
-      '出産年は妻の月手取り最大10万円、翌年以降は時短手取り'+fpYen(safeNum(p.wifeReduced))+'・妻賞与0円と仮定。実際の育休給付等は要確認。');
+      '出産年は妻の月手取り最大100,000円、翌年以降は時短手取り'+fpYen(safeNum(p.wifeReduced))+'・妻賞与0円と仮定。実際の育休給付等は要確認。');
     if(safeNum(p.carLoanEndYear)>=simNowYear())push('note','車ローン完済前後で再比較',
       '車ローンは'+p.carLoanEndYear+'年まで年末基準で計上。購入年と返済終了時期を比較してください。');
     push('note','審査基準と家計判定は別',
@@ -1527,7 +1527,7 @@
         '<p>異常に大きい金額が含まれる可能性があります。入力内容は自動変更していません。</p>'+
         '<div class="fp-validation-list">'+visible.map(x=>
           '<button data-act="fp-fix-input" data-value="'+x.step+':'+x.page+'">'+esc(x.label)+
-          '<strong>'+esc(String(x.amount))+' '+esc(x.unit)+'　›</strong></button>').join('')+'</div>'+
+          '<strong>'+fpYen(x.amount)+'　›</strong></button>').join('')+'</div>'+
         fpPageNav(count,ui.fpIssuePage,'fp-issue-page')+'</div>'+
         '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">最初から見直す</button>'+
         '<button class="btn primary" data-act="fp-fix-input" data-value="'+warnings[0].step+':'+warnings[0].page+'">該当項目を修正 →</button></div></section>';
@@ -1537,7 +1537,7 @@
     let content='';
     if(page===0){
       const end=current.points.at(-1),min=current.points.reduce((a,b)=>a.cash<b.cash?a:b);
-      const output=rating.budget.amount===0?'返済可能予算は0万円の計算。生活費や入力項目を確認してください。':
+      const output=rating.budget.amount===0?'返済可能予算は0円の計算。生活費や入力項目を確認してください。':
         (rating.reason||'');
       const negative=current.points.find(x=>x.cash<0);
       content='<div class="fp-r-summary grow">'+
@@ -2154,7 +2154,7 @@
         const linked=propById(val);
         if(linked && num(linked.price)!==null)state.plan.propertyPrice=Number(linked.price);
         const priceInput=app.querySelector('[data-sim="propertyPrice"]');
-        if(priceInput)priceInput.value=state.plan.propertyPrice;
+        if(priceInput)priceInput.value=priceInput.dataset.simYen==='true'?fpYenNumber(state.plan.propertyPrice):state.plan.propertyPrice;
       }
       save();
     }
@@ -2274,7 +2274,7 @@
         const linked=propById(val);
         if(linked&&num(linked.price)!==null)state.plan.propertyPrice=Number(linked.price);
         const priceInput=app.querySelector('[data-sim="propertyPrice"]');
-        if(priceInput)priceInput.value=state.plan.propertyPrice;
+        if(priceInput)priceInput.value=priceInput.dataset.simYen==='true'?fpYenNumber(state.plan.propertyPrice):state.plan.propertyPrice;
       }
       save();
     }

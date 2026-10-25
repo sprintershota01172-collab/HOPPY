@@ -39,7 +39,9 @@ function start(){
   };
 }
 const a=start();
-assert.match(a.app.innerHTML,/ほっぽさん/);
+assert.match(a.app.innerHTML,/ホーム|home-search-row/);
+assert.doesNotMatch(a.app.innerHTML,/<header class="top/,'global title has been removed');
+assert.match(a.app.innerHTML,/data-act="settings"/,'settings still available on property home');
 assert.match(a.app.innerHTML,/物件を追加/);
 assert.match(a.app.innerHTML,/home-search-box/);
 assert.match(a.app.innerHTML,/status-chip-row/);

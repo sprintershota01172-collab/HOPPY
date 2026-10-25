@@ -575,3 +575,112 @@ html,body,.app-shell{background:var(--paper)}
 @media(prefers-reduced-motion:reduce){
  .property-list-card{transition:none}
 }
+
+
+/* Smaller text across the app while preserving readable primary controls */
+:root{--compact-text:11px}
+.brand h1{font-size:15px}
+.brand .eyebrow{font-size:9px}
+.header-count,.header-count b{font-size:10px}
+.header-learn{min-width:44px;min-height:44px;border:1px solid #dbe6dc;background:#edf2eb;border-radius:12px;color:#417a72;padding:4px 8px;font-size:11px;font-weight:750;white-space:nowrap}
+.header-actions{gap:2px}
+.home-search-box input{font-size:12px}
+.home-filter-btn{font-size:11px}
+.home-add-btn{font-size:14px}
+.home-summary-label strong{font-size:19px}
+.home-summary-label span{font-size:11px}
+.summary-action{font-size:11px}
+.status-chip{font-size:11px}
+.status-chip span{font-size:10px}
+.property-list-name{font-size:13px}
+.property-list-maker{font-size:10px}
+.property-second-row>span,.prop-station,.prop-meeting{font-size:10px}
+.property-second-row .prop-price{font-size:12px}
+.property-state{font-size:10px}
+.tab,.tab .tab-label{font-size:11px}
+.btn,.meta,.subtle,.pill{font-size:11px}
+.field label,.onepage-field label{font-size:11px}
+.section-title{font-size:17px}
+.info-box span,.info-box strong{font-size:11px}
+.segment button,.question-row span{font-size:11px}
+.kicker,.micro-label{font-size:10px}
+.meeting-date-block strong{font-size:15px}
+.meeting-date-block span:last-child{font-size:11px}
+.full-header strong{font-size:15px}
+.property-list-card{min-height:81px;max-height:81px}
+.property-thumb{height:61px}
+.property-card-body{gap:9px}
+@media(max-height:735px){.property-list-card{min-height:75px;max-height:75px}.property-thumb{height:57px}}
+@media(max-width:365px){.property-list-name{font-size:12px}.property-list-maker,.property-second-row>span{font-size:9px}.property-state{font-size:9px}}
+
+/* Step-by-step life simulation */
+.sim-screen{min-height:0;gap:9px}
+.sim-intro{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:28px;flex:none}
+.sim-progress-text{font-size:11px;font-weight:700;color:#8b928c;white-space:nowrap}
+.sim-progress{display:flex;gap:5px;flex:none;height:5px}
+.sim-progress span{flex:1;background:#dfe5dd;border-radius:3px}
+.sim-progress span.filled{background:#4e8178}
+.sim-question{display:grid;gap:5px;padding:3px 1px 6px;flex:none}
+.sim-question h2,.sim-result-title{font-size:18px;font-weight:800;letter-spacing:-.035em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sim-question p{color:#86918c;font-size:11px;line-height:1.35}
+.sim-form{display:flex;flex-direction:column;justify-content:center;padding:14px;gap:9px;overflow:hidden}
+.sim-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px 10px;align-content:center;min-height:0}
+.sim-field{min-width:0;display:flex;flex-direction:column;gap:5px;color:#5e7369}
+.sim-field>span:first-child{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
+.sim-input-wrap{display:flex;align-items:center;gap:2px;border:1px solid #dedfd6;background:#fffefa;border-radius:9px;height:45px;min-width:0;padding:0 8px}
+.sim-input-wrap input{background:transparent;border:0;outline:0;min-width:0;flex:1;width:100%;height:100%;font-size:15px;font-weight:700;color:#203d38}
+.sim-input-wrap em{font-style:normal;font-size:10px;flex:none;color:#8b9891}
+.sim-field select{height:45px;min-width:0;width:100%;padding:0 8px;border-radius:9px;background:#fffefa;border:1px solid #dedfd6;outline:0;color:#203d38;font-size:12px}
+.sim-footer{display:grid;grid-template-columns:1fr 1.5fr;gap:8px;min-height:46px;align-items:stretch;flex:none}
+.sim-footer .btn{width:100%;font-size:12px;min-height:46px;white-space:nowrap}
+.sim-hint{font-size:10px;line-height:1.5;color:#74857a;letter-spacing:0}
+.sim-result-card{display:flex;flex-direction:column;min-height:0;gap:12px;padding:16px;overflow:hidden}
+.sim-result-card h3{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sim-result-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sim-result-head strong{font-family:Georgia,"Yu Gothic",sans-serif;font-size:19px;white-space:nowrap}
+.sim-result-head strong small,.sim-hero-number small{font-size:11px;margin-left:2px}
+.sim-chart{width:100%;max-height:235px;flex:1;min-height:125px;overflow:visible;align-self:stretch}
+.sim-legend{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;font-size:10px}
+.sim-legend span{white-space:nowrap}
+.sim-legend i{display:inline-block;width:11px;height:3px;margin:0 4px 3px 0}
+.sim-metric{display:flex;align-items:center;justify-content:space-between;gap:6px;border-bottom:1px solid #e9e8de;padding:10px 0;min-height:47px}
+.sim-metric span{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;color:#728078}
+.sim-metric strong{font-size:14px;white-space:nowrap;font-weight:750}
+.sim-hero-number{font-size:34px;font-family:Georgia,"Yu Gothic",sans-serif;text-align:center;color:#2e675c;font-weight:700;margin:13px 0 8px}
+.sim-result-card>.subtle{font-size:11px}
+
+/* Home study mini-library and local extractive summary */
+.study-toolbar{display:flex;align-items:center;justify-content:space-between;gap:6px;flex:none;min-height:57px}
+.study-toolbar>div{display:grid;gap:3px;min-width:0}
+.study-toolbar .subtle{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.study-note-list{display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.study-note-card,.study-summary-item{border:1px solid #e2e5de;background:#fffdf9;border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:7px;min-height:0;flex:1}
+.study-note-head{display:flex;align-items:center;gap:4px;min-height:44px}
+.study-note-head strong{flex:1;min-width:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.study-note-head .btn{min-width:44px;padding:0 7px}
+.study-note-card p{font-size:11px;color:#667b70;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.study-summary-item{gap:5px}
+.study-category{font-size:10px;font-weight:750;color:#39766a;background:#e6efea;border-radius:8px;align-self:start;padding:3px 9px;white-space:nowrap}
+.study-summary-item p{font-size:11px;line-height:1.43;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.study-summary-item small{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#919c94}
+.study-disclaimer{font-size:10px;line-height:1.4;color:#75877b}
+.study-counter{display:block;text-align:center}
+.study-edit-form{display:flex;flex-direction:column;min-height:0;gap:13px}
+.study-edit-form .field{display:flex;flex-direction:column;gap:5px}
+.study-edit-form .field>span{font-weight:700;font-size:11px;white-space:nowrap}
+.study-edit-form .field input{min-height:44px;height:44px;border:1px solid #dfe1d8;border-radius:9px;background:#fffefa;font-size:14px;padding:8px 10px}
+.study-edit-form .field textarea{display:block;flex:1;min-height:0;max-height:none;overflow-y:auto;border:1px solid #dfe1d8;background:#fffefa;border-radius:9px;font-size:13px;line-height:1.55;padding:12px 10px;resize:none}
+.study-edit-form .field.grow{min-height:0}
+@media(max-height:740px){
+ .sim-screen{gap:5px}.sim-question{padding-bottom:2px}
+ .sim-form{padding:9px;gap:6px}
+ .sim-grid{gap:6px 8px}
+ .sim-field{gap:3px}
+ .sim-input-wrap,.sim-field select{height:42px}
+ .sim-result-card{gap:5px;padding:10px}
+ .sim-metric{min-height:41px;padding:7px 0}
+ .sim-chart{min-height:105px}
+ .study-toolbar{min-height:49px}
+ .study-note-card,.study-summary-item{padding:8px}
+ .study-note-head{min-height:40px}
+}

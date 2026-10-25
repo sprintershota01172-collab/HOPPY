@@ -911,16 +911,12 @@
       '<p class="fp-r-help">公的資料を参照した計算上の助言です。安全の保証や金融機関の事前審査ではありません。</p></div>';
   }
   function simulationResultsScreen(){
-    const p=state.plan,price=safeNum(p.propertyPrice),linked=propById(p.propertyId);
-    const budget=fpBudget(),assessment=fpRating(price),current=modelYears(price,true),rent=modelYears(price,false);
-    const page=ui.simResultPage,eduKids=Math.min(3,Math.round(safeNum(p.children)));
-    const warnings=fpPlanWarnings();
-    let eduTotal=0;
-    for(let k=0;k<eduKids;k++)for(let age=0;age<22;age++)eduTotal+=educationAnnual(age,p);
-    const heading=['あなたの住宅予算','支出の内訳','現金とNISAの推移','教育費の準備'][page];
-    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r4</span><button class="btn compact" data-act="sim-restart">回答を編集 <span aria-hidden="true">↗</span></button></div>';
-    const steps='<div class="fp-result-nav">'+['予算','支出','資産','教育'].map((x,i)=>
-      '<button data-act="fp-result-tab" data-value="'+i+'" class="'+(page===i?'active':'')+'">'+x+'</button>').join('')+'</div>';
+    const p=state.plan,price=safeNum(p.propertyPrice),current=modelYears(price,true),rent=modelYears(price,false),
+      budget=fpBudget(),rating=fpRating(price),warnings=fpPlanWarnings(),
+      page=Math.min(3,Math.max(0,ui.simResultPage||0));
+    const heading=['購入後の家計','収支予測グラフ','計算根拠','アドバイス'][page];
+    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r5</span>'+
+      '<button class="btn compact" data-act="sim-restart">回答を編集 ↗</button></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -928,8 +924,8 @@
       return '<section class="screen sim-screen fp-result-screen">'+intro+
         '<h2 class="sim-result-title">入力した金額を確認してください</h2>'+
         fpLoanSummary(price)+
-        '<div class="fp-validation-panel grow"><strong>単位が「万円」のため、次の入力値を確認してください</strong>'+
-        '<p>異常に大きい支出が含まれている可能性があります。データは変更していません。</p>'+
+        '<div class="fp-validation-panel grow"><strong>入力単位は「万円」です</strong>'+
+        '<p>異常に大きい金額が含まれる可能性があります。入力内容は自動変更していません。</p>'+
         '<div class="fp-validation-list">'+visible.map(x=>
           '<button data-act="fp-fix-input" data-value="'+x.step+':'+x.page+'">'+esc(x.label)+
           '<strong>'+esc(String(x.amount))+' '+esc(x.unit)+'　›</strong></button>').join('')+'</div>'+
@@ -937,74 +933,42 @@
         '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">最初から見直す</button>'+
         '<button class="btn primary" data-act="fp-fix-input" data-value="'+warnings[0].step+':'+warnings[0].page+'">該当項目を修正 →</button></div></section>';
     }
+    const tabs='<div class="fp-result-nav">'+['まとめ','グラフ','計算','助言'].map((label,i)=>
+      '<button data-act="fp-result-tab" data-value="'+i+'" class="'+(page===i?'active':'')+'">'+label+'</button>').join('')+'</div>';
     let content='';
     if(page===0){
-      const homes=state.properties.slice().sort((a,b)=>b.created-a.created);
-      const futureWarning=current.min<0?'<div class="fp-alert"><b>！</b>将来の貯金が一時的にマイナスになる年があります。大きな支出の時期も再確認してください。</div>':'';
-      const homePages=Math.max(1,Math.ceil(homes.length/2));
-      ui.fpHomePage=Math.min(homePages-1,ui.fpHomePage);
-      const propertyList=homes.length?'<div class="fp-home-list">'+homes.slice(ui.fpHomePage*2,ui.fpHomePage*2+2).map(fpRatingRow).join('')+'</div>'+
-        fpPageNav(homePages,ui.fpHomePage,'fp-home-page'):
-        '<div class="fp-no-property">物件を登録すると予算内か自動判定できます。</div>';
-      content='<div class="fp-budget-content grow">'+
+      const end=current.points.at(-1),min=current.points.reduce((a,b)=>a.cash<b.cash?a:b);
+      const output=rating.budget.amount===0?'返済可能予算は0万円の計算。生活費や入力項目を確認してください。':
+        (rating.reason||'');
+      const negative=current.points.find(x=>x.cash<0);
+      content='<div class="fp-r-summary grow">'+
         fpLoanSummary(price)+
-        '<div class="fp-hero"><span class="fp-eyebrow">参考の購入予算（生活費・積立を考慮）</span><div class="fp-hero-number">'+yen(budget.amount)+'<span>万円</span></div><span class="fp-hero-caption">手取り25％＋家計余力・金利 '+yen(budget.amount>=0?assessment.rate:0,1)+'％想定</span>'+
-        '<div class="fp-budget-scale"><div class="fp-budget-fill"></div></div><span class="fp-secondary">金利＋1％なら　<strong>'+yen(budget.stressAmount)+'万円</strong>が目安</span></div>'+
-        '<div class="fp-now-card"><div class="fp-now-head"><div><span class="fp-eyebrow">検討中の価格</span><strong>'+yen(price)+'万円</strong></div><span class="fp-verdict '+fpBadgeClass(assessment.level)+'">'+assessment.label+'</span></div>'+
-        '<p class="fp-diagnostic">'+esc(budget.amount===0?'生活費・積立を考慮すると、現在の条件では住宅ローンに回せる余力がありません。入力内容も確認してください。':assessment.reason)+'</p>'+
-        '<div class="fp-stat-grid"><div><span>月々の住居費</span><strong>'+yen(assessment.housing,1)+'万</strong></div><div><span>手取り負担率</span><strong>'+yen(assessment.ratio*100,1)+'％</strong></div><div><span>現金貯金の余力</span><strong>'+yen(assessment.spendable,1)+'万</strong></div></div></div>'+
-        '<div class="fp-section-head"><strong>物件の予算評価</strong><span>'+homes.length+'件</span></div>'+
-        propertyList+
-        '<p class="fp-assumption">※ 手取り25％の住居費目安と、毎月の保険・子育て・NISA・現金貯金目標を考慮。銀行の融資可能額ではありません。</p>'+
-        futureWarning+'</div>';
+        '<div class="fp-r-summary-strip"><span>参考の購入予算</span><strong>'+yen(budget.amount,0)+'万円</strong>'+
+        '<small>金利＋1％なら '+yen(budget.stressAmount,0)+'万円が目安</small></div>'+
+        '<div class="fp-r-verdict"><div><span>物件の予算評価</span><b class="'+fpBadgeClass(rating.level)+'">'+rating.label+'</b></div>'+
+        '<p>'+esc(output)+'</p></div>'+
+        '<div class="fp-r-compact-stats">'+
+        fpMetric('月々の住居費',yen(rating.housing,2)+'万円')+
+        fpMetric('手取り負担率',yen(rating.ratio*100,1)+'％')+
+        fpMetric('毎月の現金貯金の余力',yen(rating.spendable,1)+'万円')+
+        fpMetric('年末現金の最小値',yen(min.cash,0)+'万円 ('+min.year+'年)')+'</div>'+
+        '<p class="fp-r-help">'+(negative?'注意：'+negative.year+'年に年末現金がマイナスになる試算です。':'この期間は年末現金のマイナスがありません。')+
+        ' 手取り比率は家計の参考値で、融資審査基準とは異なります。</p></div>';
     }else if(page===1){
-      const point=current.points.find(x=>x.year===ui.fpYear)||current.points.find(x=>x.year===fpDecisionYear())||current.points[0];
-      const items=fpExpenseDetails(point,true);
-      const total=items.reduce((sum,x)=>sum+x.amount,0);
-      const pageSize=window.matchMedia('(max-height:720px)').matches?4:6;
-      const count=Math.max(1,Math.ceil(items.length/pageSize));
-      ui.fpLedgerPage=Math.min(count-1,ui.fpLedgerPage);
-      const visible=items.slice(ui.fpLedgerPage*pageSize,(ui.fpLedgerPage+1)*pageSize);
-      content='<div class="fp-breakdown-content grow">'+fpYearSelect(current)+
-        '<div class="fp-year-totals"><div><span>手取り・給付金</span><strong>'+yen(point.incomes,0)+'万円</strong></div>'+
-        '<div><span>年間支出</span><strong>'+yen(point.expenses,0)+'万円</strong></div>'+
-        '<div><span>NISA等の投資積立</span><strong>'+yen(point.investing,0)+'万円</strong></div>'+
-        '<div><span>現金貯金の増減</span><strong class="'+(point.netCash<0?'fp-negative':'')+'">'+yen(point.netCash,0)+'万円</strong></div></div>'+
-        '<div class="fp-section-head"><strong>年間の支出明細</strong><span>'+items.length+'項目</span></div>'+
-        '<div class="fp-expense-rows">'+visible.map(x=>'<div class="fp-expense-line"><span>'+esc(x.label)+'</span><strong>'+yen(x.amount,1)+' 万円</strong></div>').join('')+'</div>'+fpPageNav(count,ui.fpLedgerPage,'fp-ledger-page')+
-        '<p class="fp-assumption">年間支出 '+yen(total,1)+' 万円。NISA・その他投資への積立は支出と区別し、現金から投資資産へ振替えます。現金貯金目標も支出には含みません。</p>'+
-        '<p class="fp-assumption">※ 年間額は1〜12月の計算です。給与変化・税金・教育費・給付金は入力条件と簡易モデルによります。</p></div>';
+      const chartPage=Math.max(0,Math.min(2,ui.fpChartPage||0));
+      content='<div class="fp-r-chart-page grow">'+
+        fpPageNav(3,chartPage,'fp-chart-page',['現金','年間収支','ローン'])+
+        fpYearSelect(current)+fpChartData(price,current,rent)+'</div>';
     }else if(page===2){
-      const now=assessment,stress=assessment.stressed,positive=assessment.remaining>=assessment.reserve;
-      const cash=assessment.remaining,need=assessment.reserve;
-      const selected=current.points.find(x=>x.year===ui.fpYear)||current.points.find(x=>x.year===fpDecisionYear())||current.points[0];
-      const warning=now.remaining<0?'自己資金が不足しています。':!positive?'購入後の生活防衛資金が6か月分を下回る計算です。':'購入直後の生活防衛資金は6か月分を確保できる計算です。';
-      content='<div class="fp-cash-content grow">'+fpYearSelect(current)+'<div class="panel fp-finance-card">'+
-        '<div class="fp-section-head"><strong>貯金の推移</strong><span>'+current.points[0].year+'–'+current.points.at(-1).year+'</span></div>'+
-        simGraph([{label:'現金貯金',color:'#007aff',data:current,key:'cash'},{label:'NISA＋その他投資',color:'#26a369',data:current,key:'invested'},{label:'賃貸時の現金',color:'#b5b9c2',data:rent,key:'cash'}])+
-        '<div class="sim-legend"><span><i style="background:#007aff"></i>現金</span><span><i style="background:#26a369"></i>運用資産</span><span><i style="background:#b5b9c2"></i>賃貸時</span></div>'+
-        '<p class="sim-hint">'+(current.min<0?'！ 購入するケースで貯金がマイナスになる年があります。':'✓ この試算期間で現金貯金はマイナスになりません。')+'</p></div>'+
-        '<div class="fp-asset-summary">'+
-        '<div><span>現金貯金</span><strong>'+yen(selected.cash,0)+'万円</strong></div>'+
-        '<div><span>NISA</span><strong>'+yen(selected.nisa,0)+'万円</strong></div>'+
-        '<div><span>その他投資</span><strong>'+yen(selected.otherInvest,0)+'万円</strong></div>'+
-        '<div><span>金融資産合計</span><strong>'+yen(selected.total,0)+'万円</strong></div></div>'+
-        '<div class="fp-insight-row"><div class="fp-insight"><span>金利＋1％で</span><strong>月 '+yen(now.monthlyDelta,1)+'万円 増</strong></div><div class="fp-insight"><span>現金の残り</span><strong>'+yen(cash,0)+'万円</strong></div></div>'+
-        '<p class="fp-cash-note">'+(positive?'✓':'！')+' '+warning+'（6か月分の目安 '+yen(need,0)+'万円）</p>'+
-        '<p class="fp-assumption">税・修繕費は月額一定、教育費は標準的な概算。金利・物価変動や給付金は精密には反映していません。</p></div>';
-    }else{
-      const years=Math.max(1,18+safeNum(p.birthInterval)*(eduKids-1));
-      content='<div class="fp-education-content panel grow"><span class="fp-eyebrow">幼児期〜大学卒業まで</span><div class="fp-education-total">'+yen(eduTotal)+'<small>万円</small></div>'+
-        '<span class="fp-education-sub">子ども '+eduKids+' 人分の教育費の概算</span>'+
-        '<div class="fp-metric-line"><span>高校</span><strong>'+(p.highSchool==='private'?'私立':'公立')+'</strong></div>'+
-        '<div class="fp-metric-line"><span>大学</span><strong>'+(p.university==='private'?'私立':'国公立')+'</strong></div>'+
-        '<div class="fp-metric-line"><span>月々の積立目安</span><strong>'+yen(eduTotal/years/12,1)+' 万円</strong></div>'+
-        '<div class="fp-metric-line"><span>現在のNISA予定額</span><strong>'+yen(safeNum(p.nisaMonthly),1)+' 万円</strong></div>'+
-        '<div class="fp-metric-line"><span>学資保険（1人／月）</span><strong>'+yen(safeNum(p.childEducationInsuranceMonthly),2)+' 万円</strong></div>'+
-        '<p class="fp-assumption">※ 教育費は進学先や物価によって変わります。学資保険の保険料は支出に計上し、満期金は未計上です。</p></div>';
-    }
-    return '<section class="screen sim-screen fp-result-screen">'+intro+'<h2 class="sim-result-title">'+heading+'</h2>'+steps+content+
-      '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">↶ 条件を見直す</button><button class="btn primary" data-act="fp-result-next">'+(page===3?'予算に戻る':'次へ →')+'</button></div></section>';
+      const calcPage=Math.max(0,Math.min(3,ui.fpCalcPage||0));
+      content='<div class="fp-r-calc-page grow">'+
+        fpPageNav(4,calcPage,'fp-calc-page',['収支式','ローン','支出明細','前提'])+
+        fpCalculationData(price,current)+'</div>';
+    }else content=fpAdviceScreen(price,current);
+    return '<section class="screen sim-screen fp-result-screen fp-report-screen">'+intro+
+      '<h2 class="sim-result-title">'+heading+'</h2>'+tabs+content+
+      '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">↶ 条件を見直す</button>'+
+      '<button class="btn primary" data-act="fp-result-next">'+(page===3?'まとめへ戻る':'次へ →')+'</button></div></section>';
   }
     const studyCategories=[
     ['費用・住宅ローン',/費用|万円|円|金利|ローン|予算|頭金|税|維持費|値引|価格|銀行|返済/],
@@ -1329,15 +1293,18 @@
     if(action==='fp-issue-page')return step(()=>{ui.fpIssuePage=Math.max(0,Number(v)||0);});
     if(action==='fp-fix-input')return step(()=>{const [screen,page]=String(v).split(':').map(Number);ui.simStep=Math.max(0,Math.min(6,screen||0));ui.simSubPage=Math.max(0,page||0);ui.fpIssuePage=0;});
     if(action==='fp-home-page')return step(()=>{ui.fpHomePage=Math.max(0,Number(v)||0);});
+    if(action==='fp-chart-page')return step(()=>{ui.fpChartPage=Math.max(0,Math.min(2,Number(v)||0));});
+    if(action==='fp-calc-page')return step(()=>{ui.fpCalcPage=Math.max(0,Math.min(3,Number(v)||0));ui.fpLedgerPage=0;});
+    if(action==='fp-advice-page')return step(()=>{ui.fpAdvicePage=Math.max(0,Number(v)||0);});
     if(action==='sim-next')return step(()=>{if(ui.simStep===6)state.plan.hasRun=1;ui.simStep=Math.min(7,ui.simStep+1);ui.simSubPage=0;ui.simResultPage=0;ui.fpIssuePage=0;save();});
     if(action==='sim-back')return step(()=>{ui.simStep=Math.max(0,ui.simStep-1);ui.simSubPage=0;});
     if(action==='sim-restart')return step(()=>{ui.simStep=0;ui.simSubPage=0;ui.simResultPage=0;});
     if(action==='sim-result-page')return step(()=>changePage('simResultPage',4,Number(v)));
-    if(action==='fp-result-tab')return step(()=>{ui.simResultPage=Math.min(3,Math.max(0,Number(v)||0));ui.fpLedgerPage=0;ui.fpHomePage=0;});
+    if(action==='fp-result-tab')return step(()=>{ui.simResultPage=Math.min(3,Math.max(0,Number(v)||0));ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
     if(action==='fp-legacy-utilities-clear')return step(()=>{state.plan.utilitiesMonthly=0;save();message('旧光熱費の合算額を削除しました');});
     if(action==='fp-expense-add')return step(()=>{if(state.plan.expenses.length>=35)return message('追加支出は35項目までです');state.plan.expenses.push({id:uid(),name:'新しい支出',amount:0,cycle:'month',start:0,end:0});ui.simSubPage=2+Math.floor((state.plan.expenses.length-1)/2);save();});
     if(action==='fp-expense-delete'){if(!confirm('この追加支出を削除しますか？'))return;return step(()=>{state.plan.expenses=state.plan.expenses.filter(x=>x.id!==v);ui.simSubPage=Math.min(ui.simSubPage,fpWizardPages(6).length-1);save();});}
-    if(action==='fp-result-next')return step(()=>{ui.simResultPage=(ui.simResultPage+1)%4;ui.fpLedgerPage=0;ui.fpHomePage=0;});
+    if(action==='fp-result-next')return step(()=>{ui.simResultPage=(ui.simResultPage+1)%4;ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
     if(action==='sim-choice')return step(()=>{ui.simChoice=v;save();});
     if(action==='fp-view-budget')return step(()=>{ui.tab='sim';ui.simStep=7;ui.simResultPage=0;ui.overlay='';});
     if(action==='fp-open-home')return openOverlay('detail',()=>{ui.propertyId=v;ui.propertyPage=0;});

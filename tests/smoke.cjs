@@ -64,7 +64,7 @@ a.click('overlay-close');
 a.click('search');
 a.input({filter:'query'},'no such property');
 a.click('filter-apply');
-assert.match(a.app.innerHTML,/最初の物件を登録/);
+assert.match(a.app.innerHTML,/一致する物件がありません/);
 a.click('search');
 a.click('filter-clear');
 assert.match(a.app.innerHTML,/サンプル[ABC]/);

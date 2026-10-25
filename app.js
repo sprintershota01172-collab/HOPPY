@@ -887,9 +887,9 @@
       '約'+yen(Math.abs(shortfall),0)+'万円上回ります。物件価格・積立額・返済期間の組合せを再試算してください。');
     else push('good','購入価格は参考予算の範囲内',
       '参考予算との差は'+yen(shortfall,0)+'万円。審査通過や将来の安全を保証する判定ではありません。');
-    const plus1=fpAmortization(price,1).monthly-amort.monthly;
-    push(plus1>1.5?'warn':'note','金利が年＋1％の場合',
-      '借入時からその金利が続く仮定では月＋'+yen(plus1,2)+'万円。実際の変動金利の見直し額とは異なります。');
+    const shocks=[0.5,1,2].map(shift=>({shift,increase:fpAmortization(price,shift).monthly-amort.monthly}));
+    push(shocks[1].increase>1.5?'warn':'note','金利上昇時の返済増加',
+      shocks.map(x=>'＋'+x.shift+'%：月＋'+yen(x.increase,2)+'万円').join('／')+'。借入時から一定金利とした比較で、実際の変動金利の改定額ではありません。');
     if(safeNum(p.children)>0)push('note','育児期の収入を慎重に評価',
       '出産年は妻の月手取り最大10万円、翌年以降は時短手取り'+yen(safeNum(p.wifeReduced),1)+'万円・妻賞与0円と仮定。実際の育休給付等は要確認。');
     if(safeNum(p.carLoanEndYear)>=simNowYear())push('note','車ローン完済前後で再比較',

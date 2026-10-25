@@ -18,6 +18,17 @@
   <div id="app" class="app-shell">
     <div class="boot"><span class="brand-mark">H.</span><strong>ほっぽさん</strong><small>わたしたちの家探し</small></div>
   </div>
+  <script>
+    if ('serviceWorker' in navigator) {
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          location.reload();
+        }
+      });
+    }
+  </script>
   <script src="./app.js" defer></script>
 </body>
 </html>

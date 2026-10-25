@@ -112,21 +112,15 @@
     const paths={property:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',compare:'<path d="M12 3v18M5 7h14M7 7l-4 7h8L7 7Zm10 0-4 7h8l-4-7ZM4 18h16"/>',sim:'<rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8 11h2m4 0h2M8 15h2m4 0h2M8 19h2m4 0h2"/>',schedule:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 2v6m10-6v6M3 10h18"/>',memo:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'};
     return '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+paths[key]+'</svg>';
   }
-  function toolbar(title){
-    const count=state.properties.filter(p=>p.status!=='見送り').length;
-    return '<header class="top modern-top"><div class="brand-block"><span class="brand-symbol" aria-hidden="true">'+tabIcon('property')+'</span><div class="brand"><h1>'+esc(ui.tab==='property'?'ほっぽさん':title)+'</h1><span class="eyebrow">HOME PLANNER</span></div></div><div class="header-actions">'+(ui.tab==='property'?'<span class="header-count">♥ <b>'+count+'件</b></span>':'')+'<button class="iconbtn settings-gear" data-act="settings" aria-label="バックアップ・設定">⚙</button></div></header>';
-  }
   function render(){
     if(!app)return;
-    const titles={property:'ほっぽさん',compare:'比較',sim:'FPプラン',schedule:'予定',memo:'メモ'};
     const nav=[['property','物件'],['compare','比較'],['sim','FP'],['schedule','予定'],['memo','メモ']];
     // Keep the underlying screen mounted while a full-screen view is open.
     // Rebuilding it on every dialog/page change causes the home screen to flash
     // behind the opening overlay and needlessly reloads photo thumbnails.
     const liveMain=app.querySelector('main.main');
-    const liveHeader=app.querySelector('header.top');
     const liveNav=app.querySelector('nav.bottom');
-    if(ui.overlay && liveMain && liveHeader && liveNav && liveNav.querySelector('[data-act="tab"][data-value="'+ui.tab+'"].active')){
+    if(ui.overlay && liveMain && liveNav && liveNav.querySelector('[data-act="tab"][data-value="'+ui.tab+'"].active')){
       const current=app.querySelector('.full');
       if(current)current.outerHTML=overlay();
       else app.insertAdjacentHTML('beforeend',overlay());
@@ -137,7 +131,7 @@
     const oldFPKind=oldFP?.classList?.contains('fp-month-report')?'monthly':oldFP?'annual':null;
     const oldFPScroll=oldFP?.scrollTop||0;
     const body=ui.tab==='property'?propertyScreen():ui.tab==='compare'?compareScreen():ui.tab==='sim'?simulationScreen():ui.tab==='memo'?memoScreen():pendingScreen();
-    app.innerHTML=toolbar(titles[ui.tab])+'<main class="main">'+body+'</main><nav class="bottom" aria-label="メインメニュー">'+nav.map(([key,name])=>'<button class="tab '+(ui.tab===key?'active':'')+'" data-act="tab" data-value="'+key+'" aria-current="'+(ui.tab===key?'page':'false')+'"><span class="nav-icon">'+tabIcon(key)+'</span><span class="tab-label">'+name+'</span></button>').join('')+'</nav>'+(ui.overlay?overlay(): '');
+    app.innerHTML='<main class="main" aria-label="ホッポさんアプリ">'+body+'</main><nav class="bottom" aria-label="メインメニュー">'+nav.map(([key,name])=>'<button class="tab '+(ui.tab===key?'active':'')+'" data-act="tab" data-value="'+key+'" aria-current="'+(ui.tab===key?'page':'false')+'"><span class="nav-icon">'+tabIcon(key)+'</span><span class="tab-label">'+name+'</span></button>').join('')+'</nav>'+(ui.overlay?overlay(): '');
     // Changing month/year or a value must not snap a scrolled breakdown
     // back to the start of the FP report.
     if(oldFPKind){
@@ -174,7 +168,7 @@
       (total>1?navPager(ui.homePage,total,'home-page'):'<div class="home-page-single" aria-label="1ページ目"></div>');
   }
   function propertyScreen(){
-    return '<section class="screen home-screen"><div class="home-search-row"><label class="home-search-box"><span class="search-icon" aria-hidden="true">⌕</span><input data-home-query type="search" autocomplete="off" enterkeyhint="search" placeholder="エリア・駅・物件名で検索" aria-label="物件を検索" value="'+esc(state.filter.query||'')+'"></label><button class="home-filter-btn" data-act="search">☷ <span>絞り込み</span></button></div><button class="home-add-btn" data-act="add-property"><span aria-hidden="true">＋</span> 物件を追加</button><div class="home-results">'+homeResults()+'</div>'+(state.properties.length===0?'<button class="home-sample-link" data-act="seed">サンプル3件で試す</button>':'')+'</section>';
+    return '<section class="screen home-screen"><div class="home-search-row"><label class="home-search-box"><span class="search-icon" aria-hidden="true">⌕</span><input data-home-query type="search" autocomplete="off" enterkeyhint="search" placeholder="エリア・駅・物件名で検索" aria-label="物件を検索" value="'+esc(state.filter.query||'')+'"></label><button class="home-filter-btn" data-act="search">☷ <span>絞り込み</span></button><button class="home-settings" data-act="settings" aria-label="バックアップ・設定" title="設定">⚙</button></div><button class="home-add-btn" data-act="add-property"><span aria-hidden="true">＋</span> 物件を追加</button><div class="home-results">'+homeResults()+'</div>'+(state.properties.length===0?'<button class="home-sample-link" data-act="seed">サンプル3件で試す</button>':'')+'</section>';
   }
   function detailScreen(){
     let p=curProp();if(!p)return '';
@@ -2394,5 +2388,15 @@
     }catch(_){message('バックアップを読み込めませんでした');}
   }
   save();render();
+  // The startup wordmark lives outside #app and is shown only once per
+  // document load. Navigation and updates never replay the launch animation.
+  const launch=document.getElementById('hoppo-launch');
+  if(launch?.id==='hoppo-launch'){
+    const reduceMotion=!!reduced.matches;
+    setTimeout(()=>{
+      launch.classList.add('is-leaving');
+      setTimeout(()=>launch.remove(),reduceMotion?30:280);
+    },reduceMotion?100:760);
+  }
   if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 })();

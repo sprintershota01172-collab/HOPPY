@@ -907,7 +907,9 @@
       {label:'NISAなどの積立',amount:investing,color:'#729477'},
       {label:'現金に残る分',amount:remaining,color:'#d5dde2'}
     ];
-    return {income,spent,over,items,percent:income?spent/income*100:null};
+    return {income,spent,over,items,percent:income?spent/income*100:null,
+      expensePercent:income?point.expenses/income*100:null,
+      investingPercent:income?investing/income*100:null};
   }
   function fpPieChart(point){
     const data=fpIncomeAllocation(point),total=Math.max(1,data.income,data.spent),
@@ -920,17 +922,18 @@
         ' stroke-dashoffset="'+(-acc).toFixed(4)+'" transform="rotate(-90 105 105)"/>';
       acc+=len;return svg;
     }).join('');
-    const percent=data.percent===null?'—':yen(data.percent,1)+'%';
-    return '<div class="fp-pie-figure"><svg viewBox="0 0 210 210" class="fp-pie-chart" role="img" aria-label="年の手取り収入に対する支出・積立比率：'+esc(percent)+'">'+
+    const percent=data.expensePercent===null?'—':yen(data.expensePercent,1)+'%';
+    const outflowPercent=data.percent===null?'—':yen(data.percent,1)+'%';
+    return '<div class="fp-pie-figure"><svg viewBox="0 0 210 210" class="fp-pie-chart" role="img" aria-label="年間手取り収入に対する支出率：'+esc(percent)+'">'+
       '<circle cx="105" cy="105" r="'+radius+'" fill="none" stroke="#ecf0f2" stroke-width="29"/>'+
       arcs+'<text x="105" y="100" text-anchor="middle" font-size="26" font-weight="800" fill="#283a4b">'+esc(percent)+'</text>'+
-      '<text x="105" y="124" text-anchor="middle" font-size="11" fill="#758391">支出＋積立率</text></svg>'+
+      '<text x="105" y="124" text-anchor="middle" font-size="11" fill="#758391">支出率（積立を除く）</text></svg>'+
       '<div class="fp-pie-key">'+data.items.map(x=>
         '<div><i style="background:'+x.color+'"></i><span>'+x.label+'</span><strong>'+yen(x.amount,0)+'万</strong></div>'
       ).join('')+'</div></div>'+
       '<div class="fp-pie-totals"><span>年間手取り＋給付金 <strong>'+yen(data.income,0)+'万円</strong></span>'+
       '<span>年間支出＋投資積立 <strong>'+yen(data.spent,0)+'万円</strong></span></div>'+
-      '<p class="fp-r-help">'+(data.over>0?'収入を'+yen(data.over,0)+'万円超過しています。円の大きさは支出総額を基準に表示。':
+      '<p class="fp-r-help">支出＋積立率 '+esc(outflowPercent)+'。'+(data.over>0?'収入を'+yen(data.over,0)+'万円超過しています。円の大きさは支出総額を基準に表示。':
       '円全体は年間収入の100％。残額は収入−支出−積立で計算。')+
       ' 積立は消費ではなく資産への振替です。</p>';
   }
@@ -1101,7 +1104,7 @@
         fpMetric('手取り負担率',yen(rating.ratio*100,1)+'％')+
         fpMetric('毎月の現金貯金の余力',yen(rating.spendable,1)+'万円')+
         fpMetric('年末現金の最小値',yen(min.cash,0)+'万円 ('+min.year+'年)')+'</div>'+
-        '<button class="fp-pie-shortcut" data-act="fp-pie-open"><span class="fp-pie-mini" style="--pie-sweep:'+Math.min(100,Math.max(0,fpIncomeAllocation(fpYearPoint(current)).percent||0))+'%"></span><span>収入に対する支出・積立の割合</span><b>'+(fpIncomeAllocation(fpYearPoint(current)).percent===null?'—':yen(fpIncomeAllocation(fpYearPoint(current)).percent,1)+'%')+' ›</b></button>'+
+        '<button class="fp-pie-shortcut" data-act="fp-pie-open"><span class="fp-pie-mini" style="--pie-sweep:'+Math.min(100,Math.max(0,fpIncomeAllocation(fpYearPoint(current)).expensePercent||0))+'%"></span><span>収入に対する支出の割合</span><b>'+(fpIncomeAllocation(fpYearPoint(current)).expensePercent===null?'—':yen(fpIncomeAllocation(fpYearPoint(current)).expensePercent,1)+'%')+' ›</b></button>'+
         '<p class="fp-r-help">'+(negative?'注意：'+negative.year+'年に年末現金がマイナスになる試算です。':'この期間は年末現金のマイナスがありません。')+
         ' 手取り比率は家計の参考値で、融資審査基準とは異なります。</p></div>';
     }else if(page===1){

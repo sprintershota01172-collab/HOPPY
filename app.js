@@ -7,6 +7,8 @@
   const raters = ['husband','wife'];
   const raterLabel = { husband: '夫', wife: '妻' };
   const digits = new Intl.NumberFormat('ja-JP');
+  const fpYen = value => digits.format(Math.round((Number(value)||0)*10000))+'円';
+  const fpYenNumber = value => Math.round((Number(value)||0)*10000);
   const app = document.getElementById('app');
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   const uid = () => (window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
@@ -34,7 +36,7 @@
     childLivingMonthly:0,daycareMonthly:0,childBenefitMonthly:0,childEducationInsuranceMonthly:0,
     annualTax:0,carTaxAnnual:0,travelAnnual:0,annualEvents:0,homeInsuranceAnnual:0,
     otherSavingsMonthly:0,otherInvestMonthly:0,nisaBalance:0,investBalance:0,returnAnnual:0,carLoanEndYear:0,
-    cashBufferMonthly:3,expenses:[],events:[]
+    cashBufferMonthly:3,freeSpendingMonthly:0,expenses:[],events:[]
   });
   const defaults = () => ({version:2,properties:[],criteria:initialCriteria,scores:{},selected:[],filter:{query:'',tag:'',sort:'new',status:''},plan:defaultPlan(),planHistory:[],studyNotes:[],homeCriteriaMemo:''});
   let state;
@@ -102,7 +104,7 @@
     return ps;
   }
   function selectedProperties(){return state.selected.map(propById).filter(Boolean).slice(0,3);}
-  function step(action){if(Date.now()<ui.lock)return;ui.lock=Date.now()+(reduced.matches?100:680);action();render();}
+  function step(action){if(Date.now()<ui.lock)return;ui.lock=Date.now()+(ui.tab==='sim'&&ui.simStep>=7?60:(reduced.matches?100:450));action();render();}
   function closeOverlay(){step(()=>{ui.overlay='';ui.draft=null;});}
   function openOverlay(kind, setup){step(()=>{ui.overlay=kind;if(setup)setup();});}
   function chooseTab(tab){step(()=>{ui.tab=tab;ui.overlay='';ui.fpBreakdownOpen=null;ui.draft=null;if(tab==='sim'&&state.plan.hasRun){ui.simStep=7;ui.simResultPage=1;ui.fpYear=simNowYear();ui.fpHistoryLive=true;ui.fpHistoryOpen=false;ui.fpHistoryId=state.planHistory[0]?.id||null;}});}
@@ -429,7 +431,7 @@
       ],'水道は2か月ごとの請求額を入力。月平均＝÷2、年間＝×6。',safeNum(p.utilitiesMonthly)>0?
         '<div class="fp-legacy-note">旧・光熱費合算 '+yen(p.utilitiesMonthly,2)+'万円/月。上の内訳を入力すると合算額の代わりに使います。<button data-act="fp-legacy-utilities-clear">旧合算を削除</button></div>':''));
       pages.push(fpCompactPage('毎日の支払い',[
-        f('その他の生活費','livingMonthly'),f('通信・スマホ','telecomMonthly'),
+        f('その他の生活費','livingMonthly'),f('自由費','freeSpendingMonthly'),f('通信・スマホ','telecomMonthly'),
         f('交通・ガソリン','transportMonthly'),f('サブスク','subscriptionsMonthly'),
         f('外食・レジャー','leisureMonthly'),f('通院・薬代','medicalMonthly'),
         f('車維持・車検積立','carMaintenanceMonthly')
@@ -616,6 +618,7 @@
   const fpRentMonthly=p=>['rentMonthly','managementMonthly','commonFeeMonthly','parkingMonthly'].reduce((sum,key)=>sum+safeNum(p[key]),0);
   function fpBaseMonthly(year){
     const p=state.plan,parts=fpDetailCategories.map(([key,label])=>({key,label,value:key==='waterBiMonthly'?safeNum(p[key])/2:safeNum(p[key])}));
+    parts.push({key:'freeSpendingMonthly',label:'自由費',value:safeNum(p.freeSpendingMonthly)});
     // Before separate utility fields existed, a single amount was stored. Count either the old total or the new breakdown, never both.
     if(!['electricityMonthly','gasMonthly','waterBiMonthly'].some(key=>safeNum(p[key])>0) && safeNum(p.utilitiesMonthly)>0)
       parts.push({key:'utilitiesMonthly',label:'旧・光熱費合計',value:safeNum(p.utilitiesMonthly)});
@@ -827,7 +830,7 @@
       {step:1,page:0,limit:2000,keys:[['husbandBonus','夫の年間賞与'],['wifeBonus','妻の年間賞与']]},
       {step:2,page:0,limit:100,keys:[['foodMonthly','食費'],['rentMonthly','家賃'],['managementMonthly','管理費'],['commonFeeMonthly','共益費'],['parkingMonthly','駐車場代']]},
       {step:2,page:1,limit:100,keys:[['electricityMonthly','電気代'],['gasMonthly','ガス代'],['waterBiMonthly','水道代（2か月分）']]},
-      {step:2,page:2,limit:100,keys:[['livingMonthly','その他生活費'],['telecomMonthly','通信費'],['transportMonthly','交通費'],['subscriptionsMonthly','サブスク'],['leisureMonthly','外食・レジャー'],['medicalMonthly','医療費'],['carMaintenanceMonthly','車維持費']]},
+      {step:2,page:2,limit:100,keys:[['livingMonthly','その他生活費'],['freeSpendingMonthly','自由費'],['telecomMonthly','通信費'],['transportMonthly','交通費'],['subscriptionsMonthly','サブスク'],['leisureMonthly','外食・レジャー'],['medicalMonthly','医療費'],['carMaintenanceMonthly','車維持費']]},
       {step:2,page:3,limit:100,keys:[['lifeInsuranceMonthly','生命保険'],['medicalInsuranceMonthly','医療保険'],['carInsuranceMonthly','自動車保険'],['carMonthly','自動車ローン'],['otherLoanMonthly','その他ローン']]},
       {step:3,page:0,limit:100,keys:[['childInsuranceMonthly','子どもの保険'],['childEducationInsuranceMonthly','学資保険'],['childLivingMonthly','子どもの生活費'],['daycareMonthly','保育料']]},
       {step:4,page:1,limit:100,keys:[['housingOngoing','固定資産税・修繕費']]},

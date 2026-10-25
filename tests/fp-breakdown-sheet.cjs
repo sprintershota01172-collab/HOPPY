@@ -55,14 +55,16 @@ assert.ok(app.innerHTML.indexOf('fp-month-pie')<app.innerHTML.indexOf('data-fp-i
 
 click('fp-breakdown-select','housing','monthly');
 assert.match(app.innerHTML,/家賃/,'rent displayed before buying');
+click('fp-row-edit','field|rentMonthly','monthly');
 assert.match(app.innerHTML,/data-fp-breakdown-field="rentMonthly"/);
 selectYear(2028);click('fp-cash-month','9');
 click('fp-breakdown-select','housing','monthly');
 assert.match(app.innerHTML,/住宅ローン返済/,'mortgage displayed from purchase month');
 assert.match(app.innerHTML,/住宅維持費/);
 click('fp-breakdown-select','investing','monthly');
+click('fp-row-edit','field|nisaMonthly','monthly');
 assert.match(app.innerHTML,/data-fp-breakdown-field="nisaMonthly"/);
-change('nisaMonthly',4.5);
+change('nisaMonthly',45000);
 assert.equal(p.nisaMonthly,4.5,'inline editing saved original field');
 assert.match(app.innerHTML,/data-fp-inline-breakdown/,'editing does not navigate');
 assert.match(app.innerHTML,/NISA積立/);
@@ -78,6 +80,6 @@ assert.ok(app.innerHTML.indexOf('fp-pie-figure')<app.innerHTML.indexOf('data-fp-
 
 const css=fs.readFileSync('styles.css','utf8');
 assert.match(css,/\.fp-month-report:has\(\.fp-breakdown-panel\)/);
-assert.match(css,/\.fp-breakdown-panel \.fp-breakdown-list\s*\{[^}]*overflow-y:auto!important/);
-assert.match(css,/\.fp-breakdown-panel \.fp-breakdown-edit input\s*\{[^}]*font-size:16px/);
+assert.match(css,/\.fp-focus \.fp-breakdown-list\s*\{[^}]*display:grid!important/);
+assert.match(css,/\.fp-inline-edit input\s*\{[^}]*font-size:16px!important/);
 console.log('HOPPY inline monthly/annual breakdown: '+reconciled+' reconciled slices and editable inputs PASS');

@@ -37,7 +37,7 @@
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,draft:null,simStep:0,simResultPage:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,draft:null,simStep:0,simResultPage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
   function normalize(s) {
     if (!s || !Array.isArray(s.properties) || !Array.isArray(s.criteria)) throw Error('形式が違います');
@@ -567,19 +567,45 @@
     return '<button class="fp-home-row" data-act="fp-open-home" data-value="'+esc(p.id)+'"><span class="fp-home-name">'+esc(p.name)+'</span><span class="fp-home-price">'+yen(price)+'万</span><span class="fp-home-badge '+fpBadgeClass(check.level)+'">'+check.label+'</span><span class="fp-chevron">›</span></button>';
   }
   function simGraph(series){
-    const all=series.flatMap(x=>x.data.points.map(p=>p.cash)),low=Math.min(0,...all),high=Math.max(100,...all);
+    const all=series.flatMap(x=>x.data.points.map(p=>p[x.key||'cash'])),low=Math.min(0,...all),high=Math.max(100,...all);
     const graphWidth=316,left=8,right=324,top=20,bottom=176,diff=Math.max(1,high-low);
     const y=n=>top+(high-n)/diff*(bottom-top);
     const first=series[0].data.points[0].year,last=series[0].data.points.at(-1).year;
     const x=year=>left+(year-first)/Math.max(1,last-first)*graphWidth;
     const horizontal=[0,.25,.5,.75,1].map(f=>{const val=high-f*diff;return '<line x1="'+left+'" y1="'+(top+f*(bottom-top))+'" x2="'+right+'" y2="'+(top+f*(bottom-top))+'" stroke="#e3e6df" stroke-width="1"/><text x="8" y="'+(top+f*(bottom-top)-3)+'" font-size="8" fill="#86908a">'+yen(val)+'</text>';}).join('');
     const curves=series.map(item=>{
-      const coords=item.data.points.map((p,i)=>(i?'L':'M')+x(p.year).toFixed(1)+','+y(p.cash).toFixed(1)).join(' ');
+      const coords=item.data.points.map((p,i)=>(i?'L':'M')+x(p.year).toFixed(1)+','+y(p[item.key||'cash']).toFixed(1)).join(' ');
       return '<path d="'+coords+'" fill="none" stroke="'+item.color+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
     }).join('');
-    return '<svg class="sim-chart" viewBox="0 0 332 203" role="img" aria-label="年ごとの現金貯金推移をシナリオ別に表示">'+horizontal+
+    return '<svg class="sim-chart" viewBox="0 0 332 203" role="img" aria-label="年ごとの現金貯金と投資資産の残高推移">'+horizontal+
       '<line x1="'+left+'" y1="'+y(0)+'" x2="'+right+'" y2="'+y(0)+'" stroke="#bd7e76" stroke-dasharray="4 3" stroke-width="1.3"/>'+curves+
       '<text x="8" y="195" font-size="9" fill="#76837a">'+first+'</text><text x="145" y="195" font-size="9" fill="#76837a">'+Math.round((first+last)/2)+'</text><text x="300" y="195" font-size="9" fill="#76837a">'+last+'</text></svg>';
+  }
+  function fpYearSelect(model){
+    const points=model.points;
+    if(!ui.fpYear||!points.some(x=>x.year===ui.fpYear))ui.fpYear=Math.max(points[0].year,Math.min(points.at(-1).year,fpDecisionYear()));
+    return '<label class="fp-year-select"><span>表示する年</span><select data-fp-year aria-label="収支を表示する年">'+points.map(x=>'<option value="'+x.year+'" '+(x.year===ui.fpYear?'selected':'')+'>'+x.year+'年</option>').join('')+'</select></label>';
+  }
+  function fpExpenseDetails(point,buy){
+    const p=state.plan,year=point.year;
+    const result=[
+      ...point.monthlyParts.map(x=>({label:x.label,amount:x.value*12})),
+      {label:buy&&year>=safeNum(p.purchaseYear)?'住宅ローン・維持費':'家賃',amount:point.housing*12},
+      {label:'学校・大学の費用',amount:point.school},
+      {label:'出産関連',amount:point.birth},
+      {label:'自動車税など年払い',amount:safeNum(p.carTaxAnnual)},
+      {label:'旅行・帰省',amount:safeNum(p.travelAnnual)},
+      {label:'その他の税金',amount:safeNum(p.annualTax)},
+      {label:'年内イベント・家電',amount:safeNum(p.annualEvents)},
+      {label:'火災保険',amount:buy&&year>=safeNum(p.purchaseYear)?safeNum(p.homeInsuranceAnnual):0}
+    ];
+    for(const x of p.expenses||[]){
+      if((x.start&&year<x.start)||(x.end&&year>x.end))continue;
+      result.push({label:x.name,amount:safeNum(x.amount)*(x.cycle==='year'?1:12)});
+    }
+    result.push({label:'頭金・購入諸費用',amount:point.upfront});
+    result.push({label:'結婚式・新婚旅行',amount:point.events});
+    return result.filter(x=>x.amount>0).sort((a,b)=>b.amount-a.amount);
   }
   function simulationResultsScreen(){
     const p=state.plan,price=safeNum(p.propertyPrice),linked=propById(p.propertyId);
@@ -587,9 +613,9 @@
     const page=ui.simResultPage,eduKids=Math.min(3,Math.round(safeNum(p.children)));
     let eduTotal=0;
     for(let k=0;k<eduKids;k++)for(let age=0;age<22;age++)eduTotal+=educationAnnual(age,p);
-    const heading=['あなたの住宅予算','将来の貯金と金利','教育費の準備'][page];
+    const heading=['あなたの住宅予算','支出の内訳','現金とNISAの推移','教育費の準備'][page];
     const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN</span><button class="btn compact" data-act="sim-restart">回答を編集 <span aria-hidden="true">↗</span></button></div>';
-    const steps='<div class="fp-result-nav">'+['予算','貯金','教育'].map((x,i)=>
+    const steps='<div class="fp-result-nav">'+['予算','支出','資産','教育'].map((x,i)=>
       '<button data-act="fp-result-tab" data-value="'+i+'" class="'+(page===i?'active':'')+'">'+x+'</button>').join('')+'</div>';
     let content='';
     if(page===0){
@@ -608,14 +634,33 @@
         '<p class="fp-assumption">※ 25％は暮らしの目安であり、銀行の審査額ではありません。諸費用・現金残高・将来の支出もご確認ください。</p>'+
         futureWarning+'</div>';
     }else if(page===1){
+      const point=current.points.find(x=>x.year===ui.fpYear)||current.points.find(x=>x.year===fpDecisionYear())||current.points[0];
+      const items=fpExpenseDetails(point,true);
+      const total=items.reduce((sum,x)=>sum+x.amount,0);
+      content='<div class="fp-breakdown-content grow">'+fpYearSelect(current)+
+        '<div class="fp-year-totals"><div><span>手取り・給付金</span><strong>'+yen(point.incomes,0)+'万円</strong></div>'+
+        '<div><span>年間支出</span><strong>'+yen(point.expenses,0)+'万円</strong></div>'+
+        '<div><span>NISA等の投資積立</span><strong>'+yen(point.investing,0)+'万円</strong></div>'+
+        '<div><span>現金貯金の増減</span><strong class="'+(point.netCash<0?'fp-negative':'')+'">'+yen(point.netCash,0)+'万円</strong></div></div>'+
+        '<div class="fp-section-head"><strong>年間の支出明細</strong><span>'+items.length+'項目</span></div>'+
+        '<div class="fp-expense-rows">'+items.map(x=>'<div class="fp-expense-line"><span>'+esc(x.label)+'</span><strong>'+yen(x.amount,1)+' 万円</strong></div>').join('')+'</div>'+
+        '<p class="fp-assumption">年間支出 '+yen(total,1)+' 万円。NISA・その他投資への積立は支出と区別し、現金から投資資産へ振替えます。現金貯金目標も支出には含みません。</p>'+
+        '<p class="fp-assumption">※ 年間額は1〜12月の計算です。給与変化・税金・教育費・給付金は入力条件と簡易モデルによります。</p></div>';
+    }else if(page===2){
       const now=assessment,stress=assessment.stressed,positive=assessment.remaining>=assessment.reserve;
       const cash=assessment.remaining,need=assessment.reserve;
+      const selected=current.points.find(x=>x.year===ui.fpYear)||current.points.find(x=>x.year===fpDecisionYear())||current.points[0];
       const warning=now.remaining<0?'自己資金が不足しています。':!positive?'購入後の生活防衛資金が6か月分を下回る計算です。':'購入直後の生活防衛資金は6か月分を確保できる計算です。';
-      content='<div class="fp-cash-content grow"><div class="panel fp-finance-card">'+
+      content='<div class="fp-cash-content grow">'+fpYearSelect(current)+'<div class="panel fp-finance-card">'+
         '<div class="fp-section-head"><strong>貯金の推移</strong><span>'+current.points[0].year+'–'+current.points.at(-1).year+'</span></div>'+
-        simGraph([{label:'住宅を購入',color:'#007aff',data:current},{label:'購入しない',color:'#b5b9c2',data:rent}])+
-        '<div class="sim-legend"><span><i style="background:#007aff"></i>住宅を購入</span><span><i style="background:#b5b9c2"></i>購入しない</span></div>'+
+        simGraph([{label:'現金貯金',color:'#007aff',data:current,key:'cash'},{label:'NISA＋その他投資',color:'#26a369',data:current,key:'invested'},{label:'賃貸時の現金',color:'#b5b9c2',data:rent,key:'cash'}])+
+        '<div class="sim-legend"><span><i style="background:#007aff"></i>現金</span><span><i style="background:#26a369"></i>運用資産</span><span><i style="background:#b5b9c2"></i>賃貸時</span></div>'+
         '<p class="sim-hint">'+(current.min<0?'！ 購入するケースで貯金がマイナスになる年があります。':'✓ この試算期間で現金貯金はマイナスになりません。')+'</p></div>'+
+        '<div class="fp-asset-summary">'+
+        '<div><span>現金貯金</span><strong>'+yen(selected.cash,0)+'万円</strong></div>'+
+        '<div><span>NISA</span><strong>'+yen(selected.nisa,0)+'万円</strong></div>'+
+        '<div><span>その他投資</span><strong>'+yen(selected.otherInvest,0)+'万円</strong></div>'+
+        '<div><span>金融資産合計</span><strong>'+yen(selected.total,0)+'万円</strong></div></div>'+
         '<div class="fp-insight-row"><div class="fp-insight"><span>金利＋1％で</span><strong>月 '+yen(now.monthlyDelta,1)+'万円 増</strong></div><div class="fp-insight"><span>現金の残り</span><strong>'+yen(cash,0)+'万円</strong></div></div>'+
         '<p class="fp-cash-note">'+(positive?'✓':'！')+' '+warning+'（6か月分の目安 '+yen(need,0)+'万円）</p>'+
         '<p class="fp-assumption">税・修繕費は月額一定、教育費は標準的な概算。金利・物価変動や給付金は精密には反映していません。</p></div>';
@@ -630,7 +675,7 @@
         '<p class="fp-assumption">※ 教育費は進学先や物価で大きく変わります。教育費積立はNISAの運用益を含まない概算です。</p></div>';
     }
     return '<section class="screen sim-screen fp-result-screen">'+intro+'<h2 class="sim-result-title">'+heading+'</h2>'+steps+content+
-      '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">↶ 条件を見直す</button><button class="btn primary" data-act="fp-result-next">'+(page===2?'予算に戻る':'次へ →')+'</button></div></section>';
+      '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">↶ 条件を見直す</button><button class="btn primary" data-act="fp-result-next">'+(page===3?'予算に戻る':'次へ →')+'</button></div></section>';
   }
     const studyCategories=[
     ['費用・住宅ローン',/費用|万円|円|金利|ローン|予算|頭金|税|維持費|値引|価格|銀行|返済/],
@@ -953,9 +998,11 @@
     if(action==='sim-next')return step(()=>{if(ui.simStep===6)state.plan.hasRun=1;ui.simStep=Math.min(7,ui.simStep+1);ui.simResultPage=0;save();});
     if(action==='sim-back')return step(()=>{ui.simStep=Math.max(0,ui.simStep-1);});
     if(action==='sim-restart')return step(()=>{ui.simStep=0;ui.simResultPage=0;});
-    if(action==='sim-result-page')return step(()=>changePage('simResultPage',3,Number(v)));
-    if(action==='fp-result-tab')return step(()=>{ui.simResultPage=Math.min(2,Math.max(0,Number(v)||0));});
-    if(action==='fp-result-next')return step(()=>{ui.simResultPage=(ui.simResultPage+1)%3;});
+    if(action==='sim-result-page')return step(()=>changePage('simResultPage',4,Number(v)));
+    if(action==='fp-result-tab')return step(()=>{ui.simResultPage=Math.min(3,Math.max(0,Number(v)||0));});
+    if(action==='fp-expense-add')return step(()=>{if(state.plan.expenses.length>=35)return message('追加支出は35項目までです');state.plan.expenses.push({id:uid(),name:'新しい支出',amount:0,cycle:'month',start:0,end:0});save();});
+    if(action==='fp-expense-delete'){if(!confirm('この追加支出を削除しますか？'))return;return step(()=>{state.plan.expenses=state.plan.expenses.filter(x=>x.id!==v);save();});}
+    if(action==='fp-result-next')return step(()=>{ui.simResultPage=(ui.simResultPage+1)%4;});
     if(action==='sim-choice')return step(()=>{ui.simChoice=v;save();});
     if(action==='fp-view-budget')return step(()=>{ui.tab='sim';ui.simStep=7;ui.simResultPage=0;ui.overlay='';});
     if(action==='fp-open-home')return openOverlay('detail',()=>{ui.propertyId=v;ui.propertyPage=0;});
@@ -1078,6 +1125,12 @@
     if(el.dataset.homeQuery!==undefined){state.filter.query=el.value;ui.homePage=0;save();const list=app.querySelector('.home-results');if(list){list.innerHTML=homeResults();hydratePhotos();}}
     if(el.dataset.memoProperty!==undefined){ui.memoPropertyId=el.value;ui.memoPage=0;ui.memoSwipeKey=null;render();return;}
     if(el.dataset.study && ui.studyDraft){ui.studyDraft[el.dataset.study]=el.value;}
+    if(el.dataset?.fpYear!==undefined){ui.fpYear=Math.floor(Number(el.value)||0);render();return;}
+    if(el.dataset?.fpId && el.dataset?.fpKey){
+      const entry=state.plan.expenses.find(x=>x.id===el.dataset.fpId);
+      if(entry){const k=el.dataset.fpKey;entry[k]=k==='name'?String(el.value).slice(0,50):k==='cycle'?(el.value==='year'?'year':'month'):(k==='amount'?Math.max(0,Math.min(10000,Number(el.value)||0)):Math.max(0,Math.min(2100,Math.floor(Number(el.value)||0))));save();}
+      return;
+    }
     if(el.dataset.sim){
       const k=el.dataset.sim, val=el.value;
       state.plan[k]=['propertyId','highSchool','university'].includes(k)?val:(val!==''&&Number.isFinite(Number(val))?Number(val):0);
@@ -1139,6 +1192,12 @@
     const el=e.target;
     if(el.dataset?.memoProperty!==undefined){ui.memoPropertyId=el.value;ui.memoPage=0;ui.memoSwipeKey=null;render();return;}
     if(el.dataset?.study && ui.studyDraft){ui.studyDraft[el.dataset.study]=el.value;}
+    if(el.dataset?.fpYear!==undefined){ui.fpYear=Math.floor(Number(el.value)||0);render();return;}
+    if(el.dataset?.fpId && el.dataset?.fpKey){
+      const entry=state.plan.expenses.find(x=>x.id===el.dataset.fpId);
+      if(entry){const k=el.dataset.fpKey;entry[k]=k==='name'?String(el.value).slice(0,50):k==='cycle'?(el.value==='year'?'year':'month'):(k==='amount'?Math.max(0,Math.min(10000,Number(el.value)||0)):Math.max(0,Math.min(2100,Math.floor(Number(el.value)||0))));save();}
+      return;
+    }
     if(el.dataset?.sim){
       const k=el.dataset.sim,val=el.value;
       state.plan[k]=['propertyId','highSchool','university'].includes(k)?val:(val!==''&&Number.isFinite(Number(val))?Number(val):0);

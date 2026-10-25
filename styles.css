@@ -1672,3 +1672,46 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .fp-assets-report:has(.fp-assets-months)>.fp-r-chart{max-height:83px;min-height:45px}
  .fp-assets-subline{display:none}
 }
+
+
+/* FP r10 — compact monthly allocation pie plus details toggle. */
+.fp-month-switch{
+ display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:3px;
+ min-width:122px;flex:none;height:29px;background:#e8eef1;border-radius:9px;
+}
+.fp-month-switch button{
+ min-width:0;border:0;border-radius:6px;background:transparent;color:#607584;
+ font-size:10px;font-weight:760;padding:0 4px;white-space:nowrap;
+}
+.fp-month-switch button.active{background:#fff;color:#225d86;box-shadow:0 1px 4px #1b35551c}
+.fp-month-head{min-height:29px}
+.fp-month-pie{
+ display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);
+ gap:5px;align-items:center;min-height:0;flex:1;overflow:hidden;
+ border-radius:12px;background:#fff;border:1px solid #e6ebee;padding:5px;
+}
+.fp-month-donut{display:block;width:100%;height:100%;max-height:182px;min-height:90px;min-width:0;justify-self:center}
+.fp-month-pie-legend{display:flex;flex-direction:column;gap:7px;min-width:0;justify-content:center}
+.fp-month-pie-legend>div{
+ display:flex;align-items:center;gap:5px;min-width:0;
+ font-size:9px;color:#697985;white-space:nowrap;
+}
+.fp-month-pie-legend i{width:8px;height:8px;border-radius:2px;flex:none}
+.fp-month-pie-legend span{flex:1;min-width:0;text-overflow:ellipsis;overflow:hidden}
+.fp-month-pie-legend strong{font-size:9px;color:#263b50;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fp-month-pie-note{font-size:9px;line-height:1.3;color:#687c88;flex:none;margin:0}
+.fp-month-report:has(.fp-month-pie) .fp-r-help{font-size:8px;line-height:1.3}
+@media(max-height:760px){
+ .fp-month-report:has(.fp-month-pie){gap:4px}
+ .fp-month-pie{padding:3px;gap:3px}
+ .fp-month-donut{max-height:140px;min-height:75px}
+ .fp-month-pie-legend{gap:5px}
+ .fp-month-pie-note{font-size:8px}
+}
+@media(max-height:620px){
+ .fp-month-donut{max-height:102px;min-height:52px}
+ .fp-month-pie-legend{gap:2px}
+ .fp-month-pie-legend>div,.fp-month-pie-legend strong{font-size:8px}
+ .fp-month-switch{height:25px}
+ .fp-month-pie-note{font-size:8px;line-height:1.2}
+}

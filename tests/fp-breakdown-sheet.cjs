@@ -1,7 +1,7 @@
 // HOPPY FP inline allocation: no screen change, current year, editable details.
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 let src=fs.readFileSync('app.js','utf8');
-const anchor="  save();render();\n  if('serviceWorker'";
+const anchor="  save();render();\n  // The startup wordmark";
 assert.ok(src.includes(anchor));
 src=src.replace(anchor,
   "  window.__breakdownTest={getState:()=>state,ui,modelYears,fpYearPoint,fpMonthlyLedger,fpIncomeAllocation,fpMonthlyAllocation,fpPieBreakdownRows};\n"+anchor);

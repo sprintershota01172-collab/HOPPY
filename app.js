@@ -522,7 +522,7 @@
     ui.fpHistoryPage=Math.max(0,Math.min(total-1,ui.fpHistoryPage||0));
     const page=list.slice(ui.fpHistoryPage*pageSize,(ui.fpHistoryPage+1)*pageSize);
     const cards=page.map((x,i)=>'<button class="fp-history-item" data-act="fp-history-select" data-value="'+esc(x.id)+'">'+
-      '<span><strong>'+esc(fpHistoryDate(x))+'</strong><small>物件価格 '+yen(Number(x.plan.propertyPrice)||0,0)+'万円・'+yen(Number(x.plan.loanYears)||35,0)+'年ローン</small></span>'+
+      '<span><strong>'+esc(fpHistoryDate(x))+'</strong><small>物件価格 '+fpYen(Number(x.plan.propertyPrice)||0)+'・'+yen(Number(x.plan.loanYears)||35,0)+'年ローン</small></span>'+
       '<b>'+(x.id===(fpLatestSnapshot()?.id)?'表示中':'表示 ›')+'</b></button>').join('');
     return '<section class="screen sim-screen fp-result-screen fp-history-screen">'+
       '<div class="sim-intro"><span class="kicker">FP • HISTORY / r10</span><button class="btn compact" data-act="fp-history-close">閉じる ×</button></div>'+
@@ -887,9 +887,9 @@
     return '<div class="fp-repayment-card">'+
       '<div class="fp-repayment-eyebrow">住宅ローンの毎月返済（元利均等）</div>'+
       '<div class="fp-repayment-value">'+yen(payment,2)+'<span>万円 / 月</span></div>'+
-      '<div class="fp-repayment-terms">借入 '+yen(principal,0)+'万円　｜　'+yen(years,0)+'年ローン　｜　年利 '+yen(rate,2)+'%</div>'+
-      '<div class="fp-repayment-detail"><span>住居維持費を加えると</span><strong>'+yen(payment+safeNum(p.housingOngoing),2)+'万円 / 月</strong></div>'+
-      '<div class="fp-repayment-detail"><span>ローン総返済額</span><strong>'+yen(payment*years*12,0)+'万円</strong></div>'+
+      '<div class="fp-repayment-terms">借入 '+fpYen(principal)+'　｜　'+yen(years,0)+'年ローン　｜　年利 '+yen(rate,2)+'%</div>'+
+      '<div class="fp-repayment-detail"><span>住居維持費を加えると</span><strong>'+fpYen(payment+safeNum(p.housingOngoing))+' / 月</strong></div>'+
+      '<div class="fp-repayment-detail"><span>ローン総返済額</span><strong>'+fpYen(payment*years*12)+'</strong></div>'+
       '<div class="fp-repayment-note">ボーナス返済なし・金利一定。固定資産税・火災保険などは別途。</div></div>';
   }
   function fpBadgeClass(level){return level==='good'?'fp-good':level==='warn'?'fp-warn':'fp-bad';}
@@ -897,7 +897,7 @@
     const price=num(p.price);
     if(price===null)return '<div class="fp-home-row"><span class="fp-home-name">'+esc(p.name)+'</span><span class="fp-home-badge fp-neutral">価格未登録</span></div>';
     const check=fpRating(price);
-    return '<button class="fp-home-row" data-act="fp-open-home" data-value="'+esc(p.id)+'"><span class="fp-home-name">'+esc(p.name)+'</span><span class="fp-home-price">'+yen(price)+'万</span><span class="fp-home-badge '+fpBadgeClass(check.level)+'">'+check.label+'</span><span class="fp-chevron">›</span></button>';
+    return '<button class="fp-home-row" data-act="fp-open-home" data-value="'+esc(p.id)+'"><span class="fp-home-name">'+esc(p.name)+'</span><span class="fp-home-price">'+fpYen(price)+'</span><span class="fp-home-badge '+fpBadgeClass(check.level)+'">'+check.label+'</span><span class="fp-chevron">›</span></button>';
   }
   function simGraph(series){
     const all=series.flatMap(x=>x.data.points.map(p=>p[x.key||'cash'])),low=Math.min(0,...all),high=Math.max(100,...all);
@@ -1262,8 +1262,8 @@
       const selected=fpYearPoint(current),other=rent.points.find(x=>x.year===selected.year);
       return '<div class="fp-r-body grow"><strong class="fp-r-subhead">購入後の現金残高</strong>'+
         fpChartCanvas(joined,['house','rent'],'line')+fpChartLegend(['購入後','賃貸を継続'])+
-        '<div class="fp-r-compact-stats">'+fpMetric('選択年の現金残高',yen(selected.cash,0)+'万円')+
-        fpMetric('賃貸との差額',yen(selected.cash-(other?.cash||0),0)+'万円')+'</div>'+
+        '<div class="fp-r-compact-stats">'+fpMetric('選択年の現金残高',fpYen(selected.cash))+
+        fpMetric('賃貸との差額',fpYen(selected.cash-(other?.cash||0)))+'</div>'+
         '<p class="fp-r-help">予測は各年末の現金。赤い点線＝残高0。持ち家の売却価値は含みません。</p></div>';
     }
     if(choice===1){
@@ -1271,16 +1271,16 @@
       const selected=fpYearPoint(current);
       return '<div class="fp-r-body grow"><strong class="fp-r-subhead">年間の収入と支出＋投資積立</strong>'+
         fpChartCanvas(joined,['income','spent'],'bar')+fpChartLegend(['手取り・給付','支出＋積立'])+
-        '<div class="fp-r-compact-stats">'+fpMetric('選択年の年間収入',yen(selected.incomes,0)+'万円')+
-        fpMetric('選択年の現金増減',yen(selected.netCash,0)+'万円')+'</div>'+
+        '<div class="fp-r-compact-stats">'+fpMetric('選択年の年間収入',fpYen(selected.incomes))+
+        fpMetric('選択年の現金増減',fpYen(selected.netCash))+'</div>'+
         '<p class="fp-r-help">現金増減＝収入−支出−NISA等の積立。積立は消費支出とは区別。</p></div>';
     }
     const pts=mortgage.points.map(x=>({year:x.year,balance:x.balance}));
     const currentLoan=mortgage.points.find(x=>x.year===ui.fpYear)||mortgage.points.find(x=>x.year===mortgage.start)||mortgage.points[0];
     return '<div class="fp-r-body grow"><strong class="fp-r-subhead">ローン残債・元金と利息</strong>'+
       fpChartCanvas(pts,['balance'],'line')+fpChartLegend(['ローン残債'])+
-      '<div class="fp-r-compact-stats">'+fpMetric('選択年末の残債',yen(currentLoan.balance,0)+'万円')+
-      fpMetric('選択年の元金／利息',yen(currentLoan.principalPaid,0)+' / '+yen(currentLoan.interest,0)+'万円')+'</div>'+
+      '<div class="fp-r-compact-stats">'+fpMetric('選択年末の残債',fpYen(currentLoan.balance))+
+      fpMetric('選択年の元金／利息',yen(currentLoan.principalPaid,0)+' / '+fpYen(currentLoan.interest))+'</div>'+
       '<p class="fp-r-help">元利均等、当初金利が期間中一定の場合の返済予定。繰上返済なし。</p></div>';
   }
   function fpCalcRows(rows){
@@ -1369,8 +1369,8 @@
     const selected=monthly?monthlyAsset:yearAsset.point;
     const series=model.points.map(x=>({year:x.year,cash:x.cash,nisa:x.nisa,invest:x.otherInvest}));
     const item=(label,balance,diff)=>'<div class="fp-asset-tile"><span>'+esc(label)+'</span>'+
-      '<strong>'+yen(balance,1)+'<small>万円</small></strong>'+
-      '<small class="'+(diff<0?'negative':'')+'">'+(monthly?'年初から ':'前年から ')+(diff>=0?'+':'')+yen(diff,1)+'万円</small></div>';
+      '<strong>'+fpYen(balance)+'</strong>'+
+      '<small class="'+(diff<0?'negative':'')+'">'+(monthly?'年初から ':'前年から ')+(diff>=0?'+':'')+fpYen(diff)+'</small></div>';
     return '<div class="fp-assets-report grow">'+
       '<div class="fp-assets-toolbar">'+fpYearSelect(model)+
       '<div class="fp-income-toggle"><button data-act="fp-asset-period" data-value="year" class="'+(!monthly?'active':'')+'">年末</button>'+
@@ -1384,9 +1384,9 @@
         item('現金預金',selected.cash,monthly?monthlyAsset.cashChange:yearAsset.cashChange)+
         item('NISA評価額',selected.nisa,monthly?monthlyAsset.nisaChange:yearAsset.nisaChange)+
         item('その他の株式・投資',selected.otherInvest,monthly?monthlyAsset.otherChange:yearAsset.otherChange)+
-        '<div class="fp-asset-tile total"><span>金融資産の合計</span><strong>'+yen(selected.total,1)+'<small>万円</small></strong>'+
+        '<div class="fp-asset-tile total"><span>金融資産の合計</span><strong>'+fpYen(selected.total)+'</strong>'+
         '<small>現金＋NISA＋その他投資</small></div></div>'+
-      '<p class="fp-r-help">NISAの積立 '+yen(safeNum(state.plan.nisaMonthly),2)+'万円/月、その他投資 '+yen(safeNum(state.plan.otherInvestMonthly),2)+
+      '<p class="fp-r-help">NISAの積立 '+fpYen(safeNum(state.plan.nisaMonthly))+'/月、その他投資 '+yen(safeNum(state.plan.otherInvestMonthly),2)+
         '万円/月。折れ線は年末残高。投資の月末評価額は年率の仮定から近似計算、時価実績ではありません。住宅価値とローン残債は含みません。</p></div>';
   }
   function fpIncomeReport(model){
@@ -1401,7 +1401,7 @@
     const bars='<div class="fp-income-timeline" role="group" aria-label="月を選択">'+income.months.map((x,i)=>{
       const month=i+1,height=Math.max(5,x.total/max*46);
       return '<button type="button" data-act="fp-income-month" data-value="'+month+'" class="'+(monthly&&month===m?'selected':'')+
-        '" title="'+month+'月 '+yen(x.total,2)+'万円" aria-label="'+month+'月の収入 '+yen(x.total,2)+'万円">'+
+        '" title="'+month+'月 '+fpYen(x.total)+'" aria-label="'+month+'月の収入 '+fpYen(x.total)+'">'+
         '<span style="height:'+height.toFixed(1)+'px"></span><small>'+month+'</small></button>';
     }).join('')+'</div>';
     return '<div class="fp-income-report grow">'+
@@ -1411,9 +1411,9 @@
         '<button data-act="fp-income-period" data-value="month" class="'+(monthly?'active':'')+'">月単位</button></div></div>'+
       (monthly?bars:'')+
       '<div class="fp-income-total"><span>'+point.year+'年'+(monthly?' '+m+'月':' 年間')+'の手取り収入</span>'+
-        '<strong>'+yen(record.total,2)+'<small>万円</small></strong></div>'+
+        '<strong>'+fpYen(record.total)+'</strong></div>'+
       '<div class="fp-income-lines">'+rows.map(x=>
-        '<div class="fp-income-line"><span>'+esc(x.label)+'</span><strong>'+yen(x.amount,2)+'万円</strong>'+
+        '<div class="fp-income-line"><span>'+esc(x.label)+'</span><strong>'+fpYen(x.amount)+'</strong>'+
         '<div class="fp-income-track"><i style="width:'+Math.max(0,Math.min(100,x.fraction)).toFixed(2)+'%"></i></div></div>'
       ).join('')+'</div>'+
       '<p class="fp-r-help">'+(monthly?
@@ -1428,21 +1428,21 @@
       const opening=previous?previous.cash:safeNum(p.cashSavings)+safeNum(p.support);
       return '<div class="fp-r-body grow">'+fpYearSelect(current)+
         fpCalcRows([
-          ['期首現金残高',yen(opening,1)+'万円'],['年間手取り＋給付',yen(point.incomes,1)+'万円'],
-          ['生活費・住居費・特別支出', '− '+yen(point.expenses,1)+'万円'],
-          ['NISA等への投資積立','− '+yen(point.investing,1)+'万円'],
-          ['年間の現金増減',yen(point.netCash,1)+'万円'],
-          ['期末現金残高',yen(point.cash,1)+'万円']
+          ['期首現金残高',fpYen(opening)],['年間手取り＋給付',fpYen(point.incomes)],
+          ['生活費・住居費・特別支出', '− '+fpYen(point.expenses)],
+          ['NISA等への投資積立','− '+fpYen(point.investing)],
+          ['年間の現金増減',fpYen(point.netCash)],
+          ['期末現金残高',fpYen(point.cash)]
         ])+
         '<p class="fp-r-help">期末現金＝期首現金＋年間収入−年間支出−年間投資積立。預貯金・NISA評価額は別々に計算。</p></div>';
     }
     if(mode===1){
       const n=loan.years*12,r=loan.rate/1200;
       return '<div class="fp-r-body grow">'+fpCalcRows([
-        ['物件価格',yen(price,0)+'万円'],['頭金',yen(safeNum(p.downPayment),0)+'万円'],
-        ['借入元金',yen(loan.principal,0)+'万円'],['返済期間',loan.years+'年 × 12か月'],
-        ['想定金利',yen(loan.rate,2)+'％/年'],['ローン月額',yen(loan.monthly,2)+'万円'],
-        ['ローン総返済',yen(loan.monthly*n,0)+'万円']
+        ['物件価格',fpYen(price)],['頭金',fpYen(safeNum(p.downPayment))],
+        ['借入元金',fpYen(loan.principal)],['返済期間',loan.years+'年 × 12か月'],
+        ['想定金利',yen(loan.rate,2)+'％/年'],['ローン月額',fpYen(loan.monthly)],
+        ['ローン総返済',fpYen(loan.monthly*n)]
       ])+
         '<p class="fp-r-help">元利均等：月額＝元金×月利÷{1−(1＋月利)^−回数}。月利＝年利÷1200。金利0％なら元金÷回数。</p></div>';
     }
@@ -1454,7 +1454,7 @@
       return '<div class="fp-r-body grow">'+fpYearSelect(current)+
         '<strong class="fp-r-subhead">年間の支出明細｜'+items.length+'項目</strong>'+
         fpCalcRows(items.slice(ui.fpLedgerPage*pageSize,(ui.fpLedgerPage+1)*pageSize)
-          .map(x=>[x.label,yen(x.amount,1)+'万円']))+
+          .map(x=>[x.label,fpYen(x.amount)]))+
         fpPageNav(count,ui.fpLedgerPage,'fp-ledger-page')+
         '<p class="fp-r-help">水道は2か月額×6回。住居費は購入前が家賃、購入後がローン＋維持費。追加支出も反映。</p></div>';
     }
@@ -1473,22 +1473,22 @@
     const messages=[],negative=current.points.find(x=>x.cash<0),shortfall=budget.amount-price;
     const push=(level,title,detail)=>messages.push({level,title,detail});
     if(negative)push('bad','資金不足を見込む年：'+negative.year+'年',
-      '年末現金が'+yen(negative.cash,0)+'万円。教育費・住宅購入費・収入変化などの時期を再確認してください。');
+      '年末現金が'+fpYen(negative.cash)+'。教育費・住宅購入費・収入変化などの時期を再確認してください。');
     else push('good','期間中の年末現金はプラス',
-      '年末残高の最小値は'+yen(current.min,0)+'万円。ただし月中の資金不足はこの年次モデルでは判定できません。');
+      '年末残高の最小値は'+fpYen(current.min)+'。ただし月中の資金不足はこの年次モデルでは判定できません。');
     if(rating.remaining<rating.reserve)push('bad','購入時の生活防衛資金を確認',
-      '諸費用と頭金後の現金 '+yen(rating.remaining,0)+'万円に対し、6か月分の目安は '+yen(rating.reserve,0)+'万円（独自目安）。');
+      '諸費用と頭金後の現金 '+fpYen(rating.remaining)+'に対し、6か月分の目安は '+fpYen(rating.reserve)+'（独自目安）。');
     else push('good','生活防衛資金は参考目安以上',
-      '諸費用と頭金後の現金は'+yen(rating.remaining,0)+'万円。半年分の生活費との比較です。');
+      '諸費用と頭金後の現金は'+fpYen(rating.remaining)+'。半年分の生活費との比較です。');
     if(shortfall<0)push('warn','想定価格が参考予算を超過',
-      '約'+yen(Math.abs(shortfall),0)+'万円上回ります。物件価格・積立額・返済期間の組合せを再試算してください。');
+      '約'+fpYen(Math.abs(shortfall))+'上回ります。物件価格・積立額・返済期間の組合せを再試算してください。');
     else push('good','購入価格は参考予算の範囲内',
-      '参考予算との差は'+yen(shortfall,0)+'万円。審査通過や将来の安全を保証する判定ではありません。');
+      '参考予算との差は'+fpYen(shortfall)+'。審査通過や将来の安全を保証する判定ではありません。');
     const shocks=[0.5,1,2].map(shift=>({shift,increase:fpAmortization(price,shift).monthly-amort.monthly}));
     push(shocks[1].increase>1.5?'warn':'note','金利上昇時の返済増加',
-      shocks.map(x=>'＋'+x.shift+'%：月＋'+yen(x.increase,2)+'万円').join('／')+'。借入時から一定金利とした比較で、実際の変動金利の改定額ではありません。');
+      shocks.map(x=>'＋'+x.shift+'%：月＋'+fpYen(x.increase)).join('／')+'。借入時から一定金利とした比較で、実際の変動金利の改定額ではありません。');
     if(safeNum(p.children)>0)push('note','育児期の収入を慎重に評価',
-      '出産年は妻の月手取り最大10万円、翌年以降は時短手取り'+yen(safeNum(p.wifeReduced),1)+'万円・妻賞与0円と仮定。実際の育休給付等は要確認。');
+      '出産年は妻の月手取り最大10万円、翌年以降は時短手取り'+fpYen(safeNum(p.wifeReduced))+'・妻賞与0円と仮定。実際の育休給付等は要確認。');
     if(safeNum(p.carLoanEndYear)>=simNowYear())push('note','車ローン完済前後で再比較',
       '車ローンは'+p.carLoanEndYear+'年まで年末基準で計上。購入年と返済終了時期を比較してください。');
     push('note','審査基準と家計判定は別',
@@ -1542,15 +1542,15 @@
       const negative=current.points.find(x=>x.cash<0);
       content='<div class="fp-r-summary grow">'+
         fpLoanSummary(price)+
-        '<div class="fp-r-summary-strip"><span>参考の購入予算</span><strong>'+yen(budget.amount,0)+'万円</strong>'+
-        '<small>金利＋1％なら '+yen(budget.stressAmount,0)+'万円が目安</small></div>'+
+        '<div class="fp-r-summary-strip"><span>参考の購入予算</span><strong>'+fpYen(budget.amount)+'</strong>'+
+        '<small>金利＋1％なら '+fpYen(budget.stressAmount)+'が目安</small></div>'+
         '<div class="fp-r-verdict"><div><span>物件の予算評価</span><b class="'+fpBadgeClass(rating.level)+'">'+rating.label+'</b></div>'+
         '<p>'+esc(output)+'</p></div>'+
         '<div class="fp-r-compact-stats">'+
-        fpMetric('月々の住居費',yen(rating.housing,2)+'万円')+
+        fpMetric('月々の住居費',fpYen(rating.housing))+
         fpMetric('手取り負担率',yen(rating.ratio*100,1)+'％')+
-        fpMetric('毎月の現金貯金の余力',yen(rating.spendable,1)+'万円')+
-        fpMetric('年末現金の最小値',yen(min.cash,0)+'万円 ('+min.year+'年)')+'</div>'+
+        fpMetric('毎月の現金貯金の余力',fpYen(rating.spendable))+
+        fpMetric('年末現金の最小値',fpYen(min.cash)+' ('+min.year+'年)')+'</div>'+
         '<button class="fp-pie-shortcut" data-act="fp-pie-open"><span class="fp-pie-mini" style="--pie-sweep:'+Math.min(100,Math.max(0,fpIncomeAllocation(fpYearPoint(current)).expensePercent||0))+'%"></span><span>収入に対する支出の割合</span><b>'+(fpIncomeAllocation(fpYearPoint(current)).expensePercent===null?'—':yen(fpIncomeAllocation(fpYearPoint(current)).expensePercent,1)+'%')+' ›</b></button>'+
         '<p class="fp-r-help">'+(negative?'注意：'+negative.year+'年に年末現金がマイナスになる試算です。':'この期間は年末現金のマイナスがありません。')+
         ' 手取り比率は家計の参考値で、融資審査基準とは異なります。</p></div>';

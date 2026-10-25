@@ -56,7 +56,7 @@
   function message(text) {ui.toast=text;renderToast();clearTimeout(toastTimer);toastTimer=setTimeout(()=>{ui.toast=null;renderToast();},2700);}
   function renderToast(){let old=app.querySelector('.toast');if(old)old.remove();if(ui.toast)app.insertAdjacentHTML('beforeend','<div class="toast" role="status">'+esc(ui.toast)+'</div>');}
   const propById = id => state.properties.find(p=>p.id===id);
-  const curProp = () => {const visible=visibleProperties(); return visible.find(p=>p.id===ui.propertyId) || visible[0] || null;};
+  const curProp = () => {const visible=visibleProperties(); return propById(ui.propertyId) || visible[0] || null;};
   function visibleProperties(){
     let ps=state.properties.filter(p=>(p.name+' '+p.address+' '+(p.manufacturer||'')+' '+p.tags.join(' ')).toLowerCase().includes((state.filter.query||'').toLowerCase()) && (!state.filter.tag || p.tags.includes(state.filter.tag)) && (!state.filter.status || p.status===state.filter.status));
     if(state.filter.sort==='price')ps.sort((a,b)=>(num(a.price)??Infinity)-(num(b.price)??Infinity));
@@ -611,12 +611,13 @@
   }
   function studySummaryItems(){
     const result=[],seen=new Set();
-    for(const note of state.studyNotes){
-      const sentences=studyRawItems(note.originalText||note.text);
+    const entries=memoEntries().filter(e=>ui.tab!=='memo'||ui.memoScope!=='individual'||e.propertyId===ui.memoPropertyId);
+    for(const note of entries){
+      const sentences=studyRawItems(note.kind==='note'?(state.studyNotes.find(n=>n.id===note.key.split('~')[1])?.originalText||note.content):note.content);
       for(let text of sentences){
         text=studyEndPunctuation(text);
         if(!text||seen.has(text))continue;seen.add(text);
-        result.push({category:studyCategory(text),text,source:note.title,id:note.id});
+        result.push({category:studyCategory(text),text,source:note.propertyName+' / '+note.title,id:note.key});
         if(result.length>=400)break;
       }
       if(result.length>=400)break;
@@ -631,8 +632,8 @@
       const label=studyGroups.find(x=>x[0]===item.category)?.[1]||'✦ その他';
       return '<article class="digest-item"><span class="digest-label">'+esc(label)+'</span><p>'+esc(item.text)+'</p><span class="digest-origin">↳ '+esc(truncate(item.source,28))+'</span></article>';
     }).join('');
-    return modalFrame('✦ 学びのまとめ',
-      '<div class="study-digest-top"><div><span class="kicker">HOME KNOWLEDGE</span><h2>学びをすっきり整理</h2></div><button class="btn compact" data-act="study-digest-copy">⧉ コピー</button></div>'+
+    return modalFrame('✦ メモのまとめ',
+      '<div class="study-digest-top"><div><span class="kicker">HOME KNOWLEDGE</span><h2>メモをすっきり整理</h2></div><button class="btn compact" data-act="study-digest-copy">⧉ コピー</button></div>'+
       '<p class="study-hint">全部のメモから重複を省き、テーマごとに分類しました。</p>'+
       '<div class="digest-list grow">'+(cards||'<div class="empty grow"><p>メモを追加すると、ここに要点が表示されます。</p></div>')+'</div>'+
       (total>1?navPager(ui.studyDigestPage,total,'study-digest-page'):'<span class="study-counter">'+items.length+' 件のポイント</span>')+
@@ -654,8 +655,8 @@
   function studyForm(){
     const d=ui.studyDraft||{title:'',text:''};
     const hasBackup=typeof d.beforeFix==='string';
-    return modalFrame(ui.studyEditId?'学びメモを修正':'学びをメモ',
-      '<div class="study-edit-form grow"><label class="field"><span>▤ タイトル</span><input data-study="title" maxlength="65" value="'+esc(d.title)+'" placeholder="例：断熱性能について"></label>'+
+    return modalFrame(ui.studyEditId?'メモを編集':'メモを追加',
+      '<div class="study-edit-form grow"><label class="field"><span>⌂ 関連する物件</span><select class="memo-property-editor" data-study="propertyId"><option value="">共通メモ（物件なし）</option>'+state.properties.map(p=>'<option value="'+esc(p.id)+'" '+((d.propertyId||'')===p.id?'selected':'')+'>'+esc(p.name)+'</option>').join('')+'</select></label><label class="field"><span>▤ タイトル</span><input data-study="title" maxlength="65" value="'+esc(d.title)+'" placeholder="例：断熱性能について"></label>'+
       '<label class="field grow"><span>✎ メモ本文</span><textarea data-study="text" maxlength="7000" placeholder="例：営業さんに断熱と耐震の話を聞いた。保証の期間も確認したい。">'+esc(d.text)+'</textarea></label>'+
       (hasBackup?'<span class="study-edited-banner">✓ 自動修正しました。保存前に文章を確認してください。</span>':'<span class="study-edit-help">✦ 「修正・整理」で表記を補正し、内容ごとに見出しを付けます。</span>')+
       '<div class="study-fix-actions"><button class="btn study-fix-main" data-act="study-fix">✦ 修正・整理する</button>'+ (hasBackup?'<button class="btn study-undo-btn" data-act="study-undo">↶ 元に戻す</button>':'')+'</div></div>'+
@@ -688,20 +689,20 @@
       if(!confirm('このメモを削除しますか？'))return;
       return step(()=>{if(memoRemove(v))message('メモを削除しました');});
     }
-    if(action==='study-open')return openOverlay('study',()=>{ui.studyMode='notes';ui.studyPage=0;});
+    if(action==='study-open')return chooseTab('memo');
     if(action==='study-page')return step(()=>changePage('studyPage',Math.max(1,Math.ceil(state.studyNotes.length/3)),Number(v)));
     if(action==='study-digest-page')return step(()=>changePage('studyDigestPage',Math.max(1,Math.ceil(studySummaryItems().length/3)),Number(v)));
     if(action==='study-digest-back')return step(()=>{ui.overlay='study';});
-    if(action==='study-add')return openOverlay('study-form',()=>{ui.studyEditId=null;ui.studyDraft={title:'',text:'',originalText:'',beforeFix:null};});
+    if(action==='study-add')return openOverlay('study-form',()=>{ui.studyEditId=null;ui.studyDraft={title:'',text:'',propertyId:ui.tab==='memo'&&ui.memoScope==='individual'?ui.memoPropertyId:'',originalText:'',beforeFix:null};});
     if(action==='study-edit')return openOverlay('study-form',()=>{
       const note=state.studyNotes.find(n=>n.id===v);if(!note)return;
-      ui.studyEditId=v;ui.studyDraft={title:note.title,text:note.text,originalText:note.originalText||note.text,beforeFix:null};
+      ui.studyEditId=v;ui.studyDraft={title:note.title,text:note.text,propertyId:note.propertyId||'',originalText:note.originalText||note.text,beforeFix:null};
     });
     if(action==='study-quick-fix')return openOverlay('study-form',()=>{
       const note=state.studyNotes.find(n=>n.id===v);if(!note)return;
       const original=note.originalText||note.text;
       ui.studyEditId=v;ui.studyDraft={
-        title:note.title,text:organizeStudyText(original),originalText:original,beforeFix:note.text
+        title:note.title,text:organizeStudyText(original),propertyId:note.propertyId||'',originalText:original,beforeFix:note.text
       };
     });
     if(action==='study-fix'){
@@ -719,7 +720,7 @@
       const draft=ui.studyDraft;
       if(draft&&typeof draft.beforeFix==='string'){draft.text=draft.beforeFix;draft.beforeFix=null;}
     });
-    if(action==='study-back')return step(()=>{ui.overlay='study';ui.studyDraft=null;ui.studyEditId=null;});
+    if(action==='study-back')return step(()=>{ui.overlay=ui.tab==='memo'?'':'study';ui.studyDraft=null;ui.studyEditId=null;});
     if(action==='study-save'){
       const draft=ui.studyDraft;if(!draft?.text?.trim())return message('学んだ内容を書いてください');
       return step(()=>{
@@ -727,9 +728,9 @@
         const original=String(typeof draft.beforeFix==='string'?(draft.originalText||draft.beforeFix):draft.text).slice(0,2500);
         if(ui.studyEditId){
           const previous=state.studyNotes.find(x=>x.id===ui.studyEditId);
-          if(previous){previous.title=title;previous.text=draft.text.trim().slice(0,7000);previous.originalText=original;}
-        }else state.studyNotes.unshift({id:uid(),title,text:draft.text.trim().slice(0,7000),originalText:original,created:Date.now()});
-        ui.studyPage=0;ui.studyDraft=null;ui.studyEditId=null;ui.overlay='study';save();message('✓ 学びメモを保存しました');
+          if(previous){previous.title=title;previous.text=draft.text.trim().slice(0,7000);previous.originalText=original;previous.propertyId=draft.propertyId||'';}
+        }else state.studyNotes.unshift({id:uid(),title,text:draft.text.trim().slice(0,7000),originalText:original,propertyId:draft.propertyId||'',created:Date.now()});
+        ui.studyPage=0;ui.memoPage=0;ui.studyDraft=null;ui.studyEditId=null;ui.overlay=ui.tab==='memo'?'':'study';save();message('✓ メモを保存しました');
       });
     }
     if(action==='study-delete'){
@@ -737,7 +738,7 @@
       return step(()=>{state.studyNotes=state.studyNotes.filter(n=>n.id!==v);ui.studyPage=0;save();});
     }
     if(action==='study-summarize')return step(()=>{
-      if(!state.studyNotes.length)return message('先にメモを登録してください');
+      if(!memoEntries().length)return message('先にメモを登録してください');
       ui.studyDigestPage=0;ui.overlay='study-digest';
     });
     if(action==='study-digest-copy'){

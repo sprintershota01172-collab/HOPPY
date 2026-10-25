@@ -79,8 +79,8 @@
   }
   function render(){
     if(!app)return;
-    const titles={property:'ほっぽさん',compare:'比較',sim:'シミュレーション',schedule:'予定',memo:'メモ'};
-    const nav=[['property','物件'],['compare','比較'],['sim','シミュ'],['schedule','予定'],['memo','メモ']];
+    const titles={property:'ほっぽさん',compare:'比較',sim:'FPプラン',schedule:'予定',memo:'メモ'};
+    const nav=[['property','物件'],['compare','比較'],['sim','FP'],['schedule','予定'],['memo','メモ']];
     // Keep the underlying screen mounted while a full-screen view is open.
     // Rebuilding it on every dialog/page change causes the home screen to flash
     // behind the opening overlay and needlessly reloads photo thumbnails.
@@ -459,7 +459,7 @@
       const propertyList=homes.length?'<div class="fp-home-list">'+homes.slice(0,8).map(fpRatingRow).join('')+'</div>':
         '<div class="fp-no-property">物件を登録すると、ここで予算内か自動判定できます。</div>';
       content='<div class="fp-budget-content grow">'+
-        '<div class="fp-hero"><span class="fp-eyebrow">無理しない購入価格の目安</span><div class="fp-hero-number">'+yen(budget.amount)+'<span>万円</span></div><span class="fp-hero-caption">将来の手取り25％・金利 '+yen(budget.amount>=0?assessment.rate:0,1)+'％想定</span>'+
+        '<div class="fp-hero"><span class="fp-eyebrow">返済負担から算出した参考予算</span><div class="fp-hero-number">'+yen(budget.amount)+'<span>万円</span></div><span class="fp-hero-caption">将来の手取り25％・金利 '+yen(budget.amount>=0?assessment.rate:0,1)+'％想定</span>'+
         '<div class="fp-budget-scale"><div class="fp-budget-fill"></div></div><span class="fp-secondary">金利＋1％なら　<strong>'+yen(budget.stressAmount)+'万円</strong>が目安</span></div>'+
         '<div class="fp-now-card"><div class="fp-now-head"><div><span class="fp-eyebrow">検討中の価格</span><strong>'+yen(price)+'万円</strong></div><span class="fp-verdict '+fpBadgeClass(assessment.level)+'">'+assessment.label+'</span></div>'+
         '<p class="fp-diagnostic">'+esc(assessment.reason)+'</p>'+

@@ -1,0 +1,19 @@
+{
+  "name": "ほっぴーくん｜夫婦の家探しノート",
+  "short_name": "ほっぴーくん",
+  "description": "物件メモ・○△×比較をオフラインで管理できる家探しPWA",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f1e8",
+  "theme_color": "#345b4c",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

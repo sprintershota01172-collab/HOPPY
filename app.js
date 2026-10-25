@@ -17,17 +17,17 @@
   const dots = (index,count) => '<div class="dots" aria-label="' + (index+1) + ' / ' + count + 'ページ">' + Array.from({length:Math.min(count,5)},(_,i)=>'<span class="dot ' + (i===Math.round(index*(Math.min(count,5)-1)/Math.max(1,count-1))?'active':'') + '"></span>').join('') + '</div>';
   const rowsPerPage = () => window.matchMedia('(max-height: 650px)').matches ? 4 : 5;
   const initialCriteria = ['価格','耐久性（構造・耐震・築年数）','立地（駅距離・通勤）','広さ・間取り','日当たり','周辺環境（スーパー・病院）','子育て環境（学校・公園）','維持費（税・管理費等）','災害リスク','資産価値'].map((name,i)=>({id:'standard-'+i,name,weight:2,auto:null}));
-  const blankProperty = () => ({id:uid(),name:'',url:'',address:'',price:'',kind:kinds[0],age:'',area:'',layout:'',station:'',status:statuses[0],tags:[],notes:{good:[''],bad:['']},questions:[],photos:[],created:Date.now()});
+  const blankProperty = () => ({id:uid(),name:'',url:'',address:'',price:'',kind:kinds[0],age:'',area:'',layout:'',station:'',status:statuses[0],manufacturer:'',meetings:[],tags:[],notes:{good:[''],bad:['']},questions:[],photos:[],created:Date.now()});
   const defaults = () => ({version:1,properties:[],criteria:initialCriteria,scores:{},selected:[],filter:{query:'',tag:'',sort:'new'},});
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,comparePage:0,rater:'husband',overlay:'',formStep:0,draft:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'husband',overlay:'',formStep:0,draft:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
   function normalize(s) {
     if (!s || !Array.isArray(s.properties) || !Array.isArray(s.criteria)) throw Error('形式が違います');
     const out = defaults();
-    out.properties = s.properties.filter(p=>p && typeof p.id==='string').map(p=>({...blankProperty(),...p,notes:{good:Array.isArray(p.notes?.good)?p.notes.good:[''],bad:Array.isArray(p.notes?.bad)?p.notes.bad:['']},questions:Array.isArray(p.questions)?p.questions:[],photos:Array.isArray(p.photos)?p.photos:[],tags:Array.isArray(p.tags)?p.tags:[]}));
+    out.properties = s.properties.filter(p=>p && typeof p.id==='string').map(p=>({...blankProperty(),...p,notes:{good:Array.isArray(p.notes?.good)?p.notes.good:[''],bad:Array.isArray(p.notes?.bad)?p.notes.bad:['']},questions:Array.isArray(p.questions)?p.questions:[],meetings:Array.isArray(p.meetings)?p.meetings.filter(m=>m && typeof m.id==='string').map(m=>({id:m.id,at:typeof m.at==='string'?m.at:'',maker:String(m.maker||''),notes:Array.isArray(m.notes)&&m.notes.length?m.notes.map(x=>String(x).slice(0,220)):['']})):[],photos:Array.isArray(p.photos)?p.photos:[],tags:Array.isArray(p.tags)?p.tags:[]}));
     out.criteria = s.criteria.filter(c=>c && typeof c.id==='string' && typeof c.name==='string').map(c=>({...c,weight:Math.min(3,Math.max(1,Number(c.weight)||1))}));
     out.scores = s.scores && typeof s.scores==='object' ? s.scores : {};
     out.selected = Array.isArray(s.selected)?s.selected.filter(id=>out.properties.some(p=>p.id===id)).slice(0,3):[];
@@ -54,7 +54,7 @@
   function toolbar(title,sub){return '<header class="top"><div class="brand"><span class="eyebrow">OUR HOME JOURNAL</span><h1>'+esc(title)+'</h1></div><div class="header-actions"><button class="iconbtn" data-act="search" aria-label="検索・並び替え">⌕</button><button class="iconbtn" data-act="settings" aria-label="バックアップ・設定">⋯</button></div></header>';}
   function render(){
     if(!app)return;
-    const titles={property:'ほっぴーくん',compare:'くらべる',sim:'未来を描く',schedule:'これからの予定'};
+    const titles={property:'ほっぽさん',compare:'くらべる',sim:'未来を描く',schedule:'これからの予定'};
     const nav=[['property','⌂','物件'],['compare','◎','比較'],['sim','∿','シミュレーション'],['schedule','▦','スケジュール']];
     let body=ui.tab==='property'?propertyScreen():ui.tab==='compare'?compareScreen():pendingScreen();
     app.innerHTML=toolbar(titles[ui.tab])+'<main class="main">'+body+'</main><nav class="bottom" aria-label="メインメニュー">'+nav.map(([key,sym,name])=>'<button class="tab '+(ui.tab===key?'active':'')+'" data-act="tab" data-value="'+key+'" aria-current="'+(ui.tab===key?'page':'false')+'"><span class="sym">'+sym+'</span>'+name+'</button>').join('')+'</nav>'+(ui.overlay?overlay(): '');
@@ -65,19 +65,31 @@
   function propertyScreen(){
     let ps=visibleProperties(),p=ps.find(x=>x.id===ui.propertyId)||ps[0]||null;if(p)ui.propertyId=p.id;
     if(!p)return state.properties.length?'<section class="screen">'+empty('⌕','一致する物件がありません','検索条件を変更するか、絞り込みを解除してください。','filter-clear','絞り込みを解除する')+'</section>':'<section class="screen">'+empty('⌂','家探しを、ここから。','物件を登録するとメモや比較を始められます。','add-property','最初の物件を登録')+'<button class="btn soft wide" data-act="seed">サンプル3件で試す</button></section>';
-    let pos=ps.findIndex(x=>x.id===p.id);if(pos<0){p=ps[0];ui.propertyId=p.id;pos=0;}
-    let image=p.photos.length?'<img data-photo="'+esc(p.photos[0])+'" alt="物件の写真">':'<span class="house-illustration" aria-hidden="true">⌂</span>';
-    return '<section class="screen"><div class="toolbar between"><div class="row"><span class="kicker">PROPERTY NOTE</span><span class="pill">'+ps.length+' 件</span></div><div class="row"><button class="btn compact" data-act="property-list">一覧</button><button class="btn primary compact" data-act="add-property">＋ 追加</button></div></div>'+
-      '<div class="panel estate grow swipe-zone"><div class="estate-top"><span class="pill status">'+esc(p.status)+'</span><span class="meta">'+(p.demo?'サンプル物件':'物件メモ')+'</span></div><h2 class="estate-name">'+esc(p.name||'名称未設定')+'</h2><div class="estate-hero">'+image+'<div class="hero-label">'+esc(p.kind)+'</div></div><div class="row between"><span class="money">'+(num(p.price)!==null?digits.format(p.price)+'<small> 万円</small>':'価格未登録')+'</span><span class="meta">'+esc(truncate(p.layout||p.area+'㎡',14))+'</span></div><div class="estate-summary"><div class="mini"><span class="meta">住所</span><strong>'+esc(p.address||'未登録')+'</strong></div><div class="mini"><span class="meta">タグ</span><strong>'+esc(p.tags.join('・')||'未登録')+'</strong></div></div><div class="toolbar"><button class="btn primary flex1" data-act="property-detail">詳細・メモを見る</button><button class="btn flex1" data-act="edit-property">編集する</button></div></div>'+navPager(pos,ps.length,'property-nav')+'</section>';
+    const pos=ps.findIndex(x=>x.id===p.id), meetings=p.meetings||[];
+    const now=Date.now();
+    const upcoming=meetings.filter(m=>m.at && new Date(m.at).getTime()>=now).sort((a,b)=>a.at.localeCompare(b.at))[0];
+    const latest=upcoming||meetings.filter(m=>m.at).sort((a,b)=>b.at.localeCompare(a.at))[0];
+    const when=latest?formatMeetingDate(latest.at):'日時未登録';
+    const maker=p.manufacturer||'メーカー未登録';
+    const info=[p.kind,p.layout,p.area!==''?p.area+'㎡':null].filter(Boolean).join(' ・ ');
+    const img=p.photos?.length?'<div class="estate-photo"><img data-photo="'+esc(p.photos[0])+'" alt="物件写真"></div>':'';
+    return '<section class="screen home-screen"><div class="toolbar between home-tools"><div class="row"><span class="kicker">PROPERTY</span><span class="meta">'+ps.length+'件</span></div><div class="row"><button class="btn compact" data-act="property-list">一覧</button><button class="btn primary compact" data-act="add-property">＋ 追加</button></div></div>'+
+      '<article class="panel estate grow swipe-zone"><div class="estate-top"><span class="pill status">'+esc(p.status)+'</span><span class="meta">'+(pos+1)+' / '+ps.length+'</span></div><div class="home-heading"><div class="home-title-wrap"><span class="home-eyebrow">MY HOME FILE</span><h2 class="estate-name">'+esc(p.name||'名称未設定')+'</h2><p class="maker-name">'+esc(maker)+'</p></div>'+img+'</div>'+
+      '<div class="price-block"><div><span class="micro-label">物件価格</span><div class="money">'+(num(p.price)!==null?digits.format(p.price)+'<small> 万円</small>':'未登録')+'</div></div><span class="price-foot">物件比較メモ</span></div>'+
+      '<div class="estate-facts"><div class="fact"><span>物件情報</span><strong>'+esc(info||'未登録')+'</strong></div><div class="fact"><span>所在地</span><strong>'+esc(p.address||'未登録')+'</strong></div></div>'+
+      '<div class="meeting-preview"><div class="meeting-preview-head"><span class="micro-label">'+(upcoming?'次の打ち合わせ':'打ち合わせ記録')+'</span><span class="meta">'+meetings.length+'件</span></div><strong>'+esc(latest?when:'打ち合わせ未登録')+'</strong><span>'+esc(latest?(latest.maker||maker):'予定やメモを登録できます')+'</span><button class="btn compact" data-act="open-meetings">'+(latest?'記録を見る':'＋ 登録する')+'</button></div>'+
+      '<div class="home-actions"><button class="btn primary flex1" data-act="property-detail">物件の詳細</button><button class="btn flex1" data-act="open-meetings">打ち合わせ</button></div></article>'+navPager(pos,ps.length,'property-nav')+'</section>';
   }
   function detailScreen(){
     let p=curProp();if(!p)return '';
-    const heads=['基本情報','メモ','写真'];
+    const heads=['基本','打合せ','メモ','写真'];
     let content='';
     if(ui.propertyPage===0){
-      const items=[['住所',p.address],['価格',fmt(p.price)],['種別',p.kind],['築年数',p.age===''?'未登録':p.age+'年'],['面積',p.area===''?'未登録':p.area+'㎡'],['間取り',p.layout],['駅徒歩',p.station===''?'未登録':p.station+'分'],['状態',p.status]];
+      const items=[['住所',p.address],['価格',fmt(p.price)],['種別',p.kind],['築年数',p.age===''?'未登録':p.age+'年'],['面積',p.area===''?'未登録':p.area+'㎡'],['間取り',p.layout],['駅徒歩',p.station===''?'未登録':p.station+'分'],['メーカー',p.manufacturer]];
       content='<div class="panel detail grow swipe-zone"><div class="info-grid grow">'+items.map(([a,b])=>'<div class="info-box"><span>'+a+'</span><strong>'+esc(b||'未登録')+'</strong></div>').join('')+'</div><div class="toolbar"><button class="btn flex1" data-act="edit-property">情報を編集</button>'+(p.url?'<button class="btn flex1" data-act="external" data-value="'+esc(p.url)+'">物件サイトを見る</button>':'')+'</div></div>';
     }else if(ui.propertyPage===1){
+      content=meetingsScreen(p);
+    }else if(ui.propertyPage===2){
       let notes=p.notes[ui.noteKind]||[''];ui.noteIndex=Math.min(ui.noteIndex,Math.max(0,notes.length-1));
       if(ui.noteKind==='questions'){
         const start=ui.questionPage*4;const subset=p.questions.slice(start,start+4);
@@ -86,21 +98,43 @@
         const note=notes[ui.noteIndex]||'';
         content='<div class="panel detail grow swipe-zone"><div class="notes-title"><span class="kicker">'+(ui.noteKind==='good'?'よかった点':'気になる点')+'</span><span class="meta">'+note.length+' / 220文字</span></div><textarea class="note-text" data-note="'+ui.noteKind+'" maxlength="220" placeholder="ここにメモを書きます。1ページ220文字まで。">'+esc(note)+'</textarea><div class="note-actions"><button class="btn compact" data-act="note-delete" '+(notes.length<2?'disabled':'')+'>削除</button>'+'<button class="btn compact" data-act="note-nav" data-value="-1" '+(ui.noteIndex===0?'disabled':'')+'>‹</button><span class="meta">'+(ui.noteIndex+1)+' / '+notes.length+'</span><button class="btn compact" data-act="note-nav" data-value="1" '+(ui.noteIndex===notes.length-1?'disabled':'')+'>›</button><button class="btn compact primary" data-act="note-add">＋</button></div></div>';
       }
-    }else{
+    }else if(ui.propertyPage===3){
       let n=p.photos.length;ui.photoIndex=Math.min(ui.photoIndex,Math.max(0,n-1));
       content='<div class="panel detail grow swipe-zone"><div class="photo-frame">'+(n?'<img data-photo="'+esc(p.photos[ui.photoIndex])+'" alt="物件写真 '+(ui.photoIndex+1)+'">':'<div class="photo-empty">▧<p>写真はまだありません</p><p>複数枚を端末に保存できます</p></div>')+'</div>'+navPager(ui.photoIndex,n,'photo-nav')+'<div class="toolbar"><label class="btn primary flex1" for="photo-upload">＋ 写真を追加</label><input id="photo-upload" class="sr-only" type="file" accept="image/*" multiple>'+(n?'<button class="btn danger" data-act="photo-delete">写真を削除</button>':'')+'</div></div>';
     }
-    return '<div class="full"><header class="full-header"><button class="btn compact" data-act="detail-close">‹ 戻る</button><strong>'+esc(p.name)+'</strong><button class="btn compact" data-act="edit-property">編集</button></header><div class="full-body screen"><div class="segment">'+heads.map((x,i)=>'<button data-act="detail-page" data-value="'+i+'" class="'+(i===ui.propertyPage?'active':'')+'">'+x+'</button>').join('')+'</div>'+(ui.propertyPage===1?'<div class="segment"><button class="'+(ui.noteKind==='good'?'active':'')+'" data-act="note-kind" data-value="good">よかった</button><button class="'+(ui.noteKind==='bad'?'active':'')+'" data-act="note-kind" data-value="bad">気になる</button><button class="'+(ui.noteKind==='questions'?'active':'')+'" data-act="note-kind" data-value="questions">質問</button></div>':'')+content+'</div></div>';
+    return '<div class="full"><header class="full-header"><button class="btn compact" data-act="detail-close">‹ 戻る</button><strong>'+esc(p.name)+'</strong><button class="btn compact" data-act="edit-property">編集</button></header><div class="full-body screen"><div class="segment">'+heads.map((x,i)=>'<button data-act="detail-page" data-value="'+i+'" class="'+(i===ui.propertyPage?'active':'')+'">'+x+'</button>').join('')+'</div>'+(ui.propertyPage===2?'<div class="segment"><button class="'+(ui.noteKind==='good'?'active':'')+'" data-act="note-kind" data-value="good">よかった</button><button class="'+(ui.noteKind==='bad'?'active':'')+'" data-act="note-kind" data-value="bad">気になる</button><button class="'+(ui.noteKind==='questions'?'active':'')+'" data-act="note-kind" data-value="questions">質問</button></div>':'')+content+'</div></div>';
+  }
+  function formatMeetingDate(value){
+    if(!value)return '日時未設定';
+    const match=String(value).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    if(!match)return '日時未設定';
+    return match[1]+'/'+match[2]+'/'+match[3]+' '+match[4]+':'+match[5];
+  }
+  function meetingsScreen(p){
+    const ms=p.meetings||[];
+    ui.meetingIndex=Math.max(0,Math.min(ui.meetingIndex,Math.max(0,ms.length-1)));
+    if(!ms.length)return '<div class="panel detail grow meeting-panel"><div class="empty grow meeting-empty"><span class="kicker">MEETING JOURNAL</span><h2 class="section-title">打ち合わせの記録</h2><p>日時とメーカー、聞いた内容を物件ごとに残せます。</p><button class="btn primary" data-act="meeting-add">＋ 打ち合わせを登録</button></div></div>';
+    const m=ms[ui.meetingIndex], notes=m.notes||[''];
+    ui.meetingNoteIndex=Math.min(ui.meetingNoteIndex,Math.max(0,notes.length-1));
+    return '<div class="panel detail grow meeting-panel swipe-zone"><div class="meeting-record-head"><div class="meeting-date-block"><span class="micro-label">打ち合わせ日時</span><strong>'+esc(formatMeetingDate(m.at))+'</strong><span>'+esc(m.maker||p.manufacturer||'メーカー未登録')+'</span></div><div class="row"><button class="btn compact" data-act="meeting-edit">編集</button><button class="btn compact" data-act="meeting-delete" aria-label="削除">×</button></div></div>'+
+      '<div class="meeting-notepad"><div class="notes-title"><span class="kicker">打ち合わせメモ</span><span class="meta">'+(ui.meetingNoteIndex+1)+' / '+notes.length+'ページ</span></div><textarea class="note-text meeting-note" data-meeting-note maxlength="220" placeholder="担当者の説明、次回聞くこと、見積もりの内容などを記録">'+esc(notes[ui.meetingNoteIndex]||'')+'</textarea>'+
+      '<div class="meeting-note-actions"><button class="btn compact" data-act="meeting-note-nav" data-value="-1" '+(ui.meetingNoteIndex===0?'disabled':'')+'>‹</button><button class="btn compact" data-act="meeting-note-nav" data-value="1" '+(ui.meetingNoteIndex===notes.length-1?'disabled':'')+'>›</button><button class="btn compact" data-act="meeting-note-add">＋ ページ</button><button class="btn compact danger" data-act="meeting-note-delete" '+(notes.length===1?'disabled':'')+'>削除</button></div></div>'+
+      '<div class="meeting-nav"><button class="btn compact" data-act="meeting-nav" data-value="-1" '+(ui.meetingIndex===0?'disabled':'')+'>‹ 前の記録</button><span class="meta">'+(ui.meetingIndex+1)+' / '+ms.length+'件</span><button class="btn compact" data-act="meeting-nav" data-value="1" '+(ui.meetingIndex===ms.length-1?'disabled':'')+'>次の記録 ›</button></div><button class="btn primary wide" data-act="meeting-add">＋ 打ち合わせを追加</button></div>';
+  }
+  function meetingForm(){
+    const m=ui.meetingDraft;
+    const preview=(m.notes&&m.notes[0])||'';
+    return modalFrame(m._new?'打ち合わせを登録':'打ち合わせを編集','<div class="panel detail grow meeting-form"><div><span class="kicker">MEETING NOTE</span><p class="subtle">日時とメーカーを登録して、内容を残します。</p></div><div class="field"><label for="meeting-at">打ち合わせ日時</label><input id="meeting-at" type="datetime-local" data-meeting-model="at" value="'+esc(m.at)+'"></div><div class="field"><label for="meeting-maker">メーカー・担当会社</label><input id="meeting-maker" type="text" data-meeting-model="maker" maxlength="70" value="'+esc(m.maker||'')+'" placeholder="例: ヘーベルハウス"></div><div class="field grow"><label for="meeting-memo">打ち合わせメモ（1ページ目）</label><textarea id="meeting-memo" class="meeting-form-note" data-meeting-model="memo" maxlength="220" placeholder="話した内容、聞きたいこと、次回までの宿題">'+esc(preview)+'</textarea></div><p class="subtle">長いメモは保存後にページ追加できます。</p></div><div class="form-foot"><button class="btn flex1" data-act="meeting-cancel">戻る</button><button class="btn primary flex1" data-act="meeting-save">保存する</button></div>');
   }
   function propertyForm(){
     const p=ui.draft;const stepN=ui.formStep;
     const field=(label,key,type,extra)=>'<div class="field"><label for="form-'+key+'">'+label+'</label><input id="form-'+key+'" data-model="'+key+'" type="'+(type||'text')+'" value="'+esc(p[key]??'')+'" '+(extra||'')+'></div>';
     const select=(label,key,opts)=>'<div class="field"><label for="form-'+key+'">'+label+'</label><select id="form-'+key+'" data-model="'+key+'">'+opts.map(x=>'<option '+(p[key]===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></div>';
     let fields='';
-    if(stepN===0)fields=field('物件名 *','name','text','maxlength="70" required placeholder="例: ○○の家"')+field('掲載URL','url','url','placeholder="https://..."')+field('住所','address','text','maxlength="120"');
+    if(stepN===0)fields=field('物件名 *','name','text','maxlength="70" required placeholder="例: ○○の家"')+field('住宅メーカー・販売会社','manufacturer','text','maxlength="70" placeholder="例: ヘーベルハウス"')+field('住所','address','text','maxlength="120"');
     if(stepN===1)fields=field('物件価格（万円）','price','number','min="0" step="1" inputmode="numeric"')+select('種別','kind',kinds)+field('築年数（年）','age','number','min="0" step="1" inputmode="numeric"');
     if(stepN===2)fields=field('広さ（㎡）','area','number','min="0" step="0.1" inputmode="decimal"')+field('間取り','layout','text','placeholder="例: 3LDK" maxlength="50"')+field('最寄駅まで徒歩（分）','station','number','min="0" step="1" inputmode="numeric"');
-    if(stepN===3)fields=select('検討ステータス','status',statuses)+'<div class="field"><label for="form-tags">タグ（カンマ区切り）</label><input id="form-tags" data-model="tags" value="'+esc(p.tags.join(', '))+'" placeholder="例: 駅近, 南向き" maxlength="160"></div>';
+    if(stepN===3)fields=select('検討ステータス','status',statuses)+field('掲載URL','url','url','placeholder="https://..."')+'<div class="field"><label for="form-tags">タグ（カンマ区切り）</label><input id="form-tags" data-model="tags" value="'+esc(p.tags.join(', '))+'" placeholder="例: 駅近, 南向き" maxlength="160"></div>';
     return modalFrame((p._new?'物件を追加':'物件を編集'),'<div class="panel detail grow form-view"><span class="kicker">STEP '+(stepN+1)+' / 4</span>'+fields+'</div><div class="form-foot"><button class="btn flex1" data-act="form-back">'+(stepN?'戻る':'キャンセル')+'</button><button class="btn primary flex1" data-act="form-next">'+(stepN===3?'保存する':'次へ')+'</button></div><p class="step-label">入力内容は端末内に保存されます</p>'+(stepN===3&&!p._new?'<button class="btn danger wide" data-act="property-delete">この物件を削除する</button>':''));
   }
   function modalFrame(title,content){return '<div class="full"><header class="full-header"><button class="btn compact" data-act="overlay-close">×</button><strong>'+esc(title)+'</strong><span style="width:44px"></span></header><section class="full-body swipe-zone">'+content+'</section></div>';}
@@ -187,9 +221,9 @@
   }
   function questionForm(){return modalFrame('営業担当に聞くこと','<div class="panel detail grow form-view"><div class="field"><label>質問（120文字まで）</label><textarea data-question-input maxlength="120" placeholder="例: 長期保証の適用条件は？"></textarea></div><p class="subtle">内見時に確認する質問をリストで管理できます。</p></div><button class="btn primary wide" data-act="question-save">質問を保存</button>');}
   function pendingScreen(){const sim=ui.tab==='sim';return '<section class="screen">'+empty(sim?'∿':'▦',sim?'人生設計はフェーズ2':'スケジュールはフェーズ3',sim?'貯金推移・住宅ローン・教育費をステップ式で追加予定です。':'内見カレンダー・リマインド通知を追加予定です。')+'</section>';}
-  function overlay(){return ui.overlay==='detail'?detailScreen():ui.overlay==='form'?propertyForm():ui.overlay==='list'?listScreen():ui.overlay==='search'?searchScreen():ui.overlay==='settings'?settingsScreen():ui.overlay==='choose'?choosePropertiesScreen():ui.overlay==='criteria'?criteriaScreen():ui.overlay==='criterion-form'?criterionForm():ui.overlay==='rating'?ratingScreen():ui.overlay==='question'?questionForm():'';}
+  function overlay(){return ui.overlay==='detail'?detailScreen():ui.overlay==='form'?propertyForm():ui.overlay==='list'?listScreen():ui.overlay==='search'?searchScreen():ui.overlay==='settings'?settingsScreen():ui.overlay==='choose'?choosePropertiesScreen():ui.overlay==='criteria'?criteriaScreen():ui.overlay==='criterion-form'?criterionForm():ui.overlay==='rating'?ratingScreen():ui.overlay==='question'?questionForm():ui.overlay==='meeting-form'?meetingForm():'';}
   function moveProperty(d){let ps=visibleProperties(),i=ps.findIndex(p=>p.id===ui.propertyId);if(ps.length){ui.propertyId=ps[(i+d+ps.length)%ps.length].id;ui.photoIndex=0;ui.propertyPage=0;}}
-  function moveDetail(d){ui.propertyPage=Math.max(0,Math.min(2,ui.propertyPage+d));}
+  function moveDetail(d){ui.propertyPage=Math.max(0,Math.min(3,ui.propertyPage+d));}
   function changePage(key,total,d){ui[key]=Math.max(0,Math.min(Math.max(0,total-1),ui[key]+d));}
   function setScore(p,c,who,value){
     state.scores[p]??={};state.scores[p][c]??={};
@@ -211,6 +245,36 @@
     if(action==='overlay-close')return closeOverlay();
     if(action==='add-property')return openOverlay('form',()=>prepareForm(null));
     if(action==='edit-property')return openOverlay('form',()=>prepareForm(p));
+    if(action==='open-meetings')return openOverlay('detail',()=>{ui.propertyPage=1;ui.meetingIndex=0;ui.meetingNoteIndex=0;});
+    if(action==='meeting-add')return openOverlay('meeting-form',()=>{ui.meetingDraft={id:uid(),at:'',maker:p.manufacturer||'',notes:[''],_new:true};});
+    if(action==='meeting-edit')return openOverlay('meeting-form',()=>{ui.meetingDraft={...JSON.parse(JSON.stringify(p.meetings[ui.meetingIndex]))};});
+    if(action==='meeting-cancel')return step(()=>{ui.overlay='detail';ui.meetingDraft=null;});
+    if(action==='meeting-save'){
+      const m=ui.meetingDraft;
+      if(!m || !m.at || !Number.isFinite(new Date(m.at).getTime()))return message('打ち合わせ日時を入力してください');
+      return step(()=>{
+        const record={id:m.id,at:m.at,maker:String(m.maker||'').trim(),notes:m.notes?.length?m.notes:['']};
+        const idx=p.meetings.findIndex(x=>x.id===record.id);
+        if(idx<0){p.meetings.push(record);ui.meetingIndex=p.meetings.length-1;}
+        else{p.meetings[idx]=record;ui.meetingIndex=idx;}
+        ui.meetingNoteIndex=0;ui.meetingDraft=null;ui.overlay='detail';ui.propertyPage=1;save();message('打ち合わせを保存しました');
+      });
+    }
+    if(action==='meeting-nav')return step(()=>{changePage('meetingIndex',p.meetings.length,Number(v));ui.meetingNoteIndex=0;});
+    if(action==='meeting-note-nav')return step(()=>changePage('meetingNoteIndex',p.meetings[ui.meetingIndex].notes.length,Number(v)));
+    if(action==='meeting-note-add')return step(()=>{
+      const m=p.meetings[ui.meetingIndex];if(m.notes.length>=20)return message('メモは20ページまでです');
+      m.notes.splice(ui.meetingNoteIndex+1,0,'');ui.meetingNoteIndex++;save();
+    });
+    if(action==='meeting-note-delete'){
+      const m=p.meetings[ui.meetingIndex];if(m.notes.length<2)return;
+      if(!confirm('このメモページを削除しますか？'))return;
+      return step(()=>{m.notes.splice(ui.meetingNoteIndex,1);ui.meetingNoteIndex=Math.max(0,ui.meetingNoteIndex-1);save();});
+    }
+    if(action==='meeting-delete'){
+      if(!confirm('この打ち合わせ記録を削除しますか？'))return;
+      return step(()=>{p.meetings.splice(ui.meetingIndex,1);ui.meetingIndex=Math.min(ui.meetingIndex,Math.max(0,p.meetings.length-1));ui.meetingNoteIndex=0;save();message('打ち合わせを削除しました');});
+    }
     if(action==='property-nav')return step(()=>moveProperty(Number(v)));
     if(action==='property-list')return openOverlay('list',()=>ui.listPage=0);
     if(action==='list-pick')return step(()=>{ui.propertyId=v;ui.overlay='';ui.tab='property';});
@@ -288,9 +352,23 @@
     if(el.dataset.model && ui.draft){
       let k=el.dataset.model;ui.draft[k]=k==='tags'?el.value.split(/[,、]/).map(s=>s.trim()).filter(Boolean):el.value;
     }
+    if(el.dataset.meetingModel && ui.meetingDraft){const key=el.dataset.meetingModel;if(key==='memo')ui.meetingDraft.notes[0]=el.value;else ui.meetingDraft[key]=el.value;}
     if(el.dataset.filter){state.filter[el.dataset.filter]=el.value;}
     if(el.dataset.criterionModel && ui.draft){let k=el.dataset.criterionModel;ui.draft[k]=k==='weight'?Number(el.value):el.value;}
     if(el.dataset.auto && ui.draft){ui.draft.auto ||= {field:'',dir:'low',good:'',mid:''};ui.draft.auto[el.dataset.auto]=el.value;}
+    if(el.hasAttribute('data-meeting-note') && p?.meetings?.[ui.meetingIndex]){
+      const m=p.meetings[ui.meetingIndex],idx=ui.meetingNoteIndex;
+      if(el.scrollHeight>el.clientHeight+2 && el.value.length>1){
+        const value=el.value,caret=el.selectionStart||value.length,split=Math.max(1,Math.min(caret-1,value.length-1));
+        if(m.notes.length>=20)return message('メモは20ページまでです');
+        m.notes[idx]=value.slice(0,split);
+        m.notes.splice(idx+1,0,value.slice(split));
+        ui.meetingNoteIndex=idx+1;save();render();
+        const next=app.querySelector('[data-meeting-note]');if(next)next.focus();
+        return;
+      }
+      m.notes[idx]=el.value;save();return;
+    }
     if(el.dataset.note && p){
       const type=el.dataset.note;
       if(el.scrollHeight>el.clientHeight+2 && el.value.length>1){

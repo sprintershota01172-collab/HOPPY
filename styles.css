@@ -287,3 +287,54 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .meeting-nav .btn{padding-inline:5px}
  .meeting-note-actions{gap:3px}
 }
+
+
+/* Property editor: all basic fields on one continuous form, with one save action. */
+.property-editor{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.property-fields{
+ flex:1;min-height:0;
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ grid-template-rows:repeat(6,minmax(0,1fr));
+ gap:7px 9px;
+ padding:1px 2px 4px;
+}
+.onepage-field{min-width:0;min-height:0;gap:3px;justify-content:center}
+.onepage-field label{
+ font-size:14px;font-weight:600;line-height:1.2;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.onepage-field input,.onepage-field select{
+ display:block;min-width:0;width:100%;height:44px;min-height:44px;max-height:44px;
+ background:#fffefa;border:1px solid #d9dbd3;border-radius:8px;
+ padding:8px 9px;font-size:16px;
+}
+.onepage-field input:focus,.onepage-field select:focus{
+ border-color:#759080;background:#fff;
+ box-shadow:0 0 0 2px #bdd0c326;
+}
+.property-editor-actions{display:flex;flex:none;gap:8px}
+.property-editor-actions .btn{flex:1;min-width:0;min-height:48px}
+.property-delete-inline{
+ min-height:44px;flex:none;align-self:center;
+ border:0;background:transparent;color:#9d534a;
+ font-size:14px;text-decoration:underline;text-underline-offset:4px;
+ padding:8px 16px;
+}
+/* Small screens and opened software keyboard may compress the visual viewport.
+   Only the editing form can scroll in this case; the app shell stays fixed. */
+@media(max-height:700px){
+ .property-fields{gap:5px 8px}
+ .property-editor{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+ .property-fields{flex:none;grid-template-rows:repeat(6, minmax(62px,1fr));padding-bottom:8px}
+}
+@media(max-height:540px){
+ .property-fields{grid-template-rows:repeat(6, minmax(65px,1fr))}
+ .property-editor-actions .btn{min-height:44px}
+ .property-delete-inline{min-height:44px}
+}
+.property-editor:focus-within{overflow-y:auto;overscroll-behavior:contain}
+@media(max-width:355px){
+ .property-fields{column-gap:6px}
+ .onepage-field input,.onepage-field select{padding-left:7px;padding-right:7px}
+}

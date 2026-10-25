@@ -1,0 +1,84 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const source=fs.readFileSync('app.js','utf8');
+const anchor="  save();render();\n  if('serviceWorker'";
+assert.ok(source.includes(anchor));
+const instrumented=source.replace(anchor,"  window.__fpInternals={getState:()=>state,modelYears,fpEventsForYear,fpIncomeAllocation,fpExpenseDetails};\n"+anchor);
+const storage={};let clock=5000,seq=0;
+class FakeDate extends Date{static now(){return clock+=1400;}}
+function openApp(){
+ const app={innerHTML:'',querySelector(){return null},querySelectorAll(){return []},contains(){return true},addEventListener(k,f){handlers[k]=f},insertAdjacentHTML(){}};
+ const handlers={};const win={matchMedia(){return {matches:true}},crypto:{randomUUID(){return 'id-'+(++seq)}},addEventListener(){}};
+ vm.runInNewContext(instrumented,{document:{getElementById(){return app}},window:win,
+ localStorage:{getItem(k){return storage[k]||null},setItem(k,v){storage[k]=v}},navigator:{},
+ location:{protocol:'http:',hostname:'invalid.example'},Date:FakeDate,crypto:win.crypto,
+ confirm(){return true},setTimeout(){return 0},clearTimeout(){},Intl,console,URL,Number,Math,Array,JSON,String,Promise},{filename:'app.js'});
+ return {app,win,click:(act,value='')=>handlers.click({target:{closest(){return {dataset:{act,value}}}},preventDefault(){}}),
+  input:(id,key,value)=>handlers.input({target:{dataset:{eventId:id,eventKey:key},value,hasAttribute(){return false}}})};
+}
+const a=openApp(),api=a.win.__fpInternals,plan=api.getState().plan;
+const year=plan.weddingYear,price=plan.propertyPrice;
+const baseline=api.modelYears(price,true).points.find(x=>x.year===year);
+assert.equal(baseline.events,plan.weddingCost+plan.honeymoonCost);
+a.click('fp-event-add','wedding');
+assert.equal(plan.weddingCost,0);
+assert.equal(plan.events[0].amount,350);
+assert.equal(api.modelYears(price,true).points.find(x=>x.year===year).events,baseline.events,'no wedding double charge');
+a.click('fp-event-add','honeymoon');
+assert.equal(plan.honeymoonCost,0);
+assert.equal(api.modelYears(price,true).points.find(x=>x.year===year).events,baseline.events,'no honeymoon double charge');
+a.input(plan.events[0].id,'amount','400');
+assert.equal(api.modelYears(price,true).points.find(x=>x.year===year).events,498);
+a.click('fp-event-add','custom');
+const custom=plan.events.at(-1);
+a.input(custom.id,'name','引っ越し費');
+a.input(custom.id,'amount','15');
+a.input(custom.id,'year',String(year));
+assert.equal(api.modelYears(price,true).points.find(x=>x.year===year).events,513);
+a.input(custom.id,'type','income');
+const withIncome=api.modelYears(price,true).points.find(x=>x.year===year);
+assert.equal(withIncome.events,498);
+assert.equal(withIncome.incomes-baseline.incomes,15);
+const detail=api.fpExpenseDetails(withIncome,true);
+assert.ok(detail.some(x=>x.label==='結婚式'&&x.amount===400));
+assert.ok(detail.some(x=>x.label==='新婚旅行'&&x.amount===98));
+assert.ok(!detail.some(x=>x.label==='引っ越し費'),'income not counted in spending');
+assert.ok(Math.abs(detail.reduce((sum,x)=>sum+x.amount,0)-withIncome.expenses)<1e-8);
+const allocation=api.fpIncomeAllocation(withIncome);
+assert.ok(Math.abs(allocation.spent-(withIncome.expenses+withIncome.investing))<1e-8);
+assert.ok(Math.abs(allocation.items.reduce((sum,x)=>sum+x.amount,0)-Math.max(allocation.income,allocation.spent))<1e-8);
+a.click('tab','sim');
+for(let i=0;i<7;i++)a.click('sim-next');
+assert.equal(api.getState().planHistory.length,1);
+assert.match(a.app.innerHTML,/FP • LIFE PLAN/);
+assert.match(a.app.innerHTML,/fp-pie-shortcut/);
+a.click('fp-pie-open');
+assert.match(a.app.innerHTML,/支出＋積立率/);
+assert.match(a.app.innerHTML,/fp-pie-chart/);
+a.click('fp-history-open');
+assert.match(a.app.innerHTML,/過去の診断結果/);
+a.click('fp-history-close');
+const old=api.getState().planHistory[0],oldHusband=old.plan.husbandMonthly;
+plan.husbandMonthly=99;
+a.click('sim-restart');
+for(let i=0;i<7;i++)a.click('sim-next');
+assert.equal(api.getState().planHistory.length,2);
+assert.equal(old.plan.husbandMonthly,oldHusband,'earlier snapshot immutable');
+const latest=api.getState().planHistory[0];
+a.click('fp-history-open');
+assert.match(a.app.innerHTML,/過去の診断結果/);
+a.click('fp-history-select',old.id);
+assert.ok(a.app.innerHTML.includes('FP • LIFE PLAN'),'selected old snapshot rendered');
+const again=openApp();
+assert.match(again.app.innerHTML,/FP • LIFE PLAN/,'reload opens saved results');
+assert.equal(again.win.__fpInternals.getState().planHistory.length,2);
+again.click('fp-history-open');again.click('fp-history-select',old.id);
+assert.match(again.app.innerHTML,/FP • LIFE PLAN/);
+again.click('tab','property');again.click('tab','sim');
+assert.match(again.app.innerHTML,/FP • LIFE PLAN/,'tab opens last diagnosis');
+const legacy=JSON.parse(storage['hoppy-phase1-v1']);
+legacy.planHistory=[];legacy.plan.hasRun=1;
+storage['hoppy-phase1-v1']=JSON.stringify(legacy);
+const migrated=openApp();
+assert.match(migrated.app.innerHTML,/FP • LIFE PLAN/,'old completed plan opens previous result');
+assert.equal(migrated.win.__fpInternals.getState().planHistory.length,1,'older plan creates one undated snapshot');
+console.log('HOPPY pie allocation, one-time events, history immutable snapshots and legacy reload: PASS');

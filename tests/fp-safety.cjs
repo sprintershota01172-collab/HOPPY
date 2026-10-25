@@ -1,0 +1,43 @@
+// FP regression: implausible万円 input must never be silently shown as a credible house budget.
+// Education-insurance premiums multiply by the number of eligible children; monthly mortgage is explicit.
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+let src=fs.readFileSync('app.js','utf8');
+const marker="  save();render();\n  if('serviceWorker'";
+assert.ok(src.includes(marker));
+src=src.replace(marker,"  window.__fpSafety={getPlan:()=>state.plan,fpBaseMonthly,fpPlanWarnings,mortgageMonthly,fpExpenseDetails,modelYears};\n"+marker);
+let seq=0,now=1000;
+class FakeDate extends Date{static now(){return now+=2000;}}
+const listeners={},storage={},app={innerHTML:'',querySelector(){return null},querySelectorAll(){return []},contains(){return true},addEventListener(k,v){listeners[k]=v},insertAdjacentHTML(){}};
+const win={matchMedia(){return {matches:true}},crypto:{randomUUID(){return String(++seq)}},addEventListener(){}};
+vm.runInNewContext(src,{document:{getElementById(){return app}},window:win,localStorage:{getItem(k){return storage[k]||null},setItem(k,v){storage[k]=v}},navigator:{},location:{protocol:'http:',hostname:'test.invalid'},Date:FakeDate,crypto:win.crypto,confirm(){return true},setTimeout(){return 0},clearTimeout(){},Intl,console,URL,Number,Math,Array,JSON,String,Promise},{filename:'app.js'});
+const click=(act,value='')=>listeners.click({target:{closest(){return {dataset:{act,value}}}},preventDefault(){}});
+const input=(key,value)=>listeners.input({target:{dataset:{sim:key},value,hasAttribute(){return false}}});
+const f=win.__fpSafety,p=f.getPlan();
+p.childEducationInsuranceMonthly=0.5;p.children=2;p.firstChildYear=2028;p.birthInterval=3;
+assert.equal(f.fpBaseMonthly(2027).find(x=>x.key==='childEducationInsuranceMonthly').value,0);
+assert.equal(f.fpBaseMonthly(2029).find(x=>x.key==='childEducationInsuranceMonthly').value,.5);
+assert.equal(f.fpBaseMonthly(2032).find(x=>x.key==='childEducationInsuranceMonthly').value,1);
+assert.equal(f.fpBaseMonthly(2050).find(x=>x.key==='childEducationInsuranceMonthly').value,0);
+const points=f.modelYears(4500,true).points;
+const y=points.find(x=>x.year===2032);
+const lines=f.fpExpenseDetails(y,true);
+assert.equal(lines.find(x=>x.label==='学資保険').amount,12);
+const expected=f.mortgageMonthly(4500,0,1.5,35);
+assert.ok(Math.abs(expected-13.778)<.3);
+p.livingMonthly=91000;
+assert.ok(f.fpPlanWarnings().some(x=>x.label==='その他生活費'));
+click('tab','sim');
+for(let i=0;i<7;i++)click('sim-next');
+assert.match(app.innerHTML,/入力した金額を確認してください/);
+assert.match(app.innerHTML,/その他生活費/);
+assert.doesNotMatch(app.innerHTML,/現金貯金の余力/);
+assert.match(app.innerHTML,/35年ローン/);
+click('fp-fix-input','2:2');
+assert.match(app.innerHTML,/毎日の支払い/);
+assert.match(app.innerHTML,/その他の生活費/);
+input('livingMonthly',10);
+for(let i=0;i<5;i++)click('sim-next');
+assert.match(app.innerHTML,/住宅ローンの毎月返済/);
+assert.match(app.innerHTML,/参考の購入予算/);
+assert.doesNotMatch(app.innerHTML,/入力した金額を確認してください/);
+console.log('HOPPY FP unit validation, correction, child education insurance and mortgage: PASS');

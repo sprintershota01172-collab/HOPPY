@@ -40,7 +40,7 @@
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpChartPage:0,fpIncomePeriod:'year',fpIncomeMonth:1,fpCashMonth:1,fpHistoryPage:0,fpHistoryId:null,fpHistoryOpen:false,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpChartPage:0,fpIncomePeriod:'year',fpIncomeMonth:1,fpCashMonth:1,fpAssetPeriod:'year',fpAssetMonth:1,fpHistoryPage:0,fpHistoryId:null,fpHistoryOpen:false,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
   if(state.plan.hasRun)ui.simStep=7;
   function normalize(s) {
@@ -937,6 +937,20 @@
     return {point,opening,cashChange:point.cash-opening.cash,
       nisaChange:point.nisa-opening.nisa,otherChange:point.otherInvest-opening.otherInvest};
   }
+  function fpMonthlyAssets(model,year,month){
+    const p=state.plan,asset=fpAssetsForYear(model,year),
+      m=Math.max(1,Math.min(12,Math.round(Number(month)||1))),
+      flows=fpMonthlyLedger(asset.point).months,
+      growth=Math.min(.2,Math.max(-.2,Number(p.returnAnnual)||0)/100);
+    // Interpolation is a display approximation. At m=12, this exactly matches
+    // the existing annual formula (opening + 12 months of contributions) × (1+return).
+    const nisa=Math.max(0,(asset.opening.nisa+m*safeNum(p.nisaMonthly))*(1+growth*m/12));
+    const otherInvest=Math.max(0,(asset.opening.otherInvest+m*safeNum(p.otherInvestMonthly))*(1+growth*m/12));
+    const cash=flows[m-1].endingCash;
+    return {year,month:m,cash,nisa,otherInvest,total:cash+nisa+otherInvest,
+      cashChange:cash-asset.opening.cash,nisaChange:nisa-asset.opening.nisa,
+      otherChange:otherInvest-asset.opening.otherInvest};
+  }
   function fpYearPoint(model){
     return model.points.find(x=>x.year===ui.fpYear)||model.points.find(x=>x.year===fpDecisionYear())||model.points[0];
   }
@@ -1092,23 +1106,32 @@
       '<p class="fp-r-help">現金増減＝手取り−生活費・住宅費−臨時支出−投資積立。年払い・教育費や月未指定イベントは12か月で仮配分。購入費は1月計上。実際の引落月とは異なる概算です。</p></div>';
   }
   function fpAssetsReport(model){
-    const point=fpYearPoint(model),assets=fpAssetsForYear(model,point.year);
+    const point=fpYearPoint(model),period=ui.fpAssetPeriod==='month'?'month':'year',
+      monthly=period==='month',month=Math.max(1,Math.min(12,ui.fpAssetMonth||1)),
+      yearAsset=fpAssetsForYear(model,point.year),
+      monthlyAsset=monthly?fpMonthlyAssets(model,point.year,month):null;
+    const selected=monthly?monthlyAsset:yearAsset.point;
     const series=model.points.map(x=>({year:x.year,cash:x.cash,nisa:x.nisa,invest:x.otherInvest}));
     const item=(label,balance,diff)=>'<div class="fp-asset-tile"><span>'+esc(label)+'</span>'+
       '<strong>'+yen(balance,1)+'<small>万円</small></strong>'+
-      '<small class="'+(diff<0?'negative':'')+'">前年から '+(diff>=0?'+':'')+yen(diff,1)+'万円</small></div>';
-    return '<div class="fp-assets-report grow">'+fpYearSelect(model)+
-      '<strong class="fp-r-subhead">現金・NISA・その他投資の残高推移</strong>'+
+      '<small class="'+(diff<0?'negative':'')+'">'+(monthly?'年初から ':'前年から ')+(diff>=0?'+':'')+yen(diff,1)+'万円</small></div>';
+    return '<div class="fp-assets-report grow">'+
+      '<div class="fp-assets-toolbar">'+fpYearSelect(model)+
+      '<div class="fp-income-toggle"><button data-act="fp-asset-period" data-value="year" class="'+(!monthly?'active':'')+'">年末</button>'+
+      '<button data-act="fp-asset-period" data-value="month" class="'+(monthly?'active':'')+'">月末</button></div></div>'+
+      (monthly?'<div class="fp-assets-months">'+Array.from({length:12},(_,i)=>'<button data-act="fp-asset-month" data-value="'+(i+1)+'" class="'+(month===i+1?'active':'')+'">'+(i+1)+'</button>').join('')+'</div>':'')+
+      '<strong class="fp-r-subhead">'+point.year+'年'+(monthly?' '+month+'月末':' 年末')+'の金融資産・増減</strong>'+
+      (monthly?'<div class="fp-assets-subline">年内の月末評価額は想定利回りから計算した概算です</div>':'')+
       fpChartCanvas(series,['cash','nisa','invest'],'line')+
       fpChartLegend(['現金','NISA','その他投資'])+
       '<div class="fp-assets-grid">'+
-        item('現金預金',point.cash,assets.cashChange)+
-        item('NISA評価額',point.nisa,assets.nisaChange)+
-        item('その他の株式・投資',point.otherInvest,assets.otherChange)+
-        '<div class="fp-asset-tile total"><span>金融資産の合計</span><strong>'+yen(point.total,1)+'<small>万円</small></strong>'+
+        item('現金預金',selected.cash,monthly?monthlyAsset.cashChange:yearAsset.cashChange)+
+        item('NISA評価額',selected.nisa,monthly?monthlyAsset.nisaChange:yearAsset.nisaChange)+
+        item('その他の株式・投資',selected.otherInvest,monthly?monthlyAsset.otherChange:yearAsset.otherChange)+
+        '<div class="fp-asset-tile total"><span>金融資産の合計</span><strong>'+yen(selected.total,1)+'<small>万円</small></strong>'+
         '<small>現金＋NISA＋その他投資</small></div></div>'+
-      '<p class="fp-r-help">NISA年間積立 '+yen(safeNum(state.plan.nisaMonthly)*12,1)+'万円、その他投資 '+yen(safeNum(state.plan.otherInvestMonthly)*12,1)+
-        '万円。投資評価額には入力した想定運用利回りを反映。現金から投資へ移す積立は消費ではありません。住宅そのものの資産価値とローン残債は合計に含みません。</p></div>';
+      '<p class="fp-r-help">NISAの積立 '+yen(safeNum(state.plan.nisaMonthly),2)+'万円/月、その他投資 '+yen(safeNum(state.plan.otherInvestMonthly),2)+
+        '万円/月。折れ線は年末残高。投資の月末評価額は年率の仮定から近似計算、時価実績ではありません。住宅価値とローン残債は含みません。</p></div>';
   }
   function fpIncomeReport(model){
     const point=fpYearPoint(model),income=fpYearlyIncome(point.year),
@@ -1638,6 +1661,8 @@
     if(action==='fp-pie-open')return step(()=>{ui.simResultPage=3;ui.fpChartPage=3;});
     if(action==='fp-result-tab')return step(()=>{ui.simResultPage=Math.min(6,Math.max(0,Number(v)||0));ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
     if(action==='fp-cash-month')return step(()=>{ui.fpCashMonth=Math.min(12,Math.max(1,Number(v)||1));});
+    if(action==='fp-asset-period')return step(()=>{ui.fpAssetPeriod=v==='month'?'month':'year';});
+    if(action==='fp-asset-month')return step(()=>{ui.fpAssetMonth=Math.min(12,Math.max(1,Number(v)||1));ui.fpAssetPeriod='month';});
     if(action==='fp-income-period')return step(()=>{ui.fpIncomePeriod=v==='month'?'month':'year';});
     if(action==='fp-income-month')return step(()=>{ui.fpIncomeMonth=Math.max(1,Math.min(12,Number(v)||1));ui.fpIncomePeriod='month';});
     if(action==='fp-legacy-utilities-clear')return step(()=>{state.plan.utilitiesMonthly=0;save();message('旧光熱費の合算額を削除しました');});

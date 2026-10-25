@@ -837,9 +837,8 @@
       (within?'家計上限以内（余裕 '+fpYen(Math.max(0,-over))+' / 月）':
         '家計上限を '+fpYen(over)+' / 月超過')+'</div></div>'+
       '<p class="fp-capacity-footnote">住居費の予算 '+fpYen(b.housingBudget)+'/月 − 維持費 '+
-        fpYen(b.maintenance)+'/月 = 返済上限 '+fpYen(b.loanPayment)+'/月。'+
-        '物件価格は50万円単位で切下げ。維持費・諸費用（物件価格の約7%）は総支払額と別。'+
-        '金利一定の概算で、融資承認額ではありません。</p>'+
+        fpYen(b.maintenance)+'/月。物件価格は50万円単位で切下げ。'+
+        '維持費・諸費用（約7%）別、金利一定の概算で融資承認額ではありません。</p>'+
       '</section>';
   }
   function fpRating(price){

@@ -131,8 +131,17 @@
       renderToast();hydratePhotos();
       return;
     }
+    const oldFP=ui.tab==='sim'?app.querySelector('.fp-month-report, .fp-pie-panel'):null;
+    const oldFPKind=oldFP?.classList?.contains('fp-month-report')?'monthly':oldFP?'annual':null;
+    const oldFPScroll=oldFP?.scrollTop||0;
     const body=ui.tab==='property'?propertyScreen():ui.tab==='compare'?compareScreen():ui.tab==='sim'?simulationScreen():ui.tab==='memo'?memoScreen():pendingScreen();
     app.innerHTML=toolbar(titles[ui.tab])+'<main class="main">'+body+'</main><nav class="bottom" aria-label="メインメニュー">'+nav.map(([key,name])=>'<button class="tab '+(ui.tab===key?'active':'')+'" data-act="tab" data-value="'+key+'" aria-current="'+(ui.tab===key?'page':'false')+'"><span class="nav-icon">'+tabIcon(key)+'</span><span class="tab-label">'+name+'</span></button>').join('')+'</nav>'+(ui.overlay?overlay(): '');
+    // Changing month/year or a value must not snap a scrolled breakdown
+    // back to the start of the FP report.
+    if(oldFPKind){
+      const nextFP=app.querySelector(oldFPKind==='monthly'?'.fp-month-report':'.fp-pie-panel');
+      if(nextFP)nextFP.scrollTop=oldFPScroll;
+    }
     renderToast();hydratePhotos();
   }
   function empty(icon,title,desc,action,label){return '<section class="panel grow empty"><div class="big">'+icon+'</div><h2 class="section-title">'+esc(title)+'</h2><p>'+esc(desc)+'</p>'+ (action?'<button class="btn primary" data-act="'+action+'">'+esc(label)+'</button>':'')+'</section>';}
@@ -1156,12 +1165,23 @@
     const panel=host?.querySelector?.('.fp-breakdown-panel');
     if(!panel){render();return;}
     const previousScroll=host.scrollTop;
-    const model=modelYears(safeNum(state.plan.propertyPrice),true);
-    const point=fpYearPoint(model);
-    const month=period==='monthly'
-      ?fpMonthlyLedger(point).months[Math.min(11,Math.max(0,(ui.fpCashMonth||1)-1))]:null;
-    const allocation=month?fpMonthlyAllocation(month):fpIncomeAllocation(point);
-    panel.outerHTML=fpPieBreakdownPanel(point,month,allocation.items,selectedCategory);
+    // Historical results use a stored snapshot; never calculate an archived
+    // chart with the latest editable plan when changing categories.
+    const workingPlan=state.plan;
+    try{
+      if(!ui.fpHistoryLive){
+        const snapshot=fpLatestSnapshot();
+        if(snapshot)state.plan=snapshot.plan;
+      }
+      const model=modelYears(safeNum(state.plan.propertyPrice),true);
+      const point=fpYearPoint(model);
+      const month=period==='monthly'
+        ?fpMonthlyLedger(point).months[Math.min(11,Math.max(0,(ui.fpCashMonth||1)-1))]:null;
+      const allocation=month?fpMonthlyAllocation(month):fpIncomeAllocation(point);
+      panel.outerHTML=fpPieBreakdownPanel(point,month,allocation.items,selectedCategory);
+    }finally{
+      state.plan=workingPlan;
+    }
     for(const el of host.querySelectorAll('[data-act="fp-breakdown-select"]')){
       if(el.dataset.period!==period)continue;
       const selected=el.dataset.value===selectedCategory;

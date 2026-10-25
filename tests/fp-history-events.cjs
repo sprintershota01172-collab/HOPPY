@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const source=fs.readFileSync('app.js','utf8');
-const anchor="  save();render();\n  if('serviceWorker'";
+const anchor="  save();render();\n  // The startup wordmark";
 assert.ok(source.includes(anchor));
 const instrumented=source.replace(anchor,"  window.__fpInternals={getState:()=>state,modelYears,fpEventsForYear,fpIncomeAllocation,fpExpenseDetails};\n"+anchor);
 const storage={};let clock=5000,seq=0;

@@ -45,7 +45,7 @@ for(const year of [2026,2028,2030]){
  }
 }
 click('tab','sim');for(let i=0;i<7;i++)click('sim-next');
-assert.match(app.innerHTML,/月ごとの収支/,'FP opens directly to monthly cashflow');
+assert.match(app.innerHTML,/data-fp-cash-month/,'FP opens directly to monthly cashflow');
 assert.equal(api.ui.fpYear,new Date().getFullYear(),'selected year starts with the current year');
 assert.match(app.innerHTML,/data-fp-inline-breakdown/,'details are within the monthly report');
 assert.match(app.innerHTML,/fp-month-pie/);

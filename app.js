@@ -40,7 +40,7 @@
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpChartPage:0,fpIncomePeriod:'year',fpIncomeMonth:1,fpHistoryPage:0,fpHistoryId:null,fpHistoryOpen:false,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpChartPage:0,fpIncomePeriod:'year',fpIncomeMonth:1,fpCashMonth:1,fpHistoryPage:0,fpHistoryId:null,fpHistoryOpen:false,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
   if(state.plan.hasRun)ui.simStep=7;
   function normalize(s) {
@@ -1231,8 +1231,8 @@
   function simulationResultsScreen(snapshot){
     const p=state.plan,price=safeNum(p.propertyPrice),current=modelYears(price,true),rent=modelYears(price,false),
       budget=fpBudget(),rating=fpRating(price),warnings=fpPlanWarnings(),
-      page=Math.min(4,Math.max(0,ui.simResultPage||0));
-    const heading=['購入後の家計','収支予測グラフ','収入の内訳','計算根拠','アドバイス'][page];
+      page=Math.min(6,Math.max(0,ui.simResultPage||0));
+    const heading=['購入後の家計','月ごとの収支','現金と投資資産','収支予測グラフ','収入の内訳','計算根拠','アドバイス'][page];
     const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r8</span>'+
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
@@ -1253,7 +1253,7 @@
         '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">最初から見直す</button>'+
         '<button class="btn primary" data-act="fp-fix-input" data-value="'+warnings[0].step+':'+warnings[0].page+'">該当項目を修正 →</button></div></section>';
     }
-    const tabs='<div class="fp-result-nav">'+['まとめ','グラフ','収入','計算','助言'].map((label,i)=>
+    const tabs='<div class="fp-result-nav">'+['まとめ','月収支','資産','グラフ','収入','計算','助言'].map((label,i)=>
       '<button data-act="fp-result-tab" data-value="'+i+'" class="'+(page===i?'active':'')+'">'+label+'</button>').join('')+'</div>';
     let content='';
     if(page===0){
@@ -1276,13 +1276,17 @@
         '<p class="fp-r-help">'+(negative?'注意：'+negative.year+'年に年末現金がマイナスになる試算です。':'この期間は年末現金のマイナスがありません。')+
         ' 手取り比率は家計の参考値で、融資審査基準とは異なります。</p></div>';
     }else if(page===1){
+      content=fpMonthlyReport(current);
+    }else if(page===2){
+      content=fpAssetsReport(current);
+    }else if(page===3){
       const chartPage=Math.max(0,Math.min(3,ui.fpChartPage||0));
       content='<div class="fp-r-chart-page grow">'+
         fpPageNav(4,chartPage,'fp-chart-page',['現金','年間収支','ローン','円グラフ'])+
         fpYearSelect(current)+fpChartData(price,current,rent)+'</div>';
-    }else if(page===2){
+    }else if(page===4){
       content=fpIncomeReport(current);
-    }else if(page===3){
+    }else if(page===5){
       const calcPage=Math.max(0,Math.min(3,ui.fpCalcPage||0));
       content='<div class="fp-r-calc-page grow">'+
         fpPageNav(4,calcPage,'fp-calc-page',['収支式','ローン','支出明細','前提'])+
@@ -1291,7 +1295,7 @@
     return '<section class="screen sim-screen fp-result-screen fp-report-screen">'+intro+
       '<h2 class="sim-result-title">'+heading+'</h2>'+(snapshot?'<div class="fp-snapshot-label">'+esc(fpHistoryDate(snapshot))+'</div>':'')+tabs+content+
       '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">↶ 条件を見直す</button>'+
-      '<button class="btn primary" data-act="fp-result-next">'+(page===4?'まとめへ戻る':'次へ →')+'</button></div></section>';
+      '<button class="btn primary" data-act="fp-result-next">'+(page===6?'まとめへ戻る':'次へ →')+'</button></div></section>';
   }
     const studyCategories=[
     ['費用・住宅ローン',/費用|万円|円|金利|ローン|予算|頭金|税|維持費|値引|価格|銀行|返済/],
@@ -1622,7 +1626,7 @@
     if(action==='sim-next')return step(()=>{if(ui.simStep===6){state.plan.hasRun=1;fpRecordHistory();}ui.simStep=Math.min(7,ui.simStep+1);ui.simSubPage=0;ui.simResultPage=0;ui.fpIssuePage=0;save();});
     if(action==='sim-back')return step(()=>{ui.simStep=Math.max(0,ui.simStep-1);ui.simSubPage=0;});
     if(action==='sim-restart')return step(()=>{ui.simStep=0;ui.simSubPage=0;ui.simResultPage=0;ui.fpHistoryOpen=false;});
-    if(action==='sim-result-page')return step(()=>changePage('simResultPage',5,Number(v)));
+    if(action==='sim-result-page')return step(()=>changePage('simResultPage',7,Number(v)));
     if(action==='fp-history-open')return step(()=>{ui.fpHistoryOpen=true;ui.fpHistoryPage=0;});
     if(action==='fp-history-close')return step(()=>{ui.fpHistoryOpen=false;});
     if(action==='fp-history-page')return step(()=>{ui.fpHistoryPage=Math.max(0,Number(v)||0);});
@@ -1631,8 +1635,9 @@
     });
     if(action==='fp-history-latest')return step(()=>{ui.fpHistoryId=state.planHistory[0]?.id||null;ui.fpHistoryOpen=false;ui.simResultPage=0;});
     if(action==='fp-edit-events')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=6;ui.simSubPage=2;});
-    if(action==='fp-pie-open')return step(()=>{ui.simResultPage=1;ui.fpChartPage=3;});
-    if(action==='fp-result-tab')return step(()=>{ui.simResultPage=Math.min(4,Math.max(0,Number(v)||0));ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
+    if(action==='fp-pie-open')return step(()=>{ui.simResultPage=3;ui.fpChartPage=3;});
+    if(action==='fp-result-tab')return step(()=>{ui.simResultPage=Math.min(6,Math.max(0,Number(v)||0));ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
+    if(action==='fp-cash-month')return step(()=>{ui.fpCashMonth=Math.min(12,Math.max(1,Number(v)||1));});
     if(action==='fp-income-period')return step(()=>{ui.fpIncomePeriod=v==='month'?'month':'year';});
     if(action==='fp-income-month')return step(()=>{ui.fpIncomeMonth=Math.max(1,Math.min(12,Number(v)||1));ui.fpIncomePeriod='month';});
     if(action==='fp-legacy-utilities-clear')return step(()=>{state.plan.utilitiesMonthly=0;save();message('旧光熱費の合算額を削除しました');});
@@ -1663,7 +1668,7 @@
     }
     if(action==='fp-expense-add')return step(()=>{if(state.plan.expenses.length>=35)return message('追加支出は35項目までです');state.plan.expenses.push({id:uid(),name:'新しい支出',amount:0,cycle:'month',start:0,end:0});ui.simSubPage=2+Math.max(1,Math.ceil(state.plan.events.length/2))+Math.floor((state.plan.expenses.length-1)/2);save();});
     if(action==='fp-expense-delete'){if(!confirm('この追加支出を削除しますか？'))return;return step(()=>{state.plan.expenses=state.plan.expenses.filter(x=>x.id!==v);ui.simSubPage=Math.min(ui.simSubPage,fpWizardPages(6).length-1);save();});}
-    if(action==='fp-result-next')return step(()=>{ui.simResultPage=(ui.simResultPage+1)%5;ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
+    if(action==='fp-result-next')return step(()=>{ui.simResultPage=(ui.simResultPage+1)%7;ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
     if(action==='sim-choice')return step(()=>{ui.simChoice=v;save();});
     if(action==='fp-view-budget')return step(()=>{ui.tab='sim';ui.simStep=7;ui.simResultPage=0;ui.fpHistoryOpen=false;ui.overlay='';});
     if(action==='fp-open-home')return openOverlay('detail',()=>{ui.propertyId=v;ui.propertyPage=0;});

@@ -1,7 +1,7 @@
 // HOPPY FP monthly cashflow: annual reconciliation, timed events, and cash/NISA/other asset balances.
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 let source=fs.readFileSync('app.js','utf8');
-const anchor="  save();render();\n  if('serviceWorker'";
+const anchor="  save();render();\n  // The startup wordmark";
 assert.ok(source.includes(anchor));
 source=source.replace(anchor,
  "  window.__cashTest={getPlan:()=>state.plan,modelYears,fpMonthlyLedger,fpAssetsForYear,fpMonthlyAssets,fpYearlyIncome,fpMonthlyAllocation,fpMonthlyPie};\n"+anchor);

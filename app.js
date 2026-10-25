@@ -21,6 +21,7 @@
   const defaultPlan = () => ({
     husbandAge:27,wifeAge:29,children:2,firstChildYear:2028,birthInterval:3,
     husbandMonthly:26,wifeMonthly:25,husbandBonus:120,wifeBonus:20,wifeReduced:12.5,
+    husbandBonusMonth1:6,husbandBonusMonth2:12,wifeBonusMonth1:6,wifeBonusMonth2:12,
     cashSavings:300,support:0,livingMonthly:20,rentMonthly:8.2,carMonthly:1.18,
     propertyPrice:4400,propertyId:'',purchaseYear:2028,downPayment:0,interest:1.5,loanYears:35,
     housingOngoing:2.5,weddingYear:2027,weddingCost:350,honeymoonCost:98,
@@ -39,7 +40,7 @@
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpChartPage:0,fpHistoryPage:0,fpHistoryId:null,fpHistoryOpen:false,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpChartPage:0,fpIncomePeriod:'year',fpIncomeMonth:1,fpHistoryPage:0,fpHistoryId:null,fpHistoryOpen:false,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
   if(state.plan.hasRun)ui.simStep=7;
   function normalize(s) {
@@ -393,11 +394,17 @@
       f('第1子の予定年','firstChildYear','年'),f('きょうだいの年齢差','birthInterval','年'),
       f('妻の時短中の月手取り','wifeReduced','万円/月')
     ]));
-    if(i===1)pages.push(fpCompactPage('収入と給付金',[
-      f('夫・月手取り','husbandMonthly'),f('妻・月手取り','wifeMonthly'),
-      f('夫・年間賞与','husbandBonus','万円/年'),f('妻・年間賞与','wifeBonus','万円/年'),
-      f('子ども関連の給付金','childBenefitMonthly','万円/人月')
-    ],'子ども関連の給付金は受給条件の自動判定を行いません。'));
+    if(i===1){
+      pages.push(fpCompactPage('収入と給付金',[
+        f('夫・月手取り','husbandMonthly'),f('妻・月手取り','wifeMonthly'),
+        f('夫・年間賞与','husbandBonus','万円/年'),f('妻・年間賞与','wifeBonus','万円/年'),
+        f('子ども関連の給付金','childBenefitMonthly','万円/人月')
+      ],'子ども関連の給付金は受給条件の自動判定を行いません。'));
+      pages.push(fpCompactPage('賞与の支給月',[
+        f('夫・賞与①','husbandBonusMonth1','月'),f('夫・賞与②','husbandBonusMonth2','月'),
+        f('妻・賞与①','wifeBonusMonth1','月'),f('妻・賞与②','wifeBonusMonth2','月')
+      ],'年間賞与を2回均等に配分。支給が1回だけなら②を0に設定。実際の配分と異なる場合は概算です。'));
+    }
     if(i===2){
       pages.push(fpCompactPage('食費・家賃の内訳',[
         f('食費','foodMonthly'),f('家賃（賃料）','rentMonthly'),

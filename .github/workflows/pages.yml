@@ -29,6 +29,7 @@ jobs:
           node tests/fp-safety.cjs
           node tests/fp-report.cjs
           node tests/fp-history-events.cjs
+          node tests/fp-income.cjs
       - uses: actions/configure-pages@v5
         with:
           enablement: true

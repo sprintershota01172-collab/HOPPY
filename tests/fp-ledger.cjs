@@ -2,7 +2,7 @@
 // NISA-to-investment transfers, custom cost schedules and budget sensitivity.
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 let s=fs.readFileSync('app.js','utf8');
-const anchor="  save();render();\n  if('serviceWorker'";
+const anchor="  save();render();\n  // The startup wordmark";
 assert.ok(s.includes(anchor));
 s=s.replace(anchor,"  window.__fpTest={getPlan:()=>state.plan,modelYears,fpBudget,fpRating,fpBaseMonthly,fpChildCounts,fpExpenseDetails};\n"+anchor);
 const storage={};const listeners={},app={innerHTML:'',contains(){return true},querySelector(){return null},querySelectorAll(){return []},addEventListener(k,fn){listeners[k]=fn},insertAdjacentHTML(){}};

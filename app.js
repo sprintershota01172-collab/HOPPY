@@ -507,7 +507,7 @@
     return result.sort((a,b)=>studyGroups.findIndex(x=>x[0]===a.category)-studyGroups.findIndex(x=>x[0]===b.category));
   }
   function studyDigestScreen(){
-    const items=studySummaryItems(),pageSize=5,total=Math.max(1,Math.ceil(items.length/pageSize));
+    const items=studySummaryItems(),pageSize=3,total=Math.max(1,Math.ceil(items.length/pageSize));
     ui.studyDigestPage=Math.min(ui.studyDigestPage,total-1);
     const visible=items.slice(ui.studyDigestPage*pageSize,(ui.studyDigestPage+1)*pageSize);
     const cards=visible.map(item=>{
@@ -566,7 +566,7 @@
     if(action==='tab')return chooseTab(v);
     if(action==='study-open')return openOverlay('study',()=>{ui.studyMode='notes';ui.studyPage=0;});
     if(action==='study-page')return step(()=>changePage('studyPage',Math.max(1,Math.ceil(state.studyNotes.length/3)),Number(v)));
-    if(action==='study-digest-page')return step(()=>changePage('studyDigestPage',Math.max(1,Math.ceil(studySummaryItems().length/5)),Number(v)));
+    if(action==='study-digest-page')return step(()=>changePage('studyDigestPage',Math.max(1,Math.ceil(studySummaryItems().length/3)),Number(v)));
     if(action==='study-digest-back')return step(()=>{ui.overlay='study';});
     if(action==='study-add')return openOverlay('study-form',()=>{ui.studyEditId=null;ui.studyDraft={title:'',text:'',originalText:'',beforeFix:null};});
     if(action==='study-edit')return openOverlay('study-form',()=>{
@@ -600,7 +600,7 @@
       const draft=ui.studyDraft;if(!draft?.text?.trim())return message('学んだ内容を書いてください');
       return step(()=>{
         const title=draft.title.trim()||'家の学び';
-        const original=String(draft.originalText||draft.beforeFix||draft.text).slice(0,2500);
+        const original=String(typeof draft.beforeFix==='string'?(draft.originalText||draft.beforeFix):draft.text).slice(0,2500);
         if(ui.studyEditId){
           const previous=state.studyNotes.find(x=>x.id===ui.studyEditId);
           if(previous){previous.title=title;previous.text=draft.text.trim().slice(0,7000);previous.originalText=original;}

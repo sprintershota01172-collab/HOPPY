@@ -62,6 +62,7 @@
       id:String(x.id).slice(0,80),name:String(x.name||'イベント').slice(0,50),
       amount:Math.min(100000,Math.max(0,Number(x.amount)||0)),
       year:Math.max(0,Math.min(2100,Math.floor(Number(x.year)||0))),
+      month:Math.max(0,Math.min(12,Math.floor(Number(x.month)||0))),
       type:x.type==='income'?'income':'expense',
       kind:['wedding','honeymoon'].includes(x.kind)?x.kind:'custom'
     })):[];
@@ -378,11 +379,12 @@
       '<button data-act="fp-event-delete" data-value="'+esc(x.id)+'" aria-label="イベントを削除">×</button></div>'+
       '<div class="fp-event-fields"><label>発生年<input data-event-id="'+esc(x.id)+'" data-event-key="year" type="number" min="2020" max="2100" step="1" value="'+esc(x.year)+'"></label>'+
       '<label>金額（万円）<input data-event-id="'+esc(x.id)+'" data-event-key="amount" type="number" min="0" step="any" value="'+esc(x.amount)+'"></label>'+
+      '<label>発生月<input data-event-id="'+esc(x.id)+'" data-event-key="month" type="number" min="0" max="12" step="1" value="'+esc(x.month||0)+'"></label>'+ 
       '<label>収支<select data-event-id="'+esc(x.id)+'" data-event-key="type"><option value="expense" '+(x.type==='expense'?'selected':'')+'>支出 −</option>'+
       '<option value="income" '+(x.type==='income'?'selected':'')+'>収入 ＋</option></select></label></div></div>').join('');
     return '<div class="fp-event-editor"><div class="fp-compact-title">予定イベント｜'+total+'件</div>'+choices+
       (cards||'<div class="fp-event-empty">結婚式・新婚旅行などを登録。発生年の現金残高に反映します。</div>')+
-      '<p class="fp-field-hint">単位は万円。収入イベントも登録可能です。既存の式・旅行費用と重複しないよう自動調整します。</p></div>';
+      '<p class="fp-field-hint">月が0なら発生月未指定。月別収入では12か月で均等割りする概算です。結婚式・旅行の二重計上は防止します。</p></div>';
   }
   function fpWizardPages(i){
     const p=state.plan;
@@ -1479,7 +1481,7 @@
       return step(()=>{
         const year=Math.max(simNowYear(),Math.floor(safeNum(state.plan.weddingYear,simNowYear())));
         const record={id:uid(),name:kind==='wedding'?'結婚式':kind==='honeymoon'?'新婚旅行':'新しいイベント',
-          year,amount:kind==='wedding'?safeNum(state.plan.weddingCost):kind==='honeymoon'?safeNum(state.plan.honeymoonCost):0,
+          year,month:0,amount:kind==='wedding'?safeNum(state.plan.weddingCost):kind==='honeymoon'?safeNum(state.plan.honeymoonCost):0,
           type:'expense',kind};
         if(kind==='wedding')state.plan.weddingCost=0;
         if(kind==='honeymoon')state.plan.honeymoonCost=0;
@@ -1630,6 +1632,7 @@
         if(k==='name')item.name=String(value).slice(0,50);
         if(k==='year')item.year=Math.max(2020,Math.min(2100,Math.floor(Number(value)||simNowYear())));
         if(k==='amount')item.amount=Math.max(0,Number(value)||0);
+        if(k==='month')item.month=Math.max(0,Math.min(12,Math.floor(Number(value)||0)));
         if(k==='type')item.type=value==='income'?'income':'expense';
         save();
       }
@@ -1709,6 +1712,7 @@
         if(k==='name')item.name=String(value).slice(0,50);
         if(k==='year')item.year=Math.max(2020,Math.min(2100,Math.floor(Number(value)||simNowYear())));
         if(k==='amount')item.amount=Math.max(0,Number(value)||0);
+        if(k==='month')item.month=Math.max(0,Math.min(12,Math.floor(Number(value)||0)));
         if(k==='type')item.type=value==='income'?'income':'expense';
         save();
       }

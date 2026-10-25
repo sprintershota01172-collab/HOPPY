@@ -50,7 +50,7 @@ a.click('tab','sim');
 for(let i=0;i<7;i++)a.click('sim-next');
 assert.equal(api.getState().planHistory.length,1);
 assert.match(a.app.innerHTML,/FP • LIFE PLAN/);
-assert.match(a.app.innerHTML,/月ごとの収支/);
+assert.match(a.app.innerHTML,/data-fp-cash-month/);
 a.click('fp-result-tab','0');
 assert.match(a.app.innerHTML,/fp-pie-shortcut/);
 a.click('fp-pie-open');

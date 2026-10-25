@@ -1,7 +1,7 @@
 // Annual and monthly FP income calculations must reconcile exactly and stay visible without scrolling.
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 let src=fs.readFileSync('app.js','utf8');
-const anchor="  save();render();\n  if('serviceWorker'";
+const anchor="  save();render();\n  // The startup wordmark";
 assert.ok(src.includes(anchor));
 src=src.replace(anchor,"  window.__incomeTest={getState:()=>state,fpMonthlyIncome,fpYearlyIncome,modelYears};\n"+anchor);
 const storage={},handlers={};let clock=1e4,seq=0;

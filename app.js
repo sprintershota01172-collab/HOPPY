@@ -69,7 +69,7 @@
   }
   function empty(icon,title,desc,action,label){return '<section class="panel grow empty"><div class="big">'+icon+'</div><h2 class="section-title">'+esc(title)+'</h2><p>'+esc(desc)+'</p>'+ (action?'<button class="btn primary" data-act="'+action+'">'+esc(label)+'</button>':'')+'</section>';}
   function navPager(index,total,act){return '<div class="pager"><button class="page-arrow" data-act="'+act+'" data-value="-1" '+(total<2?'disabled':'')+' aria-label="前へ">‹</button><div class="counter">'+(total?index+1:0)+' / '+total+'</div>'+dots(index,Math.max(total,1))+'<button class="page-arrow" data-act="'+act+'" data-value="1" '+(total<2?'disabled':'')+' aria-label="次へ">›</button></div>';}
-  const homePageSize=()=>window.matchMedia('(max-height: 620px)').matches?2:window.matchMedia('(max-height: 750px)').matches?3:4;
+  const homePageSize=()=>window.matchMedia('(max-height: 710px)').matches?2:window.matchMedia('(max-height: 910px)').matches?3:4;
   function propertyCard(p){
     const now=Date.now(),ms=(p.meetings||[]).filter(m=>m.at);
     const future=ms.filter(m=>new Date(m.at).getTime()>=now).sort((a,b)=>a.at.localeCompare(b.at))[0];

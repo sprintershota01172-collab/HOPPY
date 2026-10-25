@@ -1959,3 +1959,20 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .fp-breakdown-sheet-bottom span{display:none}
   .fp-breakdown-sheet-bottom button{width:100%}
 }
+
+
+/* The detail entry remains visible before the pie, including on compact iPhones. */
+.fp-pie-panel-head{display:flex;align-items:center;justify-content:space-between;gap:7px;flex:none;min-height:29px}
+.fp-pie-panel-head .fp-r-subhead{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.fp-breakdown-open{
+  display:flex;align-items:center;justify-content:center;flex:none;
+  border:1px solid #cfdfeb;background:#eef5fa;border-radius:9px;
+  color:#245e88;font-size:10px;font-weight:800;
+  padding:3px 9px;min-height:29px;white-space:nowrap;touch-action:manipulation;
+}
+.fp-month-head .fp-breakdown-open{font-size:11px;padding:3px 7px}
+@media(max-width:360px){
+  .fp-pie-panel-head .fp-r-subhead{font-size:10px}
+  .fp-breakdown-open{font-size:9px;padding:3px 5px}
+  .fp-month-head .fp-breakdown-open{font-size:10px;padding:3px 5px}
+}

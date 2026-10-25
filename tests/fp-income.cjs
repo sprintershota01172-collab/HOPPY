@@ -55,7 +55,7 @@ for(const yr of [2026,2028,2031,2043]){
  assert.ok(Math.abs(group.months.reduce((a,b)=>a+b.total,0)-group.total)<1e-8,'monthly sum reconciles '+yr);
 }
 click('tab','sim');for(let i=0;i<7;i++)click('sim-next');
-click('fp-result-tab','2');
+click('fp-result-tab','4');
 assert.match(app.innerHTML,/収入の内訳/);
 assert.match(app.innerHTML,/年単位/);
 assert.match(app.innerHTML,/夫の給与/);

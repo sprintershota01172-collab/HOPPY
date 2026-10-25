@@ -23,7 +23,7 @@
     husbandMonthly:26,wifeMonthly:25,husbandBonus:120,wifeBonus:20,wifeReduced:12.5,
     husbandBonusMonth1:6,husbandBonusMonth2:12,wifeBonusMonth1:6,wifeBonusMonth2:12,
     cashSavings:300,support:0,livingMonthly:20,rentMonthly:8.2,carMonthly:1.18,
-    propertyPrice:4400,propertyId:'',purchaseYear:2028,downPayment:0,interest:1.5,loanYears:35,
+    propertyPrice:4400,propertyId:'',purchaseYear:2028,purchaseMonth:1,downPayment:0,interest:1.5,loanYears:35,
     housingOngoing:2.5,weddingYear:2027,weddingCost:350,honeymoonCost:98,
     nisaMonthly:3,highSchool:'public',university:'public',simulateUntil:2045,hasRun:0,
     utilitiesMonthly:0,foodMonthly:0,managementMonthly:0,commonFeeMonthly:0,parkingMonthly:0,
@@ -36,7 +36,7 @@
     otherSavingsMonthly:0,otherInvestMonthly:0,nisaBalance:0,investBalance:0,returnAnnual:0,carLoanEndYear:0,
     cashBufferMonthly:3,expenses:[],events:[]
   });
-  const defaults = () => ({version:2,properties:[],criteria:initialCriteria,scores:{},selected:[],filter:{query:'',tag:'',sort:'new',status:''},plan:defaultPlan(),planHistory:[],studyNotes:[]});
+  const defaults = () => ({version:2,properties:[],criteria:initialCriteria,scores:{},selected:[],filter:{query:'',tag:'',sort:'new',status:''},plan:defaultPlan(),planHistory:[],studyNotes:[],homeCriteriaMemo:''});
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
@@ -75,6 +75,7 @@
       plan.events=normalizeEvents(raw?.events);
       return plan;
     };
+    out.homeCriteriaMemo=String(s.homeCriteriaMemo||'').slice(0,4000);
     out.plan=normalizePlan(s.plan);
     out.planHistory=Array.isArray(s.planHistory)?s.planHistory.slice(0,24).filter(x=>
       x&&typeof x.id==='string'&&x.plan&&typeof x.plan==='object'
@@ -444,8 +445,9 @@
       pages.push(fpCompactPage('購入予定',[
         sSelect('登録物件から選択','propertyId',options),
         f('購入予定価格','propertyPrice','万円'),f('購入予定年','purchaseYear','年'),
+        sSelect('購入予定月','purchaseMonth',Array.from({length:12},(_,i)=>[i+1,(i+1)+'月'])),
         f('頭金','downPayment','万円')
-      ],'購入諸費用は物件価格の7％で仮計算します。'));
+      ],'指定した購入月までは家賃、購入月から住宅ローン＋維持費に切り替えます。購入諸費用は物件価格の7％で仮計算。'));
       pages.push(fpCompactPage('住宅ローン・維持費',[
         f('金利（仮定）','interest','％'),f('返済期間','loanYears','年'),
         f('固定資産税・修繕等','housingOngoing'),
@@ -655,31 +657,46 @@
     ]));
     return {year,months,fields,total:months.reduce((sum,x)=>sum+x.total,0)};
   }
-  // Fixed-rate equivalent, level-payment amortization in 万円.
-  // Rate shocks are alternative rates assumed from loan origination, not future repricing schedules.
+  // Origination month affects both annual balances and cashflow within a year.
+  function fpPurchaseMonth(){
+    return Math.max(1,Math.min(12,Math.round(Number(state.plan.purchaseMonth)||1)));
+  }
+  function fpOwnsHomeAt(year,month){
+    const purchaseYear=Math.round(safeNum(state.plan.purchaseYear,simNowYear()+2));
+    return year>purchaseYear || (year===purchaseYear && month>=fpPurchaseMonth());
+  }
   function fpAmortization(price,rateShift=0){
     const p=state.plan,years=Math.max(1,Math.round(safeNum(p.loanYears,35))),
-      start=safeNum(p.purchaseYear,simNowYear()+2),
+      start=Math.round(safeNum(p.purchaseYear,simNowYear()+2)),startMonth=fpPurchaseMonth(),
       principal=Math.max(0,safeNum(price)-safeNum(p.downPayment)),
-      rate=(safeNum(p.interest)+rateShift)/1200,
-      payment=mortgageMonthly(price,p.downPayment,safeNum(p.interest)+rateShift,years);
+      interestRate=safeNum(p.interest)+rateShift,rate=interestRate/1200,
+      payment=mortgageMonthly(price,p.downPayment,interestRate,years);
     let balance=principal;
-    const points=[{year:start-1,balance,interest:0,principalPaid:0,payment:0}];
-    for(let y=0;y<years;y++){
-      let interest=0,principalPaid=0,paid=0;
-      for(let m=0;m<12&&balance>1e-9;m++){
-        const i=balance*rate,principalPart=Math.min(balance,Math.max(0,payment-i));
-        interest+=i;principalPaid+=principalPart;paid+=principalPart+i;balance-=principalPart;
-      }
-      points.push({year:start+y,balance:Math.max(0,balance),interest,principalPaid,payment:paid});
+    const months=[],yearsMap=new Map();
+    for(let i=0;i<years*12&&balance>1e-9;i++){
+      const index=startMonth-1+i,year=start+Math.floor(index/12),month=index%12+1;
+      const interest=balance*rate;
+      const principalPaid=Math.min(balance,Math.max(0,payment-interest));
+      const paid=principalPaid+interest;
+      balance=Math.max(0,balance-principalPaid);
+      const entry={year,month,balance,interest,principalPaid,payment:paid};
+      months.push(entry);
+      if(!yearsMap.has(year))yearsMap.set(year,{year,balance:0,interest:0,principalPaid:0,payment:0});
+      const row=yearsMap.get(year);
+      row.balance=balance;row.interest+=interest;row.principalPaid+=principalPaid;row.payment+=paid;
     }
-    return {points,principal,monthly:payment,rate:safeNum(p.interest)+rateShift,years,start};
+    const points=[{year:start-1,balance:principal,interest:0,principalPaid:0,payment:0},
+      ...Array.from(yearsMap.values()).sort((a,b)=>a.year-b.year)];
+    return {points,months,principal,monthly:payment,rate:interestRate,years,start,startMonth};
   }
   function modelYears(price,buy){
-    const p=state.plan,start=simNowYear(),end=Math.max(start+9,Math.min(start+30,safeNum(p.simulateUntil,start+19))),
-      purchaseYear=safeNum(p.purchaseYear,start+2),weddingYear=safeNum(p.weddingYear,start+1),
+    const p=state.plan,start=simNowYear(),
+      end=Math.max(start+9,Math.min(start+30,safeNum(p.simulateUntil,start+19))),
+      purchaseYear=Math.round(safeNum(p.purchaseYear,start+2)),
+      purchaseMonth=fpPurchaseMonth(),
       amort=fpAmortization(price),payment=amort.monthly;
     const loanByYear=new Map(amort.points.map(x=>[x.year,x]));
+    const loanByMonth=new Map(amort.months.map(x=>[x.year+'-'+x.month,x.payment]));
     let cash=safeNum(p.cashSavings)+safeNum(p.support);
     let nisa=safeNum(p.nisaBalance),otherInvest=safeNum(p.investBalance);
     let investedContributions=0;
@@ -690,10 +707,21 @@
       const income=fpYearlyIncome(year).total;
       const monthlyParts=fpBaseMonthly(year);
       const loan=buy&&year>=purchaseYear?loanByYear.get(year):null;
-      const housing=buy&&year>=purchaseYear?(loan?loan.payment/12:0)+safeNum(p.housingOngoing):fpRentMonthly(p);
+      const housingMonths=Array.from({length:12},(_,index)=>{
+        const month=index+1;
+        if(!buy||year<purchaseYear||(year===purchaseYear&&month<purchaseMonth))
+          return fpRentMonthly(p);
+        return (loanByMonth.get(year+'-'+month)||0)+safeNum(p.housingOngoing);
+      });
+      const ownedMonths=buy?(year>purchaseYear?12:year===purchaseYear?13-purchaseMonth:0):0;
+      const rentMonths=12-ownedMonths;
+      const housingLoan=buy?(loan?.payment||0):0;
+      const housingMaintenance=ownedMonths*safeNum(p.housingOngoing);
+      const housingRent=rentMonths*fpRentMonthly(p);
+      const housing=housingMonths.reduce((sum,x)=>sum+x,0)/12;
       const monthly=monthlyParts.reduce((sum,x)=>sum+x.value,0)+housing;
       const annualFixed=safeNum(p.annualTax)+safeNum(p.carTaxAnnual)+safeNum(p.travelAnnual)+
-        safeNum(p.annualEvents)+(buy&&year>=purchaseYear?safeNum(p.homeInsuranceAnnual):0)+fpCustomAnnual(year);
+        safeNum(p.annualEvents)+(ownedMonths>0?safeNum(p.homeInsuranceAnnual):0)+fpCustomAnnual(year);
       let school=0,birth=0;
       for(let child=0;child<kids;child++){
         const age=year-(safeNum(p.firstChildYear)+child*Math.max(1,safeNum(p.birthInterval,3)));
@@ -712,11 +740,12 @@
       const invested=nisa+otherInvest;
       points.push({year,cash,invested,nisa,otherInvest,total:cash+invested,
         incomes:income,expenses,investing,netCash:income-expenses-investing,
-        monthly,school,birth,annualFixed,upfront,events,housing,education:school,
-        monthlyParts,children,contributions:investedContributions,
-        loanBalance:loan?loan.balance:(buy&&year<purchaseYear?0:0),loanPrincipal:loan?.principalPaid||0,loanInterest:loan?.interest||0});
+        monthly,school,birth,annualFixed,upfront,events,housing,housingMonths,
+        housingLoan,housingMaintenance,housingRent,ownedMonths,rentMonths,
+        education:school,monthlyParts,children,contributions:investedContributions,
+        loanBalance:loan?.balance||0,loanPrincipal:loan?.principalPaid||0,loanInterest:loan?.interest||0});
     }
-    return {points,monthly:payment,purchaseYear,ending:points.at(-1).cash,
+    return {points,monthly:payment,purchaseYear,purchaseMonth,ending:points.at(-1).cash,
       min:Math.min(...points.map(x=>x.cash)),nisa,otherInvest};
   }
   function fpDecisionYear(){
@@ -869,14 +898,14 @@
   }
   function fpYearSelect(model){
     const points=model.points;
-    if(!ui.fpYear||!points.some(x=>x.year===ui.fpYear))ui.fpYear=Math.max(points[0].year,Math.min(points.at(-1).year,fpDecisionYear()));
+    if(!ui.fpYear||!points.some(x=>x.year===ui.fpYear))ui.fpYear=Math.max(points[0].year,Math.min(points.at(-1).year,simNowYear()));
     return '<label class="fp-year-select"><span>表示する年</span><select data-fp-year aria-label="収支を表示する年">'+points.map(x=>'<option value="'+x.year+'" '+(x.year===ui.fpYear?'selected':'')+'>'+x.year+'年</option>').join('')+'</select></label>';
   }
   function fpExpenseDetails(point,buy){
     const p=state.plan,year=point.year;
     const result=[
       ...point.monthlyParts.map(x=>({label:x.label,amount:x.value*12})),
-      ...(buy&&year>=safeNum(p.purchaseYear)?[{label:'住宅ローン・維持費',amount:point.housing*12}]:[
+      ...(buy?fpPieBreakdownRows(point,null,'housing').map(x=>({label:x.label,amount:x.amount})):[
         ['rentMonthly','家賃'],['managementMonthly','管理費'],['commonFeeMonthly','共益費'],['parkingMonthly','駐車場']
       ].map(([key,label])=>({label,amount:safeNum(p[key])*12}))),
       {label:'学校・大学の費用',amount:point.school},
@@ -885,7 +914,7 @@
       {label:'旅行・帰省',amount:safeNum(p.travelAnnual)},
       {label:'その他の税金',amount:safeNum(p.annualTax)},
       {label:'年内イベント・家電',amount:safeNum(p.annualEvents)},
-      {label:'火災保険',amount:buy&&year>=safeNum(p.purchaseYear)?safeNum(p.homeInsuranceAnnual):0}
+      {label:'火災保険',amount:buy&&point.ownedMonths>0?safeNum(p.homeInsuranceAnnual):0}
     ];
     for(const x of p.expenses||[]){
       if((x.start&&year<x.start)||(x.end&&year>x.end))continue;
@@ -900,12 +929,11 @@
   }
   function fpMonthlyLedger(point){
     const p=state.plan,inc=fpYearlyIncome(point.year).months,expenseEvents=fpEventsForYear(point.year)
-      .filter(x=>x.type==='expense'),housing=point.housing,
-      living=point.monthly-housing,
+      .filter(x=>x.type==='expense'),living=point.monthly-point.housing,
       otherAnnual=point.annualFixed+point.school+point.birth,
       investNisa=safeNum(p.nisaMonthly),investOther=safeNum(p.otherInvestMonthly);
     // Annual-only expenses without a known payment month are smoothed over 12 months.
-    // Purchase costs are placed in January, consistent with the model's purchase-year assumption.
+    // Purchase costs are placed in the selected purchase month.
     const opening=point.cash-point.netCash;
     let cash=opening;
     const months=inc.map((entry,i)=>{
@@ -913,7 +941,8 @@
       const eventExpenses=expenseEvents.reduce((sum,x)=>sum+(
         x.month>=1&&x.month<=12?(x.month===month?safeNum(x.amount):0):safeNum(x.amount)/12
       ),0);
-      const purchase=month===1?point.upfront:0;
+      const housing=point.housingMonths?.[i]??point.housing;
+      const purchase=month===fpPurchaseMonth()?point.upfront:0;
       const annualBudget=otherAnnual/12;
       const nonHousing=living+annualBudget;
       const spending=nonHousing+housing+eventExpenses+purchase;
@@ -952,7 +981,7 @@
       otherChange:otherInvest-asset.opening.otherInvest};
   }
   function fpYearPoint(model){
-    return model.points.find(x=>x.year===ui.fpYear)||model.points.find(x=>x.year===fpDecisionYear())||model.points[0];
+    return model.points.find(x=>x.year===ui.fpYear)||model.points.find(x=>x.year===simNowYear())||model.points[0];
   }
   function fpChartCanvas(points,keys,mode){
     // Responsive SVG generated locally: no external chart library or connection is needed.
@@ -1022,7 +1051,7 @@
     };
     const annualPart=amount=>annual?amount:amount/12;
     const monthlyPart=amount=>amount*scale;
-    const activeHousing=year>=safeNum(p.purchaseYear);
+    const activeHousing=point.ownedMonths>0;
     if(category==='living'){
       for(const item of point.monthlyParts){
         add(item.label,monthlyPart(item.value),{field:item.key,
@@ -1047,19 +1076,24 @@
         add('出産関連（月割）',annualPart(point.birth),{editStep:'3:0'});
       }
     }else if(category==='housing'){
-      if(activeHousing){
-        const totalHousing=monthlyPart(point.housing),ongoing=monthlyPart(safeNum(p.housingOngoing));
-        add('住宅ローン返済',Math.max(0,totalHousing-ongoing),{editStep:'4:1'});
-        add('住宅維持費',Math.min(ongoing,totalHousing),{field:'housingOngoing',unit:'万円/月',editStep:'4:1'});
-      }else{
+      const monthsRent=annual?point.rentMonths:(fpOwnsHomeAt(year,month.month)?0:1);
+      const monthsOwned=annual?point.ownedMonths:(fpOwnsHomeAt(year,month.month)?1:0);
+      if(monthsRent){
         for(const [field,label] of [['rentMonthly','家賃'],['managementMonthly','管理費'],
           ['commonFeeMonthly','共益費'],['parkingMonthly','駐車場']]){
-          add(label,monthlyPart(safeNum(p[field])),{field,unit:'万円/月',editStep:'2:0'});
+          add(label,safeNum(p[field])*monthsRent,{field,unit:'万円/月',editStep:'2:0'});
         }
+      }
+      if(monthsOwned){
+        const loanAmount=annual?point.housingLoan:
+          Math.max(0,(point.housingMonths?.[month.month-1]??point.housing)-safeNum(p.housingOngoing));
+        add('住宅ローン返済',loanAmount,{editStep:'4:1'});
+        add('住宅維持費',safeNum(p.housingOngoing)*monthsOwned,
+          {field:'housingOngoing',unit:'万円/月',editStep:'4:1'});
       }
     }else if(category==='education'){
       if(annual)add('学校・大学の費用',point.school,{editStep:'3:0'});
-      if(annual || month.month===1)add('頭金・住宅購入諸費用',point.upfront,{editStep:'4:0'});
+      if(annual || month.month===fpPurchaseMonth())add('頭金・住宅購入諸費用',point.upfront,{editStep:'4:0'});
       for(const item of fpEventsForYear(year)){
         if(item.type!=='expense')continue;
         const eventAmount=annual?safeNum(item.amount):
@@ -1279,7 +1313,7 @@
         row('年払い・教育費の月割',selected.annualBudget)+
         row('イベント・住宅購入費',selected.eventExpenses+selected.purchase)+
         row('NISA / その他投資',selected.nisaAdd+selected.otherAdd)+'</div>')+
-      '<p class="fp-r-help">現金増減＝手取り−支出−積立。年払い・教育費や月未指定イベントは12か月に仮配分、住宅購入費は1月に計上。実際の支払月と異なる場合があります。</p></div>';
+      '<p class="fp-r-help">現金増減＝手取り−支出−積立。年払い・教育費や月未指定イベントは12か月に仮配分、住宅購入費は指定した購入月に計上。</p></div>';
   }
   function fpAssetsReport(model){
     const point=fpYearPoint(model),period=ui.fpAssetPeriod==='month'?'month':'year',
@@ -1381,7 +1415,7 @@
     return '<div class="fp-r-body grow"><strong class="fp-r-subhead">計算の前提・参照先</strong>'+
       '<div class="fp-r-assumptions">'+
       '<div><b>収入</b><span>月の手取り×12＋賞与。出産年は妻の月収を最大10万円、以降は時短収入を仮定。妻賞与は出産年以降0と仮置き。</span></div>'+
-      '<div><b>住宅</b><span>購入年の1月からローン開始と仮定。購入時諸費用は物件価格の7％、固定資産税・修繕等は入力値で計算。</span></div>'+
+      '<div><b>住宅</b><span>指定した購入年月からローン返済に切替。購入時諸費用は物件価格の7％、固定資産税・修繕等は入力値で計算。</span></div>'+
       '<div><b>教育・運用</b><span>教育費は独自の固定概算。保育料、保険、NISAは入力値。税優遇・物価上昇は自動計算せず、運用利回りは仮定。</span></div>'+
       '<div><b>銀行審査</b><span>額面年収の登録がないため総返済負担率は判定しません。手取り比率とは別の指標です。</span></div></div>'+
       '<div class="fp-r-source-links"><a href="https://www.fsa.go.jp/policy/nisa2/lifeplan-simulator/index.html" target="_blank" rel="noopener noreferrer">金融庁｜ライフプランの前提 ↗</a>'+

@@ -17,6 +17,10 @@ jobs:
       name: github-pages
     steps:
       - uses: actions/checkout@v4
+      - name: Verify app syntax and phase 1 flows
+        run: |
+          node --check app.js
+          node tests/smoke.cjs
       - uses: actions/configure-pages@v5
         with:
           enablement: true

@@ -108,6 +108,6 @@ const css=fs.readFileSync('styles.css','utf8');
 assert.match(css,/\.fp-focus \.fp-breakdown-list\s*\{[^}]*display:grid!important/);
 assert.match(css,/\.fp-focus \.fp-breakdown-list.two-columns\s*\{[^}]*grid-template-columns:repeat\(2/);
 assert.match(css,/\.fp-focus \.fp-breakdown-list\s*\{[^}]*overflow:hidden!important/);
-assert.match(css,/\.main > \.fp-result-screen\s*\{animation:none!important/);
+assert.match(css,/\.main>\.fp-focus\s*\{[^}]*animation:none!important/);
 assert.match(css,/\.fp-focus \.fp-breakdown-row \.fp-row-label\s*\{[^}]*white-space:normal!important/);
 console.log('HOPPY FP stable selections: no app redraw, no scroll reset, '+renderedRows+' available expense entries PASS');

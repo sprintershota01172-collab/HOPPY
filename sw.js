@@ -1,4 +1,4 @@
-const CACHE = 'hopposan-static-v4';
+const CACHE = 'hopposan-static-v5';
 const STATIC = ['./','./index.html','./styles.css','./app.js','./manifest.webmanifest','./icon.svg','./icon-192.png'];
 
 self.addEventListener('install', event => {

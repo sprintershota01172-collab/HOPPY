@@ -16,6 +16,6 @@ assert.match(js,/function organizeStudyText\(/);
 assert.match(js,/function studyNormalizeLine\(/);
 assert.match(js,/function studySummaryItems\(/);
 assert.doesNotMatch(js.slice(js.indexOf('function studyNormalizeLine'),js.indexOf('function pendingScreen')),/fetch\(|XMLHttpRequest|WebSocket/);
-assert.match(html,/serviceWorker/);
+assert.match(js,/serviceWorker\.register\('\.\/sw\.js'\)/);
 assert.equal(manifest.display,'standalone');
 console.log('Hoppo study organizer and offline PWA shell: PASS');

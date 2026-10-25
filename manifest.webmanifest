@@ -1,7 +1,7 @@
 {
   "name": "ほっぽさん｜夫婦の家探しノート",
   "short_name": "ほっぽさん",
-  "description": "物件メモ・○△×比較をオフラインで管理できる家探しPWA",
+  "description": "物件・家計・FP資金計画・NISAの積立をオフラインで管理する家探しアプリ",
   "lang": "ja",
   "start_url": "./",
   "scope": "./",

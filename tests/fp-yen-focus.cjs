@@ -2,7 +2,7 @@
 // and free spending / cash savings goals follow distinct accounting rules.
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 let js=fs.readFileSync('app.js','utf8');
-const anchor="  save();render();\n  if('serviceWorker'";
+const anchor="  save();render();\n  // The startup wordmark";
 assert.ok(js.includes(anchor));
 js=js.replace(anchor,
  "  window.__yenTest={getState:()=>state,ui,modelYears,fpMonthlyLedger,fpPieBreakdownRows,fpPieBreakdownPanel,fpYen,fpYenNumber};\n"+anchor);

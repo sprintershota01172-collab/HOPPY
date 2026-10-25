@@ -405,7 +405,7 @@
       pages.push(fpCompactPage('賞与の支給月',[
         f('夫・賞与①','husbandBonusMonth1','月'),f('夫・賞与②','husbandBonusMonth2','月'),
         f('妻・賞与①','wifeBonusMonth1','月'),f('妻・賞与②','wifeBonusMonth2','月')
-      ],'年間賞与を2回均等に配分。支給が1回だけなら②を0に設定。実際の配分と異なる場合は概算です。'));
+      ],'年間賞与を2回均等配分。1回だけなら②を0に設定。両方0の場合は12月に一括計上します。'));
     }
     if(i===2){
       pages.push(fpCompactPage('食費・家賃の内訳',[
@@ -786,6 +786,7 @@
     const p=state.plan,problems=[];
     const groups=[
       {step:1,page:0,limit:150,keys:[['husbandMonthly','夫の月手取り'],['wifeMonthly','妻の月手取り'],['wifeReduced','妻の時短手取り']]},
+      {step:1,page:0,limit:2000,keys:[['husbandBonus','夫の年間賞与'],['wifeBonus','妻の年間賞与']]},
       {step:2,page:0,limit:100,keys:[['foodMonthly','食費'],['rentMonthly','家賃'],['managementMonthly','管理費'],['commonFeeMonthly','共益費'],['parkingMonthly','駐車場代']]},
       {step:2,page:1,limit:100,keys:[['electricityMonthly','電気代'],['gasMonthly','ガス代'],['waterBiMonthly','水道代（2か月分）']]},
       {step:2,page:2,limit:100,keys:[['livingMonthly','その他生活費'],['telecomMonthly','通信費'],['transportMonthly','交通費'],['subscriptionsMonthly','サブスク'],['leisureMonthly','外食・レジャー'],['medicalMonthly','医療費'],['carMaintenanceMonthly','車維持費']]},
@@ -802,6 +803,10 @@
       const v=Number(p[key]);
       if(!Number.isFinite(v)||v<0 || v>group.limit)
         problems.push({label,amount:p[key],unit:group.step===6?'万円/年':'万円',step:group.step,page:group.page});
+    }
+    for(const [key,label] of [['husbandBonusMonth1','夫の賞与①支給月'],['husbandBonusMonth2','夫の賞与②支給月'],['wifeBonusMonth1','妻の賞与①支給月'],['wifeBonusMonth2','妻の賞与②支給月']]){
+      const m=Number(p[key]);if(!Number.isInteger(m)||m<0||m>12)
+        problems.push({label,amount:p[key],unit:'月（0～12）',step:1,page:1});
     }
     // Historical single-field utilities are used only until the split fields are populated.
     if(!['electricityMonthly','gasMonthly','waterBiMonthly'].some(k=>safeNum(p[k])>0)&&safeNum(p.utilitiesMonthly)>100)

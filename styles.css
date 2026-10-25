@@ -123,3 +123,32 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .money{font-size:24px}
  .pager{gap:4px}
 }
+
+
+/* Readability and touch targets: all legible text >= 14px, even on compact iPhones. */
+.brand .eyebrow,.kicker,.meta,.subtle,.pill,.hero-label,.mini .meta,
+.info-box span,.field label,.step-label,.grid-tile span,.criteria-line strong,
+.question-row span,.rank-row .meta,.rating-small,.compare-cell.topic small,
+.compare-cell.heading,.compare-cell,.tab,small{font-size:14px}
+.segment{min-height:50px}
+.segment button{min-height:44px;font-size:14px}
+.tab{height:60px;font-size:14px;line-height:1.08;word-break:break-all;padding:2px 3px;overflow:hidden}
+.tab .sym{font-size:19px;flex:none}
+.compare-cell.topic{font-size:14px;overflow-wrap:anywhere}
+.compare-cell.heading{font-size:14px;line-height:1.06;overflow-wrap:anywhere}
+.compare-cell.rating .rating-small{font-size:14px}
+.dots .dot{flex:none}
+.note-actions .meta{white-space:nowrap}
+@media(max-height:650px){
+ .compare-table{grid-template-rows:40px repeat(4,minmax(44px,1fr));gap:3px}
+ .tab{height:56px}
+ .segment{min-height:50px}
+ .screen{gap:5px}
+ .rank-row{min-height:54px;padding:6px 9px}
+}
+@media(max-width:350px){
+ .tab{font-size:14px}
+ .top{padding-left:10px;padding-right:10px}
+ .brand h1{font-size:22px}
+ .compare-cell.topic{font-size:14px}
+}

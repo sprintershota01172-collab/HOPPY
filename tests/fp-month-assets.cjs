@@ -90,7 +90,7 @@ assert.match(app.innerHTML,/2027年2月の手取り収入に対する支出割�
 click('fp-result-tab','3');
 assert.match(app.innerHTML,/年収支/);
 click('fp-result-tab','2');
-assert.match(app.innerHTML,/現金と投資資産/);
+assert.match(app.innerHTML,/fp-assets-report/);
 assert.match(app.innerHTML,/現金預金/);
 assert.match(app.innerHTML,/NISA評価額/);
 assert.match(app.innerHTML,/その他の株式・投資/);

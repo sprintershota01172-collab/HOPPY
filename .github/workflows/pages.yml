@@ -25,6 +25,7 @@ jobs:
           node tests/offline.cjs
           node tests/memo-swipe.cjs
           node tests/fp-budget.cjs
+          node tests/fp-ledger.cjs
       - uses: actions/configure-pages@v5
         with:
           enablement: true

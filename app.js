@@ -898,6 +898,45 @@
   function fpMetric(label,value){
     return '<div class="fp-r-metric"><span>'+esc(label)+'</span><strong>'+value+'</strong></div>';
   }
+  function fpMonthlyLedger(point){
+    const p=state.plan,inc=fpYearlyIncome(point.year).months,expenseEvents=fpEventsForYear(point.year)
+      .filter(x=>x.type==='expense'),housing=point.housing,
+      living=point.monthly-housing,
+      otherAnnual=point.annualFixed+point.school+point.birth,
+      investNisa=safeNum(p.nisaMonthly),investOther=safeNum(p.otherInvestMonthly);
+    // Annual-only expenses without a known payment month are smoothed over 12 months.
+    // Purchase costs are placed in January, consistent with the model's purchase-year assumption.
+    const opening=point.cash-point.netCash;
+    let cash=opening;
+    const months=inc.map((entry,i)=>{
+      const month=i+1;
+      const eventExpenses=expenseEvents.reduce((sum,x)=>sum+(
+        x.month>=1&&x.month<=12?(x.month===month?safeNum(x.amount):0):safeNum(x.amount)/12
+      ),0);
+      const purchase=month===1?point.upfront:0;
+      const annualBudget=otherAnnual/12;
+      const nonHousing=living+annualBudget;
+      const spending=nonHousing+housing+eventExpenses+purchase;
+      const investing=investNisa+investOther;
+      const net=entry.total-spending-investing;
+      const openingCash=cash;
+      cash+=net;
+      return {year:point.year,month,income:entry.total,household:living,housing,
+        annualBudget,eventExpenses,purchase,spending,nisaAdd:investNisa,otherAdd:investOther,
+        investing,net,openingCash,endingCash:cash,details:entry.fields};
+    });
+    return {year:point.year,opening,months,ending:cash};
+  }
+  function fpAssetsForYear(model,year){
+    const p=state.plan,point=model.points.find(x=>x.year===year)||model.points[0],
+      prev=model.points.find(x=>x.year===point.year-1);
+    const opening=prev||{
+      cash:safeNum(p.cashSavings)+safeNum(p.support),
+      nisa:safeNum(p.nisaBalance),otherInvest:safeNum(p.investBalance)
+    };
+    return {point,opening,cashChange:point.cash-opening.cash,
+      nisaChange:point.nisa-opening.nisa,otherChange:point.otherInvest-opening.otherInvest};
+  }
   function fpYearPoint(model){
     return model.points.find(x=>x.year===ui.fpYear)||model.points.find(x=>x.year===fpDecisionYear())||model.points[0];
   }

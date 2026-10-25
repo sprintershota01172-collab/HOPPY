@@ -2234,3 +2234,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     font-size:9px!important;
   }
 }
+
+
+/* Report navigation must not replay the page entrance movement on each edit. */
+.main > .fp-result-screen{animation:none!important;transform:none!important}
+.fp-month-report:has([data-fp-inline-breakdown]) .fp-month-pie-legend,
+.fp-pie-panel:has([data-fp-inline-breakdown]) .fp-pie-key{
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  touch-action:pan-y;
+  -webkit-overflow-scrolling:touch;
+}

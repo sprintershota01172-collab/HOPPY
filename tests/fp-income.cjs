@@ -64,7 +64,7 @@ click('fp-income-period','month');
 assert.match(app.innerHTML,/月単位/);
 assert.match(app.innerHTML,/fp-income-timeline/);
 click('fp-income-month','7');
-assert.match(app.innerHTML,/202\d年 7月の手取り収入/);
+assert.match(app.innerHTML,/20\d\d年 7月の手取り収入/);
 changeYear(2028);
 assert.match(app.innerHTML,/2028年 7月の手取り収入/);
 assert.match(app.innerHTML,/妻の給与/);

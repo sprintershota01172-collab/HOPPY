@@ -1336,7 +1336,9 @@
       available=selected.net-goal,goalLabel=goal>0?(available>=0?'貯金目標まで確保可':'貯金目標まで不足'):'目標を設定できます';
     const quick= '<div class="fp-month-quick" aria-label="自由費と貯金目標">'+
       [['freeSpendingMonthly','自由費'],['otherSavingsMonthly','現金貯金目標']].map(([key,label])=>
-        '<label><span>'+label+'</span><div class="fp-month-quick-input">'+
+        '<label><span>'+label+(key==='otherSavingsMonthly'&&goal>0?
+          '<small class="fp-saving-status '+(available>=0?'success':'shortfall')+'">'+(available>=0?'確保可':'不足')+'</small>':'')+
+        '</span><div class="fp-month-quick-input">'+
         '<input type="number" min="0" max="100000000" step="1" inputmode="numeric" data-fp-quick-key="'+key+
         '" value="'+fpYenNumber(p[key])+'" aria-label="'+label+'（円/月）"><small>円/月</small></div></label>'
       ).join('')+'</div>';

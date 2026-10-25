@@ -266,6 +266,190 @@
     return modalFrame('評価する','<div class="panel detail grow form-view"><div><span class="kicker">'+esc(c.name)+'</span><h2 class="section-title">'+esc(p.name)+'</h2></div><div class="segment"><button class="'+(who==='husband'?'active':'')+'" data-act="score-rater" data-value="husband">夫の採点</button><button class="'+(who==='wife'?'active':'')+'" data-act="score-rater" data-value="wife">妻の採点</button></div><p class="subtle">現在: '+mark(s.value)+(s.auto?'（自動判定）':'')+'。あてはまる評価を選んでください。</p><button class="btn wide gold" data-act="score-set" data-value="2">○　よい（2点）</button><button class="btn wide" data-act="score-set" data-value="1">△　ふつう（1点）</button><button class="btn wide" data-act="score-set" data-value="0">×　気になる（0点）</button><button class="btn wide" data-act="score-set" data-value="clear">採点を解除（自動判定に戻す）</button></div>');
   }
   function questionForm(){return modalFrame('営業担当に聞くこと','<div class="panel detail grow form-view"><div class="field"><label>質問（120文字まで）</label><textarea data-question-input maxlength="120" placeholder="例: 長期保証の適用条件は？"></textarea></div><p class="subtle">内見時に確認する質問をリストで管理できます。</p></div><button class="btn primary wide" data-act="question-save">質問を保存</button>');}
+  const simNowYear=()=>new Date().getFullYear();
+  const yen=(v,d=0)=>Number.isFinite(v)?Number(v).toLocaleString('ja-JP',{maximumFractionDigits:d,minimumFractionDigits:d}):'—';
+  const safeNum=(v,fallback=0)=>Number.isFinite(Number(v))?Math.max(0,Number(v)):fallback;
+  const mortgageMonthly=(price,down,rate,years)=>{
+    const principal=Math.max(0,safeNum(price)-safeNum(down));
+    const months=Math.max(12,Math.round(safeNum(years,35)*12));
+    const mr=safeNum(rate)/1200;
+    return mr===0?principal/months:principal*mr/(1-Math.pow(1+mr,-months));
+  };
+  const nField=(label,key,unit,placeholder)=>'<label class="sim-field"><span>'+esc(label)+'</span><span class="sim-input-wrap"><input type="number" data-sim="'+key+'" value="'+esc(state.plan[key])+'" min="0" step="any" inputmode="decimal" placeholder="'+esc(placeholder||'')+'"><em>'+esc(unit)+'</em></span></label>';
+  const sSelect=(label,key,opts)=>'<label class="sim-field"><span>'+esc(label)+'</span><select data-sim="'+key+'">'+opts.map(([value,title])=>'<option value="'+esc(value)+'" '+(String(state.plan[key])===String(value)?'selected':'')+'>'+esc(title)+'</option>').join('')+'</select></label>';
+  const simQuestions=[
+    ['ご家族のこれから','お子さまの予定と働き方を教えてください。'],
+    ['世帯の手取り収入','月収と年間ボーナスを入力してください。'],
+    ['貯金と暮らしの支出','住宅以外の生活費を目安で入力してください。'],
+    ['購入したい住まい','物件を選ぶか、希望価格を入力してください。'],
+    ['これからの大きな支出','結婚式や積立予定を入力してください。']
+  ];
+  function simulationScreen(){
+    const i=ui.simStep;
+    if(i>=5)return simulationResultsScreen();
+    const p=state.plan;
+    let body='';
+    if(i===0)body='<div class="sim-grid">'+nField('夫の年齢','husbandAge','歳')+nField('妻の年齢','wifeAge','歳')+
+      sSelect('子どもの人数','children',[[0,'予定なし'],[1,'1人'],[2,'2人'],[3,'3人']])+
+      nField('第1子の予定年','firstChildYear','年')+nField('きょうだいの年齢差','birthInterval','年')+
+      nField('妻の時短中の月収','wifeReduced','万円')+'</div>';
+    if(i===1)body='<div class="sim-grid">'+nField('夫の手取り月収','husbandMonthly','万円')+nField('妻の手取り月収','wifeMonthly','万円')+
+      nField('夫の年間賞与','husbandBonus','万円')+nField('妻の年間賞与','wifeBonus','万円')+'</div>';
+    if(i===2)body='<div class="sim-grid">'+nField('今ある貯金','cashSavings','万円')+nField('今後受け取る援助','support','万円')+
+      nField('生活費（家賃を除く）','livingMonthly','万円/月')+nField('現在の家賃','rentMonthly','万円/月')+
+      nField('車ローン','carMonthly','万円/月')+'</div><p class="sim-hint">すでに貯金へ含めた親の援助は、二重計上しないよう「0」にしてください。</p>';
+    if(i===3){
+      const options=[['','価格を直接入力'],...state.properties.filter(x=>num(x.price)!==null).map(x=>[x.id,truncate(x.name,17)+' / '+fmt(x.price)])];
+      body='<div class="sim-grid">'+sSelect('購入する物件','propertyId',options)+nField('購入価格','propertyPrice','万円')+
+        nField('購入予定年','purchaseYear','年')+nField('頭金','downPayment','万円')+
+        nField('金利（仮定）','interest','%')+nField('ローン返済期間','loanYears','年')+
+        nField('税・修繕等','housingOngoing','万円/月')+'</div><p class="sim-hint">購入諸費用は物件価格の7％を仮定。金利は将来変わる可能性があります。</p>';
+    }
+    if(i===4)body='<div class="sim-grid">'+nField('結婚式の支払年','weddingYear','年')+nField('結婚式自己負担','weddingCost','万円')+
+      nField('新婚旅行費','honeymoonCost','万円')+nField('NISA積立','nisaMonthly','万円/月')+
+      sSelect('高校','highSchool',[['public','公立'],['private','私立']])+sSelect('大学','university',[['public','国公立'],['private','私立']])+'</div>';
+    return '<section class="screen sim-screen"><div class="sim-intro"><span class="kicker">LIFE SIMULATOR</span><span class="sim-progress-text">'+(i+1)+' / 5</span></div>'+
+      '<div class="sim-progress">'+Array.from({length:5},(_,n)=>'<span class="'+(n<=i?'filled':'')+'"></span>').join('')+'</div>'+
+      '<div class="sim-question"><h2>'+simQuestions[i][0]+'</h2><p>'+simQuestions[i][1]+'</p></div>'+
+      '<div class="panel sim-form grow">'+body+'</div>'+
+      '<div class="sim-footer"><button class="btn" data-act="sim-back" '+(i===0?'disabled':'')+'>戻る</button><button class="btn primary" data-act="sim-next">'+(i===4?'自動シミュレート':'次の質問へ →')+'</button></div></section>';
+  }
+  function educationAnnual(age,p){
+    if(age<0||age>22)return 0;
+    if(age<3)return 45;
+    if(age<6)return 28;
+    if(age<12)return 34;
+    if(age<15)return 55;
+    if(age<18)return p.highSchool==='private'?135:60;
+    if(age<22)return p.university==='private'?185:125;
+    return 0;
+  }
+  function modelYears(price,buy){
+    const p=state.plan,start=simNowYear(),end=Math.max(start+9,Math.min(start+30,safeNum(p.simulateUntil,start+19))),
+      birthYear=safeNum(p.firstChildYear,2028),birthGap=Math.max(1,safeNum(p.birthInterval,3));
+    const purchaseYear=safeNum(p.purchaseYear,start+2),weddingYear=safeNum(p.weddingYear,start+1);
+    const monthly=mortgageMonthly(price,p.downPayment,p.interest,p.loanYears);
+    let cash=safeNum(p.cashSavings)+safeNum(p.support),invested=0;
+    const points=[],kids=Math.min(3,Math.round(safeNum(p.children)));
+    for(let year=start;year<=end;year++){
+      const mother=kids&&year>=birthYear?(year===birthYear?Math.min(safeNum(p.wifeMonthly),10):safeNum(p.wifeReduced)):safeNum(p.wifeMonthly);
+      const wifeBonus=kids&&year>=birthYear?0:safeNum(p.wifeBonus);
+      const incomes=12*(safeNum(p.husbandMonthly)+mother)+safeNum(p.husbandBonus)+wifeBonus;
+      let out=12*(safeNum(p.livingMonthly)+safeNum(p.carMonthly));
+      const isOwner=buy&&year>=purchaseYear;
+      out+=12*(isOwner?(monthly+safeNum(p.housingOngoing)):safeNum(p.rentMonthly));
+      if(buy&&year===purchaseYear)out+=safeNum(p.downPayment)+safeNum(price)*0.07;
+      if(year===weddingYear)out+=safeNum(p.weddingCost)+safeNum(p.honeymoonCost);
+      for(let child=0;child<kids;child++){
+        let age=year-(birthYear+child*birthGap);
+        if(age===0)out+=50;
+        out+=educationAnnual(age,p);
+      }
+      const contribution=12*safeNum(p.nisaMonthly);
+      cash+=incomes-out-contribution;
+      invested+=contribution;
+      points.push({year,cash,invested,total:cash+invested});
+    }
+    return {points,monthly,purchaseYear,ending:points.at(-1).cash,min:Math.min(...points.map(x=>x.cash))};
+  }
+  function simGraph(series){
+    const all=series.flatMap(x=>x.data.points.map(p=>p.cash)),low=Math.min(0,...all),high=Math.max(100,...all);
+    const graphWidth=316,left=8,right=324,top=20,bottom=176,diff=Math.max(1,high-low);
+    const y=n=>top+(high-n)/diff*(bottom-top);
+    const first=series[0].data.points[0].year,last=series[0].data.points.at(-1).year;
+    const x=year=>left+(year-first)/Math.max(1,last-first)*graphWidth;
+    const horizontal=[0,.25,.5,.75,1].map(f=>{const val=high-f*diff;return '<line x1="'+left+'" y1="'+(top+f*(bottom-top))+'" x2="'+right+'" y2="'+(top+f*(bottom-top))+'" stroke="#e3e6df" stroke-width="1"/><text x="8" y="'+(top+f*(bottom-top)-3)+'" font-size="8" fill="#86908a">'+yen(val)+'</text>';}).join('');
+    const curves=series.map(item=>{
+      const coords=item.data.points.map((p,i)=>(i?'L':'M')+x(p.year).toFixed(1)+','+y(p.cash).toFixed(1)).join(' ');
+      return '<path d="'+coords+'" fill="none" stroke="'+item.color+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+    }).join('');
+    return '<svg class="sim-chart" viewBox="0 0 332 203" role="img" aria-label="年ごとの現金貯金推移をシナリオ別に表示">'+horizontal+
+      '<line x1="'+left+'" y1="'+y(0)+'" x2="'+right+'" y2="'+y(0)+'" stroke="#bd7e76" stroke-dasharray="4 3" stroke-width="1.3"/>'+curves+
+      '<text x="8" y="195" font-size="9" fill="#76837a">'+first+'</text><text x="145" y="195" font-size="9" fill="#76837a">'+Math.round((first+last)/2)+'</text><text x="300" y="195" font-size="9" fill="#76837a">'+last+'</text></svg>';
+  }
+  function simulationResultsScreen(){
+    const p=state.plan,price=safeNum(p.propertyPrice), selected=propById(p.propertyId);
+    const current=modelYears(price,true);
+    const rent=modelYears(price,false);
+    const second=selectedProperties().find(x=>x.id!==p.propertyId&&num(x.price)!==null);
+    const alternate=second?modelYears(safeNum(second.price),true):null;
+    const views=[{label:'購入する',color:'#315f76',data:current},{label:'購入しない',color:'#c09378',data:rent}];
+    if(alternate)views.push({label:truncate(second.name,12),color:'#66927e',data:alternate});
+    const page=ui.simResultPage;
+    const monthlyIncome=safeNum(p.husbandMonthly)+((safeNum(p.children)>0)?safeNum(p.wifeReduced):safeNum(p.wifeMonthly));
+    const monthlyHousing=current.monthly+safeNum(p.housingOngoing);
+    const futureLimit=Math.max(0,monthlyIncome*.25-safeNum(p.housingOngoing));
+    const months=Math.max(12,Math.round(safeNum(p.loanYears)*12)),r=safeNum(p.interest)/1200;
+    const maxLoan=r===0?futureLimit*months:futureLimit*(1-Math.pow(1+r,-months))/r;
+    const maxPrice=Math.max(0,Math.floor((maxLoan+safeNum(p.downPayment))/100)*100);
+    const kids=Math.min(3,Math.round(safeNum(p.children)));
+    let eduTotal=0;
+    for(let k=0;k<kids;k++)for(let age=0;age<22;age++)eduTotal+=educationAnnual(age,p);
+    let content='';
+    if(page===0){
+      const warnings=views.filter(x=>x.data.min<0);
+      content='<div class="sim-result-card panel grow"><div class="sim-result-head"><div><span class="kicker">CASH FLOW</span><h3>将来の現金貯金</h3></div><strong>'+yen(current.ending)+'<small>万円</small></strong></div>'+
+        simGraph(views)+'<div class="sim-legend">'+views.map(x=>'<span><i style="background:'+x.color+'"></i>'+esc(x.label)+'</span>').join('')+'</div>'+
+        '<p class="sim-hint">'+(warnings.length?'注意：'+warnings.map(x=>esc(x.label)).join('・')+'で貯金がマイナスになる年があります。':'表示期間中、現金貯金のマイナスはありません。')+'</p></div>';
+    }else if(page===1){
+      content='<div class="sim-result-card panel grow"><span class="kicker">HOME BUDGET</span><h3>住宅購入の余裕度</h3><div class="sim-metric"><span>月々ローン返済</span><strong>'+yen(current.monthly,1)+' 万円</strong></div>'+
+        '<div class="sim-metric"><span>税・修繕を含む住居費</span><strong>'+yen(monthlyHousing,1)+' 万円</strong></div>'+
+        '<div class="sim-metric"><span>将来の月手取りに占める割合</span><strong>'+yen(monthlyIncome?monthlyHousing/monthlyIncome*100:0,1)+' %</strong></div>'+
+        '<div class="sim-metric"><span>25％を目安とした購入価格</span><strong>'+yen(maxPrice)+' 万円</strong></div>'+
+        '<div class="sim-metric"><span>月の自由費（積立後・概算）</span><strong>'+yen(monthlyIncome-safeNum(p.livingMonthly)-safeNum(p.carMonthly)-safeNum(p.nisaMonthly)-monthlyHousing,1)+' 万円</strong></div>'+
+        '<p class="sim-hint">「購入価格の目安」は将来の手取り25％を住居費の上限とした簡易計算で、融資可能額を保証しません。</p></div>';
+    }else{
+      const annual=kids?eduTotal/Math.max(1,18+safeNum(p.birthInterval)*(kids-1)):0;
+      content='<div class="sim-result-card panel grow"><span class="kicker">EDUCATION PLAN</span><h3>教育費の積立目標</h3><div class="sim-hero-number">'+yen(eduTotal)+'<small> 万円</small></div>'+
+        '<p class="subtle">子ども'+kids+'人分の幼児期から大学卒業までの教育費モデル（生活費とは別）。</p>'+
+        '<div class="sim-metric"><span>高校</span><strong>'+(p.highSchool==='private'?'私立':'公立')+'</strong></div>'+
+        '<div class="sim-metric"><span>大学</span><strong>'+(p.university==='private'?'私立':'国公立')+'</strong></div>'+
+        '<div class="sim-metric"><span>月々の平均積立目安</span><strong>'+yen(annual/12,1)+' 万円</strong></div>'+
+        '<p class="sim-hint">教育費は概算額です。物価・受験費用・下宿・奨学金等は個別に調整が必要です。</p></div>';
+    }
+    return '<section class="screen sim-screen"><div class="sim-intro"><span class="kicker">YOUR FUTURE</span><button class="btn compact" data-act="sim-restart">質問から編集</button></div><h2 class="sim-result-title">'+['貯金推移','無理のない住まい','教育費の目標'][page]+'</h2>'+content+
+      '<div class="sim-footer"><button class="btn" data-act="sim-result-page" data-value="-1" '+(page===0?'disabled':'')+'>戻る</button><span class="sim-progress-text">'+(page+1)+' / 3</span><button class="btn primary" data-act="sim-result-page" data-value="1" '+(page===2?'disabled':'')+'>次へ</button></div></section>';
+  }
+  const studyCategories=[
+    ['費用・住宅ローン',/費用|万円|円|金利|ローン|予算|頭金|税|維持費|値引|価格|銀行|返済/],
+    ['性能・構造',/耐震|断熱|気密|構造|基礎|鉄骨|木造|耐久|劣化|性能|窓|結露|省エネ/],
+    ['土地・暮らし',/土地|立地|駅|通勤|学校|治安|公園|道路|日当たり|日照|災害|洪水|浸水/],
+    ['契約・保証',/保証|契約|アフター|修繕|引渡|申込|キャンセル|点検|補償|担当|営業/],
+    ['確認しておくこと',/確認|質問|聞く|不明|注意|気になる|疑問|比較|必要/]
+  ];
+  function studySummaryItems(){
+    const result=[],seen=new Set();
+    for(const note of state.studyNotes){
+      const sentences=String(note.text||'').split(/[\n。！？!?]+/).map(x=>x.trim()).filter(Boolean);
+      for(const sentence of sentences){
+        if(seen.has(sentence))continue;seen.add(sentence);
+        const cat=studyCategories.find(([name,re])=>re.test(sentence))?.[0]||'その他';
+        result.push({category:cat,text:sentence.length>105?sentence.slice(0,104)+'…':sentence,source:note.title,id:note.id});
+        if(result.length>=400)return result;
+      }
+    }
+    const order=studyCategories.map(x=>x[0]).concat('その他');
+    return result.sort((a,b)=>order.indexOf(a.category)-order.indexOf(b.category));
+  }
+  function studyScreen(){
+    const summary=ui.studyMode==='summary';
+    const items=summary?studySummaryItems():state.studyNotes;
+    const pageSize=summary?4:3,total=Math.max(1,Math.ceil(items.length/pageSize));
+    const key=summary?'studySummaryPage':'studyPage';
+    ui[key]=Math.min(ui[key],total-1);
+    const visible=items.slice(ui[key]*pageSize,(ui[key]+1)*pageSize);
+    const cards=summary?visible.map(item=>'<div class="study-summary-item"><span class="study-category">'+esc(item.category)+'</span><p>'+esc(item.text)+'</p><small>出典：'+esc(item.source)+'</small></div>').join(''):
+      visible.map(n=>'<div class="study-note-card"><div class="study-note-head"><strong>'+esc(n.title)+'</strong><button class="btn compact" data-act="study-edit" data-value="'+esc(n.id)+'">編集</button><button class="btn compact danger" data-act="study-delete" data-value="'+esc(n.id)+'">×</button></div><p>'+esc(truncate(n.text,110))+'</p></div>').join('');
+    return modalFrame('家の学び','<div class="segment"><button data-act="study-toggle" data-value="notes" class="'+(!summary?'active':'')+'">学びメモ</button><button data-act="study-summarize" class="'+(summary?'active':'')+'">ワンタップ整理</button></div>'+
+      '<div class="study-toolbar"><div><span class="kicker">HOME KNOWLEDGE</span><p class="subtle">'+(summary?'内容を分類・抜粋した要点です':'住宅会社で学んだことを残せます')+'</p></div><button class="btn primary" data-act="study-add">＋ 書く</button></div>'+
+      '<div class="study-note-list grow">'+(cards||(summary?'<div class="empty grow"><p>まとめるメモがありません</p></div>':'<div class="empty grow"><p>学んだことをメモしましょう</p></div>'))+'</div>'+
+      (total>1?navPager(ui[key],total,summary?'study-summary-page':'study-page'):'<span class="sim-progress-text study-counter">'+items.length+'件</span>')+
+      (summary?'<p class="study-disclaimer">※ AIによる要約ではなく、端末内でキーワード分類した抜粋です。原文も確認してください。</p>':'<button class="btn soft wide" data-act="study-summarize">記録をワンタップでまとめる</button>'));
+  }
+  function studyForm(){
+    const d=ui.studyDraft||{title:'',text:''};
+    return modalFrame(ui.studyEditId?'学びメモを編集':'学びをメモ','<div class="study-edit-form grow"><label class="field"><span>タイトル</span><input data-study="title" maxlength="65" value="'+esc(d.title)+'" placeholder="例：断熱性の違い"></label><label class="field grow"><span>学んだこと</span><textarea data-study="text" maxlength="2500" placeholder="家づくりで聞いた話・疑問・気付きを自由に記録">'+esc(d.text)+'</textarea></label><span class="subtle">メモは端末に保存され、後から追記できます。</span></div><div class="sim-footer"><button class="btn" data-act="study-back">戻る</button><button class="btn primary" data-act="study-save">保存する</button></div>');
+  }
   function pendingScreen(){const sim=ui.tab==='sim';return '<section class="screen">'+empty(sim?'∿':'▦',sim?'人生設計はフェーズ2':'スケジュールはフェーズ3',sim?'貯金推移・住宅ローン・教育費をステップ式で追加予定です。':'内見カレンダー・リマインド通知を追加予定です。')+'</section>';}
   function overlay(){return ui.overlay==='detail'?detailScreen():ui.overlay==='form'?propertyForm():ui.overlay==='list'?listScreen():ui.overlay==='search'?searchScreen():ui.overlay==='settings'?settingsScreen():ui.overlay==='choose'?choosePropertiesScreen():ui.overlay==='criteria'?criteriaScreen():ui.overlay==='criterion-form'?criterionForm():ui.overlay==='rating'?ratingScreen():ui.overlay==='question'?questionForm():ui.overlay==='meeting-form'?meetingForm():ui.overlay==='study'?studyScreen():ui.overlay==='study-form'?studyForm():'';}
   function moveProperty(d){let ps=visibleProperties(),i=ps.findIndex(p=>p.id===ui.propertyId);if(ps.length){ui.propertyId=ps[(i+d+ps.length)%ps.length].id;ui.photoIndex=0;ui.propertyPage=0;}}

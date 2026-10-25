@@ -541,7 +541,7 @@
     ui.simSubPage=Math.max(0,Math.min(pages.length-1,Number(ui.simSubPage)||0));
     const n=ui.simSubPage;
     const labels=i===2?['食費・住居','水道光熱','日常費','保険等']:i===4?['購入','維持費']:i===5?['資産','積立']:null;
-    return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR / r16</span>'+
+    return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR / r17</span>'+
       (p.hasRun?'<button class="fp-recall-btn" data-act="fp-view-budget">前回の診断を見る ↗</button>':'<span class="sim-progress-text">'+(i+1)+' / 7</span>')+
       '</div><div class="sim-progress">'+Array.from({length:7},(_,x)=>'<span class="'+(x<=i?'filled':'')+'"></span>').join('')+'</div>'+
       '<div class="sim-question"><h2>'+simQuestions[i][0]+'</h2><p>'+simQuestions[i][1]+'</p></div>'+
@@ -1160,7 +1160,8 @@
       rows=fpPieBreakdownRows(point,month,item.id),
       income=annual?point.incomes:month.income,
       percentage=income>0?(item.amount/income*100):null,
-      density=rows.length>24?' two-columns three-columns':rows.length>9?' two-columns':'';
+      density=rows.length>(window.matchMedia('(max-height:780px)').matches?18:24)?
+        ' two-columns three-columns':rows.length>9?' two-columns':'';
     const entries=rows.map(row=>{
       const type=row.field?'field':row.expenseId?'expense':row.eventId?'event':'',
         key=row.field||row.expenseId||row.eventId||'',editable=!!type,
@@ -1534,7 +1535,7 @@
       budget=fpBudget(),rating=fpRating(price),warnings=fpPlanWarnings(),
       page=Math.min(6,Math.max(0,ui.simResultPage||0));
     const heading=['購入後の家計','月ごとの収支','現金と投資資産','年収支','収入の内訳','計算根拠','アドバイス'][page];
-    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r16</span>'+
+    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r17</span>'+
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button></div></div>';

@@ -37,7 +37,7 @@ assert.equal(p.freeSpendingMonthly,5);
 assert.ok(Math.abs(api.modelYears(p.propertyPrice,true).points.find(x=>x.year===2026).netCash-
  (startingNet-(2.8+5)*12))<1e-7,'spending reduces annual cash forecast');
 for(let i=0;i<4;i++)click('sim-next');
-assert.match(app.innerHTML,/月ごとの収支/);
+assert.match(app.innerHTML,/data-fp-cash-month/);
 assert.match(app.innerHTML,/class="fp-month-quick"/);
 assert.match(app.innerHTML,/data-fp-quick-key="freeSpendingMonthly"/);
 assert.match(app.innerHTML,/value="50000"/);

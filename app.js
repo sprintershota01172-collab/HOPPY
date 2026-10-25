@@ -399,7 +399,7 @@
     if(i===6)body=fpSection('年払い・大きな支出','額はすべて万円')+
       '<div class="sim-grid">'+nField('自動車税・年払い費用','carTaxAnnual','万円/年')+
       nField('旅行・帰省','travelAnnual','万円/年')+
-      nField('その他税金','annualTax','万円/年')+
+      nField('給与の手取りに含まれない税金','annualTax','万円/年')+
       nField('冠婚葬祭・家電など','annualEvents','万円/年')+
       nField('結婚式支払年','weddingYear','年')+
       nField('結婚式自己負担','weddingCost','万円')+
@@ -626,14 +626,14 @@
       const propertyList=homes.length?'<div class="fp-home-list">'+homes.slice(0,8).map(fpRatingRow).join('')+'</div>':
         '<div class="fp-no-property">物件を登録すると、ここで予算内か自動判定できます。</div>';
       content='<div class="fp-budget-content grow">'+
-        '<div class="fp-hero"><span class="fp-eyebrow">返済負担から算出した参考予算</span><div class="fp-hero-number">'+yen(budget.amount)+'<span>万円</span></div><span class="fp-hero-caption">将来の手取り25％・金利 '+yen(budget.amount>=0?assessment.rate:0,1)+'％想定</span>'+
+        '<div class="fp-hero"><span class="fp-eyebrow">返済負担から算出した参考予算</span><div class="fp-hero-number">'+yen(budget.amount)+'<span>万円</span></div><span class="fp-hero-caption">手取り25％＋家計余力・金利 '+yen(budget.amount>=0?assessment.rate:0,1)+'％想定</span>'+
         '<div class="fp-budget-scale"><div class="fp-budget-fill"></div></div><span class="fp-secondary">金利＋1％なら　<strong>'+yen(budget.stressAmount)+'万円</strong>が目安</span></div>'+
         '<div class="fp-now-card"><div class="fp-now-head"><div><span class="fp-eyebrow">検討中の価格</span><strong>'+yen(price)+'万円</strong></div><span class="fp-verdict '+fpBadgeClass(assessment.level)+'">'+assessment.label+'</span></div>'+
         '<p class="fp-diagnostic">'+esc(assessment.reason)+'</p>'+
-        '<div class="fp-stat-grid"><div><span>月々の住居費</span><strong>'+yen(assessment.housing,1)+'万</strong></div><div><span>手取り負担率</span><strong>'+yen(assessment.ratio*100,1)+'％</strong></div><div><span>毎月の残り</span><strong>'+yen(assessment.spendable,1)+'万</strong></div></div></div>'+
+        '<div class="fp-stat-grid"><div><span>月々の住居費</span><strong>'+yen(assessment.housing,1)+'万</strong></div><div><span>手取り負担率</span><strong>'+yen(assessment.ratio*100,1)+'％</strong></div><div><span>現金貯金の余力</span><strong>'+yen(assessment.spendable,1)+'万</strong></div></div></div>'+
         '<div class="fp-section-head"><strong>物件の予算評価</strong><span>'+homes.length+'件</span></div>'+
         propertyList+(homes.length>8?'<p class="fp-more-homes">ほか '+(homes.length-8)+' 件。物件一覧で価格を確認できます。</p>':'')+
-        '<p class="fp-assumption">※ 25％は暮らしの目安であり、銀行の審査額ではありません。諸費用・現金残高・将来の支出もご確認ください。</p>'+
+        '<p class="fp-assumption">※ 手取り25％の住居費目安と、毎月の保険・子育て・NISA・現金貯金目標を考慮。銀行の融資可能額ではありません。</p>'+
         futureWarning+'</div>';
     }else if(page===1){
       const point=current.points.find(x=>x.year===ui.fpYear)||current.points.find(x=>x.year===fpDecisionYear())||current.points[0];

@@ -37,7 +37,7 @@ input({sim:'downPayment'},0);
 click('sim-next');click('sim-next');
 assert.equal(state().plan.hasRun,1);
 assert.match(app.innerHTML,/あなたの住宅予算/);
-assert.match(app.innerHTML,/無理しない購入価格の目安/);
+assert.match(app.innerHTML,/返済負担から算出した参考予算/);
 assert.match(app.innerHTML,/金利＋1％なら/);
 assert.match(app.innerHTML,/物件の予算評価/);
 click('fp-result-tab','1');

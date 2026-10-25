@@ -1,7 +1,7 @@
 // HOPPY: actual purchase year/month controls rent, mortgage, costs and full-term loan schedule.
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 let src=fs.readFileSync('app.js','utf8');
-const anchor="  save();render();\n  if('serviceWorker'";
+const anchor="  save();render();\n  // The startup wordmark";
 assert.ok(src.includes(anchor));
 src=src.replace(anchor,"  window.__purchaseTest={getPlan:()=>state.plan,modelYears,fpAmortization,fpMonthlyLedger,fpPieBreakdownRows,fpExpenseDetails};\n"+anchor);
 const storage={},events={};let n=0,tick=1000;

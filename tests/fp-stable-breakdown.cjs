@@ -87,7 +87,8 @@ assert.equal(renders,rendersBefore,'a second category tap must also stay in plac
 assert.match(panel.outerHTML,/追加月額費/,'late-added expense must be in the complete list');
 assert.match(panel.outerHTML,/その他の生活費/);
 const renderedRows=(panel.outerHTML.match(/class="fp-breakdown-row"/g)||[]).length;
-assert.ok(renderedRows>=15,'all entries exist, not only the first food entry: '+renderedRows);
+assert.ok(renderedRows>=7,'every registered expense is present in the compact list: '+renderedRows);
+assert.doesNotMatch(panel.outerHTML,/data-fp-breakdown-field=/,'editing controls are not repeated on every expense row');
 assert.equal(host.scrollTop,73);
 
 hostMode=null;
@@ -100,13 +101,13 @@ const annualCount=renders;
 click('fp-breakdown-select','living','annual');
 assert.equal(renders,annualCount,'annual category selection must not redraw the whole screen');
 assert.equal(host.scrollTop,91);
-assert.match(panel.outerHTML,/年間集計/);
+assert.match(panel.outerHTML,/生活費・保険等の内訳/);
 assert.match(panel.outerHTML,/追加月額費/);
 
 const css=fs.readFileSync('styles.css','utf8');
-assert.match(css,/\.fp-month-report:has\(\[data-fp-inline-breakdown\]\)[\s\S]*?overflow-y:auto!important/);
-assert.match(css,/\.fp-pie-panel:has\(\[data-fp-inline-breakdown\]\)[\s\S]*?overflow-y:auto!important/);
-assert.match(css,/\.fp-breakdown-list\s*\{[\s\S]*?overflow:visible!important/);
+assert.match(css,/\.fp-focus \.fp-breakdown-list\s*\{[^}]*display:grid!important/);
+assert.match(css,/\.fp-focus \.fp-breakdown-list.two-columns\s*\{[^}]*grid-template-columns:repeat\(2/);
+assert.match(css,/\.fp-focus \.fp-breakdown-list\s*\{[^}]*overflow:hidden!important/);
 assert.match(css,/\.main > \.fp-result-screen\s*\{animation:none!important/);
-assert.match(css,/\.fp-breakdown-entry strong\s*\{[\s\S]*?white-space:normal!important/);
+assert.match(css,/\.fp-focus \.fp-breakdown-row \.fp-row-label\s*\{[^}]*white-space:normal!important/);
 console.log('HOPPY FP stable selections: no app redraw, no scroll reset, '+renderedRows+' available expense entries PASS');

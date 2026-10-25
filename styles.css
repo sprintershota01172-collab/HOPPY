@@ -1951,3 +1951,35 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .home-axis-edit textarea{height:78px;min-height:70px;max-height:90px}
  .home-axis-preview{font-size:9px}
 }
+
+
+/* Every pie category stays reachable even when the chart is vertically compact. */
+.fp-month-report:has(.fp-breakdown-panel) .fp-month-pie-legend,
+.fp-pie-panel:has(.fp-breakdown-panel) .fp-pie-key{
+  align-self:stretch;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:flex-start!important;
+  flex:1 1 0!important;
+  min-height:0!important;
+  max-height:100%!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  touch-action:pan-y;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.fp-month-report:has(.fp-breakdown-panel) .fp-month-pie-legend::-webkit-scrollbar,
+.fp-pie-panel:has(.fp-breakdown-panel) .fp-pie-key::-webkit-scrollbar{display:none}
+.fp-month-report:has(.fp-breakdown-panel) .fp-pie-pick,
+.fp-pie-panel:has(.fp-breakdown-panel) .fp-pie-pick{
+  min-height:24px!important;
+  padding:2px 4px!important;
+  flex:0 0 auto;
+}
+@media(max-height:700px){
+  .fp-month-report:has(.fp-breakdown-panel) .fp-pie-pick,
+  .fp-pie-panel:has(.fp-breakdown-panel) .fp-pie-pick{
+    min-height:23px!important;
+  }
+}

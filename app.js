@@ -432,7 +432,7 @@
   ];
   function studyNormalizeLine(str){
     let text=String(str||'').replace(/[０-９Ａ-Ｚａ-ｚ]/g,c=>String.fromCharCode(c.charCodeAt(0)-65248))
-      .replace(/\u3000/g,' ').replace(/[ \t]{2,}/g,' ').trim();
+      .replace(/\u3000/g,' ').replace(/[ \t]{2,}/g,' ').replace(/([ぁ-ゟァ-ヿ一-龥]) +(?=[ぁ-ゟァ-ヿ一-龥])/g,'$1').trim();
     const spelling=[
       [/シュミレーション/g,'シミュレーション'],
       [/シュミレート/g,'シミュレート'],

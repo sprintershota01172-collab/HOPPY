@@ -40,7 +40,7 @@ assert.ok(interest>0,'loan total includes interest at positive APR');
 assert.ok(card.includes('維持費・諸費用'),'non-loan costs are explicitly excluded');
 assert.ok(card.includes('金利一定'),'full-term payment assumes constant interest');
 assert.ok(card.includes(api.fpYen(budget.amount)));
-assert.ok(card.includes(api.fpYen(principal)));
+assert.ok(card.includes('頭金 '+api.fpYen(budget.downPayment)),'down payment shown as a condition');
 const selectedLoan=api.fpLoanSummary(4400),
   propertyPayment=api.mortgageMonthly(4400,100,1.5,35),
   propertyTotal=100+propertyPayment*35*12;

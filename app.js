@@ -25,7 +25,9 @@
     propertyPrice:4400,propertyId:'',purchaseYear:2028,downPayment:0,interest:1.5,loanYears:35,
     housingOngoing:2.5,weddingYear:2027,weddingCost:350,honeymoonCost:98,
     nisaMonthly:3,highSchool:'public',university:'public',simulateUntil:2045,hasRun:0,
-    utilitiesMonthly:0,telecomMonthly:0,transportMonthly:0,subscriptionsMonthly:0,leisureMonthly:0,
+    utilitiesMonthly:0,foodMonthly:0,managementMonthly:0,commonFeeMonthly:0,parkingMonthly:0,
+    electricityMonthly:0,gasMonthly:0,waterBiMonthly:0,
+    telecomMonthly:0,transportMonthly:0,subscriptionsMonthly:0,leisureMonthly:0,
     lifeInsuranceMonthly:0,medicalInsuranceMonthly:0,carInsuranceMonthly:0,medicalMonthly:0,
     carMaintenanceMonthly:0,otherLoanMonthly:0,otherLoanEndYear:0,childInsuranceMonthly:0,
     childLivingMonthly:0,daycareMonthly:0,childBenefitMonthly:0,
@@ -349,24 +351,36 @@
       nField('夫・年間賞与','husbandBonus','万円')+nField('妻・年間賞与','wifeBonus','万円')+
       nField('子ども関連の給付金','childBenefitMonthly','万円/人月')+'</div>'+
       '<p class="fp-field-hint">給付金はお子さま1人あたりの任意入力です。年齢・所得等による受給条件は判定しません。未確定なら0にしてください。</p>';
-    if(i===2)body=fpSection('家計の基本支出','すべて月額・万円')+
-      '<p class="fp-field-hint">「その他の生活費」は下の項目と重ならない金額を入力してください。二重計上にご注意ください。</p>'+
-      '<div class="sim-grid">'+nField('その他の生活費','livingMonthly','万円')+
-      nField('電気・ガス・水道','utilitiesMonthly','万円')+
-      nField('通信・スマホ','telecomMonthly','万円')+
-      nField('交通・ガソリン','transportMonthly','万円')+
-      nField('サブスク','subscriptionsMonthly','万円')+
-      nField('外食・レジャー','leisureMonthly','万円')+
-      nField('夫婦の生命保険','lifeInsuranceMonthly','万円')+
-      nField('医療・がん保険','medicalInsuranceMonthly','万円')+
-      nField('自動車保険','carInsuranceMonthly','万円')+
-      nField('通院・薬代','medicalMonthly','万円')+
-      nField('車維持・車検積立','carMaintenanceMonthly','万円')+
-      nField('自動車ローン','carMonthly','万円')+
+    if(i===2)body=fpSection('家計の基本支出','金額は万円で入力')+
+      '<div class="fp-budget-group"><div class="fp-budget-group-head"><b>01</b><strong>食費・住まい</strong><span>毎月の支払い</span></div>'+
+      '<div class="sim-grid">'+nField('食費','foodMonthly','万円/月')+
+      nField('家賃（賃料）','rentMonthly','万円/月')+
+      nField('管理費','managementMonthly','万円/月')+
+      nField('共益費','commonFeeMonthly','万円/月')+
+      nField('駐車場','parkingMonthly','万円/月')+'</div>'+
+      '<p class="fp-field-hint">家賃は賃料のみ入力。これまで家賃に管理費・共益費・駐車場を含めていた場合は、重複しないよう賃料を修正してください。</p></div>'+
+      '<div class="fp-budget-group"><div class="fp-budget-group-head"><b>02</b><strong>水道・光熱費</strong><span>請求周期に対応</span></div>'+
+      '<div class="sim-grid">'+nField('電気','electricityMonthly','万円/月')+
+      nField('ガス','gasMonthly','万円/月')+
+      nField('水道（2か月分）','waterBiMonthly','万円/2か月')+'</div>'+
+      '<p class="fp-field-hint">水道は1回の請求額を入力。年間は6回分、月平均は2で割って試算します。</p>'+
+      (safeNum(p.utilitiesMonthly)>0?'<div class="fp-legacy-note">旧入力の光熱費合算 '+yen(p.utilitiesMonthly,2)+'万円/月は、上の内訳がすべて0のときだけ計算に使用します。内訳を入力すると自動的に置き換わります。<button type="button" data-act="fp-legacy-utilities-clear">旧合算を削除</button></div>':'')+'</div>'+
+      '<div class="fp-budget-group"><div class="fp-budget-group-head"><b>03</b><strong>その他の支払い</strong><span>毎月</span></div>'+
+      '<div class="sim-grid">'+nField('その他の生活費','livingMonthly','万円/月')+
+      nField('通信・スマホ','telecomMonthly','万円/月')+
+      nField('交通・ガソリン','transportMonthly','万円/月')+
+      nField('サブスク','subscriptionsMonthly','万円/月')+
+      nField('外食・レジャー','leisureMonthly','万円/月')+
+      nField('夫婦の生命保険','lifeInsuranceMonthly','万円/月')+
+      nField('医療・がん保険','medicalInsuranceMonthly','万円/月')+
+      nField('自動車保険','carInsuranceMonthly','万円/月')+
+      nField('通院・薬代','medicalMonthly','万円/月')+
+      nField('車維持・車検積立','carMaintenanceMonthly','万円/月')+
+      nField('自動車ローン','carMonthly','万円/月')+
       nField('車ローン終了年（0=継続）','carLoanEndYear','年')+
-      nField('その他のローン','otherLoanMonthly','万円')+
-      nField('ローン終了年（0=継続）','otherLoanEndYear','年')+
-      nField('現在の家賃','rentMonthly','万円')+'</div>';
+      nField('その他のローン','otherLoanMonthly','万円/月')+
+      nField('ローン終了年（0=継続）','otherLoanEndYear','年')+'</div>'+
+      '<p class="fp-field-hint">「その他の生活費」は食費・外食・上記の支出と重ならない金額にしてください。以前の合算生活費は必要に応じて修正してください。</p></div>';
     if(i===3)body=fpSection('子どもの支出','指定した人数の子どもが対象')+
       '<div class="sim-grid">'+nField('子どもの保険（1人）','childInsuranceMonthly','万円/月')+
       nField('生活・衣服・習い事（1人）','childLivingMonthly','万円/月')+
@@ -421,7 +435,8 @@
     return p.university==='private'?185:125;
   }
   const fpDetailCategories=[
-    ['livingMonthly','その他の生活費'],['utilitiesMonthly','光熱・水道'],['telecomMonthly','通信'],['transportMonthly','交通'],
+    ['foodMonthly','食費'],['electricityMonthly','電気'],['gasMonthly','ガス'],['waterBiMonthly','水道（2か月ごと）'],
+    ['livingMonthly','その他の生活費'],['telecomMonthly','通信'],['transportMonthly','交通'],
     ['subscriptionsMonthly','サブスク'],['leisureMonthly','レジャー'],['lifeInsuranceMonthly','生命保険'],
     ['medicalInsuranceMonthly','医療保険'],['carInsuranceMonthly','自動車保険'],
     ['medicalMonthly','医療費'],['carMaintenanceMonthly','車維持費']
@@ -444,8 +459,12 @@
       return sum+safeNum(x.amount)*(x.cycle==='year'?1:12);
     },0);
   }
+  const fpRentMonthly=p=>['rentMonthly','managementMonthly','commonFeeMonthly','parkingMonthly'].reduce((sum,key)=>sum+safeNum(p[key]),0);
   function fpBaseMonthly(year){
-    const p=state.plan,parts=fpDetailCategories.map(([key,label])=>({key,label,value:safeNum(p[key])}));
+    const p=state.plan,parts=fpDetailCategories.map(([key,label])=>({key,label,value:key==='waterBiMonthly'?safeNum(p[key])/2:safeNum(p[key])}));
+    // Before separate utility fields existed, a single amount was stored. Count either the old total or the new breakdown, never both.
+    if(!['electricityMonthly','gasMonthly','waterBiMonthly'].some(key=>safeNum(p[key])>0) && safeNum(p.utilitiesMonthly)>0)
+      parts.push({key:'utilitiesMonthly',label:'旧・光熱費合計',value:safeNum(p.utilitiesMonthly)});
     if(!safeNum(p.carLoanEndYear)||year<=safeNum(p.carLoanEndYear))parts.push({key:'carMonthly',label:'車ローン',value:safeNum(p.carMonthly)});
     if(!safeNum(p.otherLoanEndYear)||year<=safeNum(p.otherLoanEndYear)){
       parts.push({key:'otherLoanMonthly',label:'その他のローン',value:safeNum(p.otherLoanMonthly)});
@@ -473,7 +492,7 @@
       const income=12*(safeNum(p.husbandMonthly)+mother)+safeNum(p.husbandBonus)+wifeBonus+
         12*children.living*safeNum(p.childBenefitMonthly);
       const monthlyParts=fpBaseMonthly(year);
-      const housing=buy&&year>=purchaseYear?payment+safeNum(p.housingOngoing):safeNum(p.rentMonthly);
+      const housing=buy&&year>=purchaseYear?payment+safeNum(p.housingOngoing):fpRentMonthly(p);
       const monthly=monthlyParts.reduce((sum,x)=>sum+x.value,0)+housing;
       const annualFixed=safeNum(p.annualTax)+safeNum(p.carTaxAnnual)+safeNum(p.travelAnnual)+
         safeNum(p.annualEvents)+(buy&&year>=purchaseYear?safeNum(p.homeInsuranceAnnual):0)+fpCustomAnnual(year);
@@ -592,7 +611,9 @@
     const p=state.plan,year=point.year;
     const result=[
       ...point.monthlyParts.map(x=>({label:x.label,amount:x.value*12})),
-      {label:buy&&year>=safeNum(p.purchaseYear)?'住宅ローン・維持費':'家賃',amount:point.housing*12},
+      ...(buy&&year>=safeNum(p.purchaseYear)?[{label:'住宅ローン・維持費',amount:point.housing*12}]:[
+        ['rentMonthly','家賃'],['managementMonthly','管理費'],['commonFeeMonthly','共益費'],['parkingMonthly','駐車場']
+      ].map(([key,label])=>({label,amount:safeNum(p[key])*12}))),
       {label:'学校・大学の費用',amount:point.school},
       {label:'出産関連',amount:point.birth},
       {label:'自動車税など年払い',amount:safeNum(p.carTaxAnnual)},
@@ -1002,6 +1023,7 @@
     if(action==='sim-restart')return step(()=>{ui.simStep=0;ui.simResultPage=0;});
     if(action==='sim-result-page')return step(()=>changePage('simResultPage',4,Number(v)));
     if(action==='fp-result-tab')return step(()=>{ui.simResultPage=Math.min(3,Math.max(0,Number(v)||0));});
+    if(action==='fp-legacy-utilities-clear')return step(()=>{state.plan.utilitiesMonthly=0;save();message('旧光熱費の合算額を削除しました');});
     if(action==='fp-expense-add')return step(()=>{if(state.plan.expenses.length>=35)return message('追加支出は35項目までです');state.plan.expenses.push({id:uid(),name:'新しい支出',amount:0,cycle:'month',start:0,end:0});save();});
     if(action==='fp-expense-delete'){if(!confirm('この追加支出を削除しますか？'))return;return step(()=>{state.plan.expenses=state.plan.expenses.filter(x=>x.id!==v);save();});}
     if(action==='fp-result-next')return step(()=>{ui.simResultPage=(ui.simResultPage+1)%4;});

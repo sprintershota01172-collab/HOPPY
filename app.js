@@ -935,6 +935,7 @@
   app.addEventListener('change',async e=>{
     const el=e.target;
     if(el.dataset?.memoProperty!==undefined){ui.memoPropertyId=el.value;ui.memoPage=0;ui.memoSwipeKey=null;render();return;}
+    if(el.dataset?.study && ui.studyDraft){ui.studyDraft[el.dataset.study]=el.value;}
     if(el.dataset?.sim){
       const k=el.dataset.sim,val=el.value;
       state.plan[k]=['propertyId','highSchool','university'].includes(k)?val:(val!==''&&Number.isFinite(Number(val))?Number(val):0);

@@ -56,7 +56,7 @@ for(const yr of [2026,2028,2031,2043]){
 }
 click('tab','sim');for(let i=0;i<7;i++)click('sim-next');
 click('fp-result-tab','4');
-assert.match(app.innerHTML,/収入の内訳/);
+assert.match(app.innerHTML,/fp-income-report/);
 assert.match(app.innerHTML,/年単位/);
 assert.match(app.innerHTML,/夫の給与/);
 assert.match(app.innerHTML,/臨時収入・その他/);

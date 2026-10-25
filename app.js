@@ -39,7 +39,7 @@
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,draft:null,simStep:0,simResultPage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpLedgerPage:0,fpHomePage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
   function normalize(s) {
     if (!s || !Array.isArray(s.properties) || !Array.isArray(s.criteria)) throw Error('形式が違います');
@@ -326,106 +326,141 @@
     ['年払いと特別支出','税金・旅行・結婚式・追加費用']
   ];
   function fpSection(label,subtitle){return '<div class="fp-form-heading"><strong>'+esc(label)+'</strong>'+(subtitle?'<span>'+esc(subtitle)+'</span>':'')+'</div>';}
-  function fpExtraEditor(){
-    const expenses=state.plan.expenses||[];
-    return '<div class="fp-extra-section"><div class="fp-extra-head"><strong>＋ 自由に追加する支出</strong><button class="btn compact" data-act="fp-expense-add" '+(expenses.length>=35?'disabled':'')+'>＋ 項目追加</button></div>'+
-      '<p class="fp-field-hint">習い事・学資保険・奨学金返済・介護・仕送りなど。毎月または年額で設定できます。</p>'+
-      expenses.map(x=>'<div class="fp-extra-row"><div class="fp-extra-top"><input aria-label="費目" data-fp-id="'+esc(x.id)+'" data-fp-key="name" maxlength="50" value="'+esc(x.name)+'" placeholder="例：習い事・学資保険"><button class="fp-extra-remove" data-act="fp-expense-delete" data-value="'+esc(x.id)+'" aria-label="この支出を削除">削除</button></div><div class="fp-extra-values">'+
-      '<label>金額<input aria-label="金額 万円" data-fp-id="'+esc(x.id)+'" data-fp-key="amount" type="number" min="0" max="10000" step=".1" inputmode="decimal" value="'+esc(x.amount)+'"></label>'+
-      '<label>周期<select aria-label="周期" data-fp-id="'+esc(x.id)+'" data-fp-key="cycle"><option value="month" '+(x.cycle==='month'?'selected':'')+'>万円/月</option><option value="year" '+(x.cycle==='year'?'selected':'')+'>万円/年</option></select></label>'+
-      '<label>開始年<input aria-label="開始年" data-fp-id="'+esc(x.id)+'" data-fp-key="start" type="number" min="0" max="2100" inputmode="numeric" value="'+(x.start||'')+'" placeholder="指定なし"></label>'+
-      '<label>終了年<input aria-label="終了年" data-fp-id="'+esc(x.id)+'" data-fp-key="end" type="number" min="0" max="2100" inputmode="numeric" value="'+(x.end||'')+'" placeholder="指定なし"></label></div></div>').join('')+
+  function fpCompactPage(title,fields,hint='',extra=''){
+    return {title,html:'<div class="fp-compact-inner"><div class="fp-compact-title">'+esc(title)+'</div>'+
+      '<div class="sim-grid">'+fields.join('')+'</div>'+
+      (hint?'<p class="fp-field-hint">'+esc(hint)+'</p>':'')+extra+'</div>'};
+  }
+  function fpExtraEditor(index){
+    const expenses=state.plan.expenses||[],start=index*2,items=expenses.slice(start,start+2);
+    return '<div class="fp-extra-section"><div class="fp-extra-head"><strong>自由に追加する支出</strong>'+
+      '<button class="btn compact" data-act="fp-expense-add" '+(expenses.length>=35?'disabled':'')+'>＋ 追加</button></div>'+
+      (items.length?items.map(x=>'<div class="fp-extra-row"><div class="fp-extra-top"><input aria-label="費目" data-fp-id="'+esc(x.id)+'" data-fp-key="name" maxlength="50" value="'+esc(x.name)+'" placeholder="支出名"><button class="fp-extra-remove" data-act="fp-expense-delete" data-value="'+esc(x.id)+'">削除</button></div><div class="fp-extra-values">'+
+      '<label>金額（万円）<input data-fp-id="'+esc(x.id)+'" data-fp-key="amount" type="number" min="0" max="10000" step=".1" inputmode="decimal" value="'+esc(x.amount)+'"></label>'+
+      '<label>周期<select data-fp-id="'+esc(x.id)+'" data-fp-key="cycle"><option value="month" '+(x.cycle==='month'?'selected':'')+'>毎月</option><option value="year" '+(x.cycle==='year'?'selected':'')+'>毎年</option></select></label>'+
+      '<label>開始年<input data-fp-id="'+esc(x.id)+'" data-fp-key="start" type="number" min="0" max="2100" value="'+(x.start||'')+'" placeholder="指定なし"></label>'+
+      '<label>終了年<input data-fp-id="'+esc(x.id)+'" data-fp-key="end" type="number" min="0" max="2100" value="'+(x.end||'')+'" placeholder="指定なし"></label></div></div>').join(''):
+      '<p class="fp-extra-empty">＋ 追加から、習い事・学資保険・仕送りなどを登録できます。</p>')+
+      '<p class="fp-field-hint">追加した費用はFPの予算・年間収支に反映されます。</p></div>';
+  }
+  function fpWizardPages(i){
+    const p=state.plan;
+    const f=(title,key,unit='万円/月')=>nField(title,key,unit);
+    const pages=[];
+    if(i===0)pages.push(fpCompactPage('家族のこれから',[
+      f('夫の年齢','husbandAge','歳'),f('妻の年齢','wifeAge','歳'),
+      sSelect('子どもの人数','children',[[0,'予定なし'],[1,'1人'],[2,'2人'],[3,'3人']]),
+      f('第1子の予定年','firstChildYear','年'),f('きょうだいの年齢差','birthInterval','年'),
+      f('妻の時短中の月手取り','wifeReduced','万円/月')
+    ]));
+    if(i===1)pages.push(fpCompactPage('収入と給付金',[
+      f('夫・月手取り','husbandMonthly'),f('妻・月手取り','wifeMonthly'),
+      f('夫・年間賞与','husbandBonus','万円/年'),f('妻・年間賞与','wifeBonus','万円/年'),
+      f('子ども関連の給付金','childBenefitMonthly','万円/人月')
+    ],'子ども関連の給付金は受給条件の自動判定を行いません。'));
+    if(i===2){
+      pages.push(fpCompactPage('食費・家賃の内訳',[
+        f('食費','foodMonthly'),f('家賃（賃料）','rentMonthly'),
+        f('管理費','managementMonthly'),f('共益費','commonFeeMonthly'),
+        f('駐車場代','parkingMonthly')
+      ],'家賃は賃料のみ入力。管理費・共益費・駐車場の二重計上に注意してください。'));
+      pages.push(fpCompactPage('電気・ガス・水道',[
+        f('電気代','electricityMonthly'),f('ガス代','gasMonthly'),
+        f('水道（2か月の請求額）','waterBiMonthly','万円/2か月')
+      ],'水道は2か月ごとの請求額を入力。月平均＝÷2、年間＝×6。',safeNum(p.utilitiesMonthly)>0?
+        '<div class="fp-legacy-note">旧・光熱費合算 '+yen(p.utilitiesMonthly,2)+'万円/月。上の内訳を入力すると合算額の代わりに使います。<button data-act="fp-legacy-utilities-clear">旧合算を削除</button></div>':''));
+      pages.push(fpCompactPage('毎日の支払い',[
+        f('その他の生活費','livingMonthly'),f('通信・スマホ','telecomMonthly'),
+        f('交通・ガソリン','transportMonthly'),f('サブスク','subscriptionsMonthly'),
+        f('外食・レジャー','leisureMonthly'),f('通院・薬代','medicalMonthly'),
+        f('車維持・車検積立','carMaintenanceMonthly')
+      ],'その他の生活費に食費・外食などを重複して含めないでください。'));
+      pages.push(fpCompactPage('保険・ローン',[
+        f('夫婦の生命保険','lifeInsuranceMonthly'),f('医療・がん保険','medicalInsuranceMonthly'),
+        f('自動車保険','carInsuranceMonthly'),f('自動車ローン','carMonthly'),
+        f('車ローン終了年','carLoanEndYear','年'),
+        f('その他のローン','otherLoanMonthly'),f('他ローン終了年','otherLoanEndYear','年')
+      ],'ローン終了年が0の場合は支払いが続く設定です。'));
+    }
+    if(i===3)pages.push(fpCompactPage('子育てと教育費',[
+      f('子どもの保険（1人）','childInsuranceMonthly'),
+      f('生活・衣服・習い事（1人）','childLivingMonthly'),
+      f('保育料・幼稚園（1人）','daycareMonthly'),
+      sSelect('高校','highSchool',[['public','公立'],['private','私立']]),
+      sSelect('大学','university',[['public','国公立'],['private','私立']])
+    ],'保険0〜22歳、生活費0〜17歳、保育料0〜5歳で計算します。'));
+    if(i===4){
+      const options=[['','価格を直接入力'],...state.properties.filter(x=>num(x.price)!==null).map(x=>[x.id,truncate(x.name,17)+' / '+fmt(x.price)])];
+      pages.push(fpCompactPage('購入予定',[
+        sSelect('登録物件から選択','propertyId',options),
+        f('購入予定価格','propertyPrice','万円'),f('購入予定年','purchaseYear','年'),
+        f('頭金','downPayment','万円')
+      ],'購入諸費用は物件価格の7％で仮計算します。'));
+      pages.push(fpCompactPage('住宅ローン・維持費',[
+        f('金利（仮定）','interest','％'),f('返済期間','loanYears','年'),
+        f('固定資産税・修繕等','housingOngoing'),
+        f('住宅火災保険','homeInsuranceAnnual','万円/年')
+      ],'税金・修繕費と火災保険は重複入力しないでください。'));
+    }
+    if(i===5){
+      pages.push(fpCompactPage('現在の貯金と資産',[
+        f('現在の普通預金など','cashSavings','万円'),
+        f('今後受け取る援助','support','万円'),
+        f('現在のNISA評価額','nisaBalance','万円'),
+        f('その他投資の残高','investBalance','万円')
+      ]));
+      pages.push(fpCompactPage('毎月の貯蓄・積立',[
+        f('毎月NISAへ積立','nisaMonthly'),
+        f('その他投資の積立','otherInvestMonthly'),
+        f('現金貯金目標','otherSavingsMonthly'),
+        f('運用利回り（仮定）','returnAnnual','％/年'),
+        f('毎月の余裕費','cashBufferMonthly')
+      ],'NISA積立は支出ではなく現金から投資資産への振替です。'));
+    }
+    if(i===6){
+      pages.push(fpCompactPage('年払いの支出',[
+        f('自動車税・年払い','carTaxAnnual','万円/年'),
+        f('旅行・帰省','travelAnnual','万円/年'),
+        f('手取りに含まれない税金','annualTax','万円/年'),
+        f('冠婚葬祭・家電','annualEvents','万円/年')
+      ]));
+      pages.push(fpCompactPage('結婚式・特別支出',[
+        f('結婚式支払年','weddingYear','年'),
+        f('結婚式自己負担','weddingCost','万円'),
+        f('新婚旅行費','honeymoonCost','万円'),
+        f('試算終了年','simulateUntil','年')
+      ]));
+      const count=Math.max(1,Math.ceil(p.expenses.length/2));
+      for(let n=0;n<count;n++)pages.push({title:'自由に追加 '+(n+1)+' / '+count,html:fpExtraEditor(n)});
+    }
+    return pages;
+  }
+  function fpPageNav(count,current,action,labels=null){
+    if(count<=1)return '';
+    return '<div class="fp-page-nav" aria-label="表示ページを選択">'+
+      (count<=4?Array.from({length:count},(_,n)=>
+        '<button data-act="'+action+'" data-value="'+n+'" class="'+(n===current?'active':'')+'">'+
+        esc(labels?.[n]||String(n+1))+'</button>').join(''):
+        '<button data-act="'+action+'" data-value="'+Math.max(0,current-1)+'" '+(!current?'disabled':'')+'>‹ 前</button>'+
+        '<span>'+Number(current+1)+' / '+count+'</span>'+
+        '<button data-act="'+action+'" data-value="'+Math.min(count-1,current+1)+'" '+(current===count-1?'disabled':'')+'>次 ›</button>')+
       '</div>';
   }
   function simulationScreen(){
     const i=ui.simStep;
     if(i>=7)return simulationResultsScreen();
-    const p=state.plan;let body='';
-    if(i===0)body=fpSection('家族構成','人数と時短予定')+'<div class="sim-grid">'+
-      nField('夫の年齢','husbandAge','歳')+nField('妻の年齢','wifeAge','歳')+
-      sSelect('子どもの人数','children',[[0,'予定なし'],[1,'1人'],[2,'2人'],[3,'3人']])+
-      nField('第1子の予定年','firstChildYear','年')+nField('きょうだいの年齢差','birthInterval','年')+
-      nField('妻の時短中の月手取り','wifeReduced','万円')+'</div>';
-    if(i===1)body=fpSection('実際の手取り','額面年収ではなく手取りで入力')+'<div class="sim-grid">'+
-      nField('夫・月手取り','husbandMonthly','万円')+nField('妻・月手取り','wifeMonthly','万円')+
-      nField('夫・年間賞与','husbandBonus','万円')+nField('妻・年間賞与','wifeBonus','万円')+
-      nField('子ども関連の給付金','childBenefitMonthly','万円/人月')+'</div>'+
-      '<p class="fp-field-hint">給付金はお子さま1人あたりの任意入力です。年齢・所得等による受給条件は判定しません。未確定なら0にしてください。</p>';
-    if(i===2)body=fpSection('家計の基本支出','金額は万円で入力')+
-      '<div class="fp-budget-group"><div class="fp-budget-group-head"><b>01</b><strong>食費・住まい</strong><span>毎月の支払い</span></div>'+
-      '<div class="sim-grid">'+nField('食費','foodMonthly','万円/月')+
-      nField('家賃（賃料）','rentMonthly','万円/月')+
-      nField('管理費','managementMonthly','万円/月')+
-      nField('共益費','commonFeeMonthly','万円/月')+
-      nField('駐車場','parkingMonthly','万円/月')+'</div>'+
-      '<p class="fp-field-hint">家賃は賃料のみ入力。これまで家賃に管理費・共益費・駐車場を含めていた場合は、重複しないよう賃料を修正してください。</p></div>'+
-      '<div class="fp-budget-group"><div class="fp-budget-group-head"><b>02</b><strong>水道・光熱費</strong><span>請求周期に対応</span></div>'+
-      '<div class="sim-grid">'+nField('電気','electricityMonthly','万円/月')+
-      nField('ガス','gasMonthly','万円/月')+
-      nField('水道（2か月分）','waterBiMonthly','万円/2か月')+'</div>'+
-      '<p class="fp-field-hint">水道は1回の請求額を入力。年間は6回分、月平均は2で割って試算します。</p>'+
-      (safeNum(p.utilitiesMonthly)>0?'<div class="fp-legacy-note">旧入力の光熱費合算 '+yen(p.utilitiesMonthly,2)+'万円/月は、上の内訳がすべて0のときだけ計算に使用します。内訳を入力すると自動的に置き換わります。<button type="button" data-act="fp-legacy-utilities-clear">旧合算を削除</button></div>':'')+'</div>'+
-      '<div class="fp-budget-group"><div class="fp-budget-group-head"><b>03</b><strong>その他の支払い</strong><span>毎月</span></div>'+
-      '<div class="sim-grid">'+nField('その他の生活費','livingMonthly','万円/月')+
-      nField('通信・スマホ','telecomMonthly','万円/月')+
-      nField('交通・ガソリン','transportMonthly','万円/月')+
-      nField('サブスク','subscriptionsMonthly','万円/月')+
-      nField('外食・レジャー','leisureMonthly','万円/月')+
-      nField('夫婦の生命保険','lifeInsuranceMonthly','万円/月')+
-      nField('医療・がん保険','medicalInsuranceMonthly','万円/月')+
-      nField('自動車保険','carInsuranceMonthly','万円/月')+
-      nField('通院・薬代','medicalMonthly','万円/月')+
-      nField('車維持・車検積立','carMaintenanceMonthly','万円/月')+
-      nField('自動車ローン','carMonthly','万円/月')+
-      nField('車ローン終了年（0=継続）','carLoanEndYear','年')+
-      nField('その他のローン','otherLoanMonthly','万円/月')+
-      nField('ローン終了年（0=継続）','otherLoanEndYear','年')+'</div>'+
-      '<p class="fp-field-hint">「その他の生活費」は食費・外食・上記の支出と重ならない金額にしてください。以前の合算生活費は必要に応じて修正してください。</p></div>';
-    if(i===3)body=fpSection('子どもの支出','指定した人数の子どもが対象')+
-      '<div class="sim-grid">'+nField('子どもの保険（1人）','childInsuranceMonthly','万円/月')+
-      nField('生活・衣服・習い事（1人）','childLivingMonthly','万円/月')+
-      nField('保育料・幼稚園（1人）','daycareMonthly','万円/月')+
-      sSelect('高校','highSchool',[['public','公立'],['private','私立']])+
-      sSelect('大学','university',[['public','国公立'],['private','私立']])+'</div>'+
-      '<p class="fp-field-hint">保育料は0〜5歳、生活費は0〜17歳、子どもの保険は0〜22歳で試算。学校の標準教育費は6歳以降に別途加算します。習い事を個別費用に入力する場合は生活費に含めないでください。</p>';
-    if(i===4){
-      const options=[['','価格を直接入力'],...state.properties.filter(x=>num(x.price)!==null).map(x=>[x.id,truncate(x.name,17)+' / '+fmt(x.price)])];
-      body=fpSection('住まいの予算','住宅ローンの返済と維持費')+
-        '<div class="sim-grid">'+sSelect('登録物件を選ぶ','propertyId',options)+
-        nField('購入予定価格','propertyPrice','万円')+
-        nField('購入予定年','purchaseYear','年')+nField('頭金','downPayment','万円')+
-        nField('金利（仮定）','interest','％')+nField('返済期間','loanYears','年')+
-        nField('固定資産税・修繕積立等','housingOngoing','万円/月')+
-        nField('住宅火災保険','homeInsuranceAnnual','万円/年')+'</div>'+
-        '<p class="fp-field-hint">購入諸費用は価格の7％を仮置き。固定資産税・修繕等と火災保険の二重入力にご注意ください。</p>';
-    }
-    if(i===5)body=fpSection('現在の資産・積立','NISA積立は支出として扱わず、現金から投資資産へ振り替え')+
-      '<div class="sim-grid">'+nField('現在の普通預金など','cashSavings','万円')+
-      nField('今後受け取る援助','support','万円')+
-      nField('現在のNISA評価額','nisaBalance','万円')+
-      nField('その他投資の現在残高','investBalance','万円')+
-      nField('毎月NISAへ積立','nisaMonthly','万円')+
-      nField('その他投資への積立','otherInvestMonthly','万円')+
-      nField('毎月の現金貯金目標','otherSavingsMonthly','万円')+
-      nField('運用利回り（仮定）','returnAnnual','％/年')+
-      nField('毎月確保したい余裕費','cashBufferMonthly','万円')+'</div>'+
-      '<p class="fp-field-hint">現金貯金は収入−支出−投資積立から自動計算。貯金目標は二重に引きません。利回り0％が基本（入力は−20〜＋20％を想定）。運用益は保証されません。NISAの非課税投資枠は自動判定しません。</p>';
-    if(i===6)body=fpSection('年払い・大きな支出','額はすべて万円')+
-      '<div class="sim-grid">'+nField('自動車税・年払い費用','carTaxAnnual','万円/年')+
-      nField('旅行・帰省','travelAnnual','万円/年')+
-      nField('給与の手取りに含まれない税金','annualTax','万円/年')+
-      nField('冠婚葬祭・家電など','annualEvents','万円/年')+
-      nField('結婚式支払年','weddingYear','年')+
-      nField('結婚式自己負担','weddingCost','万円')+
-      nField('新婚旅行費','honeymoonCost','万円')+
-      nField('試算終了年','simulateUntil','年')+'</div>'+
-      fpExtraEditor();
+    const p=state.plan,pages=fpWizardPages(i);
+    ui.simSubPage=Math.max(0,Math.min(pages.length-1,Number(ui.simSubPage)||0));
+    const n=ui.simSubPage;
+    const labels=i===2?['食費・住居','水道光熱','日常費','保険等']:i===4?['購入','維持費']:i===5?['資産','積立']:null;
     return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR</span>'+
       (p.hasRun?'<button class="fp-recall-btn" data-act="fp-view-budget">前回の診断を見る ↗</button>':'<span class="sim-progress-text">'+(i+1)+' / 7</span>')+
-      '</div><div class="sim-progress">'+Array.from({length:7},(_,n)=>'<span class="'+(n<=i?'filled':'')+'"></span>').join('')+'</div>'+
+      '</div><div class="sim-progress">'+Array.from({length:7},(_,x)=>'<span class="'+(x<=i?'filled':'')+'"></span>').join('')+'</div>'+
       '<div class="sim-question"><h2>'+simQuestions[i][0]+'</h2><p>'+simQuestions[i][1]+'</p></div>'+
-      '<div class="panel sim-form grow fp-wizard-body">'+body+'</div>'+
-      '<div class="sim-footer"><button class="btn" data-act="sim-back" '+(i===0?'disabled':'')+'>戻る</button><button class="btn primary" data-act="sim-next">'+(i===6?'診断する':'次へ →')+'</button></div></section>';
+      fpPageNav(pages.length,n,'fp-form-page',labels)+
+      '<div class="panel sim-form grow fp-wizard-body">'+pages[n].html+'</div>'+
+      '<div class="sim-footer"><button class="btn" data-act="sim-back" '+(i===0?'disabled':'')+'>前の質問</button>'+
+      '<button class="btn primary" data-act="sim-next">'+(i===6?'診断する':'次の質問 →')+'</button></div></section>';
   }
   function educationAnnual(age,p){
     if(age<6 || age>=22)return 0; // preschool is modeled separately as daycare
@@ -1018,14 +1053,17 @@
       }else message('この環境ではコピーできません');
       return;
     }
-    if(action==='sim-next')return step(()=>{if(ui.simStep===6)state.plan.hasRun=1;ui.simStep=Math.min(7,ui.simStep+1);ui.simResultPage=0;save();});
-    if(action==='sim-back')return step(()=>{ui.simStep=Math.max(0,ui.simStep-1);});
-    if(action==='sim-restart')return step(()=>{ui.simStep=0;ui.simResultPage=0;});
+    if(action==='fp-form-page')return step(()=>{ui.simSubPage=Math.max(0,Math.min(fpWizardPages(ui.simStep).length-1,Number(v)||0));});
+    if(action==='fp-ledger-page')return step(()=>{ui.fpLedgerPage=Math.max(0,Number(v)||0);});
+    if(action==='fp-home-page')return step(()=>{ui.fpHomePage=Math.max(0,Number(v)||0);});
+    if(action==='sim-next')return step(()=>{if(ui.simStep===6)state.plan.hasRun=1;ui.simStep=Math.min(7,ui.simStep+1);ui.simSubPage=0;ui.simResultPage=0;save();});
+    if(action==='sim-back')return step(()=>{ui.simStep=Math.max(0,ui.simStep-1);ui.simSubPage=0;});
+    if(action==='sim-restart')return step(()=>{ui.simStep=0;ui.simSubPage=0;ui.simResultPage=0;});
     if(action==='sim-result-page')return step(()=>changePage('simResultPage',4,Number(v)));
     if(action==='fp-result-tab')return step(()=>{ui.simResultPage=Math.min(3,Math.max(0,Number(v)||0));});
     if(action==='fp-legacy-utilities-clear')return step(()=>{state.plan.utilitiesMonthly=0;save();message('旧光熱費の合算額を削除しました');});
-    if(action==='fp-expense-add')return step(()=>{if(state.plan.expenses.length>=35)return message('追加支出は35項目までです');state.plan.expenses.push({id:uid(),name:'新しい支出',amount:0,cycle:'month',start:0,end:0});save();});
-    if(action==='fp-expense-delete'){if(!confirm('この追加支出を削除しますか？'))return;return step(()=>{state.plan.expenses=state.plan.expenses.filter(x=>x.id!==v);save();});}
+    if(action==='fp-expense-add')return step(()=>{if(state.plan.expenses.length>=35)return message('追加支出は35項目までです');state.plan.expenses.push({id:uid(),name:'新しい支出',amount:0,cycle:'month',start:0,end:0});ui.simSubPage=2+Math.floor((state.plan.expenses.length-1)/2);save();});
+    if(action==='fp-expense-delete'){if(!confirm('この追加支出を削除しますか？'))return;return step(()=>{state.plan.expenses=state.plan.expenses.filter(x=>x.id!==v);ui.simSubPage=Math.min(ui.simSubPage,fpWizardPages(6).length-1);save();});}
     if(action==='fp-result-next')return step(()=>{ui.simResultPage=(ui.simResultPage+1)%4;});
     if(action==='sim-choice')return step(()=>{ui.simChoice=v;save();});
     if(action==='fp-view-budget')return step(()=>{ui.tab='sim';ui.simStep=7;ui.simResultPage=0;ui.overlay='';});

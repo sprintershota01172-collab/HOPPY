@@ -1015,6 +1015,38 @@
     return '<div class="fp-r-rows">'+rows.map(([label,value])=>
       '<div><span>'+esc(label)+'</span><strong>'+value+'</strong></div>').join('')+'</div>';
   }
+  function fpIncomeReport(model){
+    const point=fpYearPoint(model),income=fpYearlyIncome(point.year),
+      monthly=ui.fpIncomePeriod==='month',m=Math.max(1,Math.min(12,ui.fpIncomeMonth||1)),
+      record=monthly?income.months[m-1]:income;
+    const rows=fpIncomeCategories.map(([key,label])=>({
+      label,amount:record.fields[key]||0,
+      fraction:record.total?100*(record.fields[key]||0)/record.total:0
+    }));
+    const max=Math.max(1,...income.months.map(x=>x.total));
+    const bars='<div class="fp-income-timeline" role="group" aria-label="月を選択">'+income.months.map((x,i)=>{
+      const month=i+1,height=Math.max(5,x.total/max*46);
+      return '<button type="button" data-act="fp-income-month" data-value="'+month+'" class="'+(monthly&&month===m?'selected':'')+
+        '" title="'+month+'月 '+yen(x.total,2)+'万円" aria-label="'+month+'月の収入 '+yen(x.total,2)+'万円">'+
+        '<span style="height:'+height.toFixed(1)+'px"></span><small>'+month+'</small></button>';
+    }).join('')+'</div>';
+    return '<div class="fp-income-report grow">'+
+      '<div class="fp-income-toolbar">'+fpYearSelect(model)+
+        '<div class="fp-income-toggle" role="group" aria-label="収入を年または月で表示">'+
+        '<button data-act="fp-income-period" data-value="year" class="'+(!monthly?'active':'')+'">年単位</button>'+
+        '<button data-act="fp-income-period" data-value="month" class="'+(monthly?'active':'')+'">月単位</button></div></div>'+
+      (monthly?bars:'')+
+      '<div class="fp-income-total"><span>'+point.year+'年'+(monthly?' '+m+'月':' 年間')+'の手取り収入</span>'+
+        '<strong>'+yen(record.total,2)+'<small>万円</small></strong></div>'+
+      '<div class="fp-income-lines">'+rows.map(x=>
+        '<div class="fp-income-line"><span>'+esc(x.label)+'</span><strong>'+yen(x.amount,2)+'万円</strong>'+
+        '<div class="fp-income-track"><i style="width:'+Math.max(0,Math.min(100,x.fraction)).toFixed(2)+'%"></i></div></div>'
+      ).join('')+'</div>'+
+      '<p class="fp-r-help">'+(monthly?
+        '月別は年間モデルを配分した予測。給与・給付金は毎月一定、賞与は登録月、イベント収入は発生月に計上。月未指定のイベントは均等配分。':
+        '年間収入＝夫婦の手取り給与×12＋賞与＋子どもの給付金＋臨時収入。賞与額は入力した年間合計。')+
+        ' 妻の収入減少・給付金は登録条件による概算です。</p></div>';
+  }
   function fpCalculationData(price,current){
     const p=state.plan,point=fpYearPoint(current),mode=ui.fpCalcPage||0,loan=fpAmortization(price);
     if(mode===0){
@@ -1104,8 +1136,8 @@
   function simulationResultsScreen(snapshot){
     const p=state.plan,price=safeNum(p.propertyPrice),current=modelYears(price,true),rent=modelYears(price,false),
       budget=fpBudget(),rating=fpRating(price),warnings=fpPlanWarnings(),
-      page=Math.min(3,Math.max(0,ui.simResultPage||0));
-    const heading=['購入後の家計','収支予測グラフ','計算根拠','アドバイス'][page];
+      page=Math.min(4,Math.max(0,ui.simResultPage||0));
+    const heading=['購入後の家計','収支予測グラフ','収入の内訳','計算根拠','アドバイス'][page];
     const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r7</span>'+
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
@@ -1126,7 +1158,7 @@
         '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">最初から見直す</button>'+
         '<button class="btn primary" data-act="fp-fix-input" data-value="'+warnings[0].step+':'+warnings[0].page+'">該当項目を修正 →</button></div></section>';
     }
-    const tabs='<div class="fp-result-nav">'+['まとめ','グラフ','計算','助言'].map((label,i)=>
+    const tabs='<div class="fp-result-nav">'+['まとめ','グラフ','収入','計算','助言'].map((label,i)=>
       '<button data-act="fp-result-tab" data-value="'+i+'" class="'+(page===i?'active':'')+'">'+label+'</button>').join('')+'</div>';
     let content='';
     if(page===0){
@@ -1154,6 +1186,8 @@
         fpPageNav(4,chartPage,'fp-chart-page',['現金','年間収支','ローン','円グラフ'])+
         fpYearSelect(current)+fpChartData(price,current,rent)+'</div>';
     }else if(page===2){
+      content=fpIncomeReport(current);
+    }else if(page===3){
       const calcPage=Math.max(0,Math.min(3,ui.fpCalcPage||0));
       content='<div class="fp-r-calc-page grow">'+
         fpPageNav(4,calcPage,'fp-calc-page',['収支式','ローン','支出明細','前提'])+
@@ -1162,7 +1196,7 @@
     return '<section class="screen sim-screen fp-result-screen fp-report-screen">'+intro+
       '<h2 class="sim-result-title">'+heading+'</h2>'+(snapshot?'<div class="fp-snapshot-label">'+esc(fpHistoryDate(snapshot))+'</div>':'')+tabs+content+
       '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">↶ 条件を見直す</button>'+
-      '<button class="btn primary" data-act="fp-result-next">'+(page===3?'まとめへ戻る':'次へ →')+'</button></div></section>';
+      '<button class="btn primary" data-act="fp-result-next">'+(page===4?'まとめへ戻る':'次へ →')+'</button></div></section>';
   }
     const studyCategories=[
     ['費用・住宅ローン',/費用|万円|円|金利|ローン|予算|頭金|税|維持費|値引|価格|銀行|返済/],
@@ -1493,7 +1527,7 @@
     if(action==='sim-next')return step(()=>{if(ui.simStep===6){state.plan.hasRun=1;fpRecordHistory();}ui.simStep=Math.min(7,ui.simStep+1);ui.simSubPage=0;ui.simResultPage=0;ui.fpIssuePage=0;save();});
     if(action==='sim-back')return step(()=>{ui.simStep=Math.max(0,ui.simStep-1);ui.simSubPage=0;});
     if(action==='sim-restart')return step(()=>{ui.simStep=0;ui.simSubPage=0;ui.simResultPage=0;ui.fpHistoryOpen=false;});
-    if(action==='sim-result-page')return step(()=>changePage('simResultPage',4,Number(v)));
+    if(action==='sim-result-page')return step(()=>changePage('simResultPage',5,Number(v)));
     if(action==='fp-history-open')return step(()=>{ui.fpHistoryOpen=true;ui.fpHistoryPage=0;});
     if(action==='fp-history-close')return step(()=>{ui.fpHistoryOpen=false;});
     if(action==='fp-history-page')return step(()=>{ui.fpHistoryPage=Math.max(0,Number(v)||0);});
@@ -1503,7 +1537,9 @@
     if(action==='fp-history-latest')return step(()=>{ui.fpHistoryId=state.planHistory[0]?.id||null;ui.fpHistoryOpen=false;ui.simResultPage=0;});
     if(action==='fp-edit-events')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=6;ui.simSubPage=2;});
     if(action==='fp-pie-open')return step(()=>{ui.simResultPage=1;ui.fpChartPage=3;});
-    if(action==='fp-result-tab')return step(()=>{ui.simResultPage=Math.min(3,Math.max(0,Number(v)||0));ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
+    if(action==='fp-result-tab')return step(()=>{ui.simResultPage=Math.min(4,Math.max(0,Number(v)||0));ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
+    if(action==='fp-income-period')return step(()=>{ui.fpIncomePeriod=v==='month'?'month':'year';});
+    if(action==='fp-income-month')return step(()=>{ui.fpIncomeMonth=Math.max(1,Math.min(12,Number(v)||1));ui.fpIncomePeriod='month';});
     if(action==='fp-legacy-utilities-clear')return step(()=>{state.plan.utilitiesMonthly=0;save();message('旧光熱費の合算額を削除しました');});
     if(action==='fp-event-add'){
       if(state.plan.events.length>=30)return message('イベントは30件までです');
@@ -1532,7 +1568,7 @@
     }
     if(action==='fp-expense-add')return step(()=>{if(state.plan.expenses.length>=35)return message('追加支出は35項目までです');state.plan.expenses.push({id:uid(),name:'新しい支出',amount:0,cycle:'month',start:0,end:0});ui.simSubPage=2+Math.max(1,Math.ceil(state.plan.events.length/2))+Math.floor((state.plan.expenses.length-1)/2);save();});
     if(action==='fp-expense-delete'){if(!confirm('この追加支出を削除しますか？'))return;return step(()=>{state.plan.expenses=state.plan.expenses.filter(x=>x.id!==v);ui.simSubPage=Math.min(ui.simSubPage,fpWizardPages(6).length-1);save();});}
-    if(action==='fp-result-next')return step(()=>{ui.simResultPage=(ui.simResultPage+1)%4;ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
+    if(action==='fp-result-next')return step(()=>{ui.simResultPage=(ui.simResultPage+1)%5;ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
     if(action==='sim-choice')return step(()=>{ui.simChoice=v;save();});
     if(action==='fp-view-budget')return step(()=>{ui.tab='sim';ui.simStep=7;ui.simResultPage=0;ui.fpHistoryOpen=false;ui.overlay='';});
     if(action==='fp-open-home')return openOverlay('detail',()=>{ui.propertyId=v;ui.propertyPage=0;});

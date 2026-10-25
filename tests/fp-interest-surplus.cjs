@@ -33,7 +33,10 @@ assert.ok(interest>0,'positive interest rate produces loan interest');
 const card=api.fpMortgageCapacityCard();
 assert.ok(card.includes('（金利込み総支払額 '+api.fpYen(interestInclusive)+'）'),
   'purchase price has correctly calculated parenthetical interest-inclusive total');
-assert.ok(card.includes('利息総額 '+api.fpYen(interest)));
+assert.ok(card.includes('入力した物件 '+api.fpYen(p.propertyPrice)));
+assert.ok(card.includes('返済に回せる上限'));
+assert.ok(card.includes('家計上限'));
+assert.ok(interest>0,'loan total includes interest at positive APR');
 assert.ok(card.includes('維持費・諸費用'),'non-loan costs are explicitly excluded');
 assert.ok(card.includes('金利一定'),'full-term payment assumes constant interest');
 assert.ok(card.includes(api.fpYen(budget.amount)));

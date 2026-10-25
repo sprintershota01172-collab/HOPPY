@@ -18,11 +18,19 @@
   const rowsPerPage = () => window.matchMedia('(max-height: 650px)').matches ? 4 : 5;
   const initialCriteria = ['価格','耐久性（構造・耐震・築年数）','立地（駅距離・通勤）','広さ・間取り','日当たり','周辺環境（スーパー・病院）','子育て環境（学校・公園）','維持費（税・管理費等）','災害リスク','資産価値'].map((name,i)=>({id:'standard-'+i,name,weight:2,auto:null}));
   const blankProperty = () => ({id:uid(),name:'',url:'',address:'',price:'',kind:kinds[0],age:'',area:'',layout:'',station:'',status:statuses[0],manufacturer:'',meetings:[],tags:[],notes:{good:[''],bad:['']},questions:[],photos:[],created:Date.now()});
-  const defaults = () => ({version:1,properties:[],criteria:initialCriteria,scores:{},selected:[],filter:{query:'',tag:'',sort:'new',status:''},});
+  const defaultPlan = () => ({
+    husbandAge:27,wifeAge:29,children:2,firstChildYear:2028,birthInterval:3,
+    husbandMonthly:26,wifeMonthly:25,husbandBonus:120,wifeBonus:20,wifeReduced:12.5,
+    cashSavings:300,support:0,livingMonthly:20,rentMonthly:8.2,carMonthly:1.18,
+    propertyPrice:4400,propertyId:'',purchaseYear:2028,downPayment:0,interest:1.5,loanYears:35,
+    housingOngoing:2.5,weddingYear:2027,weddingCost:350,honeymoonCost:98,
+    nisaMonthly:3,highSchool:'public',university:'public',simulateUntil:2045
+  });
+  const defaults = () => ({version:2,properties:[],criteria:initialCriteria,scores:{},selected:[],filter:{query:'',tag:'',sort:'new',status:''},plan:defaultPlan(),studyNotes:[]});
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'husband',overlay:'',formStep:0,draft:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'husband',overlay:'',formStep:0,draft:null,simStep:0,simResultPage:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
   function normalize(s) {
     if (!s || !Array.isArray(s.properties) || !Array.isArray(s.criteria)) throw Error('形式が違います');
@@ -32,6 +40,16 @@
     out.scores = s.scores && typeof s.scores==='object' ? s.scores : {};
     out.selected = Array.isArray(s.selected)?s.selected.filter(id=>out.properties.some(p=>p.id===id)).slice(0,3):[];
     out.filter = {...out.filter,...s.filter};
+    if(s.plan && typeof s.plan==='object') {
+      for(const k of Object.keys(out.plan)) {
+        if(k in s.plan && (typeof s.plan[k]==='string'||typeof s.plan[k]==='number'))out.plan[k]=s.plan[k];
+      }
+    }
+    out.studyNotes = Array.isArray(s.studyNotes)?s.studyNotes.filter(n=>n&&typeof n.id==='string').slice(0,300).map(n=>({
+      id:n.id,title:String(n.title||'家の学び').slice(0,65),text:String(n.text||'').slice(0,2500),
+      created:Number(n.created)||Date.now()
+    })):[];
+
     return out;
   }
   function save() { try {localStorage.setItem(STORE,JSON.stringify(state));} catch (_) {message('保存容量に達しました。バックアップを作成してください。');} }
@@ -57,13 +75,13 @@
   }
   function toolbar(title){
     const count=state.properties.filter(p=>p.status!=='見送り').length;
-    return '<header class="top modern-top"><div class="brand-block"><span class="brand-symbol" aria-hidden="true">'+tabIcon('property')+'</span><div class="brand"><h1>'+esc(ui.tab==='property'?'ほっぽさん':title)+'</h1><span class="eyebrow">HOME PLANNER</span></div></div><div class="header-actions">'+(ui.tab==='property'?'<span class="header-count">♥ <b>'+count+'件</b></span>':'')+'<button class="iconbtn settings-gear" data-act="settings" aria-label="バックアップ・設定">⚙</button></div></header>';
+    return '<header class="top modern-top"><div class="brand-block"><span class="brand-symbol" aria-hidden="true">'+tabIcon('property')+'</span><div class="brand"><h1>'+esc(ui.tab==='property'?'ほっぽさん':title)+'</h1><span class="eyebrow">HOME PLANNER</span></div></div><div class="header-actions">'+(ui.tab==='property'?'<button class="header-learn" data-act="study-open">学び</button><span class="header-count">♥ <b>'+count+'件</b></span>':'')+'<button class="iconbtn settings-gear" data-act="settings" aria-label="バックアップ・設定">⚙</button></div></header>';
   }
   function render(){
     if(!app)return;
     const titles={property:'ほっぽさん',compare:'比較',sim:'シミュレーション',schedule:'予定'};
     const nav=[['property','物件'],['compare','比較'],['sim','シミュ'],['schedule','予定']];
-    const body=ui.tab==='property'?propertyScreen():ui.tab==='compare'?compareScreen():pendingScreen();
+    const body=ui.tab==='property'?propertyScreen():ui.tab==='compare'?compareScreen():ui.tab==='sim'?simulationScreen():pendingScreen();
     app.innerHTML=toolbar(titles[ui.tab])+'<main class="main">'+body+'</main><nav class="bottom" aria-label="メインメニュー">'+nav.map(([key,name])=>'<button class="tab '+(ui.tab===key?'active':'')+'" data-act="tab" data-value="'+key+'" aria-current="'+(ui.tab===key?'page':'false')+'"><span class="nav-icon">'+tabIcon(key)+'</span><span class="tab-label">'+name+'</span></button>').join('')+'</nav>'+(ui.overlay?overlay(): '');
     renderToast();hydratePhotos();
   }
@@ -249,7 +267,7 @@
   }
   function questionForm(){return modalFrame('営業担当に聞くこと','<div class="panel detail grow form-view"><div class="field"><label>質問（120文字まで）</label><textarea data-question-input maxlength="120" placeholder="例: 長期保証の適用条件は？"></textarea></div><p class="subtle">内見時に確認する質問をリストで管理できます。</p></div><button class="btn primary wide" data-act="question-save">質問を保存</button>');}
   function pendingScreen(){const sim=ui.tab==='sim';return '<section class="screen">'+empty(sim?'∿':'▦',sim?'人生設計はフェーズ2':'スケジュールはフェーズ3',sim?'貯金推移・住宅ローン・教育費をステップ式で追加予定です。':'内見カレンダー・リマインド通知を追加予定です。')+'</section>';}
-  function overlay(){return ui.overlay==='detail'?detailScreen():ui.overlay==='form'?propertyForm():ui.overlay==='list'?listScreen():ui.overlay==='search'?searchScreen():ui.overlay==='settings'?settingsScreen():ui.overlay==='choose'?choosePropertiesScreen():ui.overlay==='criteria'?criteriaScreen():ui.overlay==='criterion-form'?criterionForm():ui.overlay==='rating'?ratingScreen():ui.overlay==='question'?questionForm():ui.overlay==='meeting-form'?meetingForm():'';}
+  function overlay(){return ui.overlay==='detail'?detailScreen():ui.overlay==='form'?propertyForm():ui.overlay==='list'?listScreen():ui.overlay==='search'?searchScreen():ui.overlay==='settings'?settingsScreen():ui.overlay==='choose'?choosePropertiesScreen():ui.overlay==='criteria'?criteriaScreen():ui.overlay==='criterion-form'?criterionForm():ui.overlay==='rating'?ratingScreen():ui.overlay==='question'?questionForm():ui.overlay==='meeting-form'?meetingForm():ui.overlay==='study'?studyScreen():ui.overlay==='study-form'?studyForm():'';}
   function moveProperty(d){let ps=visibleProperties(),i=ps.findIndex(p=>p.id===ui.propertyId);if(ps.length){ui.propertyId=ps[(i+d+ps.length)%ps.length].id;ui.photoIndex=0;ui.propertyPage=0;}}
   function moveDetail(d){ui.propertyPage=Math.max(0,Math.min(3,ui.propertyPage+d));}
   function changePage(key,total,d){ui[key]=Math.max(0,Math.min(Math.max(0,total-1),ui[key]+d));}
@@ -268,6 +286,31 @@
   function handler(action,button){
     let v=button.dataset.value, p=curProp();
     if(action==='tab')return chooseTab(v);
+    if(action==='study-open')return openOverlay('study',()=>{ui.studyMode='notes';ui.studyPage=0;ui.studySummaryPage=0;});
+    if(action==='study-toggle')return step(()=>{ui.studyMode=v;ui.studyPage=0;ui.studySummaryPage=0;});
+    if(action==='study-page')return step(()=>changePage('studyPage',Math.max(1,Math.ceil(state.studyNotes.length/3)),Number(v)));
+    if(action==='study-summary-page')return step(()=>changePage('studySummaryPage',Math.max(1,Math.ceil(studySummaryItems().length/4)),Number(v)));
+    if(action==='study-add')return openOverlay('study-form',()=>{ui.studyEditId=null;ui.studyDraft={title:'',text:''};});
+    if(action==='study-edit')return openOverlay('study-form',()=>{const note=state.studyNotes.find(n=>n.id===v);if(!note)return;ui.studyEditId=v;ui.studyDraft={title:note.title,text:note.text};});
+    if(action==='study-back')return step(()=>{ui.overlay='study';ui.studyDraft=null;ui.studyEditId=null;});
+    if(action==='study-save'){
+      const n=ui.studyDraft;if(!n?.text?.trim())return message('学んだ内容を書いてください');
+      return step(()=>{const title=n.title.trim()||'家の学び';if(ui.studyEditId){
+        const old=state.studyNotes.find(x=>x.id===ui.studyEditId);if(old){old.title=title;old.text=n.text.trim();}
+      }else state.studyNotes.unshift({id:uid(),title,text:n.text.trim(),created:Date.now()});
+      ui.studyPage=0;ui.studyDraft=null;ui.studyEditId=null;ui.overlay='study';save();message('学びメモを保存しました');});
+    }
+    if(action==='study-delete'){
+      if(!confirm('この学びメモを削除しますか？'))return;
+      return step(()=>{state.studyNotes=state.studyNotes.filter(n=>n.id!==v);ui.studyPage=0;save();});
+    }
+    if(action==='study-summarize')return step(()=>{if(!state.studyNotes.length)return message('先にメモを登録してください');ui.studyMode='summary';ui.studySummaryPage=0;});
+    if(action==='sim-next')return step(()=>{ui.simStep=Math.min(5,ui.simStep+1);ui.simResultPage=0;save();});
+    if(action==='sim-back')return step(()=>{ui.simStep=Math.max(0,ui.simStep-1);});
+    if(action==='sim-restart')return step(()=>{ui.simStep=0;ui.simResultPage=0;});
+    if(action==='sim-result-page')return step(()=>changePage('simResultPage',3,Number(v)));
+    if(action==='sim-choice')return step(()=>{ui.simChoice=v;save();});
+
     if(action==='search')return openOverlay('search');
     if(action==='home-status')return step(()=>{state.filter.status=v;ui.homePage=0;save();});
     if(action==='home-page')return step(()=>changePage('homePage',Math.max(1,Math.ceil(visibleProperties().length/homePageSize())),Number(v)));
@@ -386,6 +429,15 @@
     }
     if(el.dataset.meetingModel && ui.meetingDraft){const key=el.dataset.meetingModel;if(key==='memo')ui.meetingDraft.notes[0]=el.value;else ui.meetingDraft[key]=el.value;}
     if(el.dataset.homeQuery!==undefined){state.filter.query=el.value;ui.homePage=0;save();const list=app.querySelector('.home-results');if(list){list.innerHTML=homeResults();hydratePhotos();}}
+    if(el.dataset.study && ui.studyDraft){ui.studyDraft[el.dataset.study]=el.value;}
+    if(el.dataset.sim){
+      const k=el.dataset.sim; const val=el.value;
+      state.plan[k]=['propertyId','highSchool','university'].includes(k)?val:(val!==''&&Number.isFinite(Number(val))?Number(val):0);
+      save();
+      if(k==='propertyId'){const p=propById(val);if(p&&Number.isFinite(Number(p.price)))state.plan.propertyPrice=Number(p.price);}
+      const priceInput=app.querySelector('[data-sim="propertyPrice"]');
+      if(k==='propertyId'&&priceInput)priceInput.value=state.plan.propertyPrice;
+    }
     if(el.dataset.filter){state.filter[el.dataset.filter]=el.value;}
     if(el.dataset.criterionModel && ui.draft){let k=el.dataset.criterionModel;ui.draft[k]=k==='weight'?Number(el.value):el.value;}
     if(el.dataset.auto && ui.draft){ui.draft.auto ||= {field:'',dir:'low',good:'',mid:''};ui.draft.auto[el.dataset.auto]=el.value;}

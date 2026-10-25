@@ -48,6 +48,21 @@ assert.match(card,/維持費・諸費用/);
 assert.match(card,/50万円単位で切下げ/);
 assert.match(card,/融資承認額ではありません/);
 assert.match(card,/住居費の予算/);
+// A household budget limit is not a loan bill. The entered home receives
+// a separate amortized payment at the configured loan length and rate.
+p.loanYears=50;
+p.propertyPrice=4400;
+let forFifty=api.fpMortgageCapacityCard();
+let actualFifty=api.mortgageMonthly(4400,100,1.5,50);
+assert.match(forFifty,/① 返済に回せる上限/);
+assert.match(forFifty,/② この上限で50年返済なら/);
+assert.match(forFifty,/実際の請求額ではありません/);
+assert.ok(forFifty.includes('入力した物件 '+api.fpYen(4400)+' の返済予測'));
+assert.ok(forFifty.includes(api.fpYen(actualFifty)+' / 月'),
+  'chosen property payment is derived from its actual loan size over 50 years');
+p.propertyPrice=api.fpBudget().amount*2;
+assert.match(api.fpMortgageCapacityCard(),/家計上限を/,'expensive chosen property warns about over-budget payment');
+p.propertyPrice=4400;p.loanYears=35;
 const prior=original.amount;
 p.housingOngoing=4;
 assert.ok(api.fpBudget().loanPayment<original.loanPayment,'higher maintenance cuts loan payment');

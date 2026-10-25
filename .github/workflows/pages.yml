@@ -32,6 +32,7 @@ jobs:
           node tests/fp-income.cjs
           node tests/fp-month-assets.cjs
           node tests/fp-breakdown-sheet.cjs
+          node tests/fp-stable-breakdown.cjs
           node tests/fp-purchase-month.cjs
           node tests/home-axis.cjs
       - uses: actions/configure-pages@v5

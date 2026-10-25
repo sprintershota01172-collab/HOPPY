@@ -814,3 +814,118 @@ html,body,.app-shell{background:var(--paper)}
   .study-toolbar{min-height:43px}
   .study-edit-form{gap:6px}
 }
+
+
+/* HOPPO v10 — Meiryo UI typography and memo workspace */
+:root{
+  font-family:"Meiryo UI","Meiryo","メイリオ","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+}
+html,body,button,input,select,textarea,.app-shell,
+.brand h1,.brand .eyebrow,.full-header strong,.section-title,.estate-name,
+.money,.sim-hero-number,.sim-result-head strong{
+  font-family:"Meiryo UI","Meiryo","メイリオ","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif!important;
+}
+.bottom{grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding-inline:5px}
+.bottom .tab{width:100%;min-width:0;padding:3px 0}
+.bottom .tab .tab-label{font-size:10px;white-space:nowrap}
+.bottom .tab .nav-icon{width:100%;height:25px}
+.bottom .tab svg{width:19px;height:19px}
+.memo-screen{gap:9px;overflow:hidden}
+.memo-heading{min-height:46px;display:flex;align-items:center;justify-content:space-between;gap:9px}
+.memo-heading>div{min-width:0}
+.memo-heading h2{font-size:19px;line-height:1.28;white-space:nowrap}
+.memo-new{height:44px;white-space:nowrap;flex:none}
+.memo-scope-switch{
+  display:grid;grid-template-columns:1fr 1fr;gap:4px;flex:none;
+  min-height:45px;border-radius:12px;padding:3px;background:#e9eae5
+}
+.memo-scope-switch button{
+  min-width:0;min-height:39px;border:0;background:transparent;
+  font-size:12px;font-weight:750;border-radius:10px;color:#748277;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.memo-scope-switch button.active{background:#fffdfa;color:#2e706a;box-shadow:0 1px 4px #233e3116}
+.memo-property-pick{display:flex;align-items:center;gap:9px;min-height:44px;flex:none}
+.memo-property-pick span{font-size:11px;color:#7d8b82;white-space:nowrap}
+.memo-property-pick select{
+  width:100%;min-width:0;height:44px;background:#fffdf9;
+  border:1px solid #e0e2d9;border-radius:10px;padding:0 10px;
+  font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.memo-all-count{display:flex;align-items:center;min-height:44px;font-size:11px;color:#758980;padding-left:4px}
+.memo-cards{display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden}
+.memo-swipe-wrap{
+  display:block;position:relative;flex:1;min-height:0;
+  border-radius:13px;overflow:hidden;background:#b65c57;
+}
+.memo-card{
+  display:flex;flex-direction:column;align-items:stretch;
+  width:100%;height:100%;min-height:0;position:relative;
+  padding:11px 12px;gap:7px;border:1px solid #e1e6dc;
+  border-radius:13px;background:#fffefa;color:#273d34;
+  text-align:left;transition:transform .24s cubic-bezier(.2,.7,.2,1);
+}
+.memo-card.swiped{transform:translateX(-78px);box-shadow:-4px 0 14px #111a1711}
+.memo-swipe-delete{
+  position:absolute;right:0;top:0;bottom:0;width:80px;
+  min-height:44px;background:#ae5754;color:#fff;border:0;
+  font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;
+  z-index:0;
+}
+.memo-card-top{display:flex;align-items:center;gap:6px;min-width:0;min-height:27px}
+.memo-icon{
+  flex:none;width:26px;height:26px;border-radius:8px;
+  color:#40766d;background:#e8f0e9;display:grid;place-items:center;
+  font-size:15px;
+}
+.memo-title{font-size:13px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.memo-chip{
+  flex:none;max-width:57px;padding:5px 6px;font-size:10px;font-weight:750;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  background:#e8eee9;color:#528073;border-radius:18px;
+}
+.memo-chevron{font-size:19px;color:#91a29a}
+.memo-property{font-size:10px;font-weight:700;color:#758d7c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.memo-preview{
+  color:#6e7b72;font-size:11px;line-height:1.45;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden;white-space:normal;overflow-wrap:anywhere;
+}
+.memo-empty{
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  gap:10px;height:100%;border-radius:14px;border:1px dashed #d9e1d8;
+  background:#fffdf9;text-align:center;padding:12px;
+}
+.memo-empty>span{font-size:31px;color:#7f9f90}
+.memo-empty strong{font-size:13px}
+.memo-empty p{font-size:11px;color:#84938a}
+.memo-count{font-size:11px;text-align:center;color:#859087;min-height:21px;flex:none}
+.memo-digest-btn{
+  flex:none;min-height:47px;border-radius:12px;background:#213e5f;color:#fff;
+  border:0;font-size:12px;font-weight:800;position:relative;white-space:nowrap;
+}
+.memo-digest-btn span{position:absolute;right:15px;font-size:19px;top:9px}
+.memo-footnote{font-size:10px;white-space:nowrap;color:#8b988c;text-align:center;flex:none}
+.memo-property-editor{
+  height:44px!important;min-height:44px!important;max-height:44px!important;
+  width:100%;border:1px solid #dfe1d8;background:#fffefa;
+  border-radius:9px;padding:0 10px;font-size:12px;min-width:0;
+}
+@media(max-height:720px){
+  .memo-screen{gap:5px}
+  .memo-heading{min-height:41px}
+  .memo-scope-switch{min-height:42px}
+  .memo-scope-switch button{min-height:36px}
+  .memo-property-pick,.memo-all-count{min-height:40px}
+  .memo-card{padding:7px 10px;gap:4px}
+  .memo-card-top{min-height:24px}
+  .memo-swipe-wrap{border-radius:11px}
+  .memo-preview{-webkit-line-clamp:1}
+  .memo-digest-btn{min-height:44px}
+}
+@media(max-height:590px){
+ .memo-card{padding:5px 9px;gap:3px}
+ .memo-preview{-webkit-line-clamp:1}
+ .memo-property{display:none}
+}
+@media(prefers-reduced-motion:reduce){.memo-card{transition:none}}

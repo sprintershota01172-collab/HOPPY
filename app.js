@@ -139,10 +139,10 @@
       let notes=p.notes[ui.noteKind]||[''];ui.noteIndex=Math.min(ui.noteIndex,Math.max(0,notes.length-1));
       if(ui.noteKind==='questions'){
         const start=ui.questionPage*4;const subset=p.questions.slice(start,start+4);
-        content='<div class="panel detail grow swipe-zone"><div class="notes-title"><span class="kicker">営業担当に聞くこと</span><span class="meta">'+p.questions.length+' 件</span></div><div class="question-list">'+(subset.length?subset.map(q=>'<div class="question-row '+(q.done?'done':'')+'"><button class="checkbtn" data-act="question-toggle" data-value="'+esc(q.id)+'" aria-label="確認済みを切替">'+(q.done?'✓':'○')+'</button><span>'+esc(q.text)+'</span><button class="ellipsis" data-act="question-delete" data-value="'+esc(q.id)+'" aria-label="質問を削除">×</button></div>').join(''):'<div class="empty grow"><p>聞きたいことを登録しましょう。</p></div>')+'</div>'+navPager(Math.min(ui.questionPage,Math.max(0,Math.ceil(p.questions.length/4)-1)),Math.max(1,Math.ceil(p.questions.length/4)),'question-nav')+'<button class="btn primary wide" data-act="add-question">＋ 質問を追加</button></div>';
+        content='<div class="panel detail grow swipe-zone"><div class="notes-title"><span class="kicker">営業担当に聞くこと</span><span class="meta">'+p.questions.length+' 件</span></div><div class="question-list">'+(subset.length?subset.map(q=>'<div class="question-row '+(q.done?'done':'')+'"><button class="checkbtn" data-act="question-toggle" data-value="'+esc(q.id)+'" aria-label="確認済みを切替">'+(q.done?'✓':'○')+'</button><span>'+esc(q.text)+'</span></div>').join(''):'<div class="empty grow"><p>聞きたいことを登録しましょう。</p></div>')+'</div>'+navPager(Math.min(ui.questionPage,Math.max(0,Math.ceil(p.questions.length/4)-1)),Math.max(1,Math.ceil(p.questions.length/4)),'question-nav')+'<button class="btn primary wide" data-act="add-question">＋ 質問を追加</button></div>';
       } else {
         const note=notes[ui.noteIndex]||'';
-        content='<div class="panel detail grow swipe-zone"><div class="notes-title"><span class="kicker">'+(ui.noteKind==='good'?'よかった点':'気になる点')+'</span><span class="meta">'+note.length+' / 220文字</span></div><textarea class="note-text" data-note="'+ui.noteKind+'" maxlength="220" placeholder="ここにメモを書きます。1ページ220文字まで。">'+esc(note)+'</textarea><div class="note-actions"><button class="btn compact" data-act="note-delete" '+(notes.length<2?'disabled':'')+'>削除</button>'+'<button class="btn compact" data-act="note-nav" data-value="-1" '+(ui.noteIndex===0?'disabled':'')+'>‹</button><span class="meta">'+(ui.noteIndex+1)+' / '+notes.length+'</span><button class="btn compact" data-act="note-nav" data-value="1" '+(ui.noteIndex===notes.length-1?'disabled':'')+'>›</button><button class="btn compact primary" data-act="note-add">＋</button></div></div>';
+        content='<div class="panel detail grow swipe-zone"><div class="notes-title"><span class="kicker">'+(ui.noteKind==='good'?'よかった点':'気になる点')+'</span><span class="meta">'+note.length+' / 220文字</span></div><textarea class="note-text" data-note="'+ui.noteKind+'" maxlength="220" placeholder="ここにメモを書きます。1ページ220文字まで。">'+esc(note)+'</textarea><div class="note-actions"><button class="btn compact" data-act="note-nav" data-value="-1" '+(ui.noteIndex===0?'disabled':'')+'>‹</button><span class="meta">'+(ui.noteIndex+1)+' / '+notes.length+'</span><button class="btn compact" data-act="note-nav" data-value="1" '+(ui.noteIndex===notes.length-1?'disabled':'')+'>›</button><button class="btn compact primary" data-act="note-add">＋</button></div></div>';
       }
     }else if(ui.propertyPage===3){
       let n=p.photos.length;ui.photoIndex=Math.min(ui.photoIndex,Math.max(0,n-1));
@@ -162,7 +162,7 @@
     if(!ms.length)return '<div class="panel detail grow meeting-panel"><div class="empty grow meeting-empty"><span class="kicker">MEETING JOURNAL</span><h2 class="section-title">打ち合わせの記録</h2><p>日時とメーカー、聞いた内容を物件ごとに残せます。</p><button class="btn primary" data-act="meeting-add">＋ 打ち合わせを登録</button></div></div>';
     const m=ms[ui.meetingIndex], notes=m.notes||[''];
     ui.meetingNoteIndex=Math.min(ui.meetingNoteIndex,Math.max(0,notes.length-1));
-    return '<div class="panel detail grow meeting-panel swipe-zone"><div class="meeting-record-head"><div class="meeting-date-block"><span class="micro-label">'+esc(m.type==='内見'?'内見日時':'打ち合わせ日時')+'</span><strong>'+esc(formatMeetingDate(m.at))+'</strong><span>'+esc(m.maker||p.manufacturer||'メーカー未登録')+'</span></div><div class="row"><button class="btn compact" data-act="meeting-edit">編集</button><button class="btn compact" data-act="meeting-delete" aria-label="削除">×</button></div></div>'+
+    return '<div class="panel detail grow meeting-panel swipe-zone"><div class="meeting-record-head"><div class="meeting-date-block"><span class="micro-label">'+esc(m.type==='内見'?'内見日時':'打ち合わせ日時')+'</span><strong>'+esc(formatMeetingDate(m.at))+'</strong><span>'+esc(m.maker||p.manufacturer||'メーカー未登録')+'</span></div><div class="row"><button class="btn compact" data-act="meeting-edit">編集</button></div></div>'+
       '<div class="meeting-notepad"><div class="notes-title"><span class="kicker">打ち合わせメモ</span><span class="meta">'+(ui.meetingNoteIndex+1)+' / '+notes.length+'ページ</span></div><textarea class="note-text meeting-note" data-meeting-note maxlength="220" placeholder="担当者の説明、次回聞くこと、見積もりの内容などを記録">'+esc(notes[ui.meetingNoteIndex]||'')+'</textarea>'+
       '<div class="meeting-note-actions"><button class="btn compact" data-act="meeting-note-nav" data-value="-1" '+(ui.meetingNoteIndex===0?'disabled':'')+'>‹</button><button class="btn compact" data-act="meeting-note-nav" data-value="1" '+(ui.meetingNoteIndex===notes.length-1?'disabled':'')+'>›</button><button class="btn compact" data-act="meeting-note-add">＋ ページ</button><button class="btn compact danger" data-act="meeting-note-delete" '+(notes.length===1?'disabled':'')+'>削除</button></div></div>'+
       '<div class="meeting-nav"><button class="btn compact" data-act="meeting-nav" data-value="-1" '+(ui.meetingIndex===0?'disabled':'')+'>‹ 前の記録</button><span class="meta">'+(ui.meetingIndex+1)+' / '+ms.length+'件</span><button class="btn compact" data-act="meeting-nav" data-value="1" '+(ui.meetingIndex===ms.length-1?'disabled':'')+'>次の記録 ›</button></div><button class="btn primary wide" data-act="meeting-add">＋ 打ち合わせを追加</button></div>';
@@ -692,7 +692,7 @@
     if(action==='study-open')return chooseTab('memo');
     if(action==='study-page')return step(()=>changePage('studyPage',Math.max(1,Math.ceil(state.studyNotes.length/3)),Number(v)));
     if(action==='study-digest-page')return step(()=>changePage('studyDigestPage',Math.max(1,Math.ceil(studySummaryItems().length/3)),Number(v)));
-    if(action==='study-digest-back')return step(()=>{ui.overlay='study';});
+    if(action==='study-digest-back')return step(()=>{ui.overlay=ui.tab==='memo'?'':'study';});
     if(action==='study-add')return openOverlay('study-form',()=>{ui.studyEditId=null;ui.studyDraft={title:'',text:'',propertyId:ui.tab==='memo'&&ui.memoScope==='individual'?ui.memoPropertyId:'',originalText:'',beforeFix:null};});
     if(action==='study-edit')return openOverlay('study-form',()=>{
       const note=state.studyNotes.find(n=>n.id===v);if(!note)return;
@@ -958,6 +958,23 @@
     if(el.id==='json-import'&&el.files?.[0]){await importData(el.files[0]);}
   });
   let touch=null, lastSwipeAt=0;
+  let memoTouch=null;
+  app.addEventListener('touchstart',e=>{
+    const item=e.target.closest('.memo-swipe-wrap');
+    if(!item || e.target.closest('input,textarea,select')){memoTouch=null;return;}
+    memoTouch={key:item.dataset.memoKey,x:e.changedTouches[0].clientX,y:e.changedTouches[0].clientY};
+  },{passive:true});
+  app.addEventListener('touchend',e=>{
+    if(!memoTouch)return;
+    const current=memoTouch;memoTouch=null;
+    const dx=e.changedTouches[0].clientX-current.x;
+    const dy=e.changedTouches[0].clientY-current.y;
+    if(Math.abs(dx)<48||Math.abs(dy)>Math.abs(dx)*.65)return;
+    lastSwipeAt=Date.now();
+    if(dx<0)step(()=>{ui.memoSwipeKey=current.key;});
+    else step(()=>{ui.memoSwipeKey=null;});
+  },{passive:true});
+
   app.addEventListener('touchstart',e=>{const zone=e.target.closest('.swipe-zone');if(!zone||e.target.closest('input,textarea,select,label')){touch=null;return;}touch={x:e.changedTouches[0].clientX,y:e.changedTouches[0].clientY};},{passive:true});
   app.addEventListener('touchend',e=>{
     if(!touch)return;let dx=e.changedTouches[0].clientX-touch.x,dy=e.changedTouches[0].clientY-touch.y;touch=null;

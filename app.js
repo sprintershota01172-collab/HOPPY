@@ -1922,9 +1922,23 @@
       const period=button.dataset.period==='annual'?'annual':'monthly';
       if(period==='annual')ui.fpBreakdownAnnual=v;
       else ui.fpBreakdownMonthly=v;
+      ui.fpEditingRow=null;
       // Only replace the inline breakdown. Recreating #app triggers the
       // screen entrance animation and resets scroll on every category tap.
       fpRefreshSelectedBreakdown(period,v);
+      return;
+    }
+    if(action==='fp-row-edit'){
+      const period=button.dataset.period==='annual'?'annual':'monthly',
+        category=period==='annual'?ui.fpBreakdownAnnual:ui.fpBreakdownMonthly;
+      ui.fpEditingRow={period,category,key:v};
+      fpRefreshSelectedBreakdown(period,category);
+      return;
+    }
+    if(action==='fp-edit-close'){
+      const chosen=ui.fpEditingRow;
+      ui.fpEditingRow=null;
+      if(chosen)fpRefreshSelectedBreakdown(chosen.period,chosen.category);
       return;
     }
     if(action==='fp-breakdown-edit')return step(()=>{
@@ -2177,19 +2191,29 @@
   app.addEventListener('change',async e=>{
     const el=e.target;
     if(el.dataset?.homeAxisMemo!==undefined){state.homeCriteriaMemo=String(el.value).slice(0,4000);save();return;}
+    if(el.dataset?.fpQuickKey!==undefined){
+      const key=el.dataset.fpQuickKey;
+      if(!['freeSpendingMonthly','otherSavingsMonthly'].includes(key))return;
+      const yenValue=Number(el.value);
+      if(!Number.isFinite(yenValue)||yenValue<0){render();return;}
+      if(!ui.fpHistoryLive){const snap=fpLatestSnapshot();if(snap)state.plan=JSON.parse(JSON.stringify(snap.plan));ui.fpHistoryLive=true;}
+      state.plan[key]=Math.min(10000,yenValue/10000);
+      save();render();return;
+    }
     if(el.dataset?.fpBreakdownField!==undefined || el.dataset?.fpBreakdownExpense!==undefined || el.dataset?.fpBreakdownEvent!==undefined){
       if(!ui.fpHistoryLive){
         const snap=fpLatestSnapshot();
         if(snap)state.plan=JSON.parse(JSON.stringify(snap.plan));
         ui.fpHistoryLive=true;
       }
-      const number=Number(el.value);
-      if(!Number.isFinite(number)||number<0){message('0以上の金額を入力してください');render();return;}
+      const yenValue=Number(el.value);
+      if(!Number.isFinite(yenValue)||yenValue<0){message('0以上の円金額を入力してください');render();return;}
+      const number=yenValue/10000;
       if(el.dataset.fpBreakdownField!==undefined){
         const allowed=new Set([...fpDetailCategories.map(x=>x[0]),'utilitiesMonthly','carMonthly','otherLoanMonthly',
           'childInsuranceMonthly','childEducationInsuranceMonthly','childLivingMonthly','daycareMonthly',
           'rentMonthly','managementMonthly','commonFeeMonthly','parkingMonthly','housingOngoing',
-          'annualTax','carTaxAnnual','travelAnnual','annualEvents','homeInsuranceAnnual','nisaMonthly','otherInvestMonthly']);
+          'annualTax','carTaxAnnual','travelAnnual','annualEvents','homeInsuranceAnnual','nisaMonthly','otherInvestMonthly','freeSpendingMonthly','otherSavingsMonthly']);
         if(!allowed.has(el.dataset.fpBreakdownField))return;
         state.plan[el.dataset.fpBreakdownField]=Math.min(10000,number);
       }else if(el.dataset.fpBreakdownExpense!==undefined){
@@ -2201,10 +2225,8 @@
         if(!entry)return;
         entry.amount=Math.min(100000,number);
       }
-      const priorScroll=app.querySelector('.fp-breakdown-list')?.scrollTop||0;
+      ui.fpEditingRow=null;
       save();render();
-      const refreshed=app.querySelector('.fp-breakdown-list');
-      if(refreshed)refreshed.scrollTop=priorScroll;
       return;
     }
     if(el.dataset?.memoProperty!==undefined){ui.memoPropertyId=el.value;ui.memoPage=0;ui.memoSwipeKey=null;render();return;}

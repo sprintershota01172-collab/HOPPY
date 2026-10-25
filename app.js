@@ -659,7 +659,12 @@
     return problems;
   }
   function fpLoanSummary(price){
-    const p=state.plan,years=Math.max(1,Math.min(50,safeNum(p.loanYears,35))),
+    const p=state.plan;
+    if(!Number.isFinite(Number(p.loanYears))||Number(p.loanYears)<1||Number(p.loanYears)>50||
+      !Number.isFinite(Number(p.interest))||Number(p.interest)<0||Number(p.interest)>20)
+      return '<div class="fp-repayment-card"><div class="fp-repayment-eyebrow">住宅ローンの返済額</div>'+
+        '<div class="fp-repayment-terms">金利・返済年数を確認してください</div></div>';
+    const years=Math.max(1,Math.min(50,safeNum(p.loanYears,35))),
       principal=Math.max(0,safeNum(price)-safeNum(p.downPayment)),
       rate=safeNum(p.interest),payment=mortgageMonthly(price,p.downPayment,rate,years);
     return '<div class="fp-repayment-card">'+
@@ -668,7 +673,7 @@
       '<div class="fp-repayment-terms">借入 '+yen(principal,0)+'万円　｜　'+yen(years,0)+'年ローン　｜　年利 '+yen(rate,2)+'%</div>'+
       '<div class="fp-repayment-detail"><span>住居維持費を加えると</span><strong>'+yen(payment+safeNum(p.housingOngoing),2)+'万円 / 月</strong></div>'+
       '<div class="fp-repayment-detail"><span>ローン総返済額</span><strong>'+yen(payment*years*12,0)+'万円</strong></div>'+
-      '<div class="fp-repayment-note">ボーナス返済なし・金利一定の仮定。諸費用・税・火災保険は別途。</div></div>';
+      '<div class="fp-repayment-note">ボーナス返済なし・金利一定。固定資産税・火災保険などは別途。</div></div>';
   }
   function fpBadgeClass(level){return level==='good'?'fp-good':level==='warn'?'fp-warn':'fp-bad';}
   function fpRatingRow(p){
@@ -761,7 +766,7 @@
         '<div class="fp-hero"><span class="fp-eyebrow">参考の購入予算（生活費・積立を考慮）</span><div class="fp-hero-number">'+yen(budget.amount)+'<span>万円</span></div><span class="fp-hero-caption">手取り25％＋家計余力・金利 '+yen(budget.amount>=0?assessment.rate:0,1)+'％想定</span>'+
         '<div class="fp-budget-scale"><div class="fp-budget-fill"></div></div><span class="fp-secondary">金利＋1％なら　<strong>'+yen(budget.stressAmount)+'万円</strong>が目安</span></div>'+
         '<div class="fp-now-card"><div class="fp-now-head"><div><span class="fp-eyebrow">検討中の価格</span><strong>'+yen(price)+'万円</strong></div><span class="fp-verdict '+fpBadgeClass(assessment.level)+'">'+assessment.label+'</span></div>'+
-        '<p class="fp-diagnostic">'+esc(assessment.reason)+'</p>'+
+        '<p class="fp-diagnostic">'+esc(budget.amount===0?'生活費・積立を考慮すると、現在の条件では住宅ローンに回せる余力がありません。入力内容も確認してください。':assessment.reason)+'</p>'+
         '<div class="fp-stat-grid"><div><span>月々の住居費</span><strong>'+yen(assessment.housing,1)+'万</strong></div><div><span>手取り負担率</span><strong>'+yen(assessment.ratio*100,1)+'％</strong></div><div><span>現金貯金の余力</span><strong>'+yen(assessment.spendable,1)+'万</strong></div></div></div>'+
         '<div class="fp-section-head"><strong>物件の予算評価</strong><span>'+homes.length+'件</span></div>'+
         propertyList+

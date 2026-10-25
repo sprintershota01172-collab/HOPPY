@@ -1574,3 +1574,79 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .fp-income-total{min-height:43px}
  .fp-income-timeline{min-height:48px;max-height:48px}
 }
+
+
+/* FP r9: visible monthly cashflow and separate cash, NISA, investment assets. */
+.fp-report-screen .fp-result-nav{
+ grid-template-columns:repeat(7,minmax(0,1fr))!important;
+ gap:2px!important;padding:3px!important;
+}
+.fp-report-screen .fp-result-nav button{
+ min-width:0!important;padding:0 1px!important;font-size:9px!important;
+ white-space:nowrap!important;letter-spacing:-.04em!important;
+}
+.fp-month-report,.fp-assets-report{display:flex;flex-direction:column;gap:6px;min-height:0;overflow:hidden!important}
+.fp-month-report>.fp-year-select,.fp-assets-report>.fp-year-select{flex:none;min-height:30px}
+.fp-month-head{display:flex;justify-content:space-between;align-items:center;gap:5px;flex:none}
+.fp-month-head span{font-size:9px;color:#6e8090}
+.fp-month-head b{font-size:9px;color:#526979;white-space:nowrap}
+.fp-month-nav{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:2px;min-height:59px;max-height:59px;flex:none;
+ border:1px solid #e6ebef;background:#fff;padding:4px 3px;border-radius:10px}
+.fp-month-nav button{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;
+ background:transparent;border:none;border-radius:6px;padding:2px 0;min-width:0;cursor:pointer}
+.fp-month-nav button.active{background:#eef4fa}
+.fp-month-nav button small{font-size:8px;line-height:1;color:#718291}
+.fp-month-bar{display:block;width:65%;max-width:12px;min-height:3px;border-radius:3px 3px 0 0}
+.fp-month-bar.plus{background:#2d8a78}
+.fp-month-bar.minus{background:#d4776e}
+.fp-month-nav button.active .fp-month-bar.plus{background:#1b695f}
+.fp-month-nav button.active .fp-month-bar.minus{background:#bf4e47}
+.fp-month-hero{display:grid;grid-template-columns:1.1fr 1fr;gap:0;background:linear-gradient(120deg,#24364e,#3a5268);color:white;border-radius:13px;min-height:75px;padding:12px 11px;flex:none}
+.fp-month-hero>div{display:flex;flex-direction:column;justify-content:center;gap:4px;min-width:0}
+.fp-month-hero>div+div{border-left:1px solid #ffffff30;padding-left:12px}
+.fp-month-hero span{font-size:10px;color:#d3dee9;white-space:nowrap}
+.fp-month-hero strong{font-size:23px;letter-spacing:-.04em;font-weight:850;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fp-month-hero strong.negative{color:#ffb5ab}
+.fp-month-hero small{font-size:9px;margin-left:2px;letter-spacing:0}
+.fp-month-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;flex:none}
+.fp-month-stats>div{display:flex;flex-direction:column;gap:3px;background:white;border:1px solid #e5eaf0;border-radius:9px;padding:6px;min-width:0}
+.fp-month-stats span{font-size:9px;color:#72808e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fp-month-stats b{font-size:12px;color:#263d51;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fp-cash-rows{display:flex;flex-direction:column;gap:2px;background:#fff;border:1px solid #e5eaef;border-radius:10px;padding:5px 9px;flex:none}
+.fp-cash-row{display:flex;align-items:center;justify-content:space-between;min-height:28px;gap:5px}
+.fp-cash-row span{font-size:10px;color:#6f7e8d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fp-cash-row strong{font-size:11px;color:#293e52;white-space:nowrap}
+.fp-assets-report>.fp-r-subhead{flex:none}
+.fp-assets-report>.fp-r-chart{max-height:180px;min-height:125px;flex:1}
+.fp-assets-report>.fp-r-legend{flex:none}
+.fp-assets-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;flex:none}
+.fp-asset-tile{display:flex;flex-direction:column;gap:4px;background:white;border:1px solid #e6ebf0;padding:9px 10px;border-radius:11px;min-width:0}
+.fp-asset-tile>span{font-size:10px;font-weight:700;color:#778391}
+.fp-asset-tile>strong{font-size:18px;font-weight:850;letter-spacing:-.04em;color:#283e53;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fp-asset-tile>strong small{font-size:9px;letter-spacing:0;margin-left:2px}
+.fp-asset-tile>small{font-size:9px;color:#44886f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fp-asset-tile>small.negative{color:#c45d54}
+.fp-asset-tile.total{background:#eef4f8;border-color:#d9e6ef}
+@media(max-height:760px){
+ .fp-month-report,.fp-assets-report{gap:4px}
+ .fp-month-nav{min-height:50px;max-height:50px}
+ .fp-month-hero{min-height:63px;padding:8px 9px}
+ .fp-month-hero strong{font-size:19px}
+ .fp-month-stats>div{padding:5px}
+ .fp-cash-row{min-height:24px}
+ .fp-assets-report>.fp-r-chart{max-height:145px;min-height:96px}
+ .fp-asset-tile{padding:7px 8px;gap:3px}
+ .fp-asset-tile>strong{font-size:16px}
+ .fp-report-screen .fp-result-nav button{font-size:8px!important}
+}
+@media(max-height:630px){
+ .fp-month-nav{min-height:43px;max-height:43px}
+ .fp-month-hero{min-height:52px}
+ .fp-month-hero strong{font-size:17px}
+ .fp-month-stats{gap:3px}
+ .fp-cash-row{min-height:20px}
+ .fp-month-report .fp-r-help,.fp-assets-report .fp-r-help{font-size:8px;line-height:1.2}
+ .fp-assets-report>.fp-r-chart{max-height:105px;min-height:70px}
+ .fp-asset-tile{padding:5px 6px}
+ .fp-asset-tile>strong{font-size:14px}
+}

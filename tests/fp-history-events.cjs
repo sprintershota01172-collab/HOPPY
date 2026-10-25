@@ -51,6 +51,7 @@ for(let i=0;i<7;i++)a.click('sim-next');
 assert.equal(api.getState().planHistory.length,1);
 assert.match(a.app.innerHTML,/FP • LIFE PLAN/);
 assert.match(a.app.innerHTML,/fp-pie-shortcut/);
+a.click('fp-result-tab','0');
 a.click('fp-pie-open');
 assert.match(a.app.innerHTML,/支出＋積立率/);
 assert.match(a.app.innerHTML,/fp-pie-chart/);

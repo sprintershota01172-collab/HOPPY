@@ -684,3 +684,33 @@ html,body,.app-shell{background:var(--paper)}
  .study-note-card,.study-summary-item{padding:8px}
  .study-note-head{min-height:40px}
 }
+
+
+/* No home-screen flash on navigation.
+   A full-screen sheet must be opaque from frame 1; animate only its contents. */
+.screen{
+  animation:none !important;
+  opacity:1;
+  transform:none;
+}
+.full{
+  animation:none !important;
+  opacity:1 !important;
+  transform:none !important;
+  background:var(--paper);
+  isolation:isolate;
+}
+@keyframes hoppo-subtle-enter{
+  from{transform:translate3d(0,4px,0)}
+  to{transform:translate3d(0,0,0)}
+}
+.main > .screen,
+.full > .full-header,
+.full > .full-body{
+  animation:hoppo-subtle-enter .22s cubic-bezier(.22,.61,.36,1) both;
+}
+@media(prefers-reduced-motion:reduce){
+  .main > .screen,.full > .full-header,.full > .full-body{
+    animation:none!important;
+  }
+}

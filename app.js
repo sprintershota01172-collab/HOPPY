@@ -350,7 +350,13 @@
     const mr=safeNum(rate)/1200;
     return mr===0?principal/months:principal*mr/(1-Math.pow(1+mr,-months));
   };
-  const nField=(label,key,unit,placeholder)=>'<label class="sim-field"><span>'+esc(label)+'</span><span class="sim-input-wrap"><input type="number" data-sim="'+key+'" value="'+esc(state.plan[key])+'" min="'+(key==='returnAnnual'?-20:0)+'" '+(key==='returnAnnual'?'max="20"':'')+' step="any" inputmode="decimal" placeholder="'+esc(placeholder||'')+'"><em>'+esc(unit)+'</em></span></label>';
+  const nField=(label,key,unit,placeholder)=>{
+    const money=unit.startsWith('万円'),shown=money?fpYenNumber(state.plan[key]):state.plan[key];
+    return '<label class="sim-field"><span>'+esc(label)+'</span><span class="sim-input-wrap"><input type="number" data-sim="'+key+
+      '" '+(money?'data-sim-yen="true" ':'')+'value="'+esc(shown)+'" min="'+(key==='returnAnnual'?-20:0)+
+      '" '+(key==='returnAnnual'?'max="20"':'')+' step="'+(money?'1':'any')+'" inputmode="'+(money?'numeric':'decimal')+
+      '" placeholder="'+esc(placeholder||'')+'"><em>'+esc(unit.replace('万円','円'))+'</em></span></label>';
+  };
   const sSelect=(label,key,opts)=>'<label class="sim-field"><span>'+esc(label)+'</span><select data-sim="'+key+'">'+opts.map(([value,title])=>'<option value="'+esc(value)+'" '+(String(state.plan[key])===String(value)?'selected':'')+'>'+esc(title)+'</option>').join('')+'</select></label>';
 
   const simQuestions=[
@@ -373,7 +379,7 @@
     return '<div class="fp-extra-section"><div class="fp-extra-head"><strong>自由に追加する支出</strong>'+
       '<button class="btn compact" data-act="fp-expense-add" '+(expenses.length>=35?'disabled':'')+'>＋ 追加</button></div>'+
       (items.length?items.map(x=>'<div class="fp-extra-row"><div class="fp-extra-top"><input aria-label="費目" data-fp-id="'+esc(x.id)+'" data-fp-key="name" maxlength="50" value="'+esc(x.name)+'" placeholder="支出名"><button class="fp-extra-remove" data-act="fp-expense-delete" data-value="'+esc(x.id)+'">削除</button></div><div class="fp-extra-values">'+
-      '<label>金額（万円）<input data-fp-id="'+esc(x.id)+'" data-fp-key="amount" type="number" min="0" max="10000" step=".1" inputmode="decimal" value="'+esc(x.amount)+'"></label>'+
+      '<label>金額（円）<input data-fp-id="'+esc(x.id)+'" data-fp-key="amount" data-fp-yen="true" type="number" min="0" max="100000000" step="1" inputmode="numeric" value="'+fpYenNumber(x.amount)+'"></label>'+
       '<label>周期<select data-fp-id="'+esc(x.id)+'" data-fp-key="cycle"><option value="month" '+(x.cycle==='month'?'selected':'')+'>毎月</option><option value="year" '+(x.cycle==='year'?'selected':'')+'>毎年</option></select></label>'+
       '<label>開始年<input data-fp-id="'+esc(x.id)+'" data-fp-key="start" type="number" min="0" max="2100" value="'+(x.start||'')+'" placeholder="指定なし"></label>'+
       '<label>終了年<input data-fp-id="'+esc(x.id)+'" data-fp-key="end" type="number" min="0" max="2100" value="'+(x.end||'')+'" placeholder="指定なし"></label></div></div>').join(''):
@@ -390,7 +396,7 @@
       '<div class="fp-event-title"><input data-event-id="'+esc(x.id)+'" data-event-key="name" aria-label="イベント名" maxlength="50" value="'+esc(x.name)+'">'+
       '<button data-act="fp-event-delete" data-value="'+esc(x.id)+'" aria-label="イベントを削除">×</button></div>'+
       '<div class="fp-event-fields"><label>発生年<input data-event-id="'+esc(x.id)+'" data-event-key="year" type="number" min="2020" max="2100" step="1" value="'+esc(x.year)+'"></label>'+
-      '<label>金額（万円）<input data-event-id="'+esc(x.id)+'" data-event-key="amount" type="number" min="0" step="any" value="'+esc(x.amount)+'"></label>'+
+      '<label>金額（円）<input data-event-id="'+esc(x.id)+'" data-event-key="amount" data-fp-yen="true" type="number" min="0" step="1" inputmode="numeric" value="'+fpYenNumber(x.amount)+'"></label>'+
       '<label>発生月<input data-event-id="'+esc(x.id)+'" data-event-key="month" type="number" min="0" max="12" step="1" value="'+esc(x.month||0)+'"></label>'+ 
       '<label>収支<select data-event-id="'+esc(x.id)+'" data-event-key="type"><option value="expense" '+(x.type==='expense'?'selected':'')+'>支出 −</option>'+
       '<option value="income" '+(x.type==='income'?'selected':'')+'>収入 ＋</option></select></label></div></div>').join('');
@@ -1517,7 +1523,7 @@
       return '<section class="screen sim-screen fp-result-screen">'+intro+
         '<h2 class="sim-result-title">入力した金額を確認してください</h2>'+
         fpLoanSummary(price)+
-        '<div class="fp-validation-panel grow"><strong>入力単位は「万円」です</strong>'+
+        '<div class="fp-validation-panel grow"><strong>金額の入力単位は「円」です</strong>'+
         '<p>異常に大きい金額が含まれる可能性があります。入力内容は自動変更していません。</p>'+
         '<div class="fp-validation-list">'+visible.map(x=>
           '<button data-act="fp-fix-input" data-value="'+x.step+':'+x.page+'">'+esc(x.label)+
@@ -2128,7 +2134,7 @@
         const k=el.dataset.eventKey,value=el.value;
         if(k==='name')item.name=String(value).slice(0,50);
         if(k==='year')item.year=Math.max(2020,Math.min(2100,Math.floor(Number(value)||simNowYear())));
-        if(k==='amount')item.amount=Math.max(0,Number(value)||0);
+        if(k==='amount')item.amount=Math.max(0,Number(value)/(el.dataset.fpYen==='true'?10000:1)||0);
         if(k==='month')item.month=Math.max(0,Math.min(12,Math.floor(Number(value)||0)));
         if(k==='type')item.type=value==='income'?'income':'expense';
         save();
@@ -2137,12 +2143,13 @@
     }
     if(el.dataset?.fpId && el.dataset?.fpKey){
       const entry=state.plan.expenses.find(x=>x.id===el.dataset.fpId);
-      if(entry){const k=el.dataset.fpKey;entry[k]=k==='name'?String(el.value).slice(0,50):k==='cycle'?(el.value==='year'?'year':'month'):(k==='amount'?Math.max(0,Math.min(10000,Number(el.value)||0)):Math.max(0,Math.min(2100,Math.floor(Number(el.value)||0))));save();}
+      if(entry){const k=el.dataset.fpKey;entry[k]=k==='name'?String(el.value).slice(0,50):k==='cycle'?(el.value==='year'?'year':'month'):(k==='amount'?Math.max(0,Math.min(10000,Number(el.value)/(el.dataset.fpYen==='true'?10000:1)||0)):Math.max(0,Math.min(2100,Math.floor(Number(el.value)||0))));save();}
       return;
     }
     if(el.dataset.sim){
       const k=el.dataset.sim, val=el.value;
-      state.plan[k]=['propertyId','highSchool','university'].includes(k)?val:(val!==''&&Number.isFinite(Number(val))?Number(val):0);
+      state.plan[k]=['propertyId','highSchool','university'].includes(k)?val:
+        (val!==''&&Number.isFinite(Number(val))?Number(val)/(el.dataset.simYen==='true'?10000:1):0);
       if(k==='propertyId'){
         const linked=propById(val);
         if(linked && num(linked.price)!==null)state.plan.propertyPrice=Number(linked.price);
@@ -2247,7 +2254,7 @@
         const k=el.dataset.eventKey,value=el.value;
         if(k==='name')item.name=String(value).slice(0,50);
         if(k==='year')item.year=Math.max(2020,Math.min(2100,Math.floor(Number(value)||simNowYear())));
-        if(k==='amount')item.amount=Math.max(0,Number(value)||0);
+        if(k==='amount')item.amount=Math.max(0,Number(value)/(el.dataset.fpYen==='true'?10000:1)||0);
         if(k==='month')item.month=Math.max(0,Math.min(12,Math.floor(Number(value)||0)));
         if(k==='type')item.type=value==='income'?'income':'expense';
         save();
@@ -2256,12 +2263,13 @@
     }
     if(el.dataset?.fpId && el.dataset?.fpKey){
       const entry=state.plan.expenses.find(x=>x.id===el.dataset.fpId);
-      if(entry){const k=el.dataset.fpKey;entry[k]=k==='name'?String(el.value).slice(0,50):k==='cycle'?(el.value==='year'?'year':'month'):(k==='amount'?Math.max(0,Math.min(10000,Number(el.value)||0)):Math.max(0,Math.min(2100,Math.floor(Number(el.value)||0))));save();}
+      if(entry){const k=el.dataset.fpKey;entry[k]=k==='name'?String(el.value).slice(0,50):k==='cycle'?(el.value==='year'?'year':'month'):(k==='amount'?Math.max(0,Math.min(10000,Number(el.value)/(el.dataset.fpYen==='true'?10000:1)||0)):Math.max(0,Math.min(2100,Math.floor(Number(el.value)||0))));save();}
       return;
     }
     if(el.dataset?.sim){
       const k=el.dataset.sim,val=el.value;
-      state.plan[k]=['propertyId','highSchool','university'].includes(k)?val:(val!==''&&Number.isFinite(Number(val))?Number(val):0);
+      state.plan[k]=['propertyId','highSchool','university'].includes(k)?val:
+        (val!==''&&Number.isFinite(Number(val))?Number(val)/(el.dataset.simYen==='true'?10000:1):0);
       if(k==='propertyId'){
         const linked=propById(val);
         if(linked&&num(linked.price)!==null)state.plan.propertyPrice=Number(linked.price);

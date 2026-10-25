@@ -37,6 +37,8 @@ assert.match(app.innerHTML,/毎日の支払い/);
 assert.match(app.innerHTML,/その他の生活費/);
 input('livingMonthly',10);
 for(let i=0;i<5;i++)click('sim-next');
+assert.match(app.innerHTML,/月ごとの収支/);
+click('fp-result-tab','0');
 assert.match(app.innerHTML,/住宅ローンの毎月返済/);
 assert.match(app.innerHTML,/参考の購入予算/);
 assert.doesNotMatch(app.innerHTML,/入力した金額を確認してください/);

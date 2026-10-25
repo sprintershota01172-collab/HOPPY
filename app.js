@@ -1243,7 +1243,8 @@
       '<text x="105" y="101" text-anchor="middle" font-size="28" font-weight="800" fill="#283a4b">'+esc(percent)+'</text>'+
       '<text x="105" y="122" text-anchor="middle" font-size="10" fill="#758391">月の支出率</text></svg>'+
       '<div class="fp-month-pie-legend">'+data.items.map(x=>fpPiePick(x,'monthly',chosen)).join('')+'</div></div>'+
-      fpPieBreakdownPanel(point,month,data.items,chosen);
+      fpPieBreakdownPanel(point,month,data.items,chosen)+
+      (data.percent===null?'<p class="fp-month-pie-note">手取り収入が0円のため、支出率は算出できません。</p>':'');
   }
   function fpMonthlyReport(model){
     const point=fpYearPoint(model),ledger=fpMonthlyLedger(point),

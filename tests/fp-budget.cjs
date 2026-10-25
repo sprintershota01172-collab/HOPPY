@@ -42,7 +42,7 @@ input({sim:'nisaBalance'},50);
 click('sim-next'); // annual expenses
 click('sim-next'); // results
 assert.equal(state().plan.hasRun,1);
-assert.match(app.innerHTML,/月ごとの収支/);
+assert.match(app.innerHTML,/data-fp-cash-month/);
 click('fp-result-tab','0');
 assert.match(app.innerHTML,/fp-r-summary/);
 assert.match(app.innerHTML,/参考の購入予算/);
@@ -78,7 +78,7 @@ assert.match(app.innerHTML,/fp-card-dot/,'FP budget statuses appear on propertie
 click('tab','sim');click('sim-restart');
 assert.match(app.innerHTML,/前回の診断を見る/);
 click('fp-view-budget');
-assert.match(app.innerHTML,/月ごとの収支/);
+assert.match(app.innerHTML,/data-fp-cash-month/);
 click('fp-result-tab','0');
 assert.match(app.innerHTML,/fp-r-summary/);
 assert.equal(state().plan.hasRun,1);

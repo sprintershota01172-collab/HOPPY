@@ -68,7 +68,7 @@ assert.ok(firstMonth.nisa>model.points.find(x=>x.year===2026).nisa,'NISA balance
 assert.ok(firstMonth.otherInvest>model.points.find(x=>x.year===2026).otherInvest);
 assert.ok(Math.abs(firstMonth.cash-led.months[0].endingCash)<1e-8);
 click('tab','sim');for(let i=0;i<7;i++)click('sim-next');
-assert.match(app.innerHTML,/購入後の家計/);
+assert.match(app.innerHTML,/月ごとの収支/);
 click('fp-result-tab','1');
 assert.match(app.innerHTML,/月ごとの収支/);
 assert.match(app.innerHTML,/この月末の現金/);

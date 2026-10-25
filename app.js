@@ -39,7 +39,7 @@
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpLedgerPage:0,fpHomePage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpLedgerPage:0,fpHomePage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
   function normalize(s) {
     if (!s || !Array.isArray(s.properties) || !Array.isArray(s.criteria)) throw Error('形式が違います');
@@ -204,9 +204,11 @@
       '<div class="field onepage-field"><label for="form-tags">タグ</label><input id="form-tags" data-model="tags" value="'+esc(p.tags.join(', '))+'" placeholder="駅近, 南向き" maxlength="160"></div>',
       field('住所','address','text','maxlength="120" placeholder="愛知県…"'),
       field('物件URL','url','url','placeholder="https://..."')
-    ].join('');
+    ];
+    const page=Math.max(0,Math.min(2,ui.propertyFormPage||0));
     return modalFrame(p._new?'物件を追加':'基本情報を編集',
-      '<div class="property-editor"><div class="property-fields" role="group" aria-label="基本情報をまとめて入力">'+fields+'</div></div>'+
+      fpPageNav(3,page,'property-form-page',['基本情報','物件条件','その他'])+
+      '<div class="property-editor"><div class="property-fields" role="group" aria-label="基本情報を分けて入力">'+fields.slice(page*4,page*4+4).join('')+'</div></div>'+
       '<div class="property-editor-actions"><button class="btn flex1" data-act="form-cancel">キャンセル</button><button class="btn primary flex1" data-act="form-save">まとめて保存</button></div>'+
       (!p._new?'<button class="property-delete-inline" data-act="property-delete">この物件を削除</button>':'')
     );
@@ -981,7 +983,7 @@
     if(value===null)delete state.scores[p][c][who];else state.scores[p][c][who]=value;
     save();
   }
-  function prepareForm(p){ui.draft=p?JSON.parse(JSON.stringify(p)):{...blankProperty(),_new:true};ui.formStep=0;ui.overlay='form';}
+  function prepareForm(p){ui.draft=p?JSON.parse(JSON.stringify(p)):{...blankProperty(),_new:true};ui.formStep=0;ui.propertyFormPage=0;ui.overlay='form';}
   function validateProperty(){
     const p=ui.draft;if(!p.name.trim())return '物件名を入力してください';
     if(p.url && !/^https?:\/\/\S+$/i.test(p.url))return 'URLはhttps://またはhttp://で入力してください';
@@ -1141,6 +1143,7 @@
     if(action==='photo-nav')return step(()=>changePage('photoIndex',p.photos.length,Number(v)));
     if(action==='photo-delete'){if(!confirm('この写真を削除しますか？'))return;return step(()=>{let id=p.photos.splice(ui.photoIndex,1)[0];removePhoto(id);ui.photoIndex=Math.max(0,ui.photoIndex-1);save();});}
     if(action==='external'){try{const u=new URL(v);if(!['https:','http:'].includes(u.protocol))throw Error('invalid');window.open(u.href,'_blank','noopener,noreferrer');}catch(_){message('有効なURLではありません');}return;}
+    if(action==='property-form-page')return step(()=>{ui.propertyFormPage=Math.max(0,Math.min(2,Number(v)||0));});
     if(action==='form-cancel')return step(()=>{ui.overlay='';ui.draft=null;});
     if(action==='form-save'){
       let error=validateProperty();if(error)return message(error);

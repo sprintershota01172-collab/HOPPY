@@ -892,9 +892,55 @@
     return '<div class="fp-r-legend">'+items.map((name,i)=>
       '<span><i style="background:'+['#1876d1','#89a9bd','#f59b6d'][i]+'"></i>'+esc(name)+'</span>').join('')+'</div>';
   }
+  function fpIncomeAllocation(point){
+    const income=Math.max(0,point.incomes),housing=Math.max(0,point.housing*12),
+      educationEvents=Math.max(0,point.school+point.events+point.upfront),
+      living=Math.max(0,point.expenses-housing-educationEvents),
+      investing=Math.max(0,point.investing),
+      spent=Math.max(0,point.expenses+investing),
+      remaining=Math.max(0,income-spent),
+      over=Math.max(0,spent-income);
+    const items=[
+      {label:'生活費・保険等',amount:living,color:'#6b9eaf'},
+      {label:'住居費',amount:housing,color:'#2767ae'},
+      {label:'教育・イベント',amount:educationEvents,color:'#d9a164'},
+      {label:'NISAなどの積立',amount:investing,color:'#729477'},
+      {label:'現金に残る分',amount:remaining,color:'#d5dde2'}
+    ];
+    return {income,spent,over,items,percent:income?spent/income*100:null};
+  }
+  function fpPieChart(point){
+    const data=fpIncomeAllocation(point),total=Math.max(1,data.income,data.spent),
+      radius=68,circumference=2*Math.PI*radius;
+    let acc=0;
+    const arcs=data.items.filter(x=>x.amount>0).map(x=>{
+      const len=x.amount/total*circumference;
+      const svg='<circle cx="105" cy="105" r="'+radius+'" fill="none" stroke="'+x.color+'" stroke-width="29"'+
+        ' stroke-dasharray="'+len.toFixed(4)+' '+(circumference-len).toFixed(4)+'"'+
+        ' stroke-dashoffset="'+(-acc).toFixed(4)+'" transform="rotate(-90 105 105)"/>';
+      acc+=len;return svg;
+    }).join('');
+    const percent=data.percent===null?'—':yen(data.percent,1)+'%';
+    return '<div class="fp-pie-figure"><svg viewBox="0 0 210 210" class="fp-pie-chart" role="img" aria-label="年の手取り収入に対する支出・積立比率：'+esc(percent)+'">'+
+      '<circle cx="105" cy="105" r="'+radius+'" fill="none" stroke="#ecf0f2" stroke-width="29"/>'+
+      arcs+'<text x="105" y="100" text-anchor="middle" font-size="26" font-weight="800" fill="#283a4b">'+esc(percent)+'</text>'+
+      '<text x="105" y="124" text-anchor="middle" font-size="11" fill="#758391">支出＋積立率</text></svg>'+
+      '<div class="fp-pie-key">'+data.items.map(x=>
+        '<div><i style="background:'+x.color+'"></i><span>'+x.label+'</span><strong>'+yen(x.amount,0)+'万</strong></div>'
+      ).join('')+'</div></div>'+
+      '<div class="fp-pie-totals"><span>年間手取り＋給付金 <strong>'+yen(data.income,0)+'万円</strong></span>'+
+      '<span>年間支出＋投資積立 <strong>'+yen(data.spent,0)+'万円</strong></span></div>'+
+      '<p class="fp-r-help">'+(data.over>0?'収入を'+yen(data.over,0)+'万円超過しています。円の大きさは支出総額を基準に表示。':
+      '円全体は年間収入の100％。残額は収入−支出−積立で計算。')+
+      ' 積立は消費ではなく資産への振替です。</p>';
+  }
   function fpChartData(price,current,rent){
     const mortgage=fpAmortization(price),option=ui.fpChartPage||0,
-      choice=Math.max(0,Math.min(2,option));
+      choice=Math.max(0,Math.min(3,option));
+    if(choice===3){
+      const selected=fpYearPoint(current);
+      return '<div class="fp-r-body grow fp-pie-panel"><strong class="fp-r-subhead">収入に対する支出割合・'+selected.year+'年</strong>'+fpPieChart(selected)+'</div>';
+    }
     if(choice===0){
       const joined=current.points.map((p,i)=>({year:p.year,house:p.cash,rent:rent.points[i]?.cash??0}));
       const selected=fpYearPoint(current),other=rent.points.find(x=>x.year===selected.year);
@@ -1054,12 +1100,13 @@
         fpMetric('手取り負担率',yen(rating.ratio*100,1)+'％')+
         fpMetric('毎月の現金貯金の余力',yen(rating.spendable,1)+'万円')+
         fpMetric('年末現金の最小値',yen(min.cash,0)+'万円 ('+min.year+'年)')+'</div>'+
+        '<button class="fp-pie-shortcut" data-act="fp-pie-open"><span class="fp-pie-mini" style="--pie-sweep:'+Math.min(100,Math.max(0,fpIncomeAllocation(fpYearPoint(current)).percent||0))+'%"></span><span>収入に対する支出・積立の割合</span><b>'+(fpIncomeAllocation(fpYearPoint(current)).percent===null?'—':yen(fpIncomeAllocation(fpYearPoint(current)).percent,1)+'%')+' ›</b></button>'+
         '<p class="fp-r-help">'+(negative?'注意：'+negative.year+'年に年末現金がマイナスになる試算です。':'この期間は年末現金のマイナスがありません。')+
         ' 手取り比率は家計の参考値で、融資審査基準とは異なります。</p></div>';
     }else if(page===1){
-      const chartPage=Math.max(0,Math.min(2,ui.fpChartPage||0));
+      const chartPage=Math.max(0,Math.min(3,ui.fpChartPage||0));
       content='<div class="fp-r-chart-page grow">'+
-        fpPageNav(3,chartPage,'fp-chart-page',['現金','年間収支','ローン'])+
+        fpPageNav(4,chartPage,'fp-chart-page',['現金','年間収支','ローン','円グラフ'])+
         fpYearSelect(current)+fpChartData(price,current,rent)+'</div>';
     }else if(page===2){
       const calcPage=Math.max(0,Math.min(3,ui.fpCalcPage||0));
@@ -1395,7 +1442,7 @@
     if(action==='fp-issue-page')return step(()=>{ui.fpIssuePage=Math.max(0,Number(v)||0);});
     if(action==='fp-fix-input')return step(()=>{const [screen,page]=String(v).split(':').map(Number);ui.simStep=Math.max(0,Math.min(6,screen||0));ui.simSubPage=Math.max(0,page||0);ui.fpIssuePage=0;});
     if(action==='fp-home-page')return step(()=>{ui.fpHomePage=Math.max(0,Number(v)||0);});
-    if(action==='fp-chart-page')return step(()=>{ui.fpChartPage=Math.max(0,Math.min(2,Number(v)||0));});
+    if(action==='fp-chart-page')return step(()=>{ui.fpChartPage=Math.max(0,Math.min(3,Number(v)||0));});
     if(action==='fp-calc-page')return step(()=>{ui.fpCalcPage=Math.max(0,Math.min(3,Number(v)||0));ui.fpLedgerPage=0;});
     if(action==='fp-advice-page')return step(()=>{ui.fpAdvicePage=Math.max(0,Number(v)||0);});
     if(action==='sim-next')return step(()=>{if(ui.simStep===6){state.plan.hasRun=1;fpRecordHistory();}ui.simStep=Math.min(7,ui.simStep+1);ui.simSubPage=0;ui.simResultPage=0;ui.fpIssuePage=0;save();});

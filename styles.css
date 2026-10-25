@@ -1294,3 +1294,24 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .fp-result-screen .fp-finance-card .sim-chart{height:92px;min-height:80px}
  .fp-result-screen .fp-home-row{min-height:29px}
 }
+
+/* All-screen no-scroll property editor: 3 groups / 4 fields each. */
+.full-body:has(>.property-editor){overflow:hidden!important}
+.full-body:has(>.property-editor)>.fp-page-nav{width:100%;flex:none}
+.full-body>.property-editor,.property-editor:focus-within{overflow:hidden!important;overscroll-behavior:none!important;flex:1}
+.property-editor>.property-fields{
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ grid-template-rows:repeat(2,minmax(0,1fr))!important;
+ align-content:start;flex:0 1 215px;max-height:240px;gap:8px!important;
+}
+.property-editor .onepage-field{gap:4px}
+.property-editor .onepage-field label{font-size:10px!important;font-weight:700}
+.property-editor .onepage-field input,.property-editor .onepage-field select{
+ height:36px!important;min-height:36px!important;max-height:36px!important;font-size:12px!important;padding:4px 7px;
+}
+.property-editor-actions .btn{min-height:40px!important;font-size:11px}
+.property-delete-inline{font-size:10px;min-height:32px}
+@media(max-height:620px){
+ .property-editor>.property-fields{flex-basis:174px;max-height:185px;gap:5px!important}
+ .property-editor .onepage-field input,.property-editor .onepage-field select{height:31px!important;min-height:31px!important;max-height:31px!important}
+}

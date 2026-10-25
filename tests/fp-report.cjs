@@ -54,6 +54,8 @@ assert.ok(advice.some(x=>x.title.includes('金利上昇時')));
 assert.ok(advice.some(x=>x.detail.includes('＋0.5%')&&x.detail.includes('＋2%')));
 click('tab','sim');
 for(let i=0;i<7;i++)click('sim-next');
+assert.match(app.innerHTML,/月ごとの収支/);
+click('fp-result-tab','0');
 assert.match(app.innerHTML,/購入後の家計/);
 assert.match(app.innerHTML,/fp-r-summary/);
 click('fp-result-tab','3');

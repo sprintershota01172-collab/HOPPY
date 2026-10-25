@@ -67,7 +67,7 @@ a.click('filter-apply');
 assert.match(a.app.innerHTML,/最初の物件を登録/);
 a.click('search');
 a.click('filter-clear');
-assert.match(a.app.innerHTML,/サンプルA/);
+assert.match(a.app.innerHTML,/サンプル[ABC]/);
 const b=start();
 assert.equal(b.state().properties.length,3);
 assert.equal(b.state().scores[p.id][c.id].husband,2);

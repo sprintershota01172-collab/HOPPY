@@ -159,6 +159,7 @@ assert.match(a.app.innerHTML,/memo-scope-switch/);
 assert.match(a.app.innerHTML,/個別のメモ/);
 assert.match(a.app.innerHTML,/すべてのメモ/);
 assert.doesNotMatch(a.app.innerHTML,/data-act="study-toggle"/);
+a.input({memoProperty:''},p.id);
 a.click('study-add');
 assert.match(a.app.innerHTML,/修正・整理する/);
 assert.match(a.app.innerHTML,/data-study="propertyId"/);

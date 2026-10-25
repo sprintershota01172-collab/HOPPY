@@ -178,7 +178,7 @@ a.click('fp-chart-page','1');
 assert.match(a.app.innerHTML,/年間の収入と支出/);
 a.click('fp-chart-page','2');
 assert.match(a.app.innerHTML,/ローン残債・元金と利息/);
-a.click('fp-result-tab','2');
+a.click('fp-result-tab','3');
 assert.match(a.app.innerHTML,/計算根拠/);
 assert.match(a.app.innerHTML,/期首現金残高/);
 a.click('fp-calc-page','2');
@@ -187,7 +187,7 @@ for(let page=1;!a.app.innerHTML.includes('学資保険')&&page<30;page++)a.click
 assert.match(a.app.innerHTML,/学資保険/);
 a.click('fp-calc-page','3');
 assert.match(a.app.innerHTML,/金融庁/);
-a.click('fp-result-tab','3');
+a.click('fp-result-tab','4');
 assert.match(a.app.innerHTML,/アドバイス/);
 assert.match(a.app.innerHTML,/家計診断・改善ポイント/);
 a.click('sim-restart');

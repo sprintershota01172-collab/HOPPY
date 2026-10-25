@@ -39,7 +39,7 @@
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpChartPage:0,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
   function normalize(s) {
     if (!s || !Array.isArray(s.properties) || !Array.isArray(s.criteria)) throw Error('形式が違います');
@@ -515,10 +515,31 @@
     parts.push({key:'daycareMonthly',label:'保育料・幼稚園',value:count.preschool*safeNum(p.daycareMonthly)});
     return parts;
   }
+  // Fixed-rate equivalent, level-payment amortization in 万円.
+  // Rate shocks are alternative rates assumed from loan origination, not future repricing schedules.
+  function fpAmortization(price,rateShift=0){
+    const p=state.plan,years=Math.max(1,Math.round(safeNum(p.loanYears,35))),
+      start=safeNum(p.purchaseYear,simNowYear()+2),
+      principal=Math.max(0,safeNum(price)-safeNum(p.downPayment)),
+      rate=(safeNum(p.interest)+rateShift)/1200,
+      payment=mortgageMonthly(price,p.downPayment,safeNum(p.interest)+rateShift,years);
+    let balance=principal;
+    const points=[{year:start-1,balance,interest:0,principalPaid:0,payment:0}];
+    for(let y=0;y<years;y++){
+      let interest=0,principalPaid=0,paid=0;
+      for(let m=0;m<12&&balance>1e-9;m++){
+        const i=balance*rate,principalPart=Math.min(balance,Math.max(0,payment-i));
+        interest+=i;principalPaid+=principalPart;paid+=principalPart+i;balance-=principalPart;
+      }
+      points.push({year:start+y,balance:Math.max(0,balance),interest,principalPaid,payment:paid});
+    }
+    return {points,principal,monthly:payment,rate:safeNum(p.interest)+rateShift,years,start};
+  }
   function modelYears(price,buy){
     const p=state.plan,start=simNowYear(),end=Math.max(start+9,Math.min(start+30,safeNum(p.simulateUntil,start+19))),
       purchaseYear=safeNum(p.purchaseYear,start+2),weddingYear=safeNum(p.weddingYear,start+1),
-      payment=mortgageMonthly(price,p.downPayment,p.interest,p.loanYears);
+      amort=fpAmortization(price),payment=amort.monthly;
+    const loanByYear=new Map(amort.points.map(x=>[x.year,x]));
     let cash=safeNum(p.cashSavings)+safeNum(p.support);
     let nisa=safeNum(p.nisaBalance),otherInvest=safeNum(p.investBalance);
     let investedContributions=0;
@@ -532,7 +553,8 @@
       const income=12*(safeNum(p.husbandMonthly)+mother)+safeNum(p.husbandBonus)+wifeBonus+
         12*children.living*safeNum(p.childBenefitMonthly);
       const monthlyParts=fpBaseMonthly(year);
-      const housing=buy&&year>=purchaseYear?payment+safeNum(p.housingOngoing):fpRentMonthly(p);
+      const loan=buy&&year>=purchaseYear?loanByYear.get(year):null;
+      const housing=buy&&year>=purchaseYear?(loan?loan.payment/12:0)+safeNum(p.housingOngoing):fpRentMonthly(p);
       const monthly=monthlyParts.reduce((sum,x)=>sum+x.value,0)+housing;
       const annualFixed=safeNum(p.annualTax)+safeNum(p.carTaxAnnual)+safeNum(p.travelAnnual)+
         safeNum(p.annualEvents)+(buy&&year>=purchaseYear?safeNum(p.homeInsuranceAnnual):0)+fpCustomAnnual(year);
@@ -555,7 +577,8 @@
       points.push({year,cash,invested,nisa,otherInvest,total:cash+invested,
         incomes:income,expenses,investing,netCash:income-expenses-investing,
         monthly,school,birth,annualFixed,upfront,events,housing,education:school,
-        monthlyParts,children,contributions:investedContributions});
+        monthlyParts,children,contributions:investedContributions,
+        loanBalance:loan?loan.balance:(buy&&year<purchaseYear?0:0),loanPrincipal:loan?.principalPaid||0,loanInterest:loan?.interest||0});
     }
     return {points,monthly:payment,purchaseYear,ending:points.at(-1).cash,
       min:Math.min(...points.map(x=>x.cash)),nisa,otherInvest};

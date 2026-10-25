@@ -14,7 +14,7 @@
   const fmt = n => n === '' || n == null ? '未登録' : digits.format(Number(n)) + '万円';
   const num = v => v === '' || v == null ? null : Number.isFinite(Number(v)) ? Number(v) : null;
   const truncate = (s,n) => String(s || '').length > n ? String(s).slice(0,n - 1) + '…' : String(s || '');
-  const dots = (index,count) => '<div class="dots" aria-label="' + (index+1) + ' / ' + count + 'ページ">' + Array.from({length:Math.min(count,6)},(_,i)=>'<span class="dot ' + (i===Math.round(index*(Math.min(count,6)-1)/Math.max(1,count-1))?'active':'') + '"></span>').join('') + '</div>';
+  const dots = (index,count) => '<div class="dots" aria-label="' + (index+1) + ' / ' + count + 'ページ">' + Array.from({length:Math.min(count,5)},(_,i)=>'<span class="dot ' + (i===Math.round(index*(Math.min(count,5)-1)/Math.max(1,count-1))?'active':'') + '"></span>').join('') + '</div>';
   const initialCriteria = ['価格','耐久性（構造・耐震・築年数）','立地（駅距離・通勤）','広さ・間取り','日当たり','周辺環境（スーパー・病院）','子育て環境（学校・公園）','維持費（税・管理費等）','災害リスク','資産価値'].map((name,i)=>({id:'standard-'+i,name,weight:2,auto:null}));
   const blankProperty = () => ({id:uid(),name:'',url:'',address:'',price:'',kind:kinds[0],age:'',area:'',layout:'',station:'',status:statuses[0],tags:[],notes:{good:[''],bad:['']},questions:[],photos:[],created:Date.now()});
   const defaults = () => ({version:1,properties:[],criteria:initialCriteria,scores:{},selected:[],filter:{query:'',tag:'',sort:'new'},});
@@ -37,7 +37,7 @@
   function message(text) {ui.toast=text;renderToast();clearTimeout(toastTimer);toastTimer=setTimeout(()=>{ui.toast=null;renderToast();},2700);}
   function renderToast(){let old=app.querySelector('.toast');if(old)old.remove();if(ui.toast)app.insertAdjacentHTML('beforeend','<div class="toast" role="status">'+esc(ui.toast)+'</div>');}
   const propById = id => state.properties.find(p=>p.id===id);
-  const curProp = () => propById(ui.propertyId) || visibleProperties()[0] || null;
+  const curProp = () => {const visible=visibleProperties(); return visible.find(p=>p.id===ui.propertyId) || visible[0] || null;};
   function visibleProperties(){
     let ps=state.properties.filter(p=>(p.name+' '+p.address+' '+p.tags.join(' ')).toLowerCase().includes((state.filter.query||'').toLowerCase()) && (!state.filter.tag || p.tags.includes(state.filter.tag)));
     if(state.filter.sort==='price')ps.sort((a,b)=>(num(a.price)??Infinity)-(num(b.price)??Infinity));
@@ -122,10 +122,10 @@
   }
   function comparisonTable(ps){
     const items=state.criteria.slice(ui.comparePage*5,ui.comparePage*5+5);
-    const head='<div class="compare-row"><div class="compare-cell topic">比較項目</div>'+Array.from({length:3},(_,i)=>'<div class="compare-cell heading">'+esc(truncate(ps[i]?.name||'未選択',9))+'</div>').join('')+'</div>';
+    const head='<div class="compare-row"><div class="compare-cell topic">比較項目</div>'+Array.from({length:3},(_,i)=>'<div class="compare-cell heading" '+(ps[i]?'title="'+esc(ps[i].name)+'"':'')+'>'+esc(truncate(ps[i]?.name||'未選択',5))+'</div>').join('')+'</div>';
     const rows=Array.from({length:5},(_,i)=>{
       const c=items[i]; if(!c)return '<div class="compare-row"><div class="compare-cell placeholder"></div>'+Array.from({length:3},()=>'<div class="compare-cell placeholder"></div>').join('')+'</div>';
-      return '<div class="compare-row"><div class="compare-cell topic">'+esc(c.name)+'<small>★'+c.weight+'</small></div>'+Array.from({length:3},(_,k)=>{
+      return '<div class="compare-row"><div class="compare-cell topic" title="'+esc(c.name)+'">'+esc(c.name.split(/[（(]/)[0])+'<small>★'+c.weight+'</small></div>'+Array.from({length:3},(_,k)=>{
         let p=ps[k];if(!p)return '<div class="compare-cell placeholder">–</div>';
         if(ui.rater==='both'){
           const h=effective(p,c,'husband'),w=effective(p,c,'wife');
@@ -293,17 +293,24 @@
     if(el.dataset.note && p){
       const type=el.dataset.note;
       if(el.scrollHeight>el.clientHeight+2 && el.value.length>1){
-        const caret=el.selectionStart||el.value.length;
-        const split=Math.max(1,Math.min(el.value.length-1,caret-1));
-        const carry=el.value.slice(split);
-        p.notes[type][ui.noteIndex]=el.value.slice(0,split);
+        if(p.notes[type].length>=30 && ui.noteIndex>=29){el.value=p.notes[type][ui.noteIndex];return message('メモは最大30ページです');}
+        let text=el.value;
+        let lo=0,hi=text.length;
+        while(lo<hi){const mid=Math.ceil((lo+hi)/2);el.value=text.slice(0,mid);if(el.scrollHeight<=el.clientHeight+2)lo=mid;else hi=mid-1;}
+        const split=Math.max(1,Math.min(text.length-1,lo));
+        const carry=text.slice(split);
+        p.notes[type][ui.noteIndex]=text.slice(0,split);
         const next=ui.noteIndex+1;
-        if(!p.notes[type][next])p.notes[type].splice(next,0,'');
+        if(p.notes[type].length<=next)p.notes[type].push('');
         p.notes[type][next]=(carry+p.notes[type][next]).slice(0,220);
         ui.noteIndex=next;save();render();
-        const upcoming=app.querySelector('[data-note]');if(upcoming){upcoming.focus();upcoming.setSelectionRange(carry.length,carry.length);}return;
+        const upcoming=app.querySelector('[data-note]');
+        if(upcoming){upcoming.focus();upcoming.setSelectionRange(carry.length,carry.length);}
+        return;
       }
-      p.notes[type][ui.noteIndex]=el.value;let span=app.querySelector('.notes-title .meta');if(span)span.textContent=el.value.length+' / 220文字';save();
+      p.notes[type][ui.noteIndex]=el.value;
+      let span=app.querySelector('.notes-title .meta');if(span)span.textContent=el.value.length+' / 220文字';
+      save();
     }
   });
   app.addEventListener('change',async e=>{
@@ -365,9 +372,13 @@
       if(json.format!=='hoppy-backup'||!json.state||typeof json.photos!=='object')throw Error('format');
       const next=normalize(json.state);
       if(!confirm('端末にある現在のデータをバックアップ内容で置き換えます。よろしいですか？'))return;
-      await photoJob('clear');
-      for(const [id,data] of Object.entries(json.photos))if(typeof data==='string'&&data.startsWith('data:image/'))await storePhoto({id,data});
-      state=next;ui.overlay='';ui.propertyId=null;ui.tab='property';save();render();message('インポートが完了しました');
+      const required=new Set(next.properties.flatMap(p=>p.photos));
+      for(const id of required){if(typeof json.photos[id]!=='string' || !/^data:image\/(jpeg|png|webp);base64,/.test(json.photos[id]))throw Error('missing photo');}
+      const obsolete=state.properties.flatMap(p=>p.photos).filter(id=>!required.has(id));
+      for(const id of required)await storePhoto({id,data:json.photos[id]});
+      state=next;ui.overlay='';ui.propertyId=null;ui.tab='property';save();render();
+      obsolete.forEach(removePhoto);
+      message('インポートが完了しました');
     }catch(_){message('バックアップを読み込めませんでした');}
   }
   save();render();

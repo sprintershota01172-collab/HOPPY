@@ -10,7 +10,7 @@ GitHub Pages のデプロイが有効な場合:
 
 https://sprintershota01172-collab.github.io/HOPPY/
 
-Pagesの公開には、GitHubリポジトリの **Settings → Pages → Build and deployment → Source: GitHub Actions** の設定が必要な場合があります。github/workflows/pages.yml（先頭にドット付き）は main 更新時に静的ファイルを配信します。公開できない場合は Actions タブからデプロイ結果を確認してください。
+Pagesの公開には、GitHubリポジトリの **Settings → Pages → Build and deployment → Source: GitHub Actions** の設定が必要な場合があります。.github/workflows/pages.ymlは main 更新時に静的ファイルを配信します。公開できない場合は Actions タブからデプロイ結果を確認してください。
 
 ### iPhoneにインストール
 
@@ -34,7 +34,7 @@ SafariでURLを開き、「共有」→「ホーム画面に追加」。最初�
 
 - 物件・採点：端末内 localStorage
 - 写真：端末内 IndexedDB
-- ソースコード：GitHubリポジトリに保存されますが、ユーザーが登録した金額や写真はGitHubにアップロードされません。
+- ソースコード：現在のGitHubリポジトリは public です。プログラムは公開されていますが、ユーザーが登録した金額や写真はGitHubにアップロードされません。
 - 公開Pagesサイトにはログインがなく、URLを知っている人も空のアプリを開けます。他人の端末から登録済みデータを取得する仕組みはありません。
 - Safariのサイトデータ消去やストレージ制限等でデータが消える可能性があるため、定期的に「…」→「JSONをエクスポート」してください。
 - iOSの通知、夫婦同期、アカウント認証は将来のフェーズです。

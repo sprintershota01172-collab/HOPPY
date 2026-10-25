@@ -489,9 +489,32 @@
         '<button data-act="'+action+'" data-value="'+Math.min(count-1,current+1)+'" '+(current===count-1?'disabled':'')+'>次 ›</button>')+
       '</div>';
   }
+  function fpHistoryScreen(){
+    const list=state.planHistory||[],pageSize=3,total=Math.max(1,Math.ceil(list.length/pageSize));
+    ui.fpHistoryPage=Math.max(0,Math.min(total-1,ui.fpHistoryPage||0));
+    const page=list.slice(ui.fpHistoryPage*pageSize,(ui.fpHistoryPage+1)*pageSize);
+    const cards=page.map((x,i)=>'<button class="fp-history-item" data-act="fp-history-select" data-value="'+esc(x.id)+'">'+
+      '<span><strong>'+esc(fpHistoryDate(x))+'</strong><small>物件価格 '+yen(Number(x.plan.propertyPrice)||0,0)+'万円・'+yen(Number(x.plan.loanYears)||35,0)+'年ローン</small></span>'+
+      '<b>'+(x.id===(fpLatestSnapshot()?.id)?'表示中':'表示 ›')+'</b></button>').join('');
+    return '<section class="screen sim-screen fp-result-screen fp-history-screen">'+
+      '<div class="sim-intro"><span class="kicker">FP • HISTORY / r6</span><button class="btn compact" data-act="fp-history-close">閉じる ×</button></div>'+
+      '<h2 class="sim-result-title">過去の診断結果</h2>'+
+      '<p class="fp-r-help">条件を保存した時点の結果を確認できます。過去の入力条件は変更されません。</p>'+
+      '<div class="fp-history-items grow">'+cards+'</div>'+
+      fpPageNav(total,ui.fpHistoryPage,'fp-history-page')+
+      '<div class="fp-bottom-actions"><button class="btn" data-act="fp-history-close">結果へ戻る</button>'+
+      '<button class="btn primary" data-act="sim-restart">＋ 新しい診断</button></div></section>';
+  }
   function simulationScreen(){
     const i=ui.simStep;
-    if(i>=7)return simulationResultsScreen();
+    if(i>=7){
+      if(ui.fpHistoryOpen)return fpHistoryScreen();
+      const snap=fpLatestSnapshot();
+      if(!snap)return simulationResultsScreen();
+      const workingPlan=state.plan;
+      try{state.plan=snap.plan;return simulationResultsScreen(snap);}
+      finally{state.plan=workingPlan;}
+    }
     const p=state.plan,pages=fpWizardPages(i);
     ui.simSubPage=Math.max(0,Math.min(pages.length-1,Number(ui.simSubPage)||0));
     const n=ui.simSubPage;
@@ -988,13 +1011,14 @@
       fpPageNav(count,ui.fpAdvicePage,'fp-advice-page')+
       '<p class="fp-r-help">公的資料を参照した計算上の助言です。安全の保証や金融機関の事前審査ではありません。</p></div>';
   }
-  function simulationResultsScreen(){
+  function simulationResultsScreen(snapshot){
     const p=state.plan,price=safeNum(p.propertyPrice),current=modelYears(price,true),rent=modelYears(price,false),
       budget=fpBudget(),rating=fpRating(price),warnings=fpPlanWarnings(),
       page=Math.min(3,Math.max(0,ui.simResultPage||0));
     const heading=['購入後の家計','収支予測グラフ','計算根拠','アドバイス'][page];
-    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r5</span>'+
-      '<button class="btn compact" data-act="sim-restart">回答を編集 ↗</button></div>';
+    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r6</span>'+
+      '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+
+      '<button class="btn compact" data-act="sim-restart">編集 ↗</button></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -1044,7 +1068,7 @@
         fpCalculationData(price,current)+'</div>';
     }else content=fpAdviceScreen(price,current);
     return '<section class="screen sim-screen fp-result-screen fp-report-screen">'+intro+
-      '<h2 class="sim-result-title">'+heading+'</h2>'+tabs+content+
+      '<h2 class="sim-result-title">'+heading+'</h2>'+(snapshot?'<div class="fp-snapshot-label">'+esc(fpHistoryDate(snapshot))+'</div>':'')+tabs+content+
       '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">↶ 条件を見直す</button>'+
       '<button class="btn primary" data-act="fp-result-next">'+(page===3?'まとめへ戻る':'次へ →')+'</button></div></section>';
   }
@@ -1374,17 +1398,26 @@
     if(action==='fp-chart-page')return step(()=>{ui.fpChartPage=Math.max(0,Math.min(2,Number(v)||0));});
     if(action==='fp-calc-page')return step(()=>{ui.fpCalcPage=Math.max(0,Math.min(3,Number(v)||0));ui.fpLedgerPage=0;});
     if(action==='fp-advice-page')return step(()=>{ui.fpAdvicePage=Math.max(0,Number(v)||0);});
-    if(action==='sim-next')return step(()=>{if(ui.simStep===6)state.plan.hasRun=1;ui.simStep=Math.min(7,ui.simStep+1);ui.simSubPage=0;ui.simResultPage=0;ui.fpIssuePage=0;save();});
+    if(action==='sim-next')return step(()=>{if(ui.simStep===6){state.plan.hasRun=1;fpRecordHistory();}ui.simStep=Math.min(7,ui.simStep+1);ui.simSubPage=0;ui.simResultPage=0;ui.fpIssuePage=0;save();});
     if(action==='sim-back')return step(()=>{ui.simStep=Math.max(0,ui.simStep-1);ui.simSubPage=0;});
-    if(action==='sim-restart')return step(()=>{ui.simStep=0;ui.simSubPage=0;ui.simResultPage=0;});
+    if(action==='sim-restart')return step(()=>{ui.simStep=0;ui.simSubPage=0;ui.simResultPage=0;ui.fpHistoryOpen=false;});
     if(action==='sim-result-page')return step(()=>changePage('simResultPage',4,Number(v)));
+    if(action==='fp-history-open')return step(()=>{ui.fpHistoryOpen=true;ui.fpHistoryPage=0;});
+    if(action==='fp-history-close')return step(()=>{ui.fpHistoryOpen=false;});
+    if(action==='fp-history-page')return step(()=>{ui.fpHistoryPage=Math.max(0,Number(v)||0);});
+    if(action==='fp-history-select')return step(()=>{
+      if(state.planHistory.some(x=>x.id===v)){ui.fpHistoryId=v;ui.fpHistoryOpen=false;ui.simResultPage=0;ui.fpYear=0;}
+    });
+    if(action==='fp-history-latest')return step(()=>{ui.fpHistoryId=state.planHistory[0]?.id||null;ui.fpHistoryOpen=false;ui.simResultPage=0;});
+    if(action==='fp-edit-events')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=6;ui.simSubPage=2;});
+    if(action==='fp-pie-open')return step(()=>{ui.simResultPage=1;ui.fpChartPage=3;});
     if(action==='fp-result-tab')return step(()=>{ui.simResultPage=Math.min(3,Math.max(0,Number(v)||0));ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
     if(action==='fp-legacy-utilities-clear')return step(()=>{state.plan.utilitiesMonthly=0;save();message('旧光熱費の合算額を削除しました');});
     if(action==='fp-expense-add')return step(()=>{if(state.plan.expenses.length>=35)return message('追加支出は35項目までです');state.plan.expenses.push({id:uid(),name:'新しい支出',amount:0,cycle:'month',start:0,end:0});ui.simSubPage=2+Math.max(1,Math.ceil(state.plan.events.length/2))+Math.floor((state.plan.expenses.length-1)/2);save();});
     if(action==='fp-expense-delete'){if(!confirm('この追加支出を削除しますか？'))return;return step(()=>{state.plan.expenses=state.plan.expenses.filter(x=>x.id!==v);ui.simSubPage=Math.min(ui.simSubPage,fpWizardPages(6).length-1);save();});}
     if(action==='fp-result-next')return step(()=>{ui.simResultPage=(ui.simResultPage+1)%4;ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
     if(action==='sim-choice')return step(()=>{ui.simChoice=v;save();});
-    if(action==='fp-view-budget')return step(()=>{ui.tab='sim';ui.simStep=7;ui.simResultPage=0;ui.overlay='';});
+    if(action==='fp-view-budget')return step(()=>{ui.tab='sim';ui.simStep=7;ui.simResultPage=0;ui.fpHistoryOpen=false;ui.overlay='';});
     if(action==='fp-open-home')return openOverlay('detail',()=>{ui.propertyId=v;ui.propertyPage=0;});
 
     if(action==='search')return openOverlay('search');

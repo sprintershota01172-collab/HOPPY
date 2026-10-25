@@ -33,14 +33,15 @@
     childLivingMonthly:0,daycareMonthly:0,childBenefitMonthly:0,childEducationInsuranceMonthly:0,
     annualTax:0,carTaxAnnual:0,travelAnnual:0,annualEvents:0,homeInsuranceAnnual:0,
     otherSavingsMonthly:0,otherInvestMonthly:0,nisaBalance:0,investBalance:0,returnAnnual:0,carLoanEndYear:0,
-    cashBufferMonthly:3,expenses:[]
+    cashBufferMonthly:3,expenses:[],events:[]
   });
-  const defaults = () => ({version:2,properties:[],criteria:initialCriteria,scores:{},selected:[],filter:{query:'',tag:'',sort:'new',status:''},plan:defaultPlan(),studyNotes:[]});
+  const defaults = () => ({version:2,properties:[],criteria:initialCriteria,scores:{},selected:[],filter:{query:'',tag:'',sort:'new',status:''},plan:defaultPlan(),planHistory:[],studyNotes:[]});
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpChartPage:0,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpChartPage:0,fpHistoryPage:0,fpHistoryId:null,fpHistoryOpen:false,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:0,simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
+  if(state.plan.hasRun)ui.simStep=7;
   function normalize(s) {
     if (!s || !Array.isArray(s.properties) || !Array.isArray(s.criteria)) throw Error('形式が違います');
     const out = defaults();
@@ -49,15 +50,35 @@
     out.scores = s.scores && typeof s.scores==='object' ? s.scores : {};
     out.selected = Array.isArray(s.selected)?s.selected.filter(id=>out.properties.some(p=>p.id===id)).slice(0,3):[];
     out.filter = {...out.filter,...s.filter};
-    if(s.plan && typeof s.plan==='object') {
-      for(const k of Object.keys(out.plan)) {
-        if(k in s.plan && (typeof s.plan[k]==='string'||typeof s.plan[k]==='number'))out.plan[k]=s.plan[k];
+    const normalizeExpenses=xs=>Array.isArray(xs)?xs.slice(0,35).filter(x=>x&&typeof x.id==='string').map(x=>({
+      id:String(x.id).slice(0,80),name:String(x.name||'追加支出').slice(0,50),
+      amount:Math.min(10000,Math.max(0,Number(x.amount)||0)),
+      cycle:x.cycle==='year'?'year':'month',
+      start:Math.max(0,Math.floor(Number(x.start)||0)),
+      end:Math.max(0,Math.floor(Number(x.end)||0))
+    })):[];
+    const normalizeEvents=xs=>Array.isArray(xs)?xs.slice(0,30).filter(x=>x&&typeof x.id==='string').map(x=>({
+      id:String(x.id).slice(0,80),name:String(x.name||'イベント').slice(0,50),
+      amount:Math.min(100000,Math.max(0,Number(x.amount)||0)),
+      year:Math.max(0,Math.min(2100,Math.floor(Number(x.year)||0))),
+      type:x.type==='income'?'income':'expense',
+      kind:['wedding','honeymoon'].includes(x.kind)?x.kind:'custom'
+    })):[];
+    const normalizePlan=raw=>{
+      const plan=defaultPlan();
+      if(raw&&typeof raw==='object')for(const key of Object.keys(plan)){
+        if(key in raw&&(typeof raw[key]==='string'||typeof raw[key]==='number'))plan[key]=raw[key];
       }
-      out.plan.expenses=Array.isArray(s.plan.expenses)?s.plan.expenses.slice(0,35).filter(x=>x&&typeof x.id==='string').map(x=>({
-        id:String(x.id).slice(0,80),name:String(x.name||'追加支出').slice(0,50),amount:Math.min(10000,Math.max(0,Number(x.amount)||0)),
-        cycle:x.cycle==='year'?'year':'month',start:Math.max(0,Math.floor(Number(x.start)||0)),end:Math.max(0,Math.floor(Number(x.end)||0))
-      })):[];
-    }
+      plan.expenses=normalizeExpenses(raw?.expenses);
+      plan.events=normalizeEvents(raw?.events);
+      return plan;
+    };
+    out.plan=normalizePlan(s.plan);
+    out.planHistory=Array.isArray(s.planHistory)?s.planHistory.slice(0,24).filter(x=>
+      x&&typeof x.id==='string'&&x.plan&&typeof x.plan==='object'
+    ).map(x=>({id:String(x.id).slice(0,80),created:Number(x.created)||0,plan:normalizePlan(x.plan)})):[];
+    if(out.plan.hasRun&&!out.planHistory.length)
+      out.planHistory=[{id:'legacy-first-result',created:0,plan:normalizePlan(out.plan)}];
     out.studyNotes = Array.isArray(s.studyNotes)?s.studyNotes.filter(n=>n&&typeof n.id==='string').slice(0,300).map(n=>({
       id:n.id,title:String(n.title||'家の学び').slice(0,65),text:String(n.text||'').slice(0,7000),originalText:String(n.originalText||n.text||'').slice(0,2500),
       propertyId:typeof n.propertyId==='string'?n.propertyId:'',created:Number(n.created)||Date.now()
@@ -81,7 +102,7 @@
   function step(action){if(Date.now()<ui.lock)return;ui.lock=Date.now()+(reduced.matches?100:680);action();render();}
   function closeOverlay(){step(()=>{ui.overlay='';ui.draft=null;});}
   function openOverlay(kind, setup){step(()=>{ui.overlay=kind;if(setup)setup();});}
-  function chooseTab(tab){step(()=>{ui.tab=tab;ui.overlay='';ui.draft=null;});}
+  function chooseTab(tab){step(()=>{ui.tab=tab;ui.overlay='';ui.draft=null;if(tab==='sim'&&state.plan.hasRun){ui.simStep=7;ui.fpHistoryOpen=false;}});}
   function tabIcon(key){
     const paths={property:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',compare:'<path d="M12 3v18M5 7h14M7 7l-4 7h8L7 7Zm10 0-4 7h8l-4-7ZM4 18h16"/>',sim:'<rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8 11h2m4 0h2M8 15h2m4 0h2M8 19h2m4 0h2"/>',schedule:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 2v6m10-6v6M3 10h18"/>',memo:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'};
     return '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+paths[key]+'</svg>';
@@ -491,6 +512,38 @@
     }
     return {preschool,living,insured,educationInsured};
   }
+  function fpEventsForYear(year){
+    const p=state.plan,yearly=(p.events||[]).filter(x=>x.year===year),
+      hasWedding=(p.events||[]).some(x=>x.kind==='wedding'),
+      hasHoneymoon=(p.events||[]).some(x=>x.kind==='honeymoon');
+    const fallback=[];
+    if(year===safeNum(p.weddingYear)){
+      if(!hasWedding&&safeNum(p.weddingCost))fallback.push({id:'legacy-wedding',name:'結婚式',amount:safeNum(p.weddingCost),type:'expense'});
+      if(!hasHoneymoon&&safeNum(p.honeymoonCost))fallback.push({id:'legacy-honeymoon',name:'新婚旅行',amount:safeNum(p.honeymoonCost),type:'expense'});
+    }
+    return [...yearly,...fallback];
+  }
+  function fpEventsAnnual(year,type='expense'){
+    return fpEventsForYear(year).filter(x=>x.type===type).reduce((sum,x)=>sum+safeNum(x.amount),0);
+  }
+  function fpRecordHistory(){
+    const copy=JSON.parse(JSON.stringify(state.plan));
+    copy.hasRun=1;
+    const entry={id:uid(),created:Date.now(),plan:copy};
+    state.planHistory=[entry,...(state.planHistory||[])].slice(0,24);
+    ui.fpHistoryId=entry.id;ui.fpHistoryOpen=false;ui.fpHistoryPage=0;
+  }
+  function fpLatestSnapshot(){
+    const list=state.planHistory||[];
+    return list.find(x=>x.id===ui.fpHistoryId)||list[0]||null;
+  }
+  function fpHistoryDate(snapshot){
+    if(!snapshot?.created)return '旧診断（保存日時不明）';
+    const stamp=new Date(snapshot.created);
+    return Number.isFinite(stamp.getTime())?stamp.toLocaleString('ja-JP',{
+      year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'
+    }):'旧診断（日時不明）';
+  }
   function fpCustomAnnual(year){
     return (state.plan.expenses||[]).reduce((sum,x)=>{
       if(x.start&&year<x.start)return sum;
@@ -551,7 +604,7 @@
       const wifeBonus=kids&&year>=safeNum(p.firstChildYear)?0:safeNum(p.wifeBonus);
       const children=fpChildCounts(year);
       const income=12*(safeNum(p.husbandMonthly)+mother)+safeNum(p.husbandBonus)+wifeBonus+
-        12*children.living*safeNum(p.childBenefitMonthly);
+        12*children.living*safeNum(p.childBenefitMonthly)+fpEventsAnnual(year,'income');
       const monthlyParts=fpBaseMonthly(year);
       const loan=buy&&year>=purchaseYear?loanByYear.get(year):null;
       const housing=buy&&year>=purchaseYear?(loan?loan.payment/12:0)+safeNum(p.housingOngoing):fpRentMonthly(p);
@@ -565,7 +618,7 @@
         school+=educationAnnual(age,p);
       }
       const upfront=buy&&year===purchaseYear?safeNum(p.downPayment)+safeNum(price)*.07:0;
-      const events=year===weddingYear?safeNum(p.weddingCost)+safeNum(p.honeymoonCost):0;
+      const events=fpEventsAnnual(year,'expense');
       const expenses=monthly*12+annualFixed+school+birth+upfront+events;
       const nisaAdd=12*safeNum(p.nisaMonthly),otherAdd=12*safeNum(p.otherInvestMonthly);
       const investing=nisaAdd+otherAdd;

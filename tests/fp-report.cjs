@@ -1,7 +1,7 @@
 // HOPPY FP post-purchase forecast: explainable cash-flow, amortization, interest shocks and UI navigation.
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 let source=fs.readFileSync('app.js','utf8');
-const anchor="  save();render();\n  if('serviceWorker'";
+const anchor="  save();render();\n  // The startup wordmark";
 assert.ok(source.includes(anchor),'test hook anchor exists');
 source=source.replace(anchor,
   "  window.__reportTest={getPlan:()=>state.plan,modelYears,fpAmortization,fpExpenseDetails,fpAdviceData};\n"+anchor);

@@ -15,6 +15,7 @@
   const num = v => v === '' || v == null ? null : Number.isFinite(Number(v)) ? Number(v) : null;
   const truncate = (s,n) => String(s || '').length > n ? String(s).slice(0,n - 1) + '…' : String(s || '');
   const dots = (index,count) => '<div class="dots" aria-label="' + (index+1) + ' / ' + count + 'ページ">' + Array.from({length:Math.min(count,5)},(_,i)=>'<span class="dot ' + (i===Math.round(index*(Math.min(count,5)-1)/Math.max(1,count-1))?'active':'') + '"></span>').join('') + '</div>';
+  const rowsPerPage = () => window.matchMedia('(max-height: 650px)').matches ? 4 : 5;
   const initialCriteria = ['価格','耐久性（構造・耐震・築年数）','立地（駅距離・通勤）','広さ・間取り','日当たり','周辺環境（スーパー・病院）','子育て環境（学校・公園）','維持費（税・管理費等）','災害リスク','資産価値'].map((name,i)=>({id:'standard-'+i,name,weight:2,auto:null}));
   const blankProperty = () => ({id:uid(),name:'',url:'',address:'',price:'',kind:kinds[0],age:'',area:'',layout:'',station:'',status:statuses[0],tags:[],notes:{good:[''],bad:['']},questions:[],photos:[],created:Date.now()});
   const defaults = () => ({version:1,properties:[],criteria:initialCriteria,scores:{},selected:[],filter:{query:'',tag:'',sort:'new'},});
@@ -102,7 +103,7 @@
     if(stepN===3)fields=select('検討ステータス','status',statuses)+'<div class="field"><label for="form-tags">タグ（カンマ区切り）</label><input id="form-tags" data-model="tags" value="'+esc(p.tags.join(', '))+'" placeholder="例: 駅近, 南向き" maxlength="160"></div>';
     return modalFrame((p._new?'物件を追加':'物件を編集'),'<div class="panel detail grow form-view"><span class="kicker">STEP '+(stepN+1)+' / 4</span>'+fields+'</div><div class="form-foot"><button class="btn flex1" data-act="form-back">'+(stepN?'戻る':'キャンセル')+'</button><button class="btn primary flex1" data-act="form-next">'+(stepN===3?'保存する':'次へ')+'</button></div><p class="step-label">入力内容は端末内に保存されます</p>'+(stepN===3&&!p._new?'<button class="btn danger wide" data-act="property-delete">この物件を削除する</button>':''));
   }
-  function modalFrame(title,content){return '<div class="full"><header class="full-header"><button class="btn compact" data-act="overlay-close">×</button><strong>'+esc(title)+'</strong><span style="width:44px"></span></header><section class="full-body">'+content+'</section></div>';}
+  function modalFrame(title,content){return '<div class="full"><header class="full-header"><button class="btn compact" data-act="overlay-close">×</button><strong>'+esc(title)+'</strong><span style="width:44px"></span></header><section class="full-body swipe-zone">'+content+'</section></div>';}
   function listScreen(){
     let ps=visibleProperties(),n=Math.max(1,Math.ceil(ps.length/4));ui.listPage=Math.min(ui.listPage,n-1);
     let cells=ps.slice(ui.listPage*4,ui.listPage*4+4);
@@ -117,13 +118,13 @@
     return modalFrame('バックアップ・設定','<div class="panel detail grow"><div><span class="kicker">DATA</span><h2 class="section-title">大切な記録を守る</h2><p class="subtle">データはこの端末のブラウザに保存されます。端末変更・ブラウザのデータ消去に備えてバックアップしてください。</p></div><button class="btn primary wide" data-act="export">JSONをエクスポート（写真を含む）</button><label class="btn wide" for="json-import">JSONをインポート（現在のデータを置換）</label><input id="json-import" class="sr-only" type="file" accept="application/json,.json"><div class="info-box"><span>保存方式</span><strong>物件・採点: localStorage</strong><strong>写真: IndexedDB</strong></div><p class="subtle">現段階は端末ごとの個別保存です。夫婦共同編集・自動同期・通知は後続フェーズで対応します。</p></div>');
   }
   function compareScreen(){
-    const ps=selectedProperties(),n=Math.ceil(state.criteria.length/5)+1;ui.comparePage=Math.min(ui.comparePage,n-1);const rank=ui.comparePage===n-1;
+    const ps=selectedProperties(),n=Math.ceil(state.criteria.length/rowsPerPage())+1;ui.comparePage=Math.min(ui.comparePage,n-1);const rank=ui.comparePage===n-1;
     return '<section class="screen"><div class="toolbar between"><div><span class="kicker">COMPARE</span><h2 class="section-title">'+(rank?'総合ランキング':'物件をくらべる')+'</h2></div><div class="row"><button class="btn compact" data-act="choose-properties">物件選択</button><button class="btn compact" data-act="criteria">項目</button></div></div><div class="segment"><button data-act="rater" data-value="husband" class="'+(ui.rater==='husband'?'active':'')+'">夫</button><button data-act="rater" data-value="wife" class="'+(ui.rater==='wife'?'active':'')+'">妻</button><button data-act="rater" data-value="both" class="'+(ui.rater==='both'?'active':'')+'">ふたり</button></div>'+(!ps.length?empty('◎','比較したい物件を選ぶ','最大3件まで横並びで採点できます。','choose-properties','物件を選ぶ'):rank?rankingScreen(ps):comparisonTable(ps))+'<div class="row between"><span class="meta">'+(rank?'合計点を表示':'○ 2点 / △ 1点 / × 0点')+'</span><span class="meta">'+(ui.comparePage+1)+' / '+n+'ページ</span></div>'+navPager(ui.comparePage,n,'compare-nav')+'</section>';
   }
   function comparisonTable(ps){
-    const items=state.criteria.slice(ui.comparePage*5,ui.comparePage*5+5);
+    const items=state.criteria.slice(ui.comparePage*rowsPerPage(),ui.comparePage*rowsPerPage()+rowsPerPage());
     const head='<div class="compare-row"><div class="compare-cell topic">比較項目</div>'+Array.from({length:3},(_,i)=>'<div class="compare-cell heading" '+(ps[i]?'title="'+esc(ps[i].name)+'"':'')+'>'+esc(truncate(ps[i]?.name||'未選択',5))+'</div>').join('')+'</div>';
-    const rows=Array.from({length:5},(_,i)=>{
+    const rows=Array.from({length:rowsPerPage()},(_,i)=>{
       const c=items[i]; if(!c)return '<div class="compare-row"><div class="compare-cell placeholder"></div>'+Array.from({length:3},()=>'<div class="compare-cell placeholder"></div>').join('')+'</div>';
       return '<div class="compare-row"><div class="compare-cell topic" title="'+esc(c.name)+'">'+esc(c.name.split(/[（(]/)[0])+'<small>★'+c.weight+'</small></div>'+Array.from({length:3},(_,k)=>{
         let p=ps[k];if(!p)return '<div class="compare-cell placeholder">–</div>';
@@ -255,7 +256,7 @@
     });}
     if(action==='choose-properties')return openOverlay('choose',()=>ui.listPage=0);
     if(action==='select-property')return step(()=>{if(state.selected.includes(v))state.selected=state.selected.filter(x=>x!==v);else if(state.selected.length<3)state.selected.push(v);else return message('比較できる物件は最大3件です');save();});
-    if(action==='compare-nav')return step(()=>changePage('comparePage',Math.ceil(state.criteria.length/5)+1,Number(v)));
+    if(action==='compare-nav')return step(()=>changePage('comparePage',Math.ceil(state.criteria.length/rowsPerPage())+1,Number(v)));
     if(action==='rater')return step(()=>{ui.rater=v;});
     if(action==='criteria')return openOverlay('criteria',()=>ui.criteriaPage=0);
     if(action==='criteria-nav')return step(()=>changePage('criteriaPage',Math.max(1,Math.ceil(state.criteria.length/5)),Number(v)));
@@ -344,9 +345,11 @@
       const p=curProp();if(ui.propertyPage===2&&p.photos.length>1)return step(()=>changePage('photoIndex',p.photos.length,d));
       return step(()=>moveDetail(d));
     }
+    if(ui.overlay==='list'||ui.overlay==='choose')return step(()=>changePage('listPage',Math.max(1,Math.ceil((ui.overlay==='list'?visibleProperties().length:state.properties.length)/4)),d));
+    if(ui.overlay==='criteria')return step(()=>changePage('criteriaPage',Math.max(1,Math.ceil(state.criteria.length/5)),d));
     if(ui.overlay)return;
     if(ui.tab==='property')step(()=>moveProperty(d));
-    if(ui.tab==='compare')step(()=>changePage('comparePage',Math.ceil(state.criteria.length/5)+1,d));
+    if(ui.tab==='compare')step(()=>changePage('comparePage',Math.ceil(state.criteria.length/rowsPerPage())+1,d));
   },{passive:true});
   let dbPromise;
   function openDB(){

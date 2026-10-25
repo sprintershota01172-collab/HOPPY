@@ -42,6 +42,8 @@ input({sim:'nisaBalance'},50);
 click('sim-next'); // annual expenses
 click('sim-next'); // results
 assert.equal(state().plan.hasRun,1);
+assert.match(app.innerHTML,/月ごとの収支/);
+click('fp-result-tab','0');
 assert.match(app.innerHTML,/購入後の家計/);
 assert.match(app.innerHTML,/参考の購入予算/);
 assert.match(app.innerHTML,/住宅ローンの毎月返済/);
@@ -76,6 +78,8 @@ assert.match(app.innerHTML,/fp-card-dot/,'FP budget statuses appear on propertie
 click('tab','sim');click('sim-restart');
 assert.match(app.innerHTML,/前回の診断を見る/);
 click('fp-view-budget');
+assert.match(app.innerHTML,/月ごとの収支/);
+click('fp-result-tab','0');
 assert.match(app.innerHTML,/購入後の家計/);
 assert.equal(state().plan.hasRun,1);
 click('sim-restart');
@@ -84,6 +88,7 @@ click('sim-next');
 input({sim:'husbandMonthly'},15);
 input({sim:'wifeMonthly'},12);
 for(let i=0;i<6;i++)click('sim-next');
+click('fp-result-tab','0');
 const reducedBudget=Number(app.innerHTML.match(/fp-r-summary-strip"><span>参考の購入予算<\/span><strong>([0-9,]+)/)?.[1]?.replace(/,/g,''));
 assert.ok(reducedBudget<startingBudget, 'lower monthly income must lower reference budget');
 assert.match(app.innerHTML,/予算超過/, 'same asking price must be evaluated as over budget');

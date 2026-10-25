@@ -1,0 +1,63 @@
+// FP engine invariants: expense breakdown, child insurance, loan payoff,
+// NISA-to-investment transfers, custom cost schedules and budget sensitivity.
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+let s=fs.readFileSync('app.js','utf8');
+const anchor="  save();render();\n  if('serviceWorker'";
+assert.ok(s.includes(anchor));
+s=s.replace(anchor,"  window.__fpTest={getPlan:()=>state.plan,modelYears,fpBudget,fpRating,fpBaseMonthly,fpChildCounts,fpExpenseDetails};\n"+anchor);
+const storage={};const listeners={},app={innerHTML:'',contains(){return true},querySelector(){return null},querySelectorAll(){return []},addEventListener(k,fn){listeners[k]=fn},insertAdjacentHTML(){}};
+let id=0,time=0;
+class FakeDate extends Date {static now(){return time+=1000}}
+const win={matchMedia(){return {matches:true}},crypto:{randomUUID(){return String(++id)}},addEventListener(){}};
+vm.runInNewContext(s,{document:{getElementById(){return app}},window:win,localStorage:{getItem(k){return storage[k]||null},setItem(k,v){storage[k]=v}},navigator:{},location:{protocol:'http:',hostname:'test.invalid'},Date:FakeDate,setTimeout(){return 0},clearTimeout(){},crypto:win.crypto,confirm(){return true},Intl,console,URL,Number,Math,Array,JSON,String,Promise},{filename:'app.js'});
+const f=win.__fpTest,p=f.getPlan();
+p.children=2;p.firstChildYear=2028;p.birthInterval=3;
+p.childInsuranceMonthly=.5;p.childLivingMonthly=1;p.daycareMonthly=2;
+p.carMonthly=1.2;p.carLoanEndYear=2028;
+p.lifeInsuranceMonthly=.8;p.medicalInsuranceMonthly=.7;
+p.cashSavings=600;p.nisaBalance=30;p.investBalance=20;
+p.nisaMonthly=4;p.otherInvestMonthly=1;p.returnAnnual=0;
+p.expenses=[{id:'lesson',name:'習い事',amount:1.5,cycle:'month',start:2030,end:2034},{id:'single',name:'帰省費',amount:6,cycle:'year',start:2031,end:2031}];
+// In 2031 both children are under six. Per-child insurance is not a one-time fee.
+const child=f.fpChildCounts(2031);
+assert.equal(child.preschool,2);assert.equal(child.insured,2);
+const year2031=f.fpBaseMonthly(2031);
+const insurance=year2031.find(x=>x.key==='childInsuranceMonthly');
+const care=year2031.find(x=>x.key==='daycareMonthly');
+assert.equal(insurance.value,1);
+assert.equal(care.value,4);
+assert.equal(year2031.find(x=>x.key==='carMonthly'),undefined,'car loan disappears after payoff year');
+assert.ok(f.fpBaseMonthly(2028).some(x=>x.key==='carMonthly'),'car loan included during payoff year');
+// A monthly transfer to NISA reduces liquid cash, but does not increase ordinary spending.
+const baseline=f.modelYears(3000,true);
+const y=baseline.points[0].year;
+const first=baseline.points[0];
+assert.ok(first.nisa>=30+48);
+assert.ok(first.otherInvest>=20+12);
+assert.equal(first.investing,60);
+assert.ok(Math.abs((first.incomes-first.expenses-first.investing)-(first.cash-(p.cashSavings+p.support)))<1e-7);
+assert.ok(Math.abs(first.total-(first.cash+first.nisa+first.otherInvest))<1e-7);
+p.nisaMonthly=5;
+const higher=f.modelYears(3000,true).points[0];
+assert.ok(Math.abs((higher.cash-first.cash)+12)<1e-7,'additional 1 per month moves exactly 12 out of cash');
+assert.ok(Math.abs((higher.nisa-first.nisa)-12)<1e-7,'same 12 enters NISA');
+assert.ok(Math.abs(higher.expenses-first.expenses)<1e-7,'investment transfer is not a living expense');
+p.nisaMonthly=4;
+const year31=baseline.points.find(x=>x.year===2031);
+const lineItems=f.fpExpenseDetails(year31,true);
+const itemSum=lineItems.reduce((a,x)=>a+x.amount,0);
+assert.ok(Math.abs(itemSum-year31.expenses)<1e-7,'annual breakdown matches total expenses');
+assert.ok(lineItems.some(x=>x.label==='習い事'&&x.amount===18));
+assert.ok(lineItems.some(x=>x.label==='帰省費'&&x.amount===6));
+const line2035=f.fpExpenseDetails(baseline.points.find(x=>x.year===2035),true);
+assert.ok(!line2035.some(x=>x.label==='習い事'||x.label==='帰省費'),'completed expenses no longer charged');
+p.husbandMonthly=40;p.wifeMonthly=35;p.wifeReduced=30;p.children=0;
+p.daycareMonthly=0;p.childInsuranceMonthly=0;p.childLivingMonthly=0;
+p.expenses=[];p.otherSavingsMonthly=0;
+const affordable=f.fpBudget().amount;
+p.lifeInsuranceMonthly+=3;
+assert.ok(f.fpBudget().amount<affordable,'new monthly insurance reduces price cap');
+p.lifeInsuranceMonthly-=3;
+p.otherSavingsMonthly=5;
+assert.ok(f.fpBudget().amount<affordable,'cash savings goal reduces price cap');
+console.log('HOPPO comprehensive FP cash, NISA, insurance, childcare and custom expense invariants: PASS');

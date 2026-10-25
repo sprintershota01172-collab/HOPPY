@@ -1198,11 +1198,12 @@
   }
 
   function fpMonthlyPie(month,point){
+    point=point||modelYears(safeNum(state.plan.propertyPrice),true).points.find(x=>x.year===month.year);
     const data=fpMonthlyAllocation(month),chosen=ui.fpBreakdownMonthly||'living',
       percent=data.percent===null?'—':yen(data.percent,1)+'%';
     return '<div class="fp-month-pie" data-fp-month-pie>'+
       '<svg viewBox="0 0 210 210" class="fp-month-donut" role="img" aria-label="'+
-         month.year+'年'+month.month+'月の収入に対する支出割合：'+esc(percent)+'">'+
+         month.year+'年'+month.month+'月の手取り収入に対する支出割合：'+esc(percent)+'">'+
       '<circle cx="105" cy="105" r="67" stroke="#ecf0f2" stroke-width="28" fill="none"/>'+
       fpPieArcs(data.items,data.total,67,28,'monthly',chosen)+
       '<text x="105" y="101" text-anchor="middle" font-size="28" font-weight="800" fill="#283a4b">'+esc(percent)+'</text>'+

@@ -42,7 +42,7 @@
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:1,fpChartPage:0,fpBreakdownAnnual:'living',fpBreakdownMonthly:'living',fpBreakdownOpen:null,fpHistoryLive:true,fpIncomePeriod:'year',fpIncomeMonth:1,fpCashMonth:1,fpMonthView:'pie',fpAssetPeriod:'year',fpAssetMonth:1,fpHistoryPage:0,fpHistoryId:null,fpHistoryOpen:false,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:new Date().getFullYear(),simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',axisEdit:false,memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:1,fpChartPage:0,fpBreakdownAnnual:'living',fpBreakdownMonthly:'living',fpBreakdownOpen:null,fpEditingRow:null,fpHistoryLive:true,fpIncomePeriod:'year',fpIncomeMonth:1,fpCashMonth:1,fpMonthView:'pie',fpAssetPeriod:'year',fpAssetMonth:1,fpHistoryPage:0,fpHistoryId:null,fpHistoryOpen:false,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:new Date().getFullYear(),simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',axisEdit:false,memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
   if(state.plan.hasRun){ui.simStep=7;ui.simResultPage=1;ui.fpYear=new Date().getFullYear();}
   function normalize(s) {
@@ -1059,7 +1059,7 @@
     const p=state.plan,year=point.year,annual=!month,scale=annual?12:1,rows=[];
     const add=(label,amount,options={})=>{
       const amountValue=Math.max(0,Number(amount)||0);
-      if(amountValue>1e-8||options.field||options.expenseId||options.eventId)rows.push({label,amount:amountValue,...options});
+      if(amountValue>1e-8)rows.push({label,amount:amountValue,...options});
     };
     const annualPart=amount=>annual?amount:amount/12;
     const monthlyPart=amount=>amount*scale;
@@ -1118,47 +1118,61 @@
       add('その他の投資積立',monthlyPart(safeNum(p.otherInvestMonthly)),
         {field:'otherInvestMonthly',unit:'万円/月',editStep:'5:1'});
     }else if(category==='remaining'){
-      const net=annual?point.netCash:month.net;
-      add('支出・積立後の現金残額',Math.max(0,net));
+      const net=Math.max(0,annual?point.netCash:month.net),
+        goal=monthlyPart(safeNum(p.otherSavingsMonthly));
+      if(goal>0){
+        add('確保できる現金貯金',Math.min(net,goal));
+        add('貯金目標を除いた残額',Math.max(0,net-goal));
+      }else add('現金として残る分',net);
     }
     return rows;
   }
   function fpPieBreakdownPanel(point,month,items,selectedKey){
     const item=items.find(x=>x.id===selectedKey)||items[0],annual=!month;
     if(!item)return '';
-    const rows=fpPieBreakdownRows(point,month,item.id),income=annual?point.incomes:month.income,
-      spending=annual?point.expenses+point.investing:month.spending+month.investing,
-      total=Math.max(1,income,spending),
-      percentage=income>0?(item.amount/income*100):null;
-    const rowHtml=rows.map(row=>{
-      let editor='';
-      if(row.field){
-        editor='<label class="fp-breakdown-edit"><input type="number" min="0" max="10000" step=".01" inputmode="decimal" '+
-          'data-fp-breakdown-field="'+esc(row.field)+'" aria-label="'+esc(row.label)+'の設定金額" value="'+esc(String(safeNum(state.plan[row.field])))+'"><small>'+esc(row.unit)+'</small></label>';
-      }else if(row.expenseId||row.eventId){
-        const id=row.expenseId||row.eventId,attr=row.expenseId?'data-fp-breakdown-expense':'data-fp-breakdown-event';
-        editor='<label class="fp-breakdown-edit"><input type="number" min="0" max="100000" step=".01" inputmode="decimal" '+
-          attr+'="'+esc(id)+'" aria-label="'+esc(row.label)+'の設定金額" value="'+esc(String(row.value))+'"><small>'+esc(row.unit)+'</small></label>';
-      }else if(row.editStep){
-        editor='<button class="fp-breakdown-link" data-act="fp-breakdown-edit" data-value="'+row.editStep+'">条件編集 ›</button>';
-      }
-      return '<div class="fp-breakdown-row"><div class="fp-breakdown-entry"><strong>'+esc(row.label)+'</strong>'+
-        '<span>'+yen(row.amount,2)+'万円</span></div>'+editor+'</div>';
+    const period=annual?'annual':'monthly',
+      rows=fpPieBreakdownRows(point,month,item.id),
+      income=annual?point.incomes:month.income,
+      percentage=income>0?(item.amount/income*100):null,
+      density=rows.length>24?' two-columns three-columns':rows.length>9?' two-columns':'';
+    const entries=rows.map(row=>{
+      const type=row.field?'field':row.expenseId?'expense':row.eventId?'event':'',
+        key=row.field||row.expenseId||row.eventId||'',editable=!!type,
+        tag=editable?'button':'div',
+        attributes=editable?' type="button" data-act="fp-row-edit" data-period="'+period+
+          '" data-value="'+type+'|'+esc(key)+'" aria-label="'+esc(row.label)+'を編集"':'';
+      return '<'+tag+attributes+' class="fp-breakdown-row"><span class="fp-row-label">'+esc(row.label)+
+        '</span><strong>'+fpYen(row.amount)+'</strong></'+tag+'>';
     }).join('');
+    const selected=ui.fpEditingRow?.period===period&&ui.fpEditingRow?.category===item.id?
+      rows.find(row=>ui.fpEditingRow.key===(row.field?'field|'+row.field:row.expenseId?'expense|'+row.expenseId:row.eventId?'event|'+row.eventId:'')):null;
+    let edit='';
+    if(selected){
+      const type=selected.field?'field':selected.expenseId?'expense':'event',
+        attr=type==='field'?'data-fp-breakdown-field':type==='expense'?'data-fp-breakdown-expense':'data-fp-breakdown-event',
+        key=selected.field||selected.expenseId||selected.eventId,
+        amount=type==='field'?state.plan[key]:type==='expense'?
+          state.plan.expenses.find(x=>x.id===key)?.amount:state.plan.events.find(x=>x.id===key)?.amount,
+        unit=String(selected.unit||'万円').replaceAll('万円','円');
+      edit='<div class="fp-inline-edit"><label><span>'+esc(selected.label)+'（'+esc(unit)+'）</span>'+
+        '<input type="number" min="0" max="1000000000" step="1" inputmode="numeric" '+attr+
+        '="'+esc(key)+'" value="'+fpYenNumber(amount)+'" aria-label="'+esc(selected.label)+'の金額（円）"></label>'+
+        '<button type="button" data-act="fp-edit-close">閉じる</button></div>';
+    }
     return '<section class="fp-breakdown-panel" data-fp-inline-breakdown aria-label="'+esc(item.label)+'の内訳">'+
-      '<div class="fp-breakdown-title"><span>選択項目の内訳 '+(annual?'年':'月')+'額</span>'+
-      '<strong>'+esc(item.label)+' <b>'+yen(item.amount,2)+'万円</b></strong>'+
-      '<small>収入比 '+(percentage===null?'—':yen(percentage,1)+'%')+' ・ '+rows.length+'項目を下まで確認できます</small></div>'+
-      '<div class="fp-breakdown-list">'+(rowHtml||'<p class="fp-breakdown-empty">この項目の内訳はありません。</p>')+'</div>'+
-      '<p class="fp-breakdown-footer">設定金額を変更すると家計・資産予測を再計算します。金額の右にある入力欄は元の登録単位です。'+
-      (annual?'年間集計':'年払い・月未指定の支出は月割の概算')+'。</p></section>';
+      '<div class="fp-breakdown-title"><span>'+esc(item.label)+'の内訳</span>'+
+      '<strong>'+fpYen(item.amount)+'</strong>'+
+      '<small>収入比 '+(percentage===null?'—':yen(percentage,1)+'%')+'　・　'+rows.length+'項目</small></div>'+
+      '<div class="fp-breakdown-list'+density+'">'+
+      (entries||'<p class="fp-breakdown-empty">金額が登録された項目はありません。</p>')+
+      '</div>'+edit+'</section>';
   }
   function fpPiePick(item,period,active){
     return '<button type="button" class="fp-pie-pick '+(active===item.id?'selected':'')+
       '" data-act="fp-breakdown-select" data-period="'+period+'" data-value="'+item.id+
       '" aria-pressed="'+(active===item.id?'true':'false')+'">'+
       '<i style="background:'+item.color+'"></i><span>'+esc(item.label)+'</span>'+
-      '<strong>'+yen(item.amount,period==='annual'?0:2)+'万</strong></button>';
+      '<strong>'+fpYen(item.amount)+'</strong></button>';
   }
 
   // Selecting a pie segment changes only the detail card and selected visuals.
@@ -1176,10 +1190,10 @@
         const snapshot=fpLatestSnapshot();
         if(snapshot)state.plan=snapshot.plan;
       }
-      const model=modelYears(safeNum(state.plan.propertyPrice),true);
-      const point=fpYearPoint(model);
-      const month=period==='monthly'
-        ?fpMonthlyLedger(point).months[Math.min(11,Math.max(0,(ui.fpCashMonth||1)-1))]:null;
+      const point=ui.fpRenderedPeriod===period?ui.fpRenderedPoint:
+        fpYearPoint(modelYears(safeNum(state.plan.propertyPrice),true));
+      const month=period==='monthly'?(ui.fpRenderedPeriod==='monthly'&&ui.fpRenderedMonth?
+        ui.fpRenderedMonth:fpMonthlyLedger(point).months[Math.min(11,Math.max(0,(ui.fpCashMonth||1)-1))]):null;
       const allocation=month?fpMonthlyAllocation(month):fpIncomeAllocation(point);
       panel.outerHTML=fpPieBreakdownPanel(point,month,allocation.items,selectedCategory);
     }finally{
@@ -1213,6 +1227,7 @@
   }
 
   function fpPieChart(point){
+    ui.fpRenderedPoint=point;ui.fpRenderedMonth=null;ui.fpRenderedPeriod='annual';
     const data=fpIncomeAllocation(point),total=Math.max(1,data.income,data.spent),
       chosen=ui.fpBreakdownAnnual||'living';
     const arcs=fpPieArcs(data.items,total,68,29,'annual',chosen);
@@ -1223,8 +1238,8 @@
       arcs+'<text x="105" y="100" text-anchor="middle" font-size="26" font-weight="800" fill="#283a4b">'+esc(percent)+'</text>'+
       '<text x="105" y="124" text-anchor="middle" font-size="11" fill="#758391">支出率（積立を除く）</text></svg>'+
       '<div class="fp-pie-key">'+data.items.map(x=>fpPiePick(x,'annual',chosen)).join('')+'</div></div>'+
-      '<div class="fp-pie-totals"><span>年間手取り＋給付金 <strong>'+yen(data.income,0)+'万円</strong></span>'+
-      '<span>年間支出＋投資積立 <strong>'+yen(data.spent,0)+'万円</strong></span></div>'+
+      '<div class="fp-pie-totals"><span>年間手取り＋給付金 <strong>'+fpYen(data.income)+'</strong></span>'+
+      '<span>年間支出＋投資積立 <strong>'+fpYen(data.spent)+'</strong></span></div>'+
       fpPieBreakdownPanel(point,null,data.items,chosen);
   }
   function fpChartData(price,current,rent){
@@ -1283,6 +1298,7 @@
 
   function fpMonthlyPie(month,point){
     point=point||modelYears(safeNum(state.plan.propertyPrice),true).points.find(x=>x.year===month.year);
+    ui.fpRenderedPoint=point;ui.fpRenderedMonth=month;ui.fpRenderedPeriod='monthly';
     const data=fpMonthlyAllocation(month),chosen=ui.fpBreakdownMonthly||'living',
       percent=data.percent===null?'—':yen(data.percent,1)+'%';
     return '<div class="fp-month-pie" data-fp-month-pie>'+

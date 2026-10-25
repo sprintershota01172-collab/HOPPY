@@ -128,4 +128,50 @@ assert.equal(a.state().properties.find(x=>x.name==='新しく登録した物件'
 const b=start();
 assert.equal(b.state().properties.length,4);
 assert.equal(b.state().scores[p.id][c.id].husband,2);
-console.log('ほっぽさん premium UI, property CRUD, comparisons, meetings: PASS');
+
+// Guided financial simulator: five questions, automatic results, persisted answers.
+a.click('tab','sim');
+assert.match(a.app.innerHTML,/ご家族のこれから/);
+a.input({sim:'husbandAge'},28);
+a.input({sim:'children'},2);
+assert.equal(a.state().plan.husbandAge,28);
+for(let i=0;i<4;i++)a.click('sim-next');
+assert.match(a.app.innerHTML,/これからの大きな支出/);
+a.input({sim:'weddingCost'},360);
+a.click('sim-next');
+assert.match(a.app.innerHTML,/将来の現金貯金/);
+assert.match(a.app.innerHTML,/sim-chart/);
+a.click('sim-result-page','1');
+assert.match(a.app.innerHTML,/月々ローン返済/);
+a.click('sim-result-page','1');
+assert.match(a.app.innerHTML,/教育費の積立目標/);
+a.click('sim-restart');
+assert.match(a.app.innerHTML,/ご家族のこれから/);
+
+// Home-learning notebook with one-tap offline extractive organization.
+a.click('tab','property');
+a.click('study-open');
+assert.match(a.app.innerHTML,/家の学び/);
+a.click('study-add');
+assert.match(a.app.innerHTML,/学んだこと/);
+a.input({study:'title'},'モデルハウスでの学び');
+a.input({study:'text'},'金利が上がるとローン負担が増える。耐震構造を確認する必要がある。学校への距離は徒歩で確認する。');
+a.click('study-save');
+assert.equal(a.state().studyNotes.length,1);
+a.click('study-summarize');
+assert.match(a.app.innerHTML,/費用・住宅ローン/);
+assert.match(a.app.innerHTML,/金利が上がるとローン負担が増える/);
+a.click('study-toggle','notes');
+assert.match(a.app.innerHTML,/モデルハウスでの学び/);
+const id=a.state().studyNotes[0].id;
+a.click('study-edit',id);
+assert.match(a.app.innerHTML,/学びメモを編集/);
+a.input({study:'text'},'断熱性能と耐震性を確認した。');
+a.click('study-save');
+assert.match(a.state().studyNotes[0].text,/断熱性能と耐震性/);
+const b2=start();
+assert.equal(b2.state().plan.husbandAge,28);
+assert.equal(b2.state().plan.weddingCost,360);
+assert.equal(b2.state().studyNotes.length,1);
+assert.equal(b2.state().properties.length,4);
+console.log('ほっぽさん premium UI + simulator + local learning organizer: PASS');

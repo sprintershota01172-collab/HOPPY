@@ -808,7 +808,33 @@
     };
     const amount=Math.max(0,Math.floor((loanCap(safeNum(p.interest))+safeNum(p.downPayment))/50)*50);
     const stressAmount=Math.max(0,Math.floor((loanCap(safeNum(p.interest)+1)+safeNum(p.downPayment))/50)*50);
-    return {amount,stressAmount,monthlyIncome,housingLimit:monthlyIncome*.25,loanPayment,spending,investing,referenceYear:fpDecisionYear()};
+    return {amount,stressAmount,monthlyIncome,housingLimit:monthlyIncome*.25,
+      housingBudget:Math.max(0,cap),maintenance:safeNum(p.housingOngoing),
+      cashflowHousingLimit:monthlyIncome-spending-investing-safeNum(p.cashBufferMonthly)-safeNum(p.otherSavingsMonthly),
+      loanPrincipal:loanCap(safeNum(p.interest)),
+      downPayment:safeNum(p.downPayment),rate:safeNum(p.interest),loanYears:safeNum(p.loanYears,35),
+      loanPayment,spending,investing,referenceYear:fpDecisionYear()};
+  }
+  // Transparent monthly-payment-to-home-price bridge. FP budgets are estimates,
+  // not bank underwriting; fees and available upfront cash must be checked separately.
+  function fpMortgageCapacityCard(){
+    const b=fpBudget(),p=state.plan,reference=b.referenceYear;
+    const rate=yen(b.rate,2),years=Math.round(b.loanYears),
+      homePrice=fpYen(b.amount),loan=fpYen(b.loanPrincipal);
+    const belowCost=b.housingBudget<b.maintenance;
+    return '<section class="fp-capacity-card" aria-label="月々のローン返済目安と購入可能な物件価格">'+
+      '<div class="fp-capacity-columns">'+
+      '<div class="fp-capacity-cell payment"><span>月々ローン返済に使える目安</span><strong>'+
+      fpYen(b.loanPayment)+'</strong><small>毎月のローン返済額</small></div>'+
+      '<div class="fp-capacity-cell price"><span>その金額で購入できる物件価格</span><strong>'+
+      homePrice+'</strong><small>建物・土地等の本体価格</small></div></div>'+
+      '<div class="fp-capacity-formula">住居費の予算 '+fpYen(b.housingBudget)+'/月 − 維持費 '+
+        fpYen(b.maintenance)+'/月 ＝ ローン返済 '+fpYen(b.loanPayment)+'/月</div>'+
+      '<div class="fp-capacity-terms">'+reference+'年の家計を基準 ｜ 借入 '+loan+
+      ' ＋ 頭金 '+fpYen(b.downPayment)+' ｜ 金利'+rate+'％・'+years+'年返済'+
+      ' ｜ 購入諸費用は別途（物件価格の7％を仮定）</div>'+
+      (belowCost?'<p class="fp-capacity-warning">維持費が住居費の上限を超える試算です。返済予算を見直してください。</p>':'')+
+      '<p class="fp-capacity-caution">家計から計算した参考上限です。融資承認額ではありません。</p></section>';
   }
   function fpRating(price){
     const info=fpForecast(price),budget=fpBudget(),stressed=fpForecast(price,1);
@@ -1342,7 +1368,7 @@
         '<input type="number" min="0" max="100000000" step="1" inputmode="numeric" data-fp-quick-key="'+key+
         '" value="'+fpYenNumber(p[key])+'" aria-label="'+label+'（円/月）"><small>円/月</small></div></label>'
       ).join('')+'</div>';
-    return '<div class="fp-month-report grow">'+fpYearSelect(model)+
+    return '<div class="fp-month-report grow">'+fpYearSelect(model)+fpMortgageCapacityCard()+
       '<div class="fp-month-head"><span class="fp-breakdown-hint">項目を選ぶと下に内訳を表示</span>'+
         '<div class="fp-month-switch" role="group" aria-label="月収支の表示形式">'+
           '<button data-act="fp-month-view" data-value="pie" class="'+(isPie?'active':'')+'">円グラフ</button>'+
@@ -1543,6 +1569,7 @@
         (rating.reason||'');
       const negative=current.points.find(x=>x.cash<0);
       content='<div class="fp-r-summary grow">'+
+        fpMortgageCapacityCard()+
         fpLoanSummary(price)+
         '<div class="fp-r-summary-strip"><span>参考の購入予算</span><strong>'+fpYen(budget.amount)+'</strong>'+
         '<small>金利＋1％なら '+fpYen(budget.stressAmount)+'が目安</small></div>'+

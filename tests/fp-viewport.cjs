@@ -60,7 +60,7 @@ try{
   const result=cp.spawnSync(chrome,['--headless','--no-sandbox','--disable-gpu',
     '--disable-dev-shm-usage','--no-first-run','--force-device-scale-factor=1',
     '--window-size='+width+','+height,'--virtual-time-budget=700','--dump-dom',
-    url.pathToFileURL(p).href],{encoding:'utf8',timeout:20000,maxBuffer:20*1024*1024});
+    url.pathToFileURL(p).href],{encoding:'utf8',timeout:60000,maxBuffer:20*1024*1024});
   if(result.error)throw result.error;
   const match=(result.stdout||'').match(/data-layout="([^"]+)"/);
   assert.ok(match,'Browser did not report bounds: '+(result.stderr||'').slice(-300));

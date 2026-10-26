@@ -1564,7 +1564,7 @@
         '<span><em class="fp-balance-chip">'+fpBalanceLabel(selected.net)+'</em> '+
           point.year+'年'+month+'月 ・ 今月の現金収支</span>'+
         '<strong class="'+fpBalanceTone(selected.net)+'">'+fpSignedYen(selected.net)+'</strong></div>'+
-        '<div><span>手取りに対する現金収支率</span><strong class="fp-surplus-percent '+fpBalanceTone(selected.net)+'">'+surplusPct+'</strong>'+
+        '<div><span aria-label="手取り収入に対する割合">手取りに対する現金収支率</span><strong class="fp-surplus-percent '+fpBalanceTone(selected.net)+'">'+surplusPct+'</strong>'+
         '<small>積立前 '+fpSignedYen(selected.income-selected.spending)+'</small>'+
         '<small>月末現金 '+fpYen(selected.endingCash)+'</small></div></div>'+
       '<div class="fp-month-summary" aria-label="月の収支計算">'+

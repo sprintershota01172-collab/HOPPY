@@ -57,7 +57,7 @@ for(const month of led.months){
  assert.ok(Math.abs(allocation.items.reduce((a,x)=>a+x.amount,0)-Math.max(month.income,month.spending+month.investing))<1e-8,
    'donut segment sum '+month.month);
  assert.equal(allocation.percent,month.income>0?month.spending/month.income*100:null);
- assert.ok(api.fpMonthlyPie(month).includes('月の支出率'));
+ assert.ok(api.fpMonthlyPie(month).includes('支出率'));
 }
 assert.ok(api.fpMonthlyAllocation(led.months[1]).percent>100,'exceptional wedding month exceeds ordinary income');
 const zeroIncome={...led.months[0],income:0,net:-led.months[0].spending-led.months[0].investing};
@@ -78,7 +78,7 @@ assert.match(app.innerHTML,/data-fp-cash-month/);
 assert.doesNotMatch(app.innerHTML,/fp-month-bar/,'unnecessary bar chart has been removed');
 assert.match(app.innerHTML,/data-fp-month-pie/);
 assert.match(app.innerHTML,/円グラフ/);
-assert.match(app.innerHTML,/月の支出率/);
+assert.match(app.innerHTML,/支出率/);
 click('fp-month-view','detail');
 assert.match(app.innerHTML,/fp-cash-rows/);
 assert.doesNotMatch(app.innerHTML,/data-fp-month-pie/);

@@ -27,7 +27,7 @@ const getEdu=y=>api.fpBaseMonthly(y).find(x=>x.key==='childEducationInsuranceMon
 assert.equal(getEdu(2026),0);
 assert.equal(getEdu(2028),.75);
 assert.equal(getEdu(2031),1.5);
-assert.equal(getEdu(2046),0,'the two child cohorts reach 18 and leave the premium calculation');
+assert.equal(getEdu(2050),0,'the two child cohorts reach 18 and leave the premium calculation');
 const cardBefore=api.fpEducationInsuranceCard(2028);
 assert.match(cardBefore,/学資保険/);
 assert.match(cardBefore,/1人あたり/);

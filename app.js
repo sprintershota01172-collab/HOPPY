@@ -712,7 +712,7 @@
     }
     const count=fpChildCounts(year);
     parts.push({key:'childInsuranceMonthly',label:'子どもの保険',value:count.insured*safeNum(p.childInsuranceMonthly)});
-    parts.push({key:'childEducationInsuranceMonthly',label:'学資保険・教育積立',value:fpEducationPremiumForYear(year,p)});
+    parts.push({key:'childEducationInsuranceMonthly',label:'学資保険',value:fpEducationPremiumForYear(year,p)});
     parts.push({key:'childLivingMonthly',label:'子どもの生活費',value:count.living*safeNum(p.childLivingMonthly)});
     parts.push({key:'daycareMonthly',label:'保育料・幼稚園',value:count.preschool*safeNum(p.daycareMonthly)});
     return parts;

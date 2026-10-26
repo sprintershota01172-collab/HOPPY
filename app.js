@@ -367,6 +367,14 @@
       fpTargetMonthly(p.goalOtherAmount,p.investBalance,safeNum(p.goalOtherYears)*12,p.returnAnnual):
       safeNum(p.otherInvestMonthly);
   }
+  function fpNisaForYear(year,p=state.plan){
+    return Number(p.goalNisaEnabled)===1&&year>=simNowYear()+safeNum(p.goalNisaYears)
+      ?0:fpEffectiveNisaMonthly(p);
+  }
+  function fpOtherInvestForYear(year,p=state.plan){
+    return Number(p.goalOtherEnabled)===1&&year>=simNowYear()+safeNum(p.goalOtherYears)
+      ?0:fpEffectiveOtherInvestMonthly(p);
+  }
   function fpEducationGoal(p,index){
     const birth=safeNum(p.firstChildYear)+(index-1)*Math.max(1,safeNum(p.birthInterval,3));
     const age=Math.min(30,Math.max(0,Math.round(safeNum(p['goalEduAge'+index]))));
@@ -832,14 +840,14 @@
       const upfront=buy&&year===purchaseYear?safeNum(p.downPayment)+safeNum(price)*.07:0;
       const events=fpEventsAnnual(year,'expense');
       const expenses=monthly*12+annualFixed+school+birth+upfront+events;
-      const nisaAdd=12*fpEffectiveNisaMonthly(p),otherAdd=12*fpEffectiveOtherInvestMonthly(p);
+      const nisaAdd=12*fpNisaForYear(year,p),otherAdd=12*fpOtherInvestForYear(year,p);
       const investing=nisaAdd+otherAdd;
       cash+=income-expenses-investing;
       // Preserve legacy projections unless a target-based plan was explicitly enabled.
       nisa=Number(p.goalNisaEnabled)===1?
-        compoundYear(nisa,fpEffectiveNisaMonthly(p)):Math.max(0,(nisa+nisaAdd)*annualGrowth);
+        compoundYear(nisa,fpNisaForYear(year,p)):Math.max(0,(nisa+nisaAdd)*annualGrowth);
       otherInvest=Number(p.goalOtherEnabled)===1?
-        compoundYear(otherInvest,fpEffectiveOtherInvestMonthly(p)):Math.max(0,(otherInvest+otherAdd)*annualGrowth);
+        compoundYear(otherInvest,fpOtherInvestForYear(year,p)):Math.max(0,(otherInvest+otherAdd)*annualGrowth);
       investedContributions+=investing;
       const invested=nisa+otherInvest;
       points.push({year,cash,invested,nisa,otherInvest,total:cash+invested,
@@ -874,7 +882,7 @@
     const housing=payment+safeNum(p.housingOngoing);
     const ratio=income>0?housing/income:Infinity;
     const recurring=fpSpendingMonthly(fpDecisionYear());
-    const investing=fpEffectiveNisaMonthly(p)+fpEffectiveOtherInvestMonthly(p);
+    const investing=fpNisaForYear(fpDecisionYear(),p)+fpOtherInvestForYear(fpDecisionYear(),p);
     const spendable=income-recurring-investing-housing;
     const upfront=safeNum(p.downPayment)+cost*.07;
     const remaining=safeNum(p.cashSavings)+safeNum(p.support)-upfront;
@@ -884,7 +892,7 @@
   function fpBudget(){
     const p=state.plan,monthlyIncome=fpForecast(0).income;
     const spending=fpSpendingMonthly(fpDecisionYear());
-    const investing=fpEffectiveNisaMonthly(p)+fpEffectiveOtherInvestMonthly(p);
+    const investing=fpNisaForYear(fpDecisionYear(),p)+fpOtherInvestForYear(fpDecisionYear(),p);
     const cap=Math.min(monthlyIncome*.25,monthlyIncome-spending-investing-safeNum(p.cashBufferMonthly)-safeNum(p.otherSavingsMonthly));
     const loanPayment=Math.max(0,cap-safeNum(p.housingOngoing));
     const term=Math.max(12,Math.round(safeNum(p.loanYears,35)*12));
@@ -1074,7 +1082,7 @@
     const p=state.plan,inc=fpYearlyIncome(point.year).months,expenseEvents=fpEventsForYear(point.year)
       .filter(x=>x.type==='expense'),living=point.monthly-point.housing,
       otherAnnual=point.annualFixed+point.school+point.birth,
-      investNisa=fpEffectiveNisaMonthly(p),investOther=fpEffectiveOtherInvestMonthly(p);
+      investNisa=fpNisaForYear(point.year,p),investOther=fpOtherInvestForYear(point.year,p);
     // Annual-only expenses without a known payment month are smoothed over 12 months.
     // Purchase costs are placed in the selected purchase month.
     const opening=point.cash-point.netCash;
@@ -1122,11 +1130,11 @@
       return balance;
     };
     const nisa=Number(p.goalNisaEnabled)===1?
-      compoundMonths(asset.opening.nisa,fpEffectiveNisaMonthly(p)):
-      Math.max(0,(asset.opening.nisa+m*fpEffectiveNisaMonthly(p))*(1+growth*m/12));
+      compoundMonths(asset.opening.nisa,fpNisaForYear(year,p)):
+      Math.max(0,(asset.opening.nisa+m*fpNisaForYear(year,p))*(1+growth*m/12));
     const otherInvest=Number(p.goalOtherEnabled)===1?
-      compoundMonths(asset.opening.otherInvest,fpEffectiveOtherInvestMonthly(p)):
-      Math.max(0,(asset.opening.otherInvest+m*fpEffectiveOtherInvestMonthly(p))*(1+growth*m/12));
+      compoundMonths(asset.opening.otherInvest,fpOtherInvestForYear(year,p)):
+      Math.max(0,(asset.opening.otherInvest+m*fpOtherInvestForYear(year,p))*(1+growth*m/12));
     const cash=flows[m-1].endingCash;
     return {year,month:m,cash,nisa,otherInvest,total:cash+nisa+otherInvest,
       cashChange:cash-asset.opening.cash,nisaChange:nisa-asset.opening.nisa,
@@ -1254,8 +1262,8 @@
           {editStep:'6:1'}:{eventId:item.id,value:safeNum(item.amount),unit:'万円/回'});
       }
     }else if(category==='investing'){
-      add('NISA積立',monthlyPart(fpEffectiveNisaMonthly(p)),{field:'nisaMonthly',unit:'万円/月',editStep:'5:1'});
-      add('その他の投資積立',monthlyPart(fpEffectiveOtherInvestMonthly(p)),
+      add('NISA積立',monthlyPart(fpNisaForYear(year,p)),{field:'nisaMonthly',unit:'万円/月',editStep:Number(p.goalNisaEnabled)===1?'5:2':'5:1'});
+      add('その他の投資積立',monthlyPart(fpOtherInvestForYear(year,p)),
         {field:'otherInvestMonthly',unit:'万円/月',editStep:'5:1'});
     }else if(category==='remaining'){
       const net=Math.max(0,annual?point.netCash:month.net),
@@ -1575,7 +1583,7 @@
         '<div class="fp-asset-tile total"><span>金融資産の合計</span><strong>'+fpYen(selected.total)+'</strong>'+
         '<small>現金＋NISA＋その他投資</small></div></div>'+
       '<div class="fp-goal-assets-action"><button data-act="fp-goal-investment-edit">目標額・何年後かを編集 ↗</button></div>'+
-      '<p class="fp-r-help">NISAの積立 '+fpYen(fpEffectiveNisaMonthly(state.plan))+'/月、その他投資 '+fpYen(fpEffectiveOtherInvestMonthly(state.plan))+
+      '<p class="fp-r-help">NISAの積立 '+fpYen(fpNisaForYear(point.year,state.plan))+'/月、その他投資 '+fpYen(fpOtherInvestForYear(point.year,state.plan))+
         '/月。折れ線は年末残高。投資の月末評価額は年率の仮定から近似計算、時価実績ではありません。住宅価値とローン残債は含みません。</p></div>';
   }
   function fpIncomeReport(model){

@@ -3679,3 +3679,164 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     padding:3px 4px!important;
   }
 }
+
+
+/* FP r30 — screenshot fix: eliminate the empty chart frame and give
+   every expense row enough height to remain inside the full border. */
+.fp-focus .fp-month-report:has(>.fp-month-pie){
+  display:flex!important;
+  flex-direction:column!important;
+  min-height:0!important;
+  overflow:hidden!important;
+  gap:4px!important;
+  padding-bottom:5px!important;
+  box-sizing:border-box!important;
+}
+.fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-month-pie{
+  flex:0 1 142px!important;
+  height:142px!important;
+  min-height:118px!important;
+  max-height:142px!important;
+  display:grid!important;
+  grid-template-columns:142px minmax(0,1fr)!important;
+  align-items:center!important;
+  justify-content:start!important;
+  gap:4px!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:hidden!important;
+}
+.fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-month-pie>.fp-month-donut{
+  display:block!important;
+  width:142px!important;
+  height:142px!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  margin:0!important;
+  padding:0!important;
+  align-self:center!important;
+  justify-self:start!important;
+}
+.fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-month-pie>.fp-month-pie-legend{
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  min-width:0!important;
+  min-height:0!important;
+  height:100%!important;
+  margin:0!important;
+  padding:0!important;
+  gap:2px!important;
+  overflow:hidden!important;
+}
+.fp-focus .fp-month-report:has(>.fp-month-pie) .fp-month-pie-legend>.fp-pie-pick{
+  flex:0 0 23px!important;
+  height:23px!important;
+  min-height:0!important;
+  max-height:23px!important;
+  padding:0 4px!important;
+  margin:0!important;
+}
+.fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-breakdown-panel{
+  flex:1 1 125px!important;
+  height:auto!important;
+  min-height:106px!important;
+  max-height:none!important;
+  box-sizing:border-box!important;
+  margin:0 0 2px!important;
+  padding:5px 7px 5px!important;
+  border:1px solid #cbdfe9!important;
+  border-radius:10px!important;
+  background:#fff!important;
+  overflow:hidden!important;
+  display:flex!important;
+  flex-direction:column!important;
+}
+.fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-breakdown-panel>.fp-breakdown-title{
+  flex:0 0 auto!important;
+  min-height:0!important;
+  padding:0 0 3px!important;
+  margin:0!important;
+  gap:1px 5px!important;
+}
+.fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-breakdown-panel>.fp-breakdown-list{
+  flex:1 1 0!important;
+  min-height:0!important;
+  height:auto!important;
+  max-height:none!important;
+  padding:2px 1px 3px!important;
+  margin:0!important;
+  grid-template-rows:repeat(var(--fp-rows,3),minmax(0,1fr))!important;
+  grid-auto-rows:0!important;
+  align-content:stretch!important;
+  overflow:hidden!important;
+}
+.fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-breakdown-panel .fp-breakdown-row{
+  box-sizing:border-box!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-height:100%!important;
+}
+.fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-breakdown-panel .fp-row-label,
+.fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-breakdown-panel .fp-breakdown-row>strong{
+  line-height:1.1!important;
+}
+@media(max-height:800px){
+  .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-month-pie{
+    flex-basis:122px!important;
+    height:122px!important;
+    min-height:100px!important;
+    max-height:122px!important;
+    grid-template-columns:122px minmax(0,1fr)!important;
+  }
+  .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-month-pie>.fp-month-donut{
+    width:122px!important;
+    height:122px!important;
+  }
+  .fp-focus .fp-month-report:has(>.fp-month-pie) .fp-month-pie-legend>.fp-pie-pick{
+    flex-basis:20px!important;
+    height:20px!important;
+    max-height:20px!important;
+  }
+  .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-breakdown-panel{
+    min-height:96px!important;
+  }
+}
+@media(max-height:680px){
+  .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-month-pie{
+    flex-basis:105px!important;
+    height:105px!important;
+    min-height:92px!important;
+    max-height:105px!important;
+    grid-template-columns:105px minmax(0,1fr)!important;
+  }
+  .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-month-pie>.fp-month-donut{
+    width:105px!important;
+    height:105px!important;
+  }
+  .fp-focus .fp-month-report:has(>.fp-month-pie) .fp-month-pie-legend>.fp-pie-pick{
+    flex-basis:18px!important;
+    height:18px!important;
+    max-height:18px!important;
+  }
+  .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-breakdown-panel{
+    min-height:83px!important;
+    padding:3px 5px!important;
+  }
+}
+@media(max-width:370px){
+  .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-month-pie{
+    grid-template-columns:minmax(100px,35%) minmax(0,1fr)!important;
+  }
+  .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-month-pie>.fp-month-donut{
+    width:100%!important;
+    height:auto!important;
+    aspect-ratio:1!important;
+  }
+}

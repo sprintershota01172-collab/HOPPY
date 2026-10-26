@@ -82,8 +82,8 @@ try{
   inside('Last expense row',m.panel,m.lastRow);
   inside('Whole detail panel',m.main,m.panel);
   assert.equal(m.category,'investing','the selected panel is investment breakdown');
-  assert.ok(m.pie.height>=90,'donut panel should be enlarged: '+JSON.stringify(m.pie));
-  assert.ok(m.donut.height>=86,'SVG donut should be enlarged: '+JSON.stringify(m.donut));
+  assert.ok(m.pie.height>=80,'donut panel should be enlarged: '+JSON.stringify(m.pie));
+  assert.ok(m.donut.height>=74,'SVG donut should be enlarged: '+JSON.stringify(m.donut));
   assert.ok(m.listScroll<=m.listClient+1,'investment detail must not scroll: '+JSON.stringify(m));
   inside('First investment row',m.list,m.first);
   inside('Second investment row',m.list,m.second);

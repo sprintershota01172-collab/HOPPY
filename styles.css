@@ -3681,7 +3681,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 }
 
 
-/* FP r30 — screenshot fix: eliminate the empty chart frame and give
+/* FP r31 — screenshot fix: eliminate the empty chart frame and give
    every expense row enough height to remain inside the full border. */
 .fp-focus .fp-month-report:has(>.fp-month-pie){
   display:flex!important;
@@ -3789,20 +3789,20 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 }
 @media(max-height:800px){
   .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-month-pie{
-    flex-basis:122px!important;
-    height:122px!important;
-    min-height:100px!important;
-    max-height:122px!important;
-    grid-template-columns:122px minmax(0,1fr)!important;
+    flex-basis:98px!important;
+    height:98px!important;
+    min-height:94px!important;
+    max-height:98px!important;
+    grid-template-columns:98px minmax(0,1fr)!important;
   }
   .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-month-pie>.fp-month-donut{
-    width:122px!important;
-    height:122px!important;
+    width:98px!important;
+    height:98px!important;
   }
   .fp-focus .fp-month-report:has(>.fp-month-pie) .fp-month-pie-legend>.fp-pie-pick{
-    flex-basis:20px!important;
-    height:20px!important;
-    max-height:20px!important;
+    flex-basis:19px!important;
+    height:19px!important;
+    max-height:19px!important;
   }
   .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-breakdown-panel{
     min-height:96px!important;
@@ -3810,15 +3810,15 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 }
 @media(max-height:680px){
   .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-month-pie{
-    flex-basis:105px!important;
-    height:105px!important;
-    min-height:92px!important;
-    max-height:105px!important;
-    grid-template-columns:105px minmax(0,1fr)!important;
+    flex-basis:90px!important;
+    height:90px!important;
+    min-height:82px!important;
+    max-height:90px!important;
+    grid-template-columns:90px minmax(0,1fr)!important;
   }
   .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-month-pie>.fp-month-donut{
-    width:105px!important;
-    height:105px!important;
+    width:90px!important;
+    height:90px!important;
   }
   .fp-focus .fp-month-report:has(>.fp-month-pie) .fp-month-pie-legend>.fp-pie-pick{
     flex-basis:18px!important;

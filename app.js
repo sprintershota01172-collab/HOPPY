@@ -1463,7 +1463,7 @@
       const rows=Array.from({length:count},(_,k)=>{
         const goal=fpEducationGoal(plan,k+1);
         return '<div class="fp-goal-child-line"><span>第'+(k+1)+'子　'+
-          (goal.enabled?(goal.age+'歳・'+goal.year+'年に'+fpYen(goal.target)):'手入力の学資保険')+
+          (goal.enabled?(goal.age+'歳・'+goal.year+'年に'+yen(goal.target)+'万円'):'手入力の学資保険')+
           '</span><b>'+ (goal.enabled&&Number.isFinite(goal.monthly)?fpYen(goal.monthly):
             fpYen(safeNum(plan.childEducationInsuranceMonthly))) +' / 月</b></div>';
       }).join('');

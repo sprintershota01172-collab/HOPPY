@@ -1329,7 +1329,7 @@
         '="'+esc(key)+'" value="'+fpYenNumber(amount)+'" aria-label="'+esc(selected.label)+'の金額（円）"></label>'+
         '<button type="button" data-act="fp-edit-close">閉じる</button></div>';
     }
-    return '<section class="fp-breakdown-panel" data-fp-inline-breakdown aria-label="'+esc(item.label)+'の内訳">'+
+    return '<section class="fp-breakdown-panel" data-fp-inline-breakdown data-fp-category="'+item.id+'" aria-label="'+esc(item.label)+'の内訳">'+
       '<div class="fp-breakdown-title"><span>'+esc(item.label)+'の内訳</span>'+
       '<strong>'+fpYen(item.amount)+'</strong>'+
       '<small>収入比 '+(percentage===null?'—':yen(percentage,1)+'%')+'　・　'+rows.length+'項目</small>'+

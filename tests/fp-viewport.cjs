@@ -39,7 +39,11 @@ const browserCode=[
  'hero:r(q(".fp-month-surplus")),heroSmall:r(q(".fp-month-surplus small")),',
  'education:r(q(".fp-education-card")),educationInput:r(q(".fp-education-input input")),',
  'educationMonthly:r(q(".fp-education-out>strong")),educationFootnote:r(q(".fp-education-footnote")),',
- 'panel:r(q(".fp-breakdown-panel")),lastRow:r(q(".fp-breakdown-panel .fp-breakdown-row:last-child")),',
+ 'panel:r(q(".fp-breakdown-panel")),lastRow:r(Array.from(document.querySelectorAll(".fp-breakdown-panel .fp-breakdown-row:not([hidden])")).at(-1)),',
+ 'pie:r(q(".fp-month-pie")),year:r(q(".fp-year-select")),heroCard:r(q(".fp-month-hero")),',
+ 'quick:r(q(".fp-month-quick")),educationCard:r(q(".fp-education-card")),',
+ 'visibleRows:Array.from(document.querySelectorAll(".fp-breakdown-panel .fp-breakdown-row:not([hidden])")).length,',
+ 'breakdownOverflow:q(".fp-breakdown-list")?.scrollHeight-q(".fp-breakdown-list")?.clientHeight,',
  'nav:r(q("nav.bottom"))};',
  'document.documentElement.setAttribute("data-layout",encodeURIComponent(JSON.stringify(m)));',
  '});</script>'
@@ -71,6 +75,11 @@ try{
   inside('Education total premium',m.education,m.educationMonthly);
   inside('Education insurance explanation',m.education,m.educationFootnote);
   inside('Last expense row',m.panel,m.lastRow);
+  assert.ok(m.panel.height<=95,'breakdown uses about half its former 155px height: '+JSON.stringify(m.panel));
+  assert.ok(m.panel.height>=75,'breakdown remains tappable: '+JSON.stringify(m.panel));
+  assert.ok(m.visibleRows<=6,'maximum six rows per page without scrolling');
+  assert.ok(m.breakdownOverflow<=1,'breakdown must not scroll');
+  assert.ok(m.pie&&m.pie.height>=100,'donut takes newly available screen space: '+JSON.stringify(m.pie));
   inside('Whole detail panel',m.main,m.panel);
   assert.ok(m.main.bottom<=m.nav.top+3,'Content must not overlap bottom navigation');
   console.log('HOPPY viewport '+width+'x'+height+': visible panels PASS');

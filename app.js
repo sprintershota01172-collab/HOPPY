@@ -1709,9 +1709,9 @@
     else push('good','期間中の年末現金はプラス',
       '年末残高の最小値は'+fpYen(current.min)+'。ただし月中の資金不足はこの年次モデルでは判定できません。');
     if(rating.remaining<rating.reserve)push('bad','購入時の生活防衛資金を確認',
-      '諸費用と頭金後の現金 '+fpYen(rating.remaining)+'に対し、6か月分の目安は '+fpYen(rating.reserve)+'（独自目安）。');
+      '購入諸費用支払後の現金 '+fpYen(rating.remaining)+'に対し、6か月分の目安は '+fpYen(rating.reserve)+'（独自目安）。');
     else push('good','生活防衛資金は参考目安以上',
-      '諸費用と頭金後の現金は'+fpYen(rating.remaining)+'。半年分の生活費との比較です。');
+      '購入諸費用支払後の現金は'+fpYen(rating.remaining)+'。半年分の生活費との比較です。');
     if(shortfall<0)push('warn','想定価格が参考予算を超過',
       '約'+fpYen(Math.abs(shortfall))+'上回ります。物件価格・積立額・返済期間の組合せを再試算してください。');
     else push('good','購入価格は参考予算の範囲内',

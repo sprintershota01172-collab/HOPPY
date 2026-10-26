@@ -1747,7 +1747,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<span class="fp-build-stamp" title="表示バージョン">r35</span></div></div>';
+      '<span class="fp-build-stamp" title="表示バージョン">r36</span></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2059,6 +2059,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r36',date:'2026.10.27',title:'内訳欄の不要な高さを削減',
+        details:['項目数に応じて内訳欄の高さを自動調整','空いたスペースを円グラフへ配分','少ない項目でも左上詰めを維持']},
       {version:'r35',date:'2026.10.27',title:'内訳の文字位置と行間を統一',
         details:['NISAと同じく全項目を左上揃えに統一','項目数が少なくても行間を伸ばさず上から詰めて表示']},
       {version:'r34',date:'2026.10.27',title:'FPの内訳を見切れにくく・更新履歴を追加',
@@ -2072,7 +2074,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r35</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r36</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

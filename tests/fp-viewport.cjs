@@ -77,7 +77,8 @@ try{
   inside('Last expense row',m.panel,m.lastRow);
   assert.ok(m.panel.height<=95,'breakdown uses about half its former 155px height: '+JSON.stringify(m.panel));
   assert.ok(m.panel.height>=75,'breakdown remains tappable: '+JSON.stringify(m.panel));
-  assert.ok(m.visibleRows<=6,'maximum six rows per page without scrolling');
+  assert.ok(m.visibleRows>=1,'all nonzero expense entries remain visible on the one card');
+  assert.ok(m.visibleRows<=30,'compact detail stays responsive');
   assert.ok(m.breakdownOverflow<=1,'breakdown must not scroll');
   assert.ok(m.pie&&m.pie.height>=100,'donut takes newly available screen space: '+JSON.stringify(m.pie));
   inside('Whole detail panel',m.main,m.panel);

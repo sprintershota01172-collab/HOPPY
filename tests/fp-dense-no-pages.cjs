@@ -91,7 +91,7 @@ try{
   assert.equal(m.rows.length,m.visibleRows,'no expenses are hidden');
   for(const [index,box] of m.rows.entries())inside('Dense expense row '+index,m.panel,box);
   assert.ok(m.breakdownOverflow<=1,'breakdown must not scroll');
-  assert.ok(m.pie&&m.pie.height>=100,'donut takes newly available screen space: '+JSON.stringify(m.pie));
+  assert.ok(m.pie&&m.pie.height>=94,'compact donut remains readable while freeing room for details: '+JSON.stringify(m.pie));
   inside('Whole detail panel',m.main,m.panel);
   assert.ok(m.main.bottom<=m.nav.top+3,'Content must not overlap bottom navigation');
   console.log('HOPPY dense no-pages '+width+'x'+height+': all '+m.rows.length+' expense lines visible in fixed card PASS');

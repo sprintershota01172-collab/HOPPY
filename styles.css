@@ -3438,3 +3438,78 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .fp-focus .fp-month-report .fp-breakdown-meta{
   justify-content:flex-start!important;white-space:nowrap!important;
 }
+
+/* FP r26: use screen area for data, not donut margins or nested frames. */
+.fp-focus .fp-month-report{gap:3px!important}
+.fp-focus .fp-month-report>.fp-month-pie{
+  border:0!important;box-shadow:none!important;background:transparent!important;
+  border-radius:0!important;padding:0 1px!important;margin:0!important;
+  column-gap:4px!important;flex:1 1 0!important;
+  height:auto!important;min-height:87px!important;max-height:none!important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  align-items:stretch!important;
+}
+.fp-focus .fp-month-report .fp-month-donut{
+  display:block!important;width:100%!important;height:100%!important;
+  min-width:0!important;min-height:0!important;
+  max-width:100%!important;max-height:100%!important;
+  align-self:center!important;justify-self:center!important;
+}
+.fp-focus .fp-month-report .fp-month-pie-legend{
+  overflow:hidden!important;padding:0!important;gap:1px!important;
+  justify-content:center!important;
+}
+.fp-focus .fp-month-report .fp-month-pie-legend>.fp-pie-pick{
+  min-height:17px!important;max-height:20px!important;height:auto!important;
+  flex:1 1 0!important;padding:0 3px!important;
+}
+.fp-focus .fp-month-report>.fp-breakdown-panel{
+  flex:0 0 79px!important;height:79px!important;
+  min-height:79px!important;max-height:79px!important;
+  padding:3px 5px!important;gap:1px!important;
+  border:1px solid #e1e6e9!important;box-shadow:none!important;
+}
+.fp-focus .fp-month-report .fp-breakdown-title{
+  padding:0 0 1px!important;gap:1px 4px!important;
+}
+.fp-focus .fp-month-report .fp-breakdown-title>small{display:none!important}
+.fp-focus .fp-month-report .fp-breakdown-list{
+  gap:0 2px!important;overflow:hidden!important;align-content:stretch!important;
+}
+.fp-focus .fp-month-report .fp-breakdown-row{border-bottom:0!important}
+.fp-focus .fp-month-report .fp-breakdown-row>.fp-row-label{font-size:8px!important}
+.fp-focus .fp-month-report .fp-breakdown-row>strong{font-size:9px!important}
+.fp-focus .fp-pie-panel>.fp-pie-panel-head .fp-breakdown-hint{display:none!important}
+.fp-focus .fp-pie-panel>.fp-pie-figure{
+  flex:0 0 135px!important;height:135px!important;
+  min-height:135px!important;max-height:135px!important;gap:3px!important;
+}
+.fp-focus .fp-pie-panel .fp-pie-chart{height:133px!important;max-height:133px!important}
+.fp-focus .fp-pie-panel>.fp-breakdown-panel{
+  min-height:0!important;overflow:hidden!important;
+  padding:4px 6px!important;box-shadow:none!important;
+}
+.fp-focus .fp-pie-panel .fp-breakdown-meta{display:none!important}
+.fp-wizard-screen .fp-compact-title{font-size:12px!important;margin:0 0 4px!important}
+.fp-wizard-screen .fp-compact-inner{gap:4px!important}
+.fp-wizard-screen .fp-goal-preview{margin-top:4px!important;padding:7px 8px!important}
+.fp-wizard-screen .fp-goal-preview p{display:none!important}
+.fp-wizard-screen .fp-field-hint{font-size:9px!important;line-height:1.2!important}
+@media(max-height:740px){
+  .fp-focus .fp-month-report>.fp-month-pie{min-height:78px!important}
+  .fp-focus .fp-month-report>.fp-breakdown-panel{
+    flex-basis:72px!important;height:72px!important;
+    min-height:72px!important;max-height:72px!important;
+  }
+  .fp-focus .fp-pie-panel>.fp-pie-figure{
+    flex-basis:105px!important;height:105px!important;
+    min-height:105px!important;max-height:105px!important;
+  }
+  .fp-focus .fp-pie-panel .fp-pie-chart{height:103px!important;max-height:103px!important}
+}
+@media(max-width:375px){
+  .fp-focus .fp-month-report>.fp-month-pie{
+    grid-template-columns:minmax(0,1.03fr) minmax(0,.97fr)!important;
+  }
+  .fp-focus .fp-pie-pick span,.fp-focus .fp-pie-pick strong{font-size:8px!important}
+}

@@ -37,6 +37,8 @@ const browserCode=[
  'const m={main:r(q("main.main")),capacity:r(q(".fp-capacity-card")),',
  'footnote:r(q(".fp-capacity-footnote")),actual:r(q(".fp-capacity-example")),',
  'hero:r(q(".fp-month-surplus")),heroSmall:r(q(".fp-month-surplus small")),',
+ 'education:r(q(".fp-education-card")),educationInput:r(q(".fp-education-input input")),',
+ 'educationMonthly:r(q(".fp-education-out>strong")),educationFootnote:r(q(".fp-education-footnote")),',
  'panel:r(q(".fp-breakdown-panel")),lastRow:r(q(".fp-breakdown-panel .fp-breakdown-row:last-child")),',
  'nav:r(q("nav.bottom"))};',
  'document.documentElement.setAttribute("data-layout",encodeURIComponent(JSON.stringify(m)));',
@@ -65,6 +67,9 @@ try{
   inside('Mortgage note',m.capacity,m.footnote);
   inside('Actual payment',m.capacity,m.actual);
   inside('Monthly surplus sublabel',m.hero,m.heroSmall);
+  inside('Education premium input',m.education,m.educationInput);
+  inside('Education total premium',m.education,m.educationMonthly);
+  inside('Education insurance explanation',m.education,m.educationFootnote);
   inside('Last expense row',m.panel,m.lastRow);
   inside('Whole detail panel',m.main,m.panel);
   assert.ok(m.main.bottom<=m.nav.top+3,'Content must not overlap bottom navigation');

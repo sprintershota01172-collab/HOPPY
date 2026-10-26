@@ -3159,3 +3159,31 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   }
   .fp-focus .fp-month-donut{height:76px!important;max-height:76px!important}
 }
+
+
+/* r23: Every expense remains reachable without vertical scrolling. */
+.fp-focus .fp-breakdown-list>.fp-breakdown-row[hidden],
+.fp-focus .fp-breakdown-list>.fp-breakdown-row[hidden]:hover{
+  display:none!important;
+}
+.fp-focus .fp-breakdown-meta{
+  display:flex!important;align-items:center!important;justify-content:space-between;
+  min-width:0;gap:3px!important;line-height:1.15!important;
+}
+.fp-breakdown-pager{
+  display:inline-flex;align-items:center;justify-content:flex-end;
+  gap:4px;flex:none;white-space:nowrap;color:#345b71;
+}
+.fp-breakdown-pager button{
+  border:1px solid #ccdfe9;background:#eef5f9;color:#215e81;
+  border-radius:5px;min-width:23px;min-height:19px;padding:0 4px;
+  line-height:1;font-size:14px;font-weight:800;touch-action:manipulation;
+}
+.fp-breakdown-pager button:disabled{opacity:.3}
+.fp-breakdown-pager b{font-size:9px!important;letter-spacing:0;font-variant-numeric:tabular-nums}
+.fp-focus .fp-breakdown-list.two-columns.three-columns{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+}
+.fp-focus .fp-breakdown-list>.fp-breakdown-row:not([hidden]){
+  min-height:0!important;
+}

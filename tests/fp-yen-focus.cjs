@@ -74,6 +74,13 @@ const html=api.fpPieBreakdownPanel(densePoint,denseMonth,[{id:'living',label:'�
 assert.ok(denseRows.length>9);
 assert.match(html,/class="fp-breakdown-list two-columns three-columns"/);
 assert.equal((html.match(/data-act="fp-row-edit"/g)||[]).length,denseRows.length);
+assert.match(html,/data-act="fp-breakdown-page"/,'long expense categories paginate rather than scroll');
+assert.match(html,/class="fp-breakdown-row" hidden/,'rows outside active page are present but hidden');
+api.ui.fpBreakdownPageMonthly=1;
+const page2=api.fpPieBreakdownPanel(densePoint,denseMonth,[{id:'living',label:'生活・教育費',amount:denseMonth.household}], 'living');
+assert.match(page2,/2 \/ 2/,'page control shows next page');
+assert.match(page2,/追加費12/,'remaining expenses can be reached on the second page');
+assert.match(page2,/data-value="-1"/,'previous-page control exists');
 const css=fs.readFileSync('styles.css','utf8');
 assert.match(css,/\.app-shell:has\(\.fp-focus\)>header.top\s*\{[^}]*display:none!important/);
 assert.match(css,/\.fp-focus>\.fp-bottom-actions\s*\{display:none!important/);

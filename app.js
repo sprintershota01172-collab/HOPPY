@@ -557,7 +557,7 @@
       ],'目標から逆算した月額を家計予測に反映します。',
         fpGoalPreview(fpEffectiveNisaMonthly(p),
           safeNum(p.goalNisaYears)+'年後・目標 '+fpYen(safeNum(p.goalNisaAmount)),
-          '元本保証なし。利回りは仮定です。'));
+          '元本保証なし。利回りは仮定です。')));
       pages.push(fpCompactPage('その他投資｜積立・目標',[
         f('現在の評価額','investBalance','万円'),
         f('毎月積立（手入力）','otherInvestMonthly'),
@@ -567,7 +567,7 @@
       ],'利回りはNISA画面と共通です。',
         fpGoalPreview(fpEffectiveOtherInvestMonthly(p),
           safeNum(p.goalOtherYears)+'年後・目標 '+fpYen(safeNum(p.goalOtherAmount)),
-          '目標から逆算した月額を家計予測に反映します。'));
+          '目標から逆算した月額を家計予測に反映します。')));
     }
     if(i===6){
       pages.push(fpCompactPage('年払いの支出',[

@@ -37,7 +37,7 @@ near(a.fpEducationPremiumForYear(now+5,p),3.7038,'two separate child targets com
 near(a.fpEducationPremiumForYear(now+20,p),1.3889,'first child target completed');
 assert.equal(a.fpEducationPremiumForYear(now+23,p),0,'both child targets completed');
 assert.equal(a.fpWizardPages(3).length,3,'education has separate goal screen for each child');
-assert.equal(a.fpWizardPages(5).length,4,'investment goals have dedicated pages');
+assert.equal(a.fpWizardPages(5).length,3,'investment goals share NISA and other investment tabs');
 assert.match(a.fpEducationInsuranceCard(now+5),/500万円/);
 assert.match(a.fpEducationInsuranceCard(now+5),/300万円/);
 assert.match(a.fpEducationInsuranceCard(now+5),/目標編集/);

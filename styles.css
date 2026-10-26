@@ -3073,3 +3073,89 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   }
   .fp-focus .fp-pie-pick span,.fp-focus .fp-pie-pick strong{font-size:8px!important}
 }
+
+
+/* r23: larger monthly donut, top-left anchored investment rows and zero scroll in details. */
+.fp-focus .fp-month-pie{
+  flex:0 0 108px!important;height:108px!important;
+  min-height:108px!important;max-height:108px!important;
+  grid-template-columns:minmax(0,.98fr) minmax(0,1.02fr)!important;
+  padding:3px!important;align-items:stretch!important;
+}
+.fp-focus .fp-month-donut{
+  height:102px!important;max-height:102px!important;
+  min-height:0!important;width:100%!important;
+  justify-self:center;align-self:center;
+}
+.fp-focus .fp-month-pie-legend{
+  align-self:stretch!important;justify-content:center!important;
+  overflow:hidden!important;
+}
+.fp-focus .fp-month-pie-legend>.fp-pie-pick{
+  flex:1 1 0!important;min-height:17px!important;max-height:20px!important;
+  height:auto!important;display:flex!important;align-items:center!important;
+  padding:0 3px!important;
+}
+.fp-focus .fp-breakdown-panel{
+  min-height:0!important;overflow:hidden!important;
+}
+.fp-focus .fp-breakdown-list{
+  display:grid!important;align-content:start!important;
+  min-height:0!important;flex:1 1 0!important;
+  grid-auto-rows:minmax(0,1fr)!important;
+  overflow:hidden!important;
+  scrollbar-width:none!important;touch-action:manipulation!important;
+}
+.fp-focus .fp-breakdown-list>.fp-breakdown-row{
+  min-height:0!important;max-height:none!important;
+  height:100%!important;padding:0 3px!important;
+  align-items:center!important;
+}
+.fp-focus .fp-breakdown-list.three-columns>.fp-breakdown-row{
+  align-items:flex-start!important;justify-content:flex-start!important;
+}
+.fp-focus .fp-breakdown-list.three-columns>.fp-breakdown-row>.fp-row-label{
+  font-size:8px!important;line-height:1.05!important;
+}
+.fp-focus .fp-breakdown-list.three-columns>.fp-breakdown-row>strong{
+  font-size:8.5px!important;line-height:1.05!important;
+}
+.fp-focus .fp-breakdown-panel[data-fp-category="investing"] .fp-breakdown-list{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-auto-flow:row!important;grid-auto-rows:min-content!important;
+  align-content:start!important;justify-content:start!important;
+}
+.fp-focus .fp-breakdown-panel[data-fp-category="investing"] .fp-breakdown-row{
+  min-height:0!important;max-height:none!important;height:auto!important;
+  align-self:start!important;justify-content:flex-start!important;
+  align-items:flex-start!important;flex-direction:column!important;
+  padding:3px 4px!important;gap:3px!important;
+}
+.fp-focus .fp-breakdown-panel[data-fp-category="investing"] .fp-row-label,
+.fp-focus .fp-breakdown-panel[data-fp-category="investing"] .fp-breakdown-row>strong{
+  text-align:left!important;align-self:flex-start!important;
+  justify-self:flex-start!important;white-space:normal!important;
+}
+.fp-focus .fp-breakdown-panel[data-fp-category="investing"] .fp-breakdown-row>strong{
+  font-size:12px!important;font-weight:850!important;
+}
+@media(max-height:850px){
+  .fp-focus .fp-month-pie{
+    flex:0 0 96px!important;min-height:96px!important;max-height:96px!important;
+    height:96px!important;
+  }
+  .fp-focus .fp-month-donut{height:90px!important;max-height:90px!important}
+  .fp-focus .fp-month-pie-legend>.fp-pie-pick{
+    min-height:16px!important;max-height:19px!important;
+  }
+  .fp-focus .fp-breakdown-list>.fp-breakdown-row{
+    min-height:0!important;height:100%!important;
+  }
+}
+@media(max-height:720px){
+  .fp-focus .fp-month-pie{
+    height:82px!important;flex-basis:82px!important;
+    min-height:82px!important;max-height:82px!important;
+  }
+  .fp-focus .fp-month-donut{height:76px!important;max-height:76px!important}
+}

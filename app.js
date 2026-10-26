@@ -1746,7 +1746,8 @@
     const intro='<div class="sim-intro"><span class="kicker">FP</span>'+
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
-      '<button class="btn compact" data-act="sim-restart">編集 ↗</button></div></div>';
+      '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
+      '<span class="fp-build-stamp" title="表示バージョン">r33</span></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);

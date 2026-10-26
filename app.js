@@ -1380,11 +1380,11 @@
   // Surplus is the cash remaining after expenditure and NISA transfers.
   function fpSurplusStrip(income,net,label){
     const ratio=income>0?net/income*100:null,
-      positive=net>=0,percent=ratio===null?'—':(ratio>0?'+':'')+yen(ratio,1)+'%';
+      percent=ratio===null?'—':(ratio>0?'+':'')+yen(ratio,1)+'%';
     return '<div class="fp-surplus-strip '+fpBalanceTone(net)+'" aria-label="'+esc(label)+'の'+
       fpBalanceLabel(net)+' '+fpYen(Math.abs(net))+'">'+
       '<span><em class="fp-balance-chip">'+fpBalanceLabel(net)+'</em> '+esc(label)+'：'+
-        (positive?'収入から残るプラス':'収入に対する不足')+'</span>'+
+        (net>0?'収入から残るプラス':net<0?'収入に対する不足':'収支差額ゼロ')+'</span>'+
       '<strong>'+fpSignedYen(net)+'</strong>'+
       '<b>手取り比 '+percent+'</b>'+
       '<small>手取り収入 − 支出 − NISA等の積立</small></div>';
@@ -1417,9 +1417,9 @@
           '<button data-act="fp-month-view" data-value="detail" class="'+(!isPie?'active':'')+'">明細</button></div></div>'+
       '<div class="fp-month-hero fp-month-surplus '+fpBalanceTone(selected.net)+'"><div>'+
         '<span><em class="fp-balance-chip">'+fpBalanceLabel(selected.net)+'</em> '+
-          point.year+'年 '+month+'月 ・ '+(selected.net>=0?'収入から残るプラス':'収入に対する不足')+'</span>'+
+          point.year+'年 '+month+'月 ・ '+(selected.net>0?'収入から残るプラス':selected.net<0?'収入に対する不足':'収支差額ゼロ')+'</span>'+
         '<strong class="'+fpBalanceTone(selected.net)+'">'+fpSignedYen(selected.net)+'</strong></div>'+
-        '<div><span>手取り収入に対する割合</span><strong class="fp-surplus-percent '+(selected.net<0?'negative':'positive')+'">'+surplusPct+'</strong>'+
+        '<div><span>手取り収入に対する割合</span><strong class="fp-surplus-percent '+fpBalanceTone(selected.net)+'">'+surplusPct+'</strong>'+
         '<small>月末現金 '+fpYen(selected.endingCash)+'</small></div></div>'+
       '<div class="fp-month-summary">'+
         '<span>手取り <b>'+fpYen(selected.income)+'</b></span>'+

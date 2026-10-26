@@ -1319,10 +1319,11 @@
       const full=esc(row.label+' '+fpYen(row.amount));
       const amount=Math.round(row.amount*10000);
       const shortAmount=amount>=10000?
-        (amount%10000===0?String(amount/10000):String(Number((amount/10000).toFixed(2))))+'万':
+        (amount%100!==0?'約':'')+
+          (amount%10000===0?String(amount/10000):String(Number((amount/10000).toFixed(2))))+'万':
         fpYen(row.amount);
       return '<'+tag+attributes+' class="fp-breakdown-row" title="'+full+
-        '" aria-label="'+full+'"><span class="fp-row-label">'+esc(row.label)+
+        '"'+(editable?'':' aria-label="'+full+'"')+'><span class="fp-row-label">'+esc(row.label)+
         '</span><strong>'+(dense?shortAmount:fpYen(row.amount))+'</strong></'+tag+'>';
     }).join('');
     const selected=ui.fpEditingRow?.period===period&&ui.fpEditingRow?.category===item.id?

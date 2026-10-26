@@ -15,8 +15,8 @@ class MockDate extends Date{static now(){return clock+=2000}}
 const win={matchMedia(){return {matches:false}},
  crypto:{randomUUID(){return 'r-'+(++seq)}},addEventListener(){}};
 const appSource=fs.readFileSync('app.js','utf8').replace(
- "  save();render();\\n  // The startup wordmark",
- "  state.plan.otherInvestMonthly=1;save();render();\\n  // The startup wordmark");
+ "  save();render();\n  // The startup wordmark",
+ "  state.plan.otherInvestMonthly=1;save();render();\n  // The startup wordmark");
 vm.runInNewContext(appSource,{
  document:{getElementById(){return app}},window:win,
  localStorage:{getItem(k){return storage[k]||null},setItem(k,v){storage[k]=v}},

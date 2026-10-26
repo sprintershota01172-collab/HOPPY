@@ -87,7 +87,7 @@ try{
   assert.ok(m.listScroll<=m.listClient+1,'investment detail must not scroll: '+JSON.stringify(m));
   inside('First investment row',m.list,m.first);
   inside('Second investment row',m.list,m.second);
-  assert.ok(m.second.left>m.first.left+10,'investment values must occupy top-left anchored columns');
+  assert.ok(m.second.left>m.first.left+10,'investment values must occupy top-left anchored columns: '+JSON.stringify({first:m.first,second:m.second,list:m.list,panel:m.panel}));
   assert.ok(m.first.top-m.list.top<10,'investment detail starts at top left, not center');
   assert.ok(m.main.bottom<=m.nav.top+3,'Content must not overlap bottom navigation');
   console.log('HOPPY investor breakdown no-scroll '+width+'x'+height+': enlarged donut and top-left-aligned entries PASS');

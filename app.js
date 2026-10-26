@@ -649,6 +649,17 @@
     if(age<18)return p.highSchool==='private'?135:60;
     return p.university==='private'?185:125;
   }
+  // Display the exact school-age cohort behind the forecast. Education is
+  // age-based; premiums and daycare are separate cash-flow lines.
+  function fpSchoolBreakdown(year,p=state.plan){
+    const count=Math.min(3,Math.round(safeNum(p.children)));
+    return Array.from({length:count},(_,index)=>{
+      const age=year-(safeNum(p.firstChildYear)+index*Math.max(1,safeNum(p.birthInterval,3)));
+      const stage=age<0?'出生前':age<6?'未就学':age<12?'小学校':age<15?'中学校':
+        age<18?'高校':age<22?'大学':'学校費終了';
+      return {index:index+1,age,stage,annual:educationAnnual(age,p)};
+    }).filter(x=>x.age>=0);
+  }
   const fpDetailCategories=[
     ['foodMonthly','食費'],['electricityMonthly','電気'],['gasMonthly','ガス'],['waterBiMonthly','水道（2か月ごと）'],
     ['livingMonthly','その他の生活費'],['telecomMonthly','通信'],['transportMonthly','交通'],
@@ -1232,8 +1243,10 @@
       }
       if(annual)add('出産関連',point.birth,{editStep:'3:0'});
       else{
-        add('学校・大学の費用（月割）',annualPart(point.school),{editStep:'3:0'});
-        add('出産関連（月割）',annualPart(point.birth),{editStep:'3:0'});
+        for(const child of fpSchoolBreakdown(year,p)){
+          add('第'+child.index+'子 '+child.stage+'（'+child.age+'歳）',annualPart(child.annual),{editStep:'3:0'});
+        }
+        add('出産費（月割）',annualPart(point.birth),{editStep:'3:0'});
       }
     }else if(category==='housing'){
       const monthsRent=annual?point.rentMonths:(fpOwnsHomeAt(year,month.month)?0:1);
@@ -1252,7 +1265,9 @@
           {field:'housingOngoing',unit:'万円/月',editStep:'4:1'});
       }
     }else if(category==='education'){
-      if(annual)add('学校・大学の費用',point.school,{editStep:'3:0'});
+      if(annual)for(const child of fpSchoolBreakdown(year,p)){
+        add('第'+child.index+'子 '+child.stage+'（'+child.age+'歳）',child.annual,{editStep:'3:0'});
+      }
       if(annual || month.month===fpPurchaseMonth())add('頭金・住宅購入諸費用',point.upfront,{editStep:'4:0'});
       for(const item of fpEventsForYear(year)){
         if(item.type!=='expense')continue;
@@ -1284,6 +1299,13 @@
       percentage=income>0?(item.amount/income*100):null,
       density=rows.length>(window.matchMedia('(max-height:780px)').matches?18:24)?
         ' two-columns three-columns':rows.length>9?' two-columns':'';
+    const children=(item.id==='living'&&!annual||item.id==='education'&&annual)?
+      fpSchoolBreakdown(point.year):[];
+    const schoolContext=children.length?
+      '<p class="fp-child-school-context" title="学校費の対象年齢">'+
+        children.map(child=>'第'+child.index+'子 '+child.age+'歳 '+child.stage+
+          (child.annual===0?'・学校費0円':'')).join(' ／ ')+
+      '</p>':'';
     const entries=rows.map(row=>{
       const type=row.field?'field':row.expenseId?'expense':row.eventId?'event':'',
         key=row.field||row.expenseId||row.eventId||'',editable=!!type,
@@ -1311,7 +1333,8 @@
     return '<section class="fp-breakdown-panel" data-fp-inline-breakdown aria-label="'+esc(item.label)+'の内訳">'+
       '<div class="fp-breakdown-title"><span>'+esc(item.label)+'の内訳</span>'+
       '<strong>'+fpYen(item.amount)+'</strong>'+
-      '<small>収入比 '+(percentage===null?'—':yen(percentage,1)+'%')+'　・　'+rows.length+'項目</small></div>'+
+      '<small>収入比 '+(percentage===null?'—':yen(percentage,1)+'%')+'　・　'+rows.length+'項目</small>'+
+      schoolContext+'</div>'+
       '<div class="fp-breakdown-list'+density+'">'+
       (entries||'<p class="fp-breakdown-empty">金額が登録された項目はありません。</p>')+
       '</div>'+edit+'</section>';
@@ -1438,11 +1461,11 @@
       totalOutflow=spent+investing,remaining=Math.max(0,month.net),over=Math.max(0,-month.net);
     return {income,spent,investing,remaining,over,total:Math.max(1,income,totalOutflow),
       percent:income>0?spent/income*100:null,items:[
-        {id:'living',label:'生活・教育費',amount:living,color:'#6b9eaf'},
-        {id:'housing',label:'住宅費',amount:housing,color:'#2767ae'},
-        {id:'education',label:'イベント・購入費',amount:events,color:'#d9a164'},
-        {id:'investing',label:'NISA等の積立',amount:investing,color:'#729477'},
-        {id:'remaining',label:'現金に残る分',amount:remaining,color:remaining>0?'#2aa78b':'#d5dde2'}
+        {id:'living',label:'生活費・子ども費',amount:living,color:'#6b9eaf'},
+        {id:'housing',label:'ローン・住居費',amount:housing,color:'#2767ae'},
+        {id:'education',label:'特別支出',amount:events,color:'#d9a164'},
+        {id:'investing',label:'投資積立',amount:investing,color:'#729477'},
+        {id:'remaining',label:'現金の残り',amount:remaining,color:remaining>0?'#2aa78b':'#d5dde2'}
       ]};
   }
 
@@ -1540,21 +1563,22 @@
           '<button data-act="fp-month-view" data-value="detail" class="'+(!isPie?'active':'')+'">明細</button></div></div>'+
       '<div class="fp-month-hero fp-month-surplus '+fpBalanceTone(selected.net)+'"><div>'+
         '<span><em class="fp-balance-chip">'+fpBalanceLabel(selected.net)+'</em> '+
-          point.year+'年 '+month+'月 ・ '+(selected.net>0?'収入から残るプラス':selected.net<0?'収入に対する不足':'収支差額ゼロ')+'</span>'+
+          point.year+'年'+month+'月 ・ 今月の現金収支</span>'+
         '<strong class="'+fpBalanceTone(selected.net)+'">'+fpSignedYen(selected.net)+'</strong></div>'+
-        '<div><span>手取り収入に対する割合</span><strong class="fp-surplus-percent '+fpBalanceTone(selected.net)+'">'+surplusPct+'</strong>'+
+        '<div><span>手取りに対する現金収支率</span><strong class="fp-surplus-percent '+fpBalanceTone(selected.net)+'">'+surplusPct+'</strong>'+
+        '<small>積立前 '+fpSignedYen(selected.income-selected.spending)+'</small>'+
         '<small>月末現金 '+fpYen(selected.endingCash)+'</small></div></div>'+
-      '<div class="fp-month-summary">'+
+      '<div class="fp-month-summary" aria-label="月の収支計算">'+
         '<span>手取り <b>'+fpYen(selected.income)+'</b></span>'+
-        '<span>支出 <b>'+fpYen(selected.spending)+'</b></span>'+
-        '<span>投資積立 <b>'+fpYen(selected.investing)+'</b></span></div>'+
+        '<span>生活・住居など <b>−'+fpYen(selected.spending)+'</b></span>'+
+        '<span>投資へ <b>−'+fpYen(selected.investing)+'</b></span></div>'+
       quick+fpEducationInsuranceCard(point.year)+
       (isPie?fpMonthlyPie(selected,point):'<div class="fp-cash-rows">'+
         row('生活費・保険など',selected.household)+
-        row('住宅費',selected.housing)+
-        row('年払い・教育費の月割',selected.annualBudget)+
-        row('イベント・住宅購入費',selected.eventExpenses+selected.purchase)+
-        row('NISA / その他投資',selected.nisaAdd+selected.otherAdd)+'</div>')+
+        row('ローン・住居費',selected.housing)+
+        row('年払・子ども教育費',selected.annualBudget)+
+        row('特別支出・購入費',selected.eventExpenses+selected.purchase)+
+        row('NISAなどの投資積立',selected.nisaAdd+selected.otherAdd)+'</div>')+
       '<p class="fp-r-help">'+goalLabel+'。現金貯金目標は支出に加えず、月末に残る現金と比較します。</p></div>';
   }
   function fpAssetsReport(model){

@@ -4230,3 +4230,66 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     max-height:calc(100% - 79px)!important;
   }
 }
+
+
+/* FP r37 — stable cell footprint for ALL breakdown categories.
+   Regardless of whether 1, 4 or 10 items are selected, keep four
+   equal-width columns and a 38px row pitch; empty cells are never
+   expanded to consume spare room. The outer card can still shrink. */
+#app .fp-focus .fp-month-report:has(>.fp-month-pie) > .fp-breakdown-panel > .fp-breakdown-list,
+#app .fp-focus .fp-pie-panel > .fp-breakdown-panel > .fp-breakdown-list {
+  --fp-cell-height:38px;
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  grid-template-rows:repeat(var(--fp-rows,1),var(--fp-cell-height))!important;
+  grid-auto-rows:var(--fp-cell-height)!important;
+  grid-auto-flow:row!important;
+  align-content:start!important;
+  align-items:start!important;
+  justify-items:stretch!important;
+  justify-content:start!important;
+  column-gap:4px!important;
+  row-gap:4px!important;
+  flex:0 1 auto!important;
+  width:100%!important;
+  height:max-content!important;
+  min-height:0!important;
+  max-height:none!important;
+  margin:0!important;
+  padding:3px 1px 2px!important;
+  overflow:hidden!important;
+}
+#app .fp-focus .fp-month-report:has(>.fp-month-pie) > .fp-breakdown-panel > .fp-breakdown-list > .fp-breakdown-row,
+#app .fp-focus .fp-pie-panel > .fp-breakdown-panel > .fp-breakdown-list > .fp-breakdown-row{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  align-self:start!important;
+  justify-content:flex-start!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+  height:var(--fp-cell-height)!important;
+  min-height:var(--fp-cell-height)!important;
+  max-height:var(--fp-cell-height)!important;
+  margin:0!important;
+  padding:4px 3px 3px!important;
+  gap:2px!important;
+  overflow:hidden!important;
+  text-align:left!important;
+  border-bottom:1px solid #edf1f2!important;
+}
+#app .fp-focus .fp-breakdown-panel > .fp-breakdown-list > .fp-breakdown-row > .fp-row-label,
+#app .fp-focus .fp-breakdown-panel > .fp-breakdown-list > .fp-breakdown-row > strong{
+  flex:0 0 auto!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  align-self:flex-start!important;
+  text-align:left!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  line-height:1.15!important;
+}
+#app .fp-focus .fp-breakdown-panel > .fp-breakdown-list > .fp-breakdown-row > .fp-row-label{font-size:8px!important}
+#app .fp-focus .fp-breakdown-panel > .fp-breakdown-list > .fp-breakdown-row > strong{font-size:9px!important}

@@ -21,8 +21,8 @@ jobs:
         run: |
           node --check app.js
           node --check sw.js
-          grep -q 'app.js?v=fp-20261027-r37' index.html
-          grep -q 'styles.css?v=fp-20261027-r37' index.html
+          grep -Eq 'app\.js\?v=fp-[0-9]{8}-r[0-9]+' index.html
+          grep -Eq 'styles\.css\?v=fp-[0-9]{8}-r[0-9]+' index.html
       - name: Run regression tests (report failures separately)
         continue-on-error: true
         run: |

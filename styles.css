@@ -3355,3 +3355,86 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .fp-focus .fp-month-report .fp-breakdown-title>span{font-size:8.5px!important}
   .fp-focus .fp-month-report .fp-breakdown-title>strong{font-size:11px!important}
 }
+
+
+/* FP r25: one compact expense grid. Every expense remains on the same card. */
+.fp-focus .fp-month-report .fp-breakdown-list,
+.fp-focus .fp-month-report .fp-breakdown-list.two-columns,
+.fp-focus .fp-month-report .fp-breakdown-list.three-columns,
+.fp-focus .fp-month-report .fp-breakdown-list.two-columns.three-columns,
+.fp-focus .fp-month-report .fp-breakdown-panel[data-fp-category="investing"] .fp-breakdown-list{
+  display:grid!important;
+  grid-template-columns:repeat(var(--fp-cols,2),minmax(0,1fr))!important;
+  grid-template-rows:repeat(var(--fp-rows,3),minmax(0,1fr))!important;
+  grid-auto-rows:0!important;
+  grid-auto-flow:row!important;
+  align-content:stretch!important;
+  justify-content:stretch!important;
+  gap:0 2px!important;
+  min-height:0!important;height:auto!important;
+  flex:1 1 0!important;
+  overflow:hidden!important;
+  touch-action:manipulation!important;
+  scrollbar-width:none!important;
+}
+.fp-focus .fp-month-report .fp-breakdown-list>.fp-breakdown-row,
+.fp-focus .fp-month-report .fp-breakdown-list.two-columns>.fp-breakdown-row,
+.fp-focus .fp-month-report .fp-breakdown-list.three-columns>.fp-breakdown-row,
+.fp-focus .fp-month-report .fp-breakdown-panel[data-fp-category="investing"] .fp-breakdown-row{
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  align-items:flex-start!important;
+  min-height:0!important;max-height:none!important;height:100%!important;
+  min-width:0!important;width:100%!important;
+  padding:0 2px!important;gap:1px!important;
+  text-align:left!important;
+  overflow:hidden!important;
+  border-bottom:1px solid #edf1f2!important;
+}
+.fp-focus .fp-month-report .fp-breakdown-row>.fp-row-label,
+.fp-focus .fp-month-report .fp-breakdown-list.three-columns>.fp-breakdown-row>.fp-row-label,
+.fp-focus .fp-month-report .fp-breakdown-list.two-columns:not(.three-columns)>.fp-breakdown-row>.fp-row-label,
+.fp-focus .fp-month-report .fp-breakdown-panel[data-fp-category="investing"] .fp-breakdown-row>.fp-row-label{
+  width:100%!important;
+  display:block!important;flex:0 0 auto!important;
+  font-size:8px!important;line-height:1.05!important;
+  min-width:0!important;min-height:0!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;
+  overflow-wrap:normal!important;word-break:normal!important;
+}
+.fp-focus .fp-month-report .fp-breakdown-row>strong,
+.fp-focus .fp-month-report .fp-breakdown-list.three-columns>.fp-breakdown-row>strong,
+.fp-focus .fp-month-report .fp-breakdown-panel[data-fp-category="investing"] .fp-breakdown-row>strong{
+  flex:0 0 auto!important;
+  font-size:9px!important;
+  max-width:100%!important;
+  min-width:0!important;
+  white-space:nowrap!important;overflow:hidden!important;
+  text-overflow:clip!important;
+  line-height:1.05!important;
+  align-self:flex-start!important;
+  text-align:left!important;
+}
+.fp-focus .fp-month-report .fp-breakdown-list.fp-breakdown-dense>.fp-breakdown-row>.fp-row-label{
+  font-size:7px!important;
+}
+.fp-focus .fp-month-report .fp-breakdown-list.fp-breakdown-dense>.fp-breakdown-row>strong{
+  font-size:8px!important;
+}
+.fp-focus .fp-month-report .fp-breakdown-list[data-fp-cols="7"]>.fp-breakdown-row>.fp-row-label,
+.fp-focus .fp-month-report .fp-breakdown-list[data-fp-cols="8"]>.fp-breakdown-row>.fp-row-label{
+  font-size:6.5px!important;
+}
+.fp-focus .fp-month-report .fp-breakdown-list[data-fp-cols="7"]>.fp-breakdown-row>strong,
+.fp-focus .fp-month-report .fp-breakdown-list[data-fp-cols="8"]>.fp-breakdown-row>strong{
+  font-size:7px!important;
+}
+.fp-focus .fp-month-report .fp-breakdown-list[data-fp-rows="5"]>.fp-breakdown-row,
+.fp-focus .fp-month-report .fp-breakdown-list[data-fp-rows="6"]>.fp-breakdown-row{
+  gap:0!important;
+}
+.fp-focus .fp-month-report .fp-breakdown-meta{
+  justify-content:flex-start!important;white-space:nowrap!important;
+}

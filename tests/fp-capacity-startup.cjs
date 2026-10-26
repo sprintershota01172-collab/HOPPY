@@ -25,7 +25,7 @@ Object.assign(p,{husbandMonthly:40,wifeMonthly:30,wifeReduced:20,children:0,
   husbandBonus:0,wifeBonus:0,foodMonthly:3.5,livingMonthly:15,
   otherSavingsMonthly:5,otherInvestMonthly:0,nisaMonthly:3,
   cashBufferMonthly:3,housingOngoing:2.5,interest:1.5,
-  loanYears:35,downPayment:100,propertyPrice:4400});
+  loanYears:35,downPayment:0,propertyPrice:4400});
 const original=api.fpBudget();
 assert.ok(original.loanPayment>0,'monthly mortgage budget computed');
 assert.ok(original.amount>0,'equivalent housing price computed');
@@ -53,7 +53,7 @@ assert.match(card,/住居費の予算/);
 p.loanYears=50;
 p.propertyPrice=4400;
 let forFifty=api.fpMortgageCapacityCard();
-let actualFifty=api.mortgageMonthly(4400,100,1.5,50);
+let actualFifty=api.mortgageMonthly(4400,0,1.5,50);
 assert.match(forFifty,/① 返済に回せる上限/);
 assert.match(forFifty,/② この上限で50年返済なら/);
 assert.match(forFifty,/実際の請求額ではありません/);
@@ -72,8 +72,8 @@ p.interest=2.5;
 assert.ok(api.fpBudget().amount<prior,'higher interest reduces financed home price');
 p.interest=1.5;
 p.downPayment=400;
-assert.ok(api.fpBudget().amount>prior,'more down payment increases affordable property price');
-p.downPayment=100;
+assert.equal(api.fpBudget().amount,prior,'zero-down financing keeps home price independent of legacy down payment values');
+p.downPayment=0;
 p.otherSavingsMonthly=40;
 assert.ok(api.fpBudget().amount<prior,'a savings goal beyond the income-ratio cap reduces buying power');
 p.otherSavingsMonthly=5;

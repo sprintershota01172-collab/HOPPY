@@ -1297,7 +1297,18 @@
       rows=fpPieBreakdownRows(point,month,item.id),
       income=annual?point.incomes:month.income,
       percentage=income>0?(item.amount/income*100):null,
-      density=rows.length>=12?' two-columns three-columns':rows.length>=8?' two-columns':'';
+      density=rows.length>=9?' two-columns three-columns':rows.length>=7?' two-columns':'',
+      // Paginate unusually long categories instead of clipping rows or scrolling.
+      pageSize=9,pageCount=Math.max(1,Math.ceil(rows.length/pageSize)),
+      pageKey=annual?'fpBreakdownPageAnnual':'fpBreakdownPageMonthly',
+      page=Math.max(0,Math.min(pageCount-1,Math.round(Number(ui[pageKey])||0))),
+      pager=pageCount>1?'<span class="fp-breakdown-pager" aria-label="内訳ページ">'+
+        '<button type="button" data-act="fp-breakdown-page" data-period="'+period+
+        '" data-value="-1" '+(page===0?'disabled':'')+' aria-label="前の内訳">‹</button>'+
+        '<b>'+(page+1)+' / '+pageCount+'</b>'+
+        '<button type="button" data-act="fp-breakdown-page" data-period="'+period+
+        '" data-value="1" '+(page===pageCount-1?'disabled':'')+' aria-label="次の内訳">›</button>'+
+      '</span>':'';
     const children=(item.id==='living'&&!annual||item.id==='education'&&annual)?
       fpSchoolBreakdown(point.year):[];
     const schoolContext=children.length?
@@ -1305,13 +1316,15 @@
         children.map(child=>'第'+child.index+'子 '+child.age+'歳 '+child.stage+
           (child.annual===0?'・学校費0円':'')).join(' ／ ')+
       '</p>':'';
-    const entries=rows.map(row=>{
+    const entries=rows.map((row,index)=>{
       const type=row.field?'field':row.expenseId?'expense':row.eventId?'event':'',
         key=row.field||row.expenseId||row.eventId||'',editable=!!type,
         tag=editable?'button':'div',
         attributes=editable?' type="button" data-act="fp-row-edit" data-period="'+period+
           '" data-value="'+type+'|'+esc(key)+'" aria-label="'+esc(row.label)+'を編集"':'';
-      return '<'+tag+attributes+' class="fp-breakdown-row"><span class="fp-row-label">'+esc(row.label)+
+      return '<'+tag+attributes+' class="fp-breakdown-row"'+
+        (Math.floor(index/pageSize)!==page?' hidden':'')+
+        '><span class="fp-row-label">'+esc(row.label)+
         '</span><strong>'+fpYen(row.amount)+'</strong></'+tag+'>';
     }).join('');
     const selected=ui.fpEditingRow?.period===period&&ui.fpEditingRow?.category===item.id?
@@ -1332,7 +1345,8 @@
     return '<section class="fp-breakdown-panel" data-fp-inline-breakdown data-fp-category="'+item.id+'" aria-label="'+esc(item.label)+'の内訳">'+
       '<div class="fp-breakdown-title"><span>'+esc(item.label)+'の内訳</span>'+
       '<strong>'+fpYen(item.amount)+'</strong>'+
-      '<small>収入比 '+(percentage===null?'—':yen(percentage,1)+'%')+'　・　'+rows.length+'項目</small>'+
+      '<small class="fp-breakdown-meta">収入比 '+(percentage===null?'—':yen(percentage,1)+'%')+
+        '　・　'+rows.length+'項目'+pager+'</small>'+
       schoolContext+'</div>'+
       '<div class="fp-breakdown-list'+density+'">'+
       (entries||'<p class="fp-breakdown-empty">金額が登録された項目はありません。</p>')+
@@ -2162,12 +2176,21 @@
     if(action==='fp-breakdown-select'){
       if(!['living','housing','education','investing','remaining'].includes(v))return;
       const period=button.dataset.period==='annual'?'annual':'monthly';
-      if(period==='annual')ui.fpBreakdownAnnual=v;
-      else ui.fpBreakdownMonthly=v;
+      if(period==='annual'){ui.fpBreakdownAnnual=v;ui.fpBreakdownPageAnnual=0;}
+      else{ui.fpBreakdownMonthly=v;ui.fpBreakdownPageMonthly=0;}
       ui.fpEditingRow=null;
       // Only replace the inline breakdown. Recreating #app triggers the
       // screen entrance animation and resets scroll on every category tap.
       fpRefreshSelectedBreakdown(period,v);
+      return;
+    }
+    if(action==='fp-breakdown-page'){
+      const period=button.dataset.period==='annual'?'annual':'monthly',
+        key=period==='annual'?'fpBreakdownPageAnnual':'fpBreakdownPageMonthly',
+        category=period==='annual'?ui.fpBreakdownAnnual:ui.fpBreakdownMonthly;
+      ui[key]=Math.max(0,(Number(ui[key])||0)+(Number(v)||0));
+      ui.fpEditingRow=null;
+      fpRefreshSelectedBreakdown(period,category);
       return;
     }
     if(action==='fp-row-edit'){

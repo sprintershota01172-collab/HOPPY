@@ -3513,3 +3513,169 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   }
   .fp-focus .fp-pie-pick span,.fp-focus .fp-pie-pick strong{font-size:8px!important}
 }
+
+
+/* FP r29: preserve the whole breakdown frame on every portrait screen.
+   The bottom card must be the flexible item; fixed 98px/89px min-heights
+   were causing its bottom border to fall beyond the clipped report pane. */
+.fp-focus .fp-month-report,
+.fp-focus .fp-r-chart-page,
+.fp-focus .fp-pie-panel{
+  min-height:0!important;
+  box-sizing:border-box!important;
+  padding-bottom:3px!important;
+}
+.fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-month-pie{
+  flex:0 1 100px!important;
+  height:auto!important;
+  min-height:80px!important;
+  max-height:100px!important;
+  padding:0!important;
+  margin:0!important;
+  gap:2px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:hidden!important;
+  display:grid!important;
+  grid-template-columns:clamp(80px,26vw,106px) minmax(0,1fr)!important;
+  justify-items:stretch!important;
+  justify-content:start!important;
+  align-items:stretch!important;
+}
+.fp-focus .fp-month-report>.fp-month-pie>.fp-month-donut{
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  padding:0!important;
+  margin:0!important;
+  object-fit:contain!important;
+  align-self:center!important;
+  justify-self:start!important;
+}
+.fp-focus .fp-month-report .fp-month-pie-legend{
+  display:flex!important;
+  flex-direction:column!important;
+  min-width:0!important;
+  min-height:0!important;
+  height:100%!important;
+  padding:0!important;
+  margin:0!important;
+  gap:1px!important;
+  overflow:hidden!important;
+  justify-content:center!important;
+}
+.fp-focus .fp-month-report .fp-month-pie-legend>.fp-pie-pick{
+  flex:1 1 0!important;
+  min-height:15px!important;
+  height:auto!important;
+  max-height:20px!important;
+  margin:0!important;
+  padding:0 4px!important;
+}
+/* Unlike the preceding fixed-height rules, this final panel may shrink
+   when the extra education row is present, keeping the border on-screen. */
+.fp-focus .fp-month-report>.fp-breakdown-panel{
+  flex:1 1 100px!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  margin:0 0 2px!important;
+  padding:4px 6px!important;
+  border:1px solid #d4e2e7!important;
+  border-radius:9px!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+  align-self:stretch!important;
+}
+.fp-focus .fp-month-report>.fp-breakdown-panel>.fp-breakdown-title{
+  flex:0 0 auto!important;
+  padding-bottom:2px!important;
+  min-height:0!important;
+}
+.fp-focus .fp-month-report>.fp-breakdown-panel>.fp-breakdown-list{
+  flex:1 1 0!important;
+  min-height:0!important;
+  height:auto!important;
+  max-height:100%!important;
+  padding:0 1px 1px!important;
+  grid-auto-rows:minmax(0,1fr)!important;
+  overflow:hidden!important;
+}
+.fp-focus .fp-month-report .fp-breakdown-list>.fp-breakdown-row{
+  box-sizing:border-box!important;
+}
+.fp-focus .fp-pie-panel>.fp-pie-figure{
+  flex:0 1 113px!important;
+  height:113px!important;
+  min-height:92px!important;
+  max-height:113px!important;
+  gap:3px!important;
+  justify-content:flex-start!important;
+  padding:0!important;
+  margin:0!important;
+}
+.fp-focus .fp-pie-panel>.fp-pie-figure>.fp-pie-chart{
+  flex:0 0 110px!important;
+  width:110px!important;
+  height:110px!important;
+  min-width:0!important;
+  max-width:110px!important;
+  max-height:110px!important;
+}
+.fp-focus .fp-pie-panel>.fp-pie-figure>.fp-pie-key{
+  flex:1 1 0!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+}
+.fp-focus .fp-pie-panel>.fp-breakdown-panel{
+  flex:1 1 0!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  margin-bottom:2px!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+}
+@media(max-height:740px){
+  .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-month-pie{
+    flex-basis:85px!important;
+    min-height:72px!important;
+    max-height:85px!important;
+    grid-template-columns:clamp(72px,22vw,90px) minmax(0,1fr)!important;
+  }
+  .fp-focus .fp-month-report .fp-month-pie-legend>.fp-pie-pick{
+    min-height:13px!important;
+    max-height:17px!important;
+    padding:0 3px!important;
+  }
+  .fp-focus .fp-pie-panel>.fp-pie-figure{
+    flex-basis:96px!important;
+    height:96px!important;
+    min-height:80px!important;
+    max-height:96px!important;
+  }
+  .fp-focus .fp-pie-panel>.fp-pie-figure>.fp-pie-chart{
+    width:94px!important;
+    flex-basis:94px!important;
+    height:94px!important;
+    max-width:94px!important;
+    max-height:94px!important;
+  }
+}
+@media(max-height:620px){
+  .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-month-pie{
+    flex-basis:77px!important;
+    min-height:64px!important;
+    max-height:77px!important;
+    grid-template-columns:clamp(67px,21vw,79px) minmax(0,1fr)!important;
+  }
+  .fp-focus .fp-month-report>.fp-breakdown-panel{
+    padding:3px 4px!important;
+  }
+}

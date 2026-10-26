@@ -2846,3 +2846,23 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   }
   .fp-focus .fp-education-card{padding:3px 5px!important}
 }
+
+
+/* Break-even cashflow is neutral, not visually marked as a positive balance. */
+.fp-focus .fp-month-surplus.neutral{
+  background:linear-gradient(120deg,#465967,#60717e)!important;
+  border:1px solid #8d9da8!important;
+}
+.fp-focus .fp-month-surplus.neutral strong,
+.fp-focus .fp-month-surplus.neutral span,
+.fp-focus .fp-month-surplus.neutral small{color:#fff!important}
+.fp-surplus-strip.neutral{
+  background:#f0f3f5!important;border-color:#d4dfe5!important;
+  color:#485e6e!important;
+}
+.fp-surplus-strip.neutral>strong,
+.fp-surplus-strip.neutral>b{color:#465e6d!important}
+.fp-surplus-strip.neutral .fp-balance-chip,
+.fp-month-surplus.neutral .fp-balance-chip{
+  border-color:#ccdce4!important;background:#edf1f4!important;color:#3d5567!important;
+}

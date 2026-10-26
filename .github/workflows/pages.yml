@@ -27,6 +27,8 @@ jobs:
           node tests/fp-budget.cjs
           node tests/fp-capacity-startup.cjs
           node tests/fp-viewport.cjs
+          node tests/fp-tabs-align.cjs
+          node tests/fp-education-clarity.cjs
           node tests/fp-interest-surplus.cjs
           node tests/fp-ledger.cjs
           node tests/fp-safety.cjs

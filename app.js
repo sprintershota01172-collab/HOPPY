@@ -39,6 +39,11 @@
     childLivingMonthly:0,daycareMonthly:0,childBenefitMonthly:0,childEducationInsuranceMonthly:0,
     annualTax:0,carTaxAnnual:0,travelAnnual:0,annualEvents:0,homeInsuranceAnnual:0,
     otherSavingsMonthly:0,otherInvestMonthly:0,nisaBalance:0,investBalance:0,returnAnnual:0,carLoanEndYear:0,
+    goalNisaEnabled:0,goalNisaAmount:1000,goalNisaYears:20,
+    goalOtherEnabled:0,goalOtherAmount:300,goalOtherYears:10,
+    goalEduEnabled1:0,goalEduAmount1:500,goalEduAge1:18,
+    goalEduEnabled2:0,goalEduAmount2:500,goalEduAge2:18,
+    goalEduEnabled3:0,goalEduAmount3:500,goalEduAge3:18,
     cashBufferMonthly:3,freeSpendingMonthly:0,expenses:[],events:[]
   });
   const defaults = () => ({version:2,properties:[],criteria:initialCriteria,scores:{},selected:[],filter:{query:'',tag:'',sort:'new',status:''},plan:defaultPlan(),planHistory:[],studyNotes:[],homeCriteriaMemo:''});
@@ -341,6 +346,63 @@
   const simNowYear=()=>new Date().getFullYear();
   const yen=(v,d=0)=>Number.isFinite(v)?Number(v).toLocaleString('ja-JP',{maximumFractionDigits:d,minimumFractionDigits:d}):'—';
   const safeNum=(v,fallback=0)=>Number.isFinite(Number(v))?Math.max(0,Number(v)):fallback;
+  // Monthly contributions are at the end of each month; amounts are in 10,000 yen.
+  function fpTargetMonthly(target,existing,months,annualRate){
+    const n=Math.max(0,Math.round(Number(months)||0)),goal=safeNum(target),start=safeNum(existing);
+    const rate=Math.min(20,Math.max(-20,Number(annualRate)||0))/100;
+    const r=Math.pow(1+rate,1/12)-1;
+    if(n===0)return goal<=start?0:Infinity;
+    const future=start*Math.pow(1+r,n);
+    if(goal<=future)return 0;
+    const factor=Math.abs(r)<1e-10?n:(Math.pow(1+r,n)-1)/r;
+    return Math.ceil((goal-future)/factor*10000-1e-9)/10000;
+  }
+  function fpEffectiveNisaMonthly(p=state.plan){
+    return Number(p.goalNisaEnabled)===1?
+      fpTargetMonthly(p.goalNisaAmount,p.nisaBalance,safeNum(p.goalNisaYears)*12,p.returnAnnual):
+      safeNum(p.nisaMonthly);
+  }
+  function fpEffectiveOtherInvestMonthly(p=state.plan){
+    return Number(p.goalOtherEnabled)===1?
+      fpTargetMonthly(p.goalOtherAmount,p.investBalance,safeNum(p.goalOtherYears)*12,p.returnAnnual):
+      safeNum(p.otherInvestMonthly);
+  }
+  function fpEducationGoal(p,index){
+    const birth=safeNum(p.firstChildYear)+(index-1)*Math.max(1,safeNum(p.birthInterval,3));
+    const age=Math.min(30,Math.max(0,Math.round(safeNum(p['goalEduAge'+index]))));
+    const year=birth+age,begin=Math.max(simNowYear(),birth),months=Math.max(0,(year-begin)*12);
+    const target=safeNum(p['goalEduAmount'+index]);
+    return {birth,age,year,begin,months,target,
+      monthly:fpTargetMonthly(target,0,months,0),
+      enabled:Number(p['goalEduEnabled'+index])===1};
+  }
+  function fpEducationPremiumForYear(year,p=state.plan){
+    let monthly=0,kids=Math.min(3,Math.round(safeNum(p.children)));
+    for(let index=1;index<=kids;index++){
+      const goal=fpEducationGoal(p,index),age=year-goal.birth;
+      if(age<0)continue;
+      if(goal.enabled){if(age<goal.age&&year>=goal.begin&&Number.isFinite(goal.monthly))monthly+=goal.monthly;}
+      else if(age<18)monthly+=safeNum(p.childEducationInsuranceMonthly);
+    }
+    return monthly;
+  }
+  function fpGoalPreview(monthly,summary,note){
+    return '<div class="fp-goal-preview"><span>必要な毎月積立額</span>'+
+      '<strong>'+(Number.isFinite(monthly)?fpYen(monthly):'期限を変更してください')+'</strong>'+
+      '<small>'+esc(summary)+'</small><p>'+esc(note||'')+'</p></div>';
+  }
+  function fpEducationGoalForm(index){
+    const p=state.plan,g=fpEducationGoal(p,index);
+    return fpCompactPage('第'+index+'子の教育資金',[
+      sSelect('計算方法','goalEduEnabled'+index,[[0,'月額を手入力'],[1,'目標から逆算']]),
+      nField('目標金額','goalEduAmount'+index,'万円'),
+      nField('何歳で達成する？','goalEduAge'+index,'歳')
+    ],'学資保険の保険料や満期金は契約で異なります。逆算額は積立原資の目安であり、保険料見積ではありません。',
+      fpGoalPreview(g.enabled?g.monthly:safeNum(p.childEducationInsuranceMonthly),
+        g.year+'年／'+g.age+'歳で'+fpYen(g.target)+'（'+(g.enabled?'逆算':'手入力')+'）',
+        g.months?'積立可能期間 '+g.months/12+'年・出生予定 '+g.birth+'年':
+          '目標期限が到来済みです。目標年齢を見直してください。'));
+  }
   const mortgageMonthly=(price,down,rate,years)=>{
     const principal=Math.max(0,safeNum(price)-safeNum(down));
     const months=Math.max(12,Math.round(safeNum(years,35)*12));

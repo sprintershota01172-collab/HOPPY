@@ -1,5 +1,5 @@
-const CACHE = 'hopposan-static-v49';
-const STATIC = ['./','./index.html','./fp-r33.html','./fp-r34.html','./styles.css','./app.js','./styles.css?v=fp-20261027-r37','./app.js?v=fp-20261027-r37','./manifest.webmanifest','./icon.svg','./icon-192.png'];
+const CACHE = 'hopposan-static-v50';
+const STATIC = ['./','./index.html','./fp-r33.html','./fp-r34.html','./styles.css','./app.js','./styles.css?v=fp-20261027-r38','./app.js?v=fp-20261027-r38','./manifest.webmanifest','./icon.svg','./icon-192.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(STATIC)).then(() => self.skipWaiting()));

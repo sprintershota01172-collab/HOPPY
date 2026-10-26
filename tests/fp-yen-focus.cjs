@@ -78,8 +78,12 @@ assert.match(html,/data-act="fp-breakdown-page"/,'long expense categories pagina
 assert.match(html,/class="fp-breakdown-row" hidden/,'rows outside active page are present but hidden');
 api.ui.fpBreakdownPageMonthly=1;
 const page2=api.fpPieBreakdownPanel(densePoint,denseMonth,[{id:'living',label:'生活・教育費',amount:denseMonth.household}], 'living');
-assert.match(page2,/2 \/ 2/,'page control shows next page');
-assert.match(page2,/追加費12/,'remaining expenses can be reached on the second page');
+assert.match(page2,/2 \/ 3/,'page control shows next page');
+assert.match(page2,/追加費7/,'later expenses remain available on the second page');
+api.ui.fpBreakdownPageMonthly=2;
+const page3=api.fpPieBreakdownPanel(densePoint,denseMonth,[{id:'living',label:'生活・教育費',amount:denseMonth.household}], 'living');
+assert.match(page3,/3 \/ 3/,'all remaining expenses are available through paging');
+assert.match(page3,/追加費12/,'last registered expense remains reachable');
 assert.match(page2,/data-value="-1"/,'previous-page control exists');
 const css=fs.readFileSync('styles.css','utf8');
 assert.match(css,/\.app-shell:has\(\.fp-focus\)>header.top\s*\{[^}]*display:none!important/);

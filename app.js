@@ -835,8 +835,11 @@
       const nisaAdd=12*fpEffectiveNisaMonthly(p),otherAdd=12*fpEffectiveOtherInvestMonthly(p);
       const investing=nisaAdd+otherAdd;
       cash+=income-expenses-investing;
-      nisa=compoundYear(nisa,fpEffectiveNisaMonthly(p));
-      otherInvest=compoundYear(otherInvest,fpEffectiveOtherInvestMonthly(p));
+      // Preserve legacy projections unless a target-based plan was explicitly enabled.
+      nisa=Number(p.goalNisaEnabled)===1?
+        compoundYear(nisa,fpEffectiveNisaMonthly(p)):Math.max(0,(nisa+nisaAdd)*annualGrowth);
+      otherInvest=Number(p.goalOtherEnabled)===1?
+        compoundYear(otherInvest,fpEffectiveOtherInvestMonthly(p)):Math.max(0,(otherInvest+otherAdd)*annualGrowth);
       investedContributions+=investing;
       const invested=nisa+otherInvest;
       points.push({year,cash,invested,nisa,otherInvest,total:cash+invested,
@@ -1111,10 +1114,19 @@
       m=Math.max(1,Math.min(12,Math.round(Number(month)||1))),
       flows=fpMonthlyLedger(asset.point).months,
       growth=Math.min(.2,Math.max(-.2,Number(p.returnAnnual)||0)/100);
-    // Interpolation is a display approximation. At m=12, this exactly matches
-    // the existing annual formula (opening + 12 months of contributions) × (1+return).
-    const nisa=Math.max(0,(asset.opening.nisa+m*fpEffectiveNisaMonthly(p))*(1+growth*m/12));
-    const otherInvest=Math.max(0,(asset.opening.otherInvest+m*fpEffectiveOtherInvestMonthly(p))*(1+growth*m/12));
+    // Manual plans retain legacy interpolation; goal plans accrue monthly
+    // with exactly the same timing as fpTargetMonthly and modelYears.
+    const compoundMonths=(initial,deposit)=>{let balance=initial;
+      const factor=Math.pow(1+growth,1/12);
+      for(let i=0;i<m;i++)balance=Math.max(0,balance*factor+deposit);
+      return balance;
+    };
+    const nisa=Number(p.goalNisaEnabled)===1?
+      compoundMonths(asset.opening.nisa,fpEffectiveNisaMonthly(p)):
+      Math.max(0,(asset.opening.nisa+m*fpEffectiveNisaMonthly(p))*(1+growth*m/12));
+    const otherInvest=Number(p.goalOtherEnabled)===1?
+      compoundMonths(asset.opening.otherInvest,fpEffectiveOtherInvestMonthly(p)):
+      Math.max(0,(asset.opening.otherInvest+m*fpEffectiveOtherInvestMonthly(p))*(1+growth*m/12));
     const cash=flows[m-1].endingCash;
     return {year,month:m,cash,nisa,otherInvest,total:cash+nisa+otherInvest,
       cashChange:cash-asset.opening.cash,nisaChange:nisa-asset.opening.nisa,

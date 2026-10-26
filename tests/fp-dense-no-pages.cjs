@@ -56,7 +56,7 @@ const browserCode=[
 ].join('');
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'hoppy-visual-'));
 try{
- for(const [width,height] of [[390,844],[353,768]]){
+ for(const [width,height] of [[414,896],[390,844],[353,768]]){
   const html='<!doctype html><html lang="ja"><head><meta charset="utf-8">'+
    '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'+
    '<style>'+css+'</style>'+

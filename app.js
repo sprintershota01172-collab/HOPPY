@@ -1299,7 +1299,7 @@
       percentage=income>0?(item.amount/income*100):null,
       density=rows.length>=9?' two-columns three-columns':rows.length>=7?' two-columns':'',
       // Paginate unusually long categories instead of clipping rows or scrolling.
-      pageSize=9,pageCount=Math.max(1,Math.ceil(rows.length/pageSize)),
+      pageSize=6,pageCount=Math.max(1,Math.ceil(rows.length/pageSize)),
       pageKey=annual?'fpBreakdownPageAnnual':'fpBreakdownPageMonthly',
       page=Math.max(0,Math.min(pageCount-1,Math.round(Number(ui[pageKey])||0))),
       pager=pageCount>1?'<span class="fp-breakdown-pager" aria-label="内訳ページ">'+

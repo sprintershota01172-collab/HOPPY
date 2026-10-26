@@ -1297,8 +1297,7 @@
       rows=fpPieBreakdownRows(point,month,item.id),
       income=annual?point.incomes:month.income,
       percentage=income>0?(item.amount/income*100):null,
-      density=rows.length>(window.matchMedia('(max-height:780px)').matches?18:24)?
-        ' two-columns three-columns':rows.length>9?' two-columns':'';
+      density=rows.length>=12?' two-columns three-columns':rows.length>=8?' two-columns':'';
     const children=(item.id==='living'&&!annual||item.id==='education'&&annual)?
       fpSchoolBreakdown(point.year):[];
     const schoolContext=children.length?

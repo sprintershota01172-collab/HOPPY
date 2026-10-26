@@ -38,7 +38,7 @@ const browserCode=[
  '<script>window.addEventListener("load",()=>{',
  'const q=s=>document.querySelector(s);',
  'const r=e=>{if(!e)return null;const b=e.getBoundingClientRect();',
- 'return {top:b.top,bottom:b.bottom,height:b.height,scrollHeight:e.scrollHeight,clientHeight:e.clientHeight}};',
+ 'return {top:b.top,bottom:b.bottom,left:b.left,right:b.right,height:b.height,scrollHeight:e.scrollHeight,clientHeight:e.clientHeight}};',
  'const m={main:r(q("main.main")),capacity:r(q(".fp-capacity-card")),',
  'footnote:r(q(".fp-capacity-footnote")),actual:r(q(".fp-capacity-example")),',
  'hero:r(q(".fp-month-surplus")),heroSmall:r(q(".fp-month-surplus small")),',

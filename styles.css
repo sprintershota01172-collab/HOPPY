@@ -3025,3 +3025,51 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .fp-focus .fp-month-hero>div+div>strong{font-size:15px!important}
   .fp-focus .fp-education-card{padding:3px 4px!important}
 }
+
+
+/* r22 small-screen fitting: reclaim space for every visible expense row. */
+@media(max-height:850px){
+  .fp-focus .fp-capacity-card{
+    padding:4px 7px!important;gap:1px!important;border-radius:9px!important;
+    line-height:1.15!important;
+  }
+  .fp-focus .fp-capacity-heading strong{font-size:10px!important;line-height:1.1!important}
+  .fp-focus .fp-capacity-heading>span{font-size:8px!important;line-height:1.1!important}
+  .fp-focus .fp-capacity-columns{gap:3px!important}
+  .fp-focus .fp-capacity-cell{gap:1px!important}
+  .fp-focus .fp-capacity-cell>span{font-size:9px!important;line-height:1.1!important}
+  .fp-focus .fp-capacity-cell>strong{font-size:16px!important;line-height:1.1!important}
+  .fp-focus .fp-capacity-cell>small{font-size:7px!important;line-height:1.12!important}
+  .fp-focus .fp-capacity-cell.price>.fp-capacity-interest{font-size:8px!important;line-height:1.1!important}
+  .fp-focus .fp-capacity-conditions{gap:1px 6px!important}
+  .fp-focus .fp-capacity-conditions>span{font-size:8px!important;line-height:1.1!important}
+  .fp-focus .fp-capacity-example{padding:2px 5px!important;gap:1px!important}
+  .fp-focus .fp-capacity-example-main>span{font-size:9px!important;line-height:1.12!important}
+  .fp-focus .fp-capacity-example-main>strong{font-size:11px!important;line-height:1.1!important}
+  .fp-focus .fp-capacity-example-status{font-size:8px!important;line-height:1.1!important}
+  .fp-focus .fp-capacity-footnote{font-size:7px!important;line-height:1.08!important}
+  .fp-focus .fp-month-head{
+    flex:0 0 25px!important;min-height:25px!important;max-height:25px!important;
+  }
+  .fp-focus .fp-month-switch{height:25px!important}
+  .fp-focus .fp-month-surplus{
+    min-height:50px!important;padding:4px 7px!important;
+    border-radius:9px!important;
+  }
+  .fp-focus .fp-month-hero strong{font-size:18px!important}
+  .fp-focus .fp-month-hero span{font-size:8px!important}
+  .fp-focus .fp-month-hero small{font-size:7.5px!important}
+  .fp-focus .fp-month-quick{min-height:32px!important;max-height:32px!important;flex-basis:32px!important}
+  .fp-focus .fp-month-quick-input input{height:24px!important;font-size:15px!important}
+  .fp-focus .fp-education-card{padding:2px 5px!important;gap:1px 3px!important}
+  .fp-focus .fp-education-input>input{height:23px!important;min-height:23px!important;font-size:15px!important}
+  .fp-focus .fp-education-footnote{font-size:7px!important;line-height:1.08!important}
+  .fp-focus .fp-month-pie{
+    height:59px!important;flex-basis:59px!important;min-height:59px!important;max-height:59px!important;
+  }
+  .fp-focus .fp-month-donut{height:53px!important;max-height:53px!important}
+  .fp-focus .fp-month-pie-legend>.fp-pie-pick{
+    height:11px!important;min-height:11px!important;max-height:11px!important;flex-basis:11px!important;
+  }
+  .fp-focus .fp-pie-pick span,.fp-focus .fp-pie-pick strong{font-size:8px!important}
+}

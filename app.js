@@ -1294,12 +1294,12 @@
       rows=fpPieBreakdownRows(point,month,item.id),
       income=annual?point.incomes:month.income,
       percentage=income>0?(item.amount/income*100):null,
-      density=rows.length>=9?' two-columns three-columns':rows.length>=7?' two-columns':'',
-      // Keep EVERY item on one card, with a fixed height; the column count
-      // adapts to the number of registered expenses, without page navigation.
-      cols=item.id==='investing'?2:Math.max(2,Math.min(8,Math.ceil(rows.length/3))),
+      // Stable four-column footprint: neither cell width nor row pitch
+      // changes when another pie category has fewer/more line items.
+      cols=4,
       gridRows=Math.max(1,Math.ceil(rows.length/cols)),
-      dense=cols>=5||gridRows>=4;
+      density='',
+      dense=false;
     const children=(item.id==='living'&&!annual||item.id==='education'&&annual)?
       fpSchoolBreakdown(point.year):[];
     const schoolContext=children.length?
@@ -1747,7 +1747,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<span class="fp-build-stamp" title="表示バージョン">r36</span></div></div>';
+      '<span class="fp-build-stamp" title="表示バージョン">r37</span></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2059,6 +2059,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r37',date:'2026.10.27',title:'FP内訳の列幅・行間を完全固定',
+        details:['項目数にかかわらず4列の同じ列幅に統一','各行の高さ・列間・行間を固定','項目は左上から順番に追加し空白を広げない']},
       {version:'r36',date:'2026.10.27',title:'内訳欄の不要な高さを削減',
         details:['項目数に応じて内訳欄の高さを自動調整','空いたスペースを円グラフへ配分','少ない項目でも左上詰めを維持']},
       {version:'r35',date:'2026.10.27',title:'内訳の文字位置と行間を統一',
@@ -2074,7 +2076,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r36</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r37</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

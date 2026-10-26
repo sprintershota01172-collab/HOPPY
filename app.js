@@ -508,14 +508,16 @@
         f('その他のローン','otherLoanMonthly'),f('他ローン終了年','otherLoanEndYear','年')
       ],'ローン終了年が0の場合は支払いが続く設定です。'));
     }
-    if(i===3)pages.push(fpCompactPage('子育てと教育費',[
+    if(i===3){pages.push(fpCompactPage('子育てと教育費',[
       f('子どもの保険（1人）','childInsuranceMonthly'),
       f('生活・衣服・習い事（1人）','childLivingMonthly'),
       f('保育料・幼稚園（1人）','daycareMonthly'),
       f('学資保険（1人）','childEducationInsuranceMonthly'),
       sSelect('高校','highSchool',[['public','公立'],['private','私立']]),
       sSelect('大学','university',[['public','国公立'],['private','私立']])
-    ],'学資保険は誕生〜17歳まで人数分計上。満期金は自動加算しません（別途登録）。'));
+    ],'手入力の学資保険は出生〜17歳まで支出計上。子ども別の目標逆算は次のページで設定します。'));
+      for(let child=1;child<=Math.min(3,Math.round(safeNum(p.children)));child++)pages.push(fpEducationGoalForm(child));
+    }
     if(i===4){
       const options=[['','価格を直接入力'],...state.properties.filter(x=>num(x.price)!==null).map(x=>[x.id,truncate(x.name,17)+' / '+fpYen(x.price)])];
       pages.push(fpCompactPage('購入予定',[
@@ -543,7 +545,24 @@
         f('現金貯金目標','otherSavingsMonthly'),
         f('運用利回り（仮定）','returnAnnual','％/年'),
         f('毎月の余裕費','cashBufferMonthly')
-      ],'NISA積立は支出ではなく現金から投資資産への振替です。'));
+      ],'目標設定を有効にしない場合は手入力の月額を使用します。'));
+      pages.push(fpCompactPage('NISAの積立目標',[
+        sSelect('計算方法','goalNisaEnabled',[[0,'月額を手入力'],[1,'目標から逆算']]),
+        f('目標金額','goalNisaAmount','万円'),f('何年後に達成？','goalNisaYears','年'),
+        f('想定利回り','returnAnnual','％/年')
+      ],'毎月末積立と複利の仮定です。NISAに元本保証はなく、利回りは確約されません。',
+        fpGoalPreview(fpEffectiveNisaMonthly(p),
+          safeNum(p.goalNisaYears)+'年後・目標 '+fpYen(safeNum(p.goalNisaAmount))+
+            '／現在 '+fpYen(safeNum(p.nisaBalance)),
+          Number(p.goalNisaEnabled)===1?'逆算した月額を家計予測に反映します。':'現在は手入力の月額です。')));
+      pages.push(fpCompactPage('その他投資の積立目標',[
+        sSelect('計算方法','goalOtherEnabled',[[0,'月額を手入力'],[1,'目標から逆算']]),
+        f('目標金額','goalOtherAmount','万円'),f('何年後に達成？','goalOtherYears','年')
+      ],'その他投資はNISAと同じ想定利回りで逆算します。',
+        fpGoalPreview(fpEffectiveOtherInvestMonthly(p),
+          safeNum(p.goalOtherYears)+'年後・目標 '+fpYen(safeNum(p.goalOtherAmount))+
+            '／現在 '+fpYen(safeNum(p.investBalance)),
+          Number(p.goalOtherEnabled)===1?'逆算した月額を家計予測に反映します。':'現在は手入力の月額です。')));
     }
     if(i===6){
       pages.push(fpCompactPage('年払いの支出',[
@@ -605,7 +624,7 @@
     const p=state.plan,pages=fpWizardPages(i);
     ui.simSubPage=Math.max(0,Math.min(pages.length-1,Number(ui.simSubPage)||0));
     const n=ui.simSubPage;
-    const labels=i===2?['食費・住居','水道光熱','日常費','保険等']:i===4?['購入','維持費']:i===5?['資産','積立']:null;
+    const labels=i===2?['食費・住居','水道光熱','日常費','保険等']:i===3?['教育費',...Array.from({length:Math.min(3,Math.round(safeNum(p.children)))},(_,k)=>'第'+(k+1)+'子')]:i===4?['購入','維持費']:i===5?['資産','積立','NISA','その他']:null;
     return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR / r20</span>'+
       (p.hasRun?'<button class="fp-recall-btn" data-act="fp-view-budget">前回の診断を見る ↗</button>':'<span class="sim-progress-text">'+(i+1)+' / 7</span>')+
       '</div><div class="sim-progress">'+Array.from({length:7},(_,x)=>'<span class="'+(x<=i?'filled':'')+'"></span>').join('')+'</div>'+
@@ -693,7 +712,7 @@
     }
     const count=fpChildCounts(year);
     parts.push({key:'childInsuranceMonthly',label:'子どもの保険',value:count.insured*safeNum(p.childInsuranceMonthly)});
-    parts.push({key:'childEducationInsuranceMonthly',label:'学資保険',value:count.educationInsured*safeNum(p.childEducationInsuranceMonthly)});
+    parts.push({key:'childEducationInsuranceMonthly',label:'学資保険・教育積立',value:fpEducationPremiumForYear(year,p)});
     parts.push({key:'childLivingMonthly',label:'子どもの生活費',value:count.living*safeNum(p.childLivingMonthly)});
     parts.push({key:'daycareMonthly',label:'保育料・幼稚園',value:count.preschool*safeNum(p.daycareMonthly)});
     return parts;
@@ -779,6 +798,11 @@
     let investedContributions=0;
     const points=[],kids=Math.min(3,Math.round(safeNum(p.children)));
     const annualGrowth=1+Math.min(.2,Math.max(-.2,Number(p.returnAnnual)||0)/100);
+    const monthlyGrowth=Math.pow(annualGrowth,1/12);
+    const compoundYear=(initial,deposit)=>{let value=initial;
+      for(let month=0;month<12;month++)value=Math.max(0,value*monthlyGrowth+deposit);
+      return value;
+    };
     for(let year=start;year<=end;year++){
       const children=fpChildCounts(year);
       const income=fpYearlyIncome(year).total;
@@ -808,11 +832,11 @@
       const upfront=buy&&year===purchaseYear?safeNum(p.downPayment)+safeNum(price)*.07:0;
       const events=fpEventsAnnual(year,'expense');
       const expenses=monthly*12+annualFixed+school+birth+upfront+events;
-      const nisaAdd=12*safeNum(p.nisaMonthly),otherAdd=12*safeNum(p.otherInvestMonthly);
+      const nisaAdd=12*fpEffectiveNisaMonthly(p),otherAdd=12*fpEffectiveOtherInvestMonthly(p);
       const investing=nisaAdd+otherAdd;
       cash+=income-expenses-investing;
-      nisa=Math.max(0,(nisa+nisaAdd)*annualGrowth);
-      otherInvest=Math.max(0,(otherInvest+otherAdd)*annualGrowth);
+      nisa=compoundYear(nisa,fpEffectiveNisaMonthly(p));
+      otherInvest=compoundYear(otherInvest,fpEffectiveOtherInvestMonthly(p));
       investedContributions+=investing;
       const invested=nisa+otherInvest;
       points.push({year,cash,invested,nisa,otherInvest,total:cash+invested,
@@ -847,7 +871,7 @@
     const housing=payment+safeNum(p.housingOngoing);
     const ratio=income>0?housing/income:Infinity;
     const recurring=fpSpendingMonthly(fpDecisionYear());
-    const investing=safeNum(p.nisaMonthly)+safeNum(p.otherInvestMonthly);
+    const investing=fpEffectiveNisaMonthly(p)+fpEffectiveOtherInvestMonthly(p);
     const spendable=income-recurring-investing-housing;
     const upfront=safeNum(p.downPayment)+cost*.07;
     const remaining=safeNum(p.cashSavings)+safeNum(p.support)-upfront;
@@ -857,7 +881,7 @@
   function fpBudget(){
     const p=state.plan,monthlyIncome=fpForecast(0).income;
     const spending=fpSpendingMonthly(fpDecisionYear());
-    const investing=safeNum(p.nisaMonthly)+safeNum(p.otherInvestMonthly);
+    const investing=fpEffectiveNisaMonthly(p)+fpEffectiveOtherInvestMonthly(p);
     const cap=Math.min(monthlyIncome*.25,monthlyIncome-spending-investing-safeNum(p.cashBufferMonthly)-safeNum(p.otherSavingsMonthly));
     const loanPayment=Math.max(0,cap-safeNum(p.housingOngoing));
     const term=Math.max(12,Math.round(safeNum(p.loanYears,35)*12));
@@ -1047,7 +1071,7 @@
     const p=state.plan,inc=fpYearlyIncome(point.year).months,expenseEvents=fpEventsForYear(point.year)
       .filter(x=>x.type==='expense'),living=point.monthly-point.housing,
       otherAnnual=point.annualFixed+point.school+point.birth,
-      investNisa=safeNum(p.nisaMonthly),investOther=safeNum(p.otherInvestMonthly);
+      investNisa=fpEffectiveNisaMonthly(p),investOther=fpEffectiveOtherInvestMonthly(p);
     // Annual-only expenses without a known payment month are smoothed over 12 months.
     // Purchase costs are placed in the selected purchase month.
     const opening=point.cash-point.netCash;
@@ -1089,8 +1113,8 @@
       growth=Math.min(.2,Math.max(-.2,Number(p.returnAnnual)||0)/100);
     // Interpolation is a display approximation. At m=12, this exactly matches
     // the existing annual formula (opening + 12 months of contributions) × (1+return).
-    const nisa=Math.max(0,(asset.opening.nisa+m*safeNum(p.nisaMonthly))*(1+growth*m/12));
-    const otherInvest=Math.max(0,(asset.opening.otherInvest+m*safeNum(p.otherInvestMonthly))*(1+growth*m/12));
+    const nisa=Math.max(0,(asset.opening.nisa+m*fpEffectiveNisaMonthly(p))*(1+growth*m/12));
+    const otherInvest=Math.max(0,(asset.opening.otherInvest+m*fpEffectiveOtherInvestMonthly(p))*(1+growth*m/12));
     const cash=flows[m-1].endingCash;
     return {year,month:m,cash,nisa,otherInvest,total:cash+nisa+otherInvest,
       cashChange:cash-asset.opening.cash,nisaChange:nisa-asset.opening.nisa,
@@ -1218,8 +1242,8 @@
           {editStep:'6:1'}:{eventId:item.id,value:safeNum(item.amount),unit:'万円/回'});
       }
     }else if(category==='investing'){
-      add('NISA積立',monthlyPart(safeNum(p.nisaMonthly)),{field:'nisaMonthly',unit:'万円/月',editStep:'5:1'});
-      add('その他の投資積立',monthlyPart(safeNum(p.otherInvestMonthly)),
+      add('NISA積立',monthlyPart(fpEffectiveNisaMonthly(p)),{field:'nisaMonthly',unit:'万円/月',editStep:'5:1'});
+      add('その他の投資積立',monthlyPart(fpEffectiveOtherInvestMonthly(p)),
         {field:'otherInvestMonthly',unit:'万円/月',editStep:'5:1'});
     }else if(category==='remaining'){
       const net=Math.max(0,annual?point.netCash:month.net),
@@ -1521,7 +1545,7 @@
         item('その他の株式・投資',selected.otherInvest,monthly?monthlyAsset.otherChange:yearAsset.otherChange)+
         '<div class="fp-asset-tile total"><span>金融資産の合計</span><strong>'+fpYen(selected.total)+'</strong>'+
         '<small>現金＋NISA＋その他投資</small></div></div>'+
-      '<p class="fp-r-help">NISAの積立 '+fpYen(safeNum(state.plan.nisaMonthly))+'/月、その他投資 '+fpYen(safeNum(state.plan.otherInvestMonthly))+
+      '<p class="fp-r-help">NISAの積立 '+fpYen(fpEffectiveNisaMonthly(state.plan))+'/月、その他投資 '+fpYen(fpEffectiveOtherInvestMonthly(state.plan))+
         '/月。折れ線は年末残高。投資の月末評価額は年率の仮定から近似計算、時価実績ではありません。住宅価値とローン残債は含みません。</p></div>';
   }
   function fpIncomeReport(model){

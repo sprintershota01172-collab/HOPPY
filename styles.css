@@ -3439,13 +3439,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   justify-content:flex-start!important;white-space:nowrap!important;
 }
 
-/* FP r26: use screen area for data, not donut margins or nested frames. */
+/* FP r28: reserve more vertical space for the breakdown without scrolling. */
 .fp-focus .fp-month-report{gap:3px!important}
 .fp-focus .fp-month-report>.fp-month-pie{
   border:0!important;box-shadow:none!important;background:transparent!important;
   border-radius:0!important;padding:0 1px!important;margin:0!important;
   column-gap:4px!important;flex:1 1 0!important;
-  height:auto!important;min-height:87px!important;max-height:none!important;
+  height:auto!important;min-height:78px!important;max-height:none!important;
   grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
   align-items:stretch!important;
 }
@@ -3464,8 +3464,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   flex:1 1 0!important;padding:0 3px!important;
 }
 .fp-focus .fp-month-report>.fp-breakdown-panel{
-  flex:0 0 79px!important;height:79px!important;
-  min-height:79px!important;max-height:79px!important;
+  flex:0 0 98px!important;height:98px!important;
+  min-height:98px!important;max-height:98px!important;
   padding:3px 5px!important;gap:1px!important;
   border:1px solid #e1e6e9!important;box-shadow:none!important;
 }
@@ -3481,10 +3481,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .fp-focus .fp-month-report .fp-breakdown-row>strong{font-size:9px!important}
 .fp-focus .fp-pie-panel>.fp-pie-panel-head .fp-breakdown-hint{display:none!important}
 .fp-focus .fp-pie-panel>.fp-pie-figure{
-  flex:0 0 135px!important;height:135px!important;
-  min-height:135px!important;max-height:135px!important;gap:3px!important;
+  flex:0 0 120px!important;height:120px!important;
+  min-height:120px!important;max-height:120px!important;gap:3px!important;
 }
-.fp-focus .fp-pie-panel .fp-pie-chart{height:133px!important;max-height:133px!important}
+.fp-focus .fp-pie-panel .fp-pie-chart{height:118px!important;max-height:118px!important}
 .fp-focus .fp-pie-panel>.fp-breakdown-panel{
   min-height:0!important;overflow:hidden!important;
   padding:4px 6px!important;box-shadow:none!important;
@@ -3496,16 +3496,16 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .fp-wizard-screen .fp-goal-preview p{display:none!important}
 .fp-wizard-screen .fp-field-hint{font-size:9px!important;line-height:1.2!important}
 @media(max-height:740px){
-  .fp-focus .fp-month-report>.fp-month-pie{min-height:78px!important}
+  .fp-focus .fp-month-report>.fp-month-pie{min-height:72px!important}
   .fp-focus .fp-month-report>.fp-breakdown-panel{
-    flex-basis:72px!important;height:72px!important;
-    min-height:72px!important;max-height:72px!important;
+    flex-basis:89px!important;height:89px!important;
+    min-height:89px!important;max-height:89px!important;
   }
   .fp-focus .fp-pie-panel>.fp-pie-figure{
-    flex-basis:105px!important;height:105px!important;
-    min-height:105px!important;max-height:105px!important;
+    flex-basis:94px!important;height:94px!important;
+    min-height:94px!important;max-height:94px!important;
   }
-  .fp-focus .fp-pie-panel .fp-pie-chart{height:103px!important;max-height:103px!important}
+  .fp-focus .fp-pie-panel .fp-pie-chart{height:92px!important;max-height:92px!important}
 }
 @media(max-width:375px){
   .fp-focus .fp-month-report>.fp-month-pie{

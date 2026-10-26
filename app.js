@@ -117,12 +117,12 @@
   function openOverlay(kind, setup){step(()=>{ui.overlay=kind;if(setup)setup();});}
   function chooseTab(tab){step(()=>{ui.tab=tab;ui.overlay='';ui.fpBreakdownOpen=null;ui.draft=null;if(tab==='sim'&&state.plan.hasRun){ui.simStep=7;ui.simResultPage=1;ui.fpYear=simNowYear();ui.fpHistoryLive=true;ui.fpHistoryOpen=false;ui.fpHistoryId=state.planHistory[0]?.id||null;}});}
   function tabIcon(key){
-    const paths={property:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',compare:'<path d="M12 3v18M5 7h14M7 7l-4 7h8L7 7Zm10 0-4 7h8l-4-7ZM4 18h16"/>',sim:'<rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8 11h2m4 0h2M8 15h2m4 0h2M8 19h2m4 0h2"/>',schedule:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 2v6m10-6v6M3 10h18"/>',memo:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'};
+    const paths={property:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',compare:'<path d="M12 3v18M5 7h14M7 7l-4 7h8L7 7Zm10 0-4 7h8l-4-7ZM4 18h16"/>',sim:'<rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8 11h2m4 0h2M8 15h2m4 0h2M8 19h2m4 0h2"/>',schedule:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 2v6m10-6v6M3 10h18"/>',memo:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',updates:'<path d="M3 12a9 9 0 1 0 2.6-6.4M3 4v5h5"/><path d="M12 7v5l3.5 2"/>'};
     return '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+paths[key]+'</svg>';
   }
   function render(){
     if(!app)return;
-    const nav=[['property','物件'],['compare','比較'],['sim','FP'],['schedule','予定'],['memo','メモ']];
+    const nav=[['property','物件'],['compare','比較'],['sim','FP'],['schedule','予定'],['memo','メモ'],['updates','更新']];
     // Keep the underlying screen mounted while a full-screen view is open.
     // Rebuilding it on every dialog/page change causes the home screen to flash
     // behind the opening overlay and needlessly reloads photo thumbnails.
@@ -138,7 +138,7 @@
     const oldFP=ui.tab==='sim'?app.querySelector('.fp-month-report, .fp-pie-panel'):null;
     const oldFPKind=oldFP?.classList?.contains('fp-month-report')?'monthly':oldFP?'annual':null;
     const oldFPScroll=oldFP?.scrollTop||0;
-    const body=ui.tab==='property'?propertyScreen():ui.tab==='compare'?compareScreen():ui.tab==='sim'?simulationScreen():ui.tab==='memo'?memoScreen():pendingScreen();
+    const body=ui.tab==='property'?propertyScreen():ui.tab==='compare'?compareScreen():ui.tab==='sim'?simulationScreen():ui.tab==='memo'?memoScreen():ui.tab==='updates'?updateLogScreen():pendingScreen();
     app.innerHTML='<main class="main" aria-label="ホッポさんアプリ">'+body+'</main><nav class="bottom" aria-label="メインメニュー">'+nav.map(([key,name])=>'<button class="tab '+(ui.tab===key?'active':'')+'" data-act="tab" data-value="'+key+'" aria-current="'+(ui.tab===key?'page':'false')+'"><span class="nav-icon">'+tabIcon(key)+'</span><span class="tab-label">'+name+'</span></button>').join('')+'</nav>'+(ui.overlay?overlay(): '');
     // Changing month/year or a value must not snap a scrolled breakdown
     // back to the start of the FP report.
@@ -1747,7 +1747,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<span class="fp-build-stamp" title="表示バージョン">r33</span></div></div>';
+      '<span class="fp-build-stamp" title="表示バージョン">r34</span></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2054,6 +2054,32 @@
       (hasBackup?'<span class="study-edited-banner">✓ 自動修正しました。保存前に文章を確認してください。</span>':'<span class="study-edit-help">✦ 「修正・整理」で表記を補正し、内容ごとに見出しを付けます。</span>')+
       '<div class="study-fix-actions"><button class="btn study-fix-main" data-act="study-fix">✦ 修正・整理する</button>'+ (hasBackup?'<button class="btn study-undo-btn" data-act="study-undo">↶ 元に戻す</button>':'')+'</div></div>'+
       '<div class="sim-footer"><button class="btn" data-act="study-back">戻る</button><button class="btn primary" data-act="study-save">保存する</button></div>');
+  }
+  // The log is compiled with the released application. It works offline
+  // and identifies the actual code version loaded on this device.
+  function updateLogScreen(){
+    const versions=[
+      {version:'r34',date:'2026.10.27',title:'FPの内訳を見切れにくく・更新履歴を追加',
+        details:['円グラフ部分を少し縮め、内訳欄を拡大','内訳の最下段と枠線の余白を調整','アプリ下部に更新履歴タブを追加']},
+      {version:'r33',date:'2026.10.27',title:'円グラフの余白と表示確認を改善',
+        details:['月収支のグラフ周囲の余白を削減','新しいURLから最新版を確認可能に']},
+      {version:'r32',date:'2026.10.27',title:'小さい画面の内訳表示を調整',
+        details:['iPhoneサイズ別の枠切れチェックを追加','FP画面のJavaScriptと公開チェックを修正']},
+      {version:'r25',date:'2026.10.26',title:'FPの支出内訳を1画面に整理',
+        details:['内訳のページ送りを廃止','内訳項目をコンパクトに配置']}
+    ];
+    return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
+      '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r34</strong></p></div>'+
+      '<div class="updates-list">'+versions.map((entry,i)=>
+        '<article class="updates-entry'+(i===0?' current':'')+'">'+
+          '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+
+          '<span>'+esc(entry.date)+'</span>'+(i===0?'<em>現在の版</em>':'')+'</div>'+
+          '<h3>'+esc(entry.title)+'</h3>'+
+          '<ul>'+entry.details.map(item=>'<li>'+esc(item)+'</li>').join('')+'</ul>'+
+        '</article>').join('')+'</div>'+
+      '<p class="updates-foot">画面が古い場合はSafariで最新ページを開いてください。保存済みの家計データはそのままです。</p>'+
+    '</section>';
   }
   function pendingScreen(){const sim=ui.tab==='sim';return '<section class="screen">'+empty(sim?'∿':'▦',sim?'人生設計はフェーズ2':'スケジュールはフェーズ3',sim?'貯金推移・住宅ローン・教育費をステップ式で追加予定です。':'内見カレンダー・リマインド通知を追加予定です。')+'</section>';}
   function overlay(){return ui.overlay==='detail'?detailScreen():ui.overlay==='form'?propertyForm():ui.overlay==='list'?listScreen():ui.overlay==='search'?searchScreen():ui.overlay==='settings'?settingsScreen():ui.overlay==='choose'?choosePropertiesScreen():ui.overlay==='criteria'?criteriaScreen():ui.overlay==='criterion-form'?criterionForm():ui.overlay==='rating'?ratingScreen():ui.overlay==='question'?questionForm():ui.overlay==='meeting-form'?meetingForm():ui.overlay==='study'?studyScreen():ui.overlay==='study-form'?studyForm():ui.overlay==='study-digest'?studyDigestScreen():'';}

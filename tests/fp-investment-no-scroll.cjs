@@ -49,7 +49,7 @@ const browserCode=[
  'first:r(q(".fp-breakdown-row:first-child")),second:r(q(".fp-breakdown-row:nth-child(2)")),',
  'category:q(".fp-breakdown-panel")?.dataset.fpCategory,',
  'listScroll:q(".fp-breakdown-list")?.scrollHeight,listClient:q(".fp-breakdown-list")?.clientHeight,',
- 'nav:r(q("nav.bottom"))};'
+ 'nav:r(q("nav.bottom"))};',
  'document.documentElement.setAttribute("data-layout",encodeURIComponent(JSON.stringify(m)));',
  '});</script>'
 ].join('');

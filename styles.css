@@ -4293,3 +4293,42 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 }
 #app .fp-focus .fp-breakdown-panel > .fp-breakdown-list > .fp-breakdown-row > .fp-row-label{font-size:8px!important}
 #app .fp-focus .fp-breakdown-panel > .fp-breakdown-list > .fp-breakdown-row > strong{font-size:9px!important}
+
+
+/* FP r38: Fix monthly donut to a constant diameter and top position.
+   The 4-column detail grid, label alignment, and row pitch are untouched.
+   Previously r36 flex:1 enlarged the pie whenever the detail card was short. */
+#app .fp-focus .fp-month-report:has(>.fp-month-pie) > .fp-month-pie{
+  flex:0 0 114px!important;
+  height:114px!important;
+  min-height:114px!important;
+  max-height:114px!important;
+  grid-template-columns:minmax(82px,38%) minmax(0,1fr)!important;
+  align-items:center!important;
+  overflow:hidden!important;
+}
+#app .fp-focus .fp-month-report:has(>.fp-month-pie) > .fp-month-pie > .fp-month-donut{
+  display:block!important;
+  flex:none!important;
+  width:114px!important;
+  height:114px!important;
+  min-width:114px!important;
+  min-height:114px!important;
+  max-width:114px!important;
+  max-height:114px!important;
+  align-self:center!important;
+  justify-self:start!important;
+}
+@media(max-height:800px){
+  #app .fp-focus .fp-month-report:has(>.fp-month-pie) > .fp-month-pie{
+    flex-basis:96px!important;
+    height:96px!important;
+    min-height:96px!important;
+    max-height:96px!important;
+  }
+  #app .fp-focus .fp-month-report:has(>.fp-month-pie) > .fp-month-pie > .fp-month-donut{
+    width:96px!important;height:96px!important;
+    min-width:96px!important;min-height:96px!important;
+    max-width:96px!important;max-height:96px!important;
+  }
+}

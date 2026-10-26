@@ -1,5 +1,5 @@
 // FP r18: monthly / annual surplus must be relative to income.
-// Interest-inclusive displayed cost = down payment + all scheduled payments.
+// Interest-inclusive displayed cost = all scheduled payments with zero down payment.
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
@@ -21,7 +21,7 @@ vm.runInNewContext(script,{document:{getElementById(){return app}},window:win,
 const api=win.__surplusTest,p=api.state.plan;
 Object.assign(p,{children:0,husbandMonthly:40,wifeMonthly:30,wifeReduced:20,husbandBonus:0,wifeBonus:0,
  foodMonthly:3.5,livingMonthly:7,purchaseYear:2028,purchaseMonth:9,
- propertyPrice:4400,downPayment:100,interest:1.5,loanYears:35,
+ propertyPrice:4400,downPayment:0,interest:1.5,loanYears:35,
  otherSavingsMonthly:3,otherInvestMonthly:0,nisaMonthly:3,
  weddingCost:0,honeymoonCost:0,events:[],expenses:[]});
 const budget=api.fpBudget(),payments=Math.max(12,Math.round(budget.loanYears*12)),
@@ -40,11 +40,12 @@ assert.ok(interest>0,'loan total includes interest at positive APR');
 assert.ok(card.includes('維持費・諸費用'),'non-loan costs are explicitly excluded');
 assert.ok(card.includes('金利一定'),'full-term payment assumes constant interest');
 assert.ok(card.includes(api.fpYen(budget.amount)));
-assert.ok(card.includes('頭金 '+api.fpYen(budget.downPayment)),'down payment shown as a condition');
+assert.ok(card.includes('全額借入'),'full borrowing shown as a condition');
 const selectedLoan=api.fpLoanSummary(4400),
-  propertyPayment=api.mortgageMonthly(4400,100,1.5,35),
-  propertyTotal=100+propertyPayment*35*12;
-assert.ok(selectedLoan.includes('（頭金込み総支払額 '+api.fpYen(propertyTotal)+'）'));
+  propertyPayment=api.mortgageMonthly(4400,0,1.5,35),
+  propertyTotal=propertyPayment*35*12;
+assert.ok(selectedLoan.includes('ローン総返済額（利息込み）'));
+assert.ok(selectedLoan.includes(api.fpYen(propertyTotal)));
 p.interest=0;
 const noInterest=api.fpBudget(),
   noInterestCard=api.fpMortgageCapacityCard();

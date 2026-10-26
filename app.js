@@ -431,7 +431,7 @@
     ['収入・働き方','夫婦の手取りと賞与、時短後の収入'],
     ['毎月の家計','生活費・保険・通信・車などの支出'],
     ['子育てと教育','子どもの保険・保育料・生活費'],
-    ['住まいとローン','購入価格、頭金、金利、維持費'],
+    ['住まいとローン','購入価格・金利・維持費'],
     ['NISAと貯金','現在の資産と毎月の積立を分けて管理'],
     ['年払いと特別支出','税金・旅行・結婚式・追加費用']
   ];
@@ -532,8 +532,7 @@
         sSelect('登録物件から選択','propertyId',options),
         f('購入予定価格','propertyPrice','万円'),f('購入予定年','purchaseYear','年'),
         sSelect('購入予定月','purchaseMonth',Array.from({length:12},(_,i)=>[i+1,(i+1)+'月'])),
-        f('頭金','downPayment','万円')
-      ],'指定した購入月までは家賃、購入月から住宅ローン＋維持費に切り替えます。購入諸費用は物件価格の7％で仮計算。'));
+      ],'指定した購入月までは家賃、購入月から住宅ローン＋維持費に切り替えます。物件価格は全額借入。購入諸費用は物件価格の7％で仮計算。'));
       pages.push(fpCompactPage('住宅ローン・維持費',[
         f('金利（仮定）','interest','％'),f('返済期間','loanYears','年'),
         f('固定資産税・修繕等','housingOngoing'),
@@ -541,36 +540,34 @@
       ],'税金・修繕費と火災保険は重複入力しないでください。'));
     }
     if(i===5){
-      pages.push(fpCompactPage('現在の貯金と資産',[
-        f('現在の普通預金など','cashSavings','万円'),
-        f('今後受け取る援助','support','万円'),
-        f('現在のNISA評価額','nisaBalance','万円'),
-        f('その他投資の残高','investBalance','万円')
-      ]));
-      pages.push(fpCompactPage('毎月の貯蓄・積立',[
-        f('毎月NISAへ積立','nisaMonthly'),
-        f('その他投資の積立','otherInvestMonthly'),
-        f('現金貯金目標','otherSavingsMonthly'),
-        f('運用利回り（仮定）','returnAnnual','％/年'),
+      // Current balance, manual savings, and reverse-calculated goals share tabs.
+      pages.push(fpCompactPage('現金・貯金',[
+        f('預貯金残高','cashSavings','万円'),
+        f('これからの援助','support','万円'),
+        f('毎月の現金貯金目標','otherSavingsMonthly'),
         f('毎月の余裕費','cashBufferMonthly')
-      ],'目標設定を有効にしない場合は手入力の月額を使用します。'));
-      pages.push(fpCompactPage('NISAの積立目標',[
-        sSelect('計算方法','goalNisaEnabled',[[0,'月額を手入力'],[1,'目標から逆算']]),
-        f('目標金額','goalNisaAmount','万円'),f('何年後に達成？','goalNisaYears','年'),
+      ],'現金貯金目標は支出に含めません。'));
+      pages.push(fpCompactPage('NISA｜積立・目標',[
+        f('現在のNISA評価額','nisaBalance','万円'),
+        f('毎月積立（手入力）','nisaMonthly'),
+        sSelect('積立の決め方','goalNisaEnabled',[[0,'月額を入力'],[1,'目標から逆算']]),
+        f('目標額','goalNisaAmount','万円'),
+        f('達成まで','goalNisaYears','年'),
         f('想定利回り','returnAnnual','％/年')
-      ],'毎月末積立と複利の仮定です。NISAに元本保証はなく、利回りは確約されません。',
+      ],'目標から逆算した月額を家計予測に反映します。',
         fpGoalPreview(fpEffectiveNisaMonthly(p),
-          safeNum(p.goalNisaYears)+'年後・目標 '+fpYen(safeNum(p.goalNisaAmount))+
-            '／現在 '+fpYen(safeNum(p.nisaBalance)),
-          Number(p.goalNisaEnabled)===1?'逆算した月額を家計予測に反映します。':'現在は手入力の月額です。')));
-      pages.push(fpCompactPage('その他投資の積立目標',[
-        sSelect('計算方法','goalOtherEnabled',[[0,'月額を手入力'],[1,'目標から逆算']]),
-        f('目標金額','goalOtherAmount','万円'),f('何年後に達成？','goalOtherYears','年')
-      ],'その他投資はNISAと同じ想定利回りで逆算します。',
+          safeNum(p.goalNisaYears)+'年後・目標 '+fpYen(safeNum(p.goalNisaAmount)),
+          '元本保証なし。利回りは仮定です。'));
+      pages.push(fpCompactPage('その他投資｜積立・目標',[
+        f('現在の評価額','investBalance','万円'),
+        f('毎月積立（手入力）','otherInvestMonthly'),
+        sSelect('積立の決め方','goalOtherEnabled',[[0,'月額を入力'],[1,'目標から逆算']]),
+        f('目標額','goalOtherAmount','万円'),
+        f('達成まで','goalOtherYears','年')
+      ],'利回りはNISA画面と共通です。',
         fpGoalPreview(fpEffectiveOtherInvestMonthly(p),
-          safeNum(p.goalOtherYears)+'年後・目標 '+fpYen(safeNum(p.goalOtherAmount))+
-            '／現在 '+fpYen(safeNum(p.investBalance)),
-          Number(p.goalOtherEnabled)===1?'逆算した月額を家計予測に反映します。':'現在は手入力の月額です。')));
+          safeNum(p.goalOtherYears)+'年後・目標 '+fpYen(safeNum(p.goalOtherAmount)),
+          '目標から逆算した月額を家計予測に反映します。'));
     }
     if(i===6){
       pages.push(fpCompactPage('年払いの支出',[
@@ -632,8 +629,8 @@
     const p=state.plan,pages=fpWizardPages(i);
     ui.simSubPage=Math.max(0,Math.min(pages.length-1,Number(ui.simSubPage)||0));
     const n=ui.simSubPage;
-    const labels=i===2?['食費・住居','水道光熱','日常費','保険等']:i===3?['教育費',...Array.from({length:Math.min(3,Math.round(safeNum(p.children)))},(_,k)=>'第'+(k+1)+'子')]:i===4?['購入','維持費']:i===5?['資産','積立','NISA','その他']:null;
-    return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR / r20</span>'+
+    const labels=i===2?['食費・住居','水道光熱','日常費','保険等']:i===3?['教育費',...Array.from({length:Math.min(3,Math.round(safeNum(p.children)))},(_,k)=>'第'+(k+1)+'子')]:i===4?['購入','維持費']:i===5?['現金','NISA','その他投資']:null;
+    return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP</span>'+
       (p.hasRun?'<button class="fp-recall-btn" data-act="fp-view-budget">前回の診断を見る ↗</button>':'<span class="sim-progress-text">'+(i+1)+' / 7</span>')+
       '</div><div class="sim-progress">'+Array.from({length:7},(_,x)=>'<span class="'+(x<=i?'filled':'')+'"></span>').join('')+'</div>'+
       '<div class="sim-question"><h2>'+simQuestions[i][0]+'</h2><p>'+simQuestions[i][1]+'</p></div>'+
@@ -783,9 +780,9 @@
   function fpAmortization(price,rateShift=0){
     const p=state.plan,years=Math.max(1,Math.round(safeNum(p.loanYears,35))),
       start=Math.round(safeNum(p.purchaseYear,simNowYear()+2)),startMonth=fpPurchaseMonth(),
-      principal=Math.max(0,safeNum(price)-safeNum(p.downPayment)),
+      principal=Math.max(0,safeNum(price)-0),
       interestRate=safeNum(p.interest)+rateShift,rate=interestRate/1200,
-      payment=mortgageMonthly(price,p.downPayment,interestRate,years);
+      payment=mortgageMonthly(price,0,interestRate,years);
     let balance=principal;
     const months=[],yearsMap=new Map();
     for(let i=0;i<years*12&&balance>1e-9;i++){
@@ -848,7 +845,7 @@
         if(age===0)birth+=50;
         school+=educationAnnual(age,p);
       }
-      const upfront=buy&&year===purchaseYear?safeNum(p.downPayment)+safeNum(price)*.07:0;
+      const upfront=buy&&year===purchaseYear?0+safeNum(price)*.07:0;
       const events=fpEventsAnnual(year,'expense');
       const expenses=monthly*12+annualFixed+school+birth+upfront+events;
       const nisaAdd=12*fpNisaForYear(year,p),otherAdd=12*fpOtherInvestForYear(year,p);
@@ -887,7 +884,7 @@
   function fpForecast(price,extraInterest=0){
     const p=state.plan,cost=Math.max(0,safeNum(price));
     const rate=Math.max(0,safeNum(p.interest)+extraInterest);
-    const payment=mortgageMonthly(cost,p.downPayment,rate,p.loanYears);
+    const payment=mortgageMonthly(cost,0,rate,p.loanYears);
     const income=safeNum(p.husbandMonthly)+(safeNum(p.children)>0
       ?Math.min(safeNum(p.wifeMonthly),safeNum(p.wifeReduced)):safeNum(p.wifeMonthly));
     const housing=payment+safeNum(p.housingOngoing);
@@ -895,7 +892,7 @@
     const recurring=fpSpendingMonthly(fpDecisionYear());
     const investing=fpNisaForYear(fpDecisionYear(),p)+fpOtherInvestForYear(fpDecisionYear(),p);
     const spendable=income-recurring-investing-housing;
-    const upfront=safeNum(p.downPayment)+cost*.07;
+    const upfront=0+cost*.07;
     const remaining=safeNum(p.cashSavings)+safeNum(p.support)-upfront;
     const reserve=6*(recurring+housing);
     return {price:cost,rate,payment,income,housing,ratio,spendable,upfront,remaining,reserve,recurring,investing};
@@ -911,13 +908,13 @@
       const r=Math.max(0,rate)/1200;
       return r===0?loanPayment*term:loanPayment*(1-Math.pow(1+r,-term))/r;
     };
-    const amount=Math.max(0,Math.floor((loanCap(safeNum(p.interest))+safeNum(p.downPayment))/50)*50);
-    const stressAmount=Math.max(0,Math.floor((loanCap(safeNum(p.interest)+1)+safeNum(p.downPayment))/50)*50);
+    const amount=Math.max(0,Math.floor((loanCap(safeNum(p.interest))+0)/50)*50);
+    const stressAmount=Math.max(0,Math.floor((loanCap(safeNum(p.interest)+1)+0)/50)*50);
     return {amount,stressAmount,monthlyIncome,housingLimit:monthlyIncome*.25,
       housingBudget:Math.max(0,cap),maintenance:safeNum(p.housingOngoing),
       cashflowHousingLimit:monthlyIncome-spending-investing-safeNum(p.cashBufferMonthly)-safeNum(p.otherSavingsMonthly),
       loanPrincipal:loanCap(safeNum(p.interest)),
-      downPayment:safeNum(p.downPayment),rate:safeNum(p.interest),loanYears:safeNum(p.loanYears,35),
+      downPayment:0,rate:safeNum(p.interest),loanYears:safeNum(p.loanYears,35),
       loanPayment,spending,investing,referenceYear:fpDecisionYear()};
   }
   // Households choose a safe payment budget; banks determine actual eligibility.
@@ -940,7 +937,7 @@
       '<strong>'+fpYen(b.amount)+'</strong>'+
       '<small class="fp-capacity-interest">（金利込み総支払額 '+fpYen(budgetTotal)+'）</small></div></div>'+
       '<div class="fp-capacity-conditions"><span>年利 '+yen(b.rate,2)+'%</span>'+
-      '<span>返済 '+Math.round(b.loanYears)+'年</span><span>頭金 '+fpYen(b.downPayment)+'</span></div>'+
+      '<span>返済 '+Math.round(b.loanYears)+'年</span><span>全額借入</span></div>'+
       '<div class="fp-capacity-example">'+
       '<div class="fp-capacity-example-main"><span>入力した物件 '+fpYen(price)+' の返済予測</span>'+
       '<strong>'+fpYen(selectedMonthly)+' / 月</strong></div>'+
@@ -964,7 +961,7 @@
       level='warn';label='家計確認';reason='毎月の保険・子育て・積立を引くと、余裕費が不足します。';
     }
     if(info.remaining<0&&level==='good'){
-      level='warn';label='資金確認';reason='月々は目安内ですが、頭金・購入諸費用の現金が不足します。';
+      level='warn';label='資金確認';reason='月々は目安内ですが、住宅購入諸費用の現金が不足します。';
     }
     return {...info,budget,stressed,level,label,reason,monthlyDelta:stressed.payment-info.payment};
   }
@@ -985,7 +982,7 @@
       {step:5,page:1,limit:100,keys:[['nisaMonthly','NISA積立'],['otherInvestMonthly','その他の投資'],['otherSavingsMonthly','現金貯金目標'],['cashBufferMonthly','余裕費']]},
       {step:6,page:0,limit:1200,keys:[['annualTax','年払い税金'],['carTaxAnnual','自動車税'],['travelAnnual','旅行・帰省'],['annualEvents','年内イベント']]},
       {step:6,page:1,limit:3000,keys:[['weddingCost','結婚式自己負担'],['honeymoonCost','新婚旅行費']]},
-      {step:4,page:0,limit:100000,keys:[['propertyPrice','物件価格'],['downPayment','頭金']]},
+      {step:4,page:0,limit:100000,keys:[['propertyPrice','物件価格']]},
       {step:5,page:0,limit:100000,keys:[['cashSavings','預貯金'],['support','援助'],['nisaBalance','NISA評価額'],['investBalance','その他投資残高']]}
     ];
     for(const group of groups)for(const [key,label] of group.keys){
@@ -1024,15 +1021,15 @@
       return '<div class="fp-repayment-card"><div class="fp-repayment-eyebrow">住宅ローンの返済額</div>'+
         '<div class="fp-repayment-terms">金利・返済年数を確認してください</div></div>';
     const years=Math.max(1,Math.min(50,safeNum(p.loanYears,35))),
-      principal=Math.max(0,safeNum(price)-safeNum(p.downPayment)),
-      rate=safeNum(p.interest),payment=mortgageMonthly(price,p.downPayment,rate,years);
+      principal=Math.max(0,safeNum(price)-0),
+      rate=safeNum(p.interest),payment=mortgageMonthly(price,0,rate,years);
     return '<div class="fp-repayment-card">'+
       '<div class="fp-repayment-eyebrow">住宅ローンの毎月返済（元利均等）</div>'+
       '<div class="fp-repayment-value">'+fpYen(payment)+'<span>/ 月</span></div>'+
       '<div class="fp-repayment-terms">借入 '+fpYen(principal)+'　｜　'+yen(years,0)+'年ローン　｜　年利 '+yen(rate,2)+'%</div>'+
       '<div class="fp-repayment-detail"><span>住居維持費を加えると</span><strong>'+fpYen(payment+safeNum(p.housingOngoing))+' / 月</strong></div>'+
       '<div class="fp-repayment-detail"><span>ローン総返済額（利息込み）</span><strong>'+fpYen(payment*Math.round(years*12))+'</strong></div>'+
-      '<div class="fp-repayment-note">（頭金込み総支払額 '+fpYen(payment*Math.round(years*12)+Math.min(safeNum(price),safeNum(p.downPayment)))+'）</div>'+
+      '<div class="fp-repayment-note">全額借入・購入諸費用は別途</div>'+
       '<div class="fp-repayment-note">ボーナス返済なし・金利一定。固定資産税・火災保険などは別途。</div></div>';
   }
   function fpBadgeClass(level){return level==='good'?'fp-good':level==='warn'?'fp-warn':'fp-bad';}
@@ -1081,7 +1078,7 @@
       if((x.start&&year<x.start)||(x.end&&year>x.end))continue;
       result.push({label:x.name,amount:safeNum(x.amount)*(x.cycle==='year'?1:12)});
     }
-    result.push({label:'頭金・購入諸費用',amount:point.upfront});
+    result.push({label:'住宅購入諸費用',amount:point.upfront});
     for(const event of fpEventsForYear(year))if(event.type==='expense')result.push({label:event.name,amount:safeNum(event.amount)});
     return result.filter(x=>x.amount>0).sort((a,b)=>b.amount-a.amount);
   }
@@ -1268,7 +1265,7 @@
       if(annual)for(const child of fpSchoolBreakdown(year,p)){
         add('第'+child.index+'子 '+child.stage+'（'+child.age+'歳）',child.annual,{editStep:'3:0'});
       }
-      if(annual || month.month===fpPurchaseMonth())add('頭金・住宅購入諸費用',point.upfront,{editStep:'4:0'});
+      if(annual || month.month===fpPurchaseMonth())add('住宅購入諸費用',point.upfront,{editStep:'4:0'});
       for(const item of fpEventsForYear(year)){
         if(item.type!=='expense')continue;
         const eventAmount=annual?safeNum(item.amount):
@@ -1344,8 +1341,7 @@
     return '<section class="fp-breakdown-panel" data-fp-inline-breakdown data-fp-category="'+item.id+'" aria-label="'+esc(item.label)+'の内訳">'+
       '<div class="fp-breakdown-title"><span>'+esc(item.label)+'の内訳</span>'+
       '<strong>'+fpYen(item.amount)+'</strong>'+
-      '<small class="fp-breakdown-meta">収入比 '+(percentage===null?'—':yen(percentage,1)+'%')+
-        '　・　'+rows.length+'項目</small>'+
+      '<small class="fp-breakdown-meta">'+rows.length+'項目</small>'+
       schoolContext+'</div>'+
       '<div class="fp-breakdown-list'+density+(dense?' fp-breakdown-dense':'')+
         '" data-fp-cols="'+cols+'" data-fp-rows="'+gridRows+
@@ -1419,10 +1415,10 @@
     const arcs=fpPieArcs(data.items,total,68,29,'annual',chosen);
     const percent=data.expensePercent===null?'—':yen(data.expensePercent,1)+'%';
     const outflowPercent=data.percent===null?'—':yen(data.percent,1)+'%';
-    return '<div class="fp-pie-figure"><svg viewBox="0 0 210 210" class="fp-pie-chart" role="img" aria-label="年間手取りに対する支出率：'+esc(percent)+'">'+
+    return '<div class="fp-pie-figure"><svg viewBox="18 18 174 174" class="fp-pie-chart" role="img" aria-label="年間手取りに対する支出率：'+esc(percent)+'">'+
       '<circle cx="105" cy="105" r="68" fill="none" stroke="#ecf0f2" stroke-width="29"/>'+
       arcs+'<text x="105" y="100" text-anchor="middle" font-size="26" font-weight="800" fill="#283a4b">'+esc(percent)+'</text>'+
-      '<text x="105" y="124" text-anchor="middle" font-size="11" fill="#758391">支出率（積立を除く）</text></svg>'+
+      '<text x="105" y="124" text-anchor="middle" font-size="11" fill="#758391">支出率</text></svg>'+
       '<div class="fp-pie-key">'+data.items.map(x=>fpPiePick(x,'annual',chosen)).join('')+'</div></div>'+
       '<div class="fp-pie-totals"><span>年間手取り＋給付金 <strong>'+fpYen(data.income)+'</strong></span>'+
       '<span>年間支出＋投資積立 <strong>'+fpYen(data.spent)+'</strong></span></div>'+
@@ -1434,7 +1430,7 @@
     if(choice===3){
       const selected=fpYearPoint(current);
       return '<div class="fp-r-body grow fp-pie-panel"><div class="fp-pie-panel-head"><strong class="fp-r-subhead">収入に対する支出割合・'+selected.year+'年</strong>'+
-         '<span class="fp-breakdown-hint">色をタップすると下の内訳が切り替わります</span></div>'+
+         '<span class="fp-breakdown-hint">色で内訳を選択</span></div>'+
          fpPieChart(selected)+'</div>';
     }
     if(choice===0){
@@ -1475,11 +1471,11 @@
       totalOutflow=spent+investing,remaining=Math.max(0,month.net),over=Math.max(0,-month.net);
     return {income,spent,investing,remaining,over,total:Math.max(1,income,totalOutflow),
       percent:income>0?spent/income*100:null,items:[
-        {id:'living',label:'生活費・子ども費',amount:living,color:'#6b9eaf'},
-        {id:'housing',label:'ローン・住居費',amount:housing,color:'#2767ae'},
-        {id:'education',label:'特別支出',amount:events,color:'#d9a164'},
+        {id:'living',label:'生活・子ども',amount:living,color:'#6b9eaf'},
+        {id:'housing',label:'住居費',amount:housing,color:'#2767ae'},
+        {id:'education',label:'臨時支出',amount:events,color:'#d9a164'},
         {id:'investing',label:'投資積立',amount:investing,color:'#729477'},
-        {id:'remaining',label:'現金の残り',amount:remaining,color:remaining>0?'#2aa78b':'#d5dde2'}
+        {id:'remaining',label:'現金残',amount:remaining,color:remaining>0?'#2aa78b':'#d5dde2'}
       ]};
   }
 
@@ -1489,12 +1485,12 @@
     const data=fpMonthlyAllocation(month),chosen=ui.fpBreakdownMonthly||'living',
       percent=data.percent===null?'—':yen(data.percent,1)+'%';
     return '<div class="fp-month-pie" data-fp-month-pie>'+
-      '<svg viewBox="0 0 210 210" class="fp-month-donut" role="img" aria-label="'+
+      '<svg viewBox="18 18 174 174" class="fp-month-donut" role="img" aria-label="'+
          month.year+'年'+month.month+'月の手取り収入に対する支出割合：'+esc(percent)+'">'+
       '<circle cx="105" cy="105" r="67" stroke="#ecf0f2" stroke-width="28" fill="none"/>'+
       fpPieArcs(data.items,data.total,67,28,'monthly',chosen)+
       '<text x="105" y="101" text-anchor="middle" font-size="28" font-weight="800" fill="#283a4b">'+esc(percent)+'</text>'+
-      '<text x="105" y="122" text-anchor="middle" font-size="10" fill="#758391">月の支出率</text></svg>'+
+      '<text x="105" y="122" text-anchor="middle" font-size="10" fill="#758391">支出率</text></svg>'+
       '<div class="fp-month-pie-legend">'+data.items.map(x=>fpPiePick(x,'monthly',chosen)).join('')+'</div></div>'+
       fpPieBreakdownPanel(point,month,data.items,chosen)+
       (data.percent===null?'<p class="fp-month-pie-note">手取り収入が0円のため、支出率は算出できません。</p>':'');
@@ -1580,7 +1576,7 @@
         '<span><em class="fp-balance-chip">'+fpBalanceLabel(selected.net)+'</em> '+
           point.year+'年'+month+'月 ・ 今月の現金収支</span>'+
         '<strong class="'+fpBalanceTone(selected.net)+'">'+fpSignedYen(selected.net)+'</strong></div>'+
-        '<div><span aria-label="手取り収入に対する割合">手取りに対する現金収支率</span><strong class="fp-surplus-percent '+fpBalanceTone(selected.net)+'">'+surplusPct+'</strong>'+
+        '<div><span aria-label="手取り収入に対する割合">手取り比</span><strong class="fp-surplus-percent '+fpBalanceTone(selected.net)+'">'+surplusPct+'</strong>'+
         '<small>積立前 '+fpSignedYen(selected.income-selected.spending)+'</small>'+
         '<small>月末現金 '+fpYen(selected.endingCash)+'</small></div></div>'+
       '<div class="fp-month-summary" aria-label="月の収支計算">'+
@@ -1590,7 +1586,7 @@
       quick+fpEducationInsuranceCard(point.year)+
       (isPie?fpMonthlyPie(selected,point):'<div class="fp-cash-rows">'+
         row('生活費・保険など',selected.household)+
-        row('ローン・住居費',selected.housing)+
+        row('住居費',selected.housing)+
         row('年払・子ども教育費',selected.annualBudget)+
         row('特別支出・購入費',selected.eventExpenses+selected.purchase)+
         row('NISAなどの投資積立',selected.nisaAdd+selected.otherAdd)+'</div>')+
@@ -1621,7 +1617,7 @@
         item('その他の株式・投資',selected.otherInvest,monthly?monthlyAsset.otherChange:yearAsset.otherChange)+
         '<div class="fp-asset-tile total"><span>金融資産の合計</span><strong>'+fpYen(selected.total)+'</strong>'+
         '<small>現金＋NISA＋その他投資</small></div></div>'+
-      '<div class="fp-goal-assets-action"><button data-act="fp-goal-investment-edit">目標額・何年後かを編集 ↗</button></div>'+
+      '<div class="fp-goal-assets-action"><button data-act="fp-goal-investment-edit">積立・目標を編集 ↗</button></div>'+
       '<p class="fp-r-help">NISAの積立 '+fpYen(fpNisaForYear(point.year,state.plan))+'/月、その他投資 '+fpYen(fpOtherInvestForYear(point.year,state.plan))+
         '/月。折れ線は年末残高。投資の月末評価額は年率の仮定から近似計算、時価実績ではありません。住宅価値とローン残債は含みません。</p></div>';
   }
@@ -1675,7 +1671,7 @@
     if(mode===1){
       const n=loan.years*12,r=loan.rate/1200;
       return '<div class="fp-r-body grow">'+fpCalcRows([
-        ['物件価格',fpYen(price)],['頭金',fpYen(safeNum(p.downPayment))],
+        ['物件価格',fpYen(price)],
         ['借入元金',fpYen(loan.principal)],['返済期間',loan.years+'年 × 12か月'],
         ['想定金利',yen(loan.rate,2)+'％/年'],['ローン月額',fpYen(loan.monthly)],
         ['ローン総返済',fpYen(loan.monthly*n)]
@@ -1747,7 +1743,7 @@
     const p=state.plan,price=safeNum(p.propertyPrice),current=modelYears(price,true),rent=modelYears(price,false),
       budget=fpBudget(),rating=fpRating(price),warnings=fpPlanWarnings(),
       page=Math.min(6,Math.max(0,ui.simResultPage||0));
-    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r20</span>'+
+    const intro='<div class="sim-intro"><span class="kicker">FP</span>'+
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button></div></div>';
@@ -2148,7 +2144,7 @@
       }else message('この環境ではコピーできません');
       return;
     }
-    if(action==='fp-goal-investment-edit')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=5;ui.simSubPage=2;});
+    if(action==='fp-goal-investment-edit')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=5;ui.simSubPage=1;});
     if(action==='fp-goal-education-edit')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=3;ui.simSubPage=1;});
     if(action==='fp-form-page')return step(()=>{ui.simSubPage=Math.max(0,Math.min(fpWizardPages(ui.simStep).length-1,Number(v)||0));});
     if(action==='fp-ledger-page')return step(()=>{ui.fpLedgerPage=Math.max(0,Number(v)||0);});

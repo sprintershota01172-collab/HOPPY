@@ -9,6 +9,9 @@
   const digits = new Intl.NumberFormat('ja-JP');
   const fpYen = value => digits.format(Math.round((Number(value)||0)*10000))+'円';
   const fpYenNumber = value => Math.round((Number(value)||0)*10000);
+  const fpSignedYen = value => (Number(value)>0?'+':'')+fpYen(value);
+  const fpBalanceTone = value => Number(value)<0?'negative':Number(value)>0?'positive':'neutral';
+  const fpBalanceLabel = value => Number(value)<0?'赤字':Number(value)>0?'黒字':'収支±0';
   const app = document.getElementById('app');
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   const uid = () => (window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
@@ -541,7 +544,7 @@
     ui.simSubPage=Math.max(0,Math.min(pages.length-1,Number(ui.simSubPage)||0));
     const n=ui.simSubPage;
     const labels=i===2?['食費・住居','水道光熱','日常費','保険等']:i===4?['購入','維持費']:i===5?['資産','積立']:null;
-    return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR / r19</span>'+
+    return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP • LIFE SIMULATOR / r20</span>'+
       (p.hasRun?'<button class="fp-recall-btn" data-act="fp-view-budget">前回の診断を見る ↗</button>':'<span class="sim-progress-text">'+(i+1)+' / 7</span>')+
       '</div><div class="sim-progress">'+Array.from({length:7},(_,x)=>'<span class="'+(x<=i?'filled':'')+'"></span>').join('')+'</div>'+
       '<div class="sim-question"><h2>'+simQuestions[i][0]+'</h2><p>'+simQuestions[i][1]+'</p></div>'+
@@ -974,8 +977,9 @@
     for(const event of fpEventsForYear(year))if(event.type==='expense')result.push({label:event.name,amount:safeNum(event.amount)});
     return result.filter(x=>x.amount>0).sort((a,b)=>b.amount-a.amount);
   }
-  function fpMetric(label,value){
-    return '<div class="fp-r-metric"><span>'+esc(label)+'</span><strong>'+value+'</strong></div>';
+  function fpMetric(label,value,tone=''){
+    return '<div class="fp-r-metric"><span>'+esc(label)+'</span><strong class="'+
+      (tone==='negative'?'fp-amount-negative':tone==='positive'?'fp-amount-positive':'')+'">'+value+'</strong></div>';
   }
   function fpMonthlyLedger(point){
     const p=state.plan,inc=fpYearlyIncome(point.year).months,expenseEvents=fpEventsForYear(point.year)
@@ -1317,8 +1321,9 @@
       '<p class="fp-r-help">元利均等、当初金利が期間中一定の場合の返済予定。繰上返済なし。</p></div>';
   }
   function fpCalcRows(rows){
-    return '<div class="fp-r-rows">'+rows.map(([label,value])=>
-      '<div><span>'+esc(label)+'</span><strong>'+value+'</strong></div>').join('')+'</div>';
+    return '<div class="fp-r-rows">'+rows.map(([label,value,tone])=>
+      '<div><span>'+esc(label)+'</span><strong class="'+(tone==='negative'?'fp-amount-negative':
+        tone==='positive'?'fp-amount-positive':'')+'">'+value+'</strong></div>').join('')+'</div>';
   }
   function fpMonthlyAllocation(month){
     const income=Math.max(0,month.income),living=Math.max(0,month.household+month.annualBudget),
@@ -1351,14 +1356,36 @@
       fpPieBreakdownPanel(point,month,data.items,chosen)+
       (data.percent===null?'<p class="fp-month-pie-note">手取り収入が0円のため、支出率は算出できません。</p>':'');
   }
+  // One insurance contract's monthly premium is a cashflow expense while a
+  // future maturity payout is unknown. Never add projected premiums to assets.
+  function fpEducationInsuranceCard(year){
+    const p=state.plan,each=safeNum(p.childEducationInsuranceMonthly),
+      kids=Math.min(3,Math.max(0,Math.round(safeNum(p.children)))),
+      active=fpChildCounts(year).educationInsured,
+      current=active*each,planned=kids*each,
+      paidIn=each*12*18;
+    return '<section class="fp-education-card" aria-label="学資保険の月額と払込計画">'+
+      '<label class="fp-education-edit"><span>学資保険 <small>1人あたり</small></span>'+
+      '<span class="fp-education-input"><input type="number" data-fp-edu-insurance="true" '+
+        'min="0" max="1000000" step="1" inputmode="numeric" value="'+fpYenNumber(each)+
+        '" aria-label="学資保険の1人あたり月額保険料（円）"><small>円/月</small></span></label>'+
+      '<div class="fp-education-out"><span>'+year+'年の払込：'+active+'人分</span>'+
+      '<strong>'+fpYen(current)+' / 月</strong>'+
+      '<small>予定'+kids+'人の合計：'+fpYen(planned)+' / 月</small></div>'+
+      '<p class="fp-education-footnote">'+
+      '18歳までの払込概算：1人 '+fpYen(paidIn)+'（216か月）。満期受取金は含めません。'+
+      (kids>0&&active===0?' 出生予定年以降に支出計上。':'')+
+      '</p></section>';
+  }
   // Surplus is the cash remaining after expenditure and NISA transfers.
   function fpSurplusStrip(income,net,label){
     const ratio=income>0?net/income*100:null,
       positive=net>=0,percent=ratio===null?'—':(ratio>0?'+':'')+yen(ratio,1)+'%';
-    return '<div class="fp-surplus-strip '+(positive?'positive':'negative')+'" aria-label="'+esc(label)+'の'+
-      (positive?'収支プラス':'収支マイナス')+' '+fpYen(Math.abs(net))+'">'+
-      '<span>'+esc(label)+'：'+(positive?'収入から残るプラス':'収入に対する不足')+'</span>'+
-      '<strong>'+(net>0?'+':'')+fpYen(net)+'</strong>'+
+    return '<div class="fp-surplus-strip '+fpBalanceTone(net)+'" aria-label="'+esc(label)+'の'+
+      fpBalanceLabel(net)+' '+fpYen(Math.abs(net))+'">'+
+      '<span><em class="fp-balance-chip">'+fpBalanceLabel(net)+'</em> '+esc(label)+'：'+
+        (positive?'収入から残るプラス':'収入に対する不足')+'</span>'+
+      '<strong>'+fpSignedYen(net)+'</strong>'+
       '<b>手取り比 '+percent+'</b>'+
       '<small>手取り収入 − 支出 − NISA等の積立</small></div>';
   }
@@ -1388,15 +1415,17 @@
         '<div class="fp-month-switch" role="group" aria-label="月収支の表示形式">'+
           '<button data-act="fp-month-view" data-value="pie" class="'+(isPie?'active':'')+'">円グラフ</button>'+
           '<button data-act="fp-month-view" data-value="detail" class="'+(!isPie?'active':'')+'">明細</button></div></div>'+
-      '<div class="fp-month-hero fp-month-surplus"><div><span>'+point.year+'年 '+month+'月 ・ '+(selected.net>=0?'収入から残るプラス':'収入に対する不足')+'</span>'+
-        '<strong class="'+(selected.net<0?'negative':'positive')+'">'+(selected.net>0?'+':'')+fpYen(selected.net)+'</strong></div>'+
+      '<div class="fp-month-hero fp-month-surplus '+fpBalanceTone(selected.net)+'"><div>'+
+        '<span><em class="fp-balance-chip">'+fpBalanceLabel(selected.net)+'</em> '+
+          point.year+'年 '+month+'月 ・ '+(selected.net>=0?'収入から残るプラス':'収入に対する不足')+'</span>'+
+        '<strong class="'+fpBalanceTone(selected.net)+'">'+fpSignedYen(selected.net)+'</strong></div>'+
         '<div><span>手取り収入に対する割合</span><strong class="fp-surplus-percent '+(selected.net<0?'negative':'positive')+'">'+surplusPct+'</strong>'+
         '<small>月末現金 '+fpYen(selected.endingCash)+'</small></div></div>'+
       '<div class="fp-month-summary">'+
         '<span>手取り <b>'+fpYen(selected.income)+'</b></span>'+
         '<span>支出 <b>'+fpYen(selected.spending)+'</b></span>'+
         '<span>投資積立 <b>'+fpYen(selected.investing)+'</b></span></div>'+
-      quick+
+      quick+fpEducationInsuranceCard(point.year)+
       (isPie?fpMonthlyPie(selected,point):'<div class="fp-cash-rows">'+
         row('生活費・保険など',selected.household)+
         row('住宅費',selected.housing)+
@@ -1413,8 +1442,8 @@
     const selected=monthly?monthlyAsset:yearAsset.point;
     const series=model.points.map(x=>({year:x.year,cash:x.cash,nisa:x.nisa,invest:x.otherInvest}));
     const item=(label,balance,diff)=>'<div class="fp-asset-tile"><span>'+esc(label)+'</span>'+
-      '<strong>'+fpYen(balance)+'</strong>'+
-      '<small class="'+(diff<0?'negative':'')+'">'+(monthly?'年初から ':'前年から ')+(diff>=0?'+':'')+fpYen(diff)+'</small></div>';
+      '<strong class="'+(balance<0?'fp-amount-negative':'')+'">'+fpYen(balance)+'</strong>'+
+      '<small class="'+fpBalanceTone(diff)+'">'+(monthly?'年初から ':'前年から ')+fpSignedYen(diff)+'</small></div>';
     return '<div class="fp-assets-report grow">'+
       '<div class="fp-assets-toolbar">'+fpYearSelect(model)+
       '<div class="fp-income-toggle"><button data-act="fp-asset-period" data-value="year" class="'+(!monthly?'active':'')+'">年末</button>'+
@@ -1475,8 +1504,8 @@
           ['期首現金残高',fpYen(opening)],['年間手取り＋給付',fpYen(point.incomes)],
           ['生活費・住居費・特別支出', '− '+fpYen(point.expenses)],
           ['NISA等への投資積立','− '+fpYen(point.investing)],
-          ['年間の現金増減',fpYen(point.netCash)],
-          ['期末現金残高',fpYen(point.cash)]
+          ['年間の現金増減',fpSignedYen(point.netCash),fpBalanceTone(point.netCash)],
+          ['期末現金残高',fpYen(point.cash),fpBalanceTone(point.cash)]
         ])+
         '<p class="fp-r-help">期末現金＝期首現金＋年間収入−年間支出−年間投資積立。預貯金・NISA評価額は別々に計算。</p></div>';
     }
@@ -1555,7 +1584,7 @@
     const p=state.plan,price=safeNum(p.propertyPrice),current=modelYears(price,true),rent=modelYears(price,false),
       budget=fpBudget(),rating=fpRating(price),warnings=fpPlanWarnings(),
       page=Math.min(6,Math.max(0,ui.simResultPage||0));
-    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r19</span>'+
+    const intro='<div class="sim-intro"><span class="kicker">FP • LIFE PLAN / r20</span>'+
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button></div></div>';
@@ -1595,8 +1624,8 @@
         '<div class="fp-r-compact-stats">'+
         fpMetric('月々の住居費',fpYen(rating.housing))+
         fpMetric('手取り負担率',yen(rating.ratio*100,1)+'％')+
-        fpMetric('毎月の現金貯金の余力',fpYen(rating.spendable))+
-        fpMetric('年末現金の最小値',fpYen(min.cash)+' ('+min.year+'年)')+'</div>'+
+        fpMetric('毎月の現金貯金の余力',fpSignedYen(rating.spendable),fpBalanceTone(rating.spendable))+
+        fpMetric('年末現金の最小値',fpYen(min.cash)+' ('+min.year+'年)',fpBalanceTone(min.cash))+'</div>'+
         '<button class="fp-pie-shortcut" data-act="fp-pie-open"><span class="fp-pie-mini" style="--pie-sweep:'+Math.min(100,Math.max(0,fpIncomeAllocation(fpYearPoint(current)).expensePercent||0))+'%"></span><span>収入に対する支出の割合</span><b>'+(fpIncomeAllocation(fpYearPoint(current)).expensePercent===null?'—':yen(fpIncomeAllocation(fpYearPoint(current)).expensePercent,1)+'%')+' ›</b></button>'+
         '<p class="fp-r-help">'+(negative?'注意：'+negative.year+'年に年末現金がマイナスになる試算です。':'この期間は年末現金のマイナスがありません。')+
         ' 手取り比率は家計の参考値で、融資審査基準とは異なります。</p></div>';
@@ -2255,6 +2284,19 @@
   app.addEventListener('change',async e=>{
     const el=e.target;
     if(el.dataset?.homeAxisMemo!==undefined){state.homeCriteriaMemo=String(el.value).slice(0,4000);save();return;}
+    if(el.dataset?.fpEduInsurance!==undefined){
+      const yenValue=Number(el.value);
+      if(!Number.isFinite(yenValue)||yenValue<0||yenValue>1000000){
+        message('学資保険の月額は0〜1,000,000円で入力してください');render();return;
+      }
+      if(!ui.fpHistoryLive){
+        const snapshot=fpLatestSnapshot();
+        if(snapshot)state.plan=JSON.parse(JSON.stringify(snapshot.plan));
+        ui.fpHistoryLive=true;
+      }
+      state.plan.childEducationInsuranceMonthly=yenValue/10000;
+      save();render();return;
+    }
     if(el.dataset?.fpQuickKey!==undefined){
       const key=el.dataset.fpQuickKey;
       if(!['freeSpendingMonthly','otherSavingsMonthly'].includes(key))return;

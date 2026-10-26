@@ -1445,6 +1445,23 @@
   // One insurance contract's monthly premium is a cashflow expense while a
   // future maturity payout is unknown. Never add projected premiums to assets.
   function fpEducationInsuranceCard(year){
+    const plan=state.plan,count=Math.min(3,Math.round(safeNum(plan.children)));
+    if(Array.from({length:count},(_,i)=>i+1).some(i=>fpEducationGoal(plan,i).enabled)){
+      const amount=fpEducationPremiumForYear(year,plan);
+      const rows=Array.from({length:count},(_,k)=>{
+        const goal=fpEducationGoal(plan,k+1);
+        return '<div class="fp-goal-child-line"><span>第'+(k+1)+'子　'+
+          (goal.enabled?(goal.age+'歳・'+goal.year+'年に'+fpYen(goal.target)):'手入力の学資保険')+
+          '</span><b>'+ (goal.enabled&&Number.isFinite(goal.monthly)?fpYen(goal.monthly):
+            fpYen(safeNum(plan.childEducationInsuranceMonthly))) +' / 月</b></div>';
+      }).join('');
+      return '<section class="fp-education-card fp-education-goals" aria-label="教育資金の積立目標">'+
+        '<div class="fp-goal-child-header"><strong>教育資金・学資保険</strong>'+
+        '<button data-act="fp-goal-education-edit">目標編集 ↗</button></div>'+
+        '<div class="fp-goal-child-current"><span>'+year+'年の教育積立</span><strong>'+
+          fpYen(amount)+' / 月</strong></div>'+rows+
+        '<p class="fp-education-footnote">目標からの逆算は積立原資の目安です。保険料や満期受取金の保証ではなく、満期金は金融資産に加算していません。</p></section>';
+    }
     const p=state.plan,each=safeNum(p.childEducationInsuranceMonthly),
       kids=Math.min(3,Math.max(0,Math.round(safeNum(p.children)))),
       active=fpChildCounts(year).educationInsured,
@@ -1545,6 +1562,7 @@
         item('その他の株式・投資',selected.otherInvest,monthly?monthlyAsset.otherChange:yearAsset.otherChange)+
         '<div class="fp-asset-tile total"><span>金融資産の合計</span><strong>'+fpYen(selected.total)+'</strong>'+
         '<small>現金＋NISA＋その他投資</small></div></div>'+
+      '<div class="fp-goal-assets-action"><button data-act="fp-goal-investment-edit">目標額・何年後かを編集 ↗</button></div>'+
       '<p class="fp-r-help">NISAの積立 '+fpYen(fpEffectiveNisaMonthly(state.plan))+'/月、その他投資 '+fpYen(fpEffectiveOtherInvestMonthly(state.plan))+
         '/月。折れ線は年末残高。投資の月末評価額は年率の仮定から近似計算、時価実績ではありません。住宅価値とローン残債は含みません。</p></div>';
   }
@@ -2071,6 +2089,8 @@
       }else message('この環境ではコピーできません');
       return;
     }
+    if(action==='fp-goal-investment-edit')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=5;ui.simSubPage=2;});
+    if(action==='fp-goal-education-edit')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=3;ui.simSubPage=1;});
     if(action==='fp-form-page')return step(()=>{ui.simSubPage=Math.max(0,Math.min(fpWizardPages(ui.simStep).length-1,Number(v)||0));});
     if(action==='fp-ledger-page')return step(()=>{ui.fpLedgerPage=Math.max(0,Number(v)||0);});
     if(action==='fp-issue-page')return step(()=>{ui.fpIssuePage=Math.max(0,Number(v)||0);});
@@ -2370,6 +2390,9 @@
   app.addEventListener('change',async e=>{
     const el=e.target;
     if(el.dataset?.homeAxisMemo!==undefined){state.homeCriteriaMemo=String(el.value).slice(0,4000);save();return;}
+    if(el.dataset?.sim && (/^goal/.test(el.dataset.sim)||el.dataset.sim==='returnAnnual')){
+      render();return;
+    }
     if(el.dataset?.fpEduInsurance!==undefined){
       const yenValue=Number(el.value);
       if(!Number.isFinite(yenValue)||yenValue<0||yenValue>1000000){

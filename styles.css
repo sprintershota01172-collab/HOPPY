@@ -2866,3 +2866,46 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .fp-month-surplus.neutral .fp-balance-chip{
   border-color:#ccdce4!important;background:#edf1f4!important;color:#3d5567!important;
 }
+
+
+/* Goal-first financial planning: compact, readable on a small iPhone. */
+.fp-goal-preview{
+  display:flex;flex-direction:column;gap:3px;
+  min-width:0;padding:9px 11px;margin-top:auto;
+  border:1px solid #c8ded4;border-radius:13px;
+  background:linear-gradient(115deg,#f0f7f2,#f9fcfa);
+  color:#1d5141;
+}
+.fp-goal-preview>span{font-size:10px;font-weight:750;line-height:1.2}
+.fp-goal-preview>strong{font-size:clamp(19px,5vw,28px);font-weight:900;line-height:1.1;letter-spacing:-.04em;overflow-wrap:anywhere}
+.fp-goal-preview>small{font-size:10px;font-weight:750;line-height:1.3;color:#3e6557}
+.fp-goal-preview>p{font-size:9px;line-height:1.35;color:#687d72;margin:0!important}
+.fp-education-card.fp-education-goals{
+  display:flex!important;flex-direction:column!important;gap:3px!important;
+  min-height:0!important;padding:6px 8px!important;
+}
+.fp-goal-child-header,.fp-goal-child-current,.fp-goal-child-line{
+  width:100%;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:5px;
+}
+.fp-goal-child-header>strong{font-size:10px;line-height:1.2;color:#275747}
+.fp-goal-child-header>button,.fp-goal-assets-action>button{
+  border:1px solid #c5ded2;border-radius:7px;background:#fff;
+  padding:3px 7px;color:#225b49;font-size:9px;font-weight:800;white-space:nowrap;
+}
+.fp-goal-child-current>span,.fp-goal-child-line>span{
+  font-size:9px;line-height:1.2;color:#4c6c5d;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.fp-goal-child-current>strong{font-size:12px;font-weight:850;color:#1d624b;white-space:nowrap}
+.fp-goal-child-line>b{font-size:10px;font-weight:800;color:#315e50;white-space:nowrap}
+.fp-education-goals>.fp-education-footnote{font-size:8px!important;line-height:1.2!important}
+.fp-goal-assets-action{display:flex;justify-content:flex-end;flex:none;min-height:22px}
+.fp-goal-assets-action>button{padding:4px 9px;font-size:10px}
+@media(max-height:740px){
+  .fp-goal-preview{padding:6px 8px;gap:2px}
+  .fp-goal-preview>strong{font-size:20px}
+  .fp-goal-preview>p{font-size:8px}
+  .fp-education-card.fp-education-goals{gap:2px!important;padding:4px 6px!important}
+  .fp-goal-child-line>span{font-size:8px}
+  .fp-goal-child-line>b{font-size:9px}
+}

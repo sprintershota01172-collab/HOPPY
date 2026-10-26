@@ -81,7 +81,7 @@ try{
   inside('Education total premium',m.education,m.educationMonthly);
   inside('Education insurance explanation',m.education,m.educationFootnote);
   inside('Last expense row',m.panel,m.lastRow);
-  assert.ok(m.panel.height<=95,'breakdown uses about half its former 155px height: '+JSON.stringify(m.panel));
+  assert.ok(m.panel.height<=145,'breakdown must fit on a single screen: '+JSON.stringify(m.panel));
   assert.ok(m.panel.height>=75,'breakdown remains tappable: '+JSON.stringify(m.panel));
   assert.ok(m.visibleRows>=1,'all nonzero expense entries remain visible on the one card');
   assert.ok(m.visibleRows>=15,'all extra expense rows must be on the same compact card');

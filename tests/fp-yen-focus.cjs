@@ -72,7 +72,7 @@ const densePoint=api.modelYears(p.propertyPrice,true).points.find(x=>x.year===20
   denseRows=api.fpPieBreakdownRows(densePoint,denseMonth,'living');
 const html=api.fpPieBreakdownPanel(densePoint,denseMonth,[{id:'living',label:'生活・教育費',amount:denseMonth.household}], 'living');
 assert.ok(denseRows.length>9);
-assert.match(html,/class="fp-breakdown-list two-columns"/);
+assert.match(html,/class="fp-breakdown-list two-columns three-columns"/);
 assert.equal((html.match(/data-act="fp-row-edit"/g)||[]).length,denseRows.length);
 const css=fs.readFileSync('styles.css','utf8');
 assert.match(css,/\.app-shell:has\(\.fp-focus\)>header.top\s*\{[^}]*display:none!important/);

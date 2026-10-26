@@ -1560,7 +1560,8 @@
         '<div class="fp-month-switch" role="group" aria-label="月収支の表示形式">'+
           '<button data-act="fp-month-view" data-value="pie" class="'+(isPie?'active':'')+'">円グラフ</button>'+
           '<button data-act="fp-month-view" data-value="detail" class="'+(!isPie?'active':'')+'">明細</button></div></div>'+
-      '<div class="fp-month-hero fp-month-surplus '+fpBalanceTone(selected.net)+'"><div>'+
+      '<div class="fp-month-hero fp-month-surplus '+fpBalanceTone(selected.net)+'" aria-label="'+
+        (selected.net>0?'収入から残るプラス':selected.net<0?'収入に対する不足':'収支差額ゼロ')+'"><div>'+
         '<span><em class="fp-balance-chip">'+fpBalanceLabel(selected.net)+'</em> '+
           point.year+'年'+month+'月 ・ 今月の現金収支</span>'+
         '<strong class="'+fpBalanceTone(selected.net)+'">'+fpSignedYen(selected.net)+'</strong></div>'+

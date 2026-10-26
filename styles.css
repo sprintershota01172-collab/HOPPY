@@ -2835,3 +2835,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .fp-education-out>strong{font-size:10px}
   .fp-education-out>small{font-size:7px}
 }
+
+
+/* Keep all entered expense rows visible at short iPhone heights even when the
+   education insurance strip is active. The pie legend already shows spending. */
+@media(max-height:800px){
+  .fp-focus .fp-month-summary{display:none!important}
+  .fp-focus .fp-month-surplus{
+    min-height:58px!important;padding:5px 8px!important;
+  }
+  .fp-focus .fp-education-card{padding:3px 5px!important}
+}

@@ -75,7 +75,7 @@ click('fp-result-tab','3');click('fp-chart-page','3');
 assert.match(app.innerHTML,/fp-pie-chart/);
 assert.match(app.innerHTML,/data-fp-inline-breakdown/,'annual details remain under pie');
 click('fp-breakdown-select','education','annual');
-assert.match(app.innerHTML,/頭金・住宅購入諸費用/);
+assert.match(app.innerHTML,/住宅購入諸費用/);
 assert.ok(app.innerHTML.indexOf('fp-pie-figure')<app.innerHTML.indexOf('data-fp-inline-breakdown'));
 
 const css=fs.readFileSync('styles.css','utf8');

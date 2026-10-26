@@ -4109,3 +4109,62 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   flex:0 0 auto;font-size:9px;line-height:1.35;
   color:#7b8c94;padding:0 5px 2px;margin:0;
 }
+
+
+/* FP r35: All breakdown categories use NISA-style top-left, content-sized rows.
+   Empty vertical space remains below the entries instead of being distributed
+   between them. The card height and one-screen report layout are unchanged. */
+#app .fp-focus .fp-breakdown-panel > .fp-breakdown-list{
+  display:grid!important;
+  grid-template-columns:repeat(var(--fp-cols,2),minmax(0,1fr))!important;
+  grid-template-rows:repeat(var(--fp-rows,1),max-content)!important;
+  grid-auto-rows:max-content!important;
+  grid-auto-flow:row!important;
+  align-content:start!important;
+  justify-content:stretch!important;
+  align-items:start!important;
+  row-gap:2px!important;
+  column-gap:4px!important;
+  flex:1 1 0!important;
+  min-height:0!important;
+  height:auto!important;
+  overflow:hidden!important;
+}
+#app .fp-focus .fp-breakdown-panel > .fp-breakdown-list > .fp-breakdown-row{
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:flex-start!important;
+  align-items:flex-start!important;
+  align-self:start!important;
+  gap:2px!important;
+  box-sizing:border-box!important;
+  height:auto!important;
+  min-height:29px!important;
+  max-height:none!important;
+  width:100%!important;
+  margin:0!important;
+  padding:3px 3px 3px!important;
+  text-align:left!important;
+  overflow:hidden!important;
+  border-bottom:1px solid #edf1f2!important;
+}
+#app .fp-focus .fp-breakdown-panel > .fp-breakdown-list > .fp-breakdown-row > .fp-row-label,
+#app .fp-focus .fp-breakdown-panel > .fp-breakdown-list > .fp-breakdown-row > strong{
+  display:block!important;
+  align-self:flex-start!important;
+  flex:0 0 auto!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-height:0!important;
+  margin:0!important;
+  text-align:left!important;
+  line-height:1.15!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+#app .fp-focus .fp-breakdown-panel > .fp-breakdown-list > .fp-breakdown-empty{
+  margin:0!important;
+  padding:6px 3px!important;
+  text-align:left!important;
+}

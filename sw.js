@@ -1,46 +1,70 @@
-const CACHE = 'hopposan-static-v65';
-const STATIC = ['./','./index.html','./fp-r33.html','./fp-r34.html','./fp-r39.html','./fp-r40.html','./fp-r41.html','./fp-r42.html','./fp-r43.html','./fp-r44.html','./fp-r45.html','./fp-r46.html','./fp-r47.html','./fp-r48.html','./fp-r49.html','./fp-r50.html','./styles.css','./app.js','./styles.css?v=fp-20261028-r53','./app.js?v=fp-20261028-r53','./manifest.webmanifest','./icon.svg','./icon-192.png'];
+// HOPPY r54: small, reliable cache. Always prefer server files when online.
+const CACHE = 'hopposan-static-r54';
+const SCRIPT = './app.js?v=fp-20261028-r54';
+const STYLE = './styles.css?v=fp-20261028-r54';
+const PRECACHE = ['./index.html','./fp-r54.html',SCRIPT,STYLE,'./manifest.webmanifest','./icon.svg'];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(STATIC)).then(() => self.skipWaiting()));
+  event.waitUntil(
+    caches.open(CACHE)
+      .then(cache => cache.addAll(PRECACHE))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(Promise.all([
-    caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))),
-    self.clients.claim()
-  ]));
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(key => key.startsWith('hopposan-') && key !== CACHE)
+      .map(key => caches.delete(key)));
+    await self.clients.claim();
+  })());
 });
 
 self.addEventListener('fetch', event => {
   const request = event.request;
-  if (request.method !== 'GET') return;
+  if(request.method !== 'GET')return;
   const url = new URL(request.url);
-  if (url.origin !== self.location.origin) return;
+  if(url.origin !== self.location.origin || !url.pathname.startsWith(new URL('./',self.location.href).pathname))return;
 
-  // HTML, JS and CSS must refresh online; cached copies remain available offline.
-  const refreshOnline = request.mode === 'navigate' ||
-    /\/(?:index\.html|app\.js|styles\.css|manifest\.webmanifest)$/.test(url.pathname);
-  if (refreshOnline) {
-    event.respondWith(
-      fetch(request).then(response => {
-        if (response.ok) {
-          const copy = response.clone();
-          const key = request.mode === 'navigate' ? './index.html' : request;
-          event.waitUntil(caches.open(CACHE).then(cache => cache.put(key, copy)));
+  const navigation = request.mode === 'navigate';
+  const appAsset = /\/(?:app\.js|styles\.css|manifest\.webmanifest)$/.test(url.pathname);
+  const refreshPage = url.pathname.endsWith('/refresh.html');
+
+  if(navigation || appAsset){
+    event.respondWith((async()=>{
+      try{
+        // Avoid an iOS/Safari HTTP cache replaying stale HTML and JavaScript.
+        const response=await fetch(request,{cache:'no-store'});
+        if(response.ok && !refreshPage){
+          const copy=response.clone();
+          const key=navigation?
+            (url.pathname.endsWith('/fp-r54.html')?'./fp-r54.html':'./index.html'):
+            request;
+          event.waitUntil(caches.open(CACHE).then(c=>c.put(key,copy)).catch(()=>{}));
         }
         return response;
-      }).catch(async () => {
-        const cached = await caches.match(request.mode === 'navigate' ? './index.html' : request);
-        return cached || Response.error();
-      })
-    );
+      }catch(_){
+        if(refreshPage)return Response.error();
+        if(navigation){
+          return await caches.match(request) || await caches.match('./fp-r54.html') ||
+            await caches.match('./index.html') || Response.error();
+        }
+        if(url.pathname.endsWith('/app.js')){
+          return await caches.match(request) || await caches.match(SCRIPT) || Response.error();
+        }
+        if(url.pathname.endsWith('/styles.css')){
+          return await caches.match(request) || await caches.match(STYLE) || Response.error();
+        }
+        return await caches.match(request) || Response.error();
+      }
+    })());
     return;
   }
-  event.respondWith(caches.match(request).then(cached => cached || fetch(request).then(response => {
-    if (response.ok) {
-      const copy = response.clone();
-      event.waitUntil(caches.open(CACHE).then(cache => cache.put(request,copy)));
+  event.respondWith(caches.match(request).then(cached=>cached||fetch(request).then(response=>{
+    if(response.ok){
+      const copy=response.clone();
+      event.waitUntil(caches.open(CACHE).then(c=>c.put(request,copy)).catch(()=>{}));
     }
     return response;
   })));

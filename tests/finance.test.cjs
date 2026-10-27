@@ -209,9 +209,15 @@ test('living and children itemization reconciles for every year and representati
       const detailTotal=details.reduce((acc,row)=>acc+row.amount,0);
       assert.ok(Math.abs(detailTotal-living.amount)<1e-8,
         year+'-'+monthNumber+' living and child itemization must match allocation');
-      for(const name of ['子どもの保険','子どもの生活費','保育料・幼稚園'])
-        if(year>=p.firstChildYear)
+      if(year>=p.firstChildYear){
+        for(const name of ['子どもの保険','子どもの生活費'])
           assert.ok(details.some(row=>row.label===name),'Missing '+name);
+        const ages=[0,1].map(i=>year-(p.firstChildYear+i*p.birthInterval));
+        if(ages.some(age=>age>=0&&age<6))
+          assert.ok(details.some(row=>row.label==='保育料・幼稚園'),'Missing preschool cost');
+        else assert.ok(!details.some(row=>row.label==='保育料・幼稚園'),
+          'Preschool expenses should end when children are older');
+      }
     }
     const incomePie=x.fpIncomeAllocation(point);
     for(const category of ['living','education','housing']){

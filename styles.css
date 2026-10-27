@@ -4613,3 +4613,118 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     max-height:18px!important;
   }
 }
+
+
+/* FP r42: immutable coordinates on category selection.
+   The card occupies the SAME remaining flex space for every breakdown.
+   Do not use max-content height or justify-content:space-between here. */
+#app .fp-focus .fp-month-report:has(>.fp-month-pie){
+  justify-content:flex-start!important;
+  align-content:stretch!important;
+  align-items:stretch!important;
+  gap:7px!important;
+}
+#app .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-breakdown-panel{
+  flex:1 1 0px!important;
+  height:0!important;
+  min-height:0!important;
+  max-height:none!important;
+  padding:6px 7px 7px!important;
+  margin:0 0 3px!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-direction:column!important;
+}
+/* Fixed header slot: category labels and school-age hints never push
+   the first grid cell down. */
+#app .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-breakdown-panel>.fp-breakdown-title,
+#app .fp-focus .fp-pie-panel>.fp-breakdown-panel>.fp-breakdown-title{
+  flex:0 0 39px!important;
+  height:39px!important;
+  min-height:39px!important;
+  max-height:39px!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+  align-content:start!important;
+  padding:0 0 2px!important;
+}
+#app .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-breakdown-panel>.fp-breakdown-list,
+#app .fp-focus .fp-pie-panel>.fp-breakdown-panel>.fp-breakdown-list{
+  align-content:start!important;
+  justify-content:start!important;
+  flex:0 1 auto!important;
+  min-height:0!important;
+  width:100%!important;
+  height:max-content!important;
+  max-height:100%!important;
+  overflow:hidden!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:4px!important;
+}
+/* Annual allocation uses the same fixed-origin rule. */
+#app .fp-focus .fp-pie-panel{
+  justify-content:flex-start!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+#app .fp-focus .fp-pie-panel>.fp-breakdown-panel{
+  flex:1 1 0px!important;
+  height:0!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+}
+/* In-place editors overlay the detail grid instead of causing the chart
+   or other sections to reflow. */
+#app .fp-focus .fp-breakdown-panel:has(>.fp-inline-edit){position:relative!important}
+#app .fp-focus .fp-breakdown-panel>.fp-inline-edit{
+  position:absolute!important;left:5px!important;right:5px!important;
+  bottom:4px!important;z-index:3!important;
+  margin:0!important;box-shadow:0 3px 12px #163b4d19;
+}
+/* Rounded native Japanese typeface, no external download needed offline. */
+:root,html,body,#app,.app-shell,
+#app button,#app input,#app select,#app textarea,
+#app h1,#app h2,#app h3,#app strong,#app span,#app small,
+#hoppo-launch,.hoppo-launch-name{
+  font-family:"Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4",
+  "Hiragino Maru Gothic Pro","M PLUS Rounded 1c","Meiryo UI",
+  "Meiryo",sans-serif!important;
+}
+#app .fp-report-screen .fp-result-nav button{
+  font-weight:750!important;
+  letter-spacing:0!important;
+}
+#app .fp-month-surplus,#app .fp-setting-card,#app .fp-breakdown-panel{
+  border-radius:14px!important;
+}
+/* Friendly house badge integrated into the existing 29px FP action row.
+   This does not add another header or shift the report downward. */
+#app .fp-friend-brand{
+  display:inline-flex;flex:0 0 auto;align-items:center;justify-content:flex-start;
+  gap:4px;min-width:0;max-width:108px;height:27px;
+  padding:2px 5px 2px 2px;
+  border-radius:12px;
+  border:1px solid #d2e7dd;
+  background:#f0f9f4;
+  color:#326d5b;
+  box-sizing:border-box;
+}
+#app .fp-friend-brand svg{width:22px;height:22px;display:block;flex:none}
+#app .fp-friend-brand strong{font-size:10px!important;line-height:1.1;white-space:nowrap}
+#app .fp-friend-brand small{font-size:8px!important;color:#65a38d;letter-spacing:.01em}
+@media(max-width:370px){
+  #app .fp-friend-brand{max-width:83px;gap:2px;padding-right:3px}
+  #app .fp-friend-brand strong{font-size:9px!important}
+  #app .fp-friend-brand small{display:none}
+}
+@media(max-height:800px){
+  #app .fp-focus .fp-month-report:has(>.fp-month-pie){gap:5px!important}
+  #app .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-breakdown-panel>.fp-breakdown-title,
+  #app .fp-focus .fp-pie-panel>.fp-breakdown-panel>.fp-breakdown-title{
+    flex-basis:34px!important;height:34px!important;
+    min-height:34px!important;max-height:34px!important;
+  }
+}

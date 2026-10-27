@@ -27,7 +27,7 @@
     husbandAge:27,wifeAge:29,children:2,firstChildYear:2028,birthInterval:3,
     husbandMonthly:26,wifeMonthly:25,husbandBonus:120,wifeBonus:20,wifeReduced:12.5,
     husbandBonusMonth1:6,husbandBonusMonth2:12,wifeBonusMonth1:6,wifeBonusMonth2:12,
-    cashSavings:300,support:0,livingMonthly:20,rentMonthly:8.2,carMonthly:1.18,
+    cashSavings:300,support:0,livingMonthly:0,rentMonthly:8.2,carMonthly:1.18,
     propertyPrice:4400,propertyId:'',purchaseYear:2028,purchaseMonth:1,downPayment:0,interest:1.5,loanYears:35,
     housingOngoing:2.5,weddingYear:2027,weddingCost:350,honeymoonCost:98,
     nisaMonthly:3,highSchool:'public',university:'public',simulateUntil:2045,hasRun:0,
@@ -939,6 +939,10 @@
       finalYear=Math.min(purchaseYear+30,endYear),
       years=Array.from({length:finalYear-purchaseYear+1},(_,i)=>fpHousingYearBudget(purchaseYear+i,p)),
       initial=years[0],
+      itemizedLiving=fpDetailCategories.reduce((sum,[key])=>sum+
+        (key==='waterBiMonthly'?safeNum(p[key])/2:safeNum(p[key])),0),
+      legacyOtherLiving=safeNum(p.livingMonthly),
+      possibleLivingOverlap=legacyOtherLiving>=10&&itemizedLiving>=1,
       // School expenses are cash needs in their actual years. For a simple
       // monthly *planning* provision, cover the maximum cumulative amount
       // due through each year from the purchase date (0% cash growth).
@@ -970,7 +974,7 @@
       const r=Math.max(0,rate)/1200;
       return r===0?monthly*term:monthly*(1-Math.pow(1+r,-term))/r;
     };
-    const roundDown=amount=>Math.max(0,Math.floor(amount/50)*50);
+    const roundDown=amount=>Math.max(0,Math.floor(amount*1e4+1e-8)/1e4);
     const amount=roundDown(principalFor(loanPayment,safeNum(p.interest)));
     const basicAmount=roundDown(principalFor(basicLoanPayment,safeNum(p.interest)));
     const stressAmount=roundDown(principalFor(loanPayment,safeNum(p.interest)+1));
@@ -979,6 +983,7 @@
       balanceCap,living:initial.living,school:initial.school,
       schoolTopUp,schoolReserve,schoolPeak:schoolPeak.school,schoolPeakYear:schoolPeak.year,
       spending:initial.living+initial.school+schoolTopUp,
+      itemizedLiving,legacyOtherLiving,possibleLivingOverlap,
       investing:initial.investing,cashTarget:initial.cashTarget,buffer:initial.buffer,
       housingBudget:cap,housingBudgetRaw:balanceCap,
       basicLoanPayment,basicRaw,basicHousingBudget:Math.max(0,basicRaw+maintenance),

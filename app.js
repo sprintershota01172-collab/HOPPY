@@ -999,41 +999,48 @@
   }
   // Households choose a safe payment budget; banks determine actual eligibility.
   // Show the budget separately from the simulated payment for the chosen home.
+  // Affordability is not loan underwriting. The main estimate preserves the
+  // household's chosen cash reserve and savings; the essentials-only maximum
+  // is a separate, explicitly non-recommended comparison.
   function fpMortgageCapacityCard(){
-    const b=fpBudget(),p=state.plan,reference=b.referenceYear,
+    const b=fpBudget(),p=state.plan,
       price=safeNum(p.propertyPrice),term=Math.max(12,Math.round(b.loanYears*12)),
-      // Always show an essentials-first ceiling as the headline loan amount;
-      // keeping all chosen savings plans is a separate (often much smaller)
-      // scenario and must never masquerade as the bank borrowing limit.
-      shownPrincipal=b.basicAmount,
-      downForBudget=Math.min(shownPrincipal,b.downPayment),
-      paymentForBudget=mortgageMonthly(shownPrincipal,b.downPayment,b.rate,b.loanYears),
-      budgetTotal=downForBudget+paymentForBudget*term,
-      selectedMonthly=mortgageMonthly(price,b.downPayment,b.rate,b.loanYears),
-      over=selectedMonthly-b.basicLoanPayment,within=over<=1e-8;
-    return '<section class="fp-capacity-card" aria-label="返済予算と登録物件のローン返済予測">'+
-      '<div class="fp-capacity-heading"><strong>住宅ローンの月額</strong>'+
-      '<span>'+(b.possibleLivingOverlap?'生活費の重複登録を要確認':b.startYear+'年の家計で計算／将来リスクは別判定')+'</span></div>'+
+      suggestedPrincipal=b.amount,ceilingPrincipal=b.basicAmount,
+      suggestedMonthly=b.loanPayment,
+      fullReturn=suggestedMonthly*term,
+      selectedMonthly=mortgageMonthly(price,0,b.rate,b.loanYears),
+      targetDiff=selectedMonthly-b.loanPayment,
+      ceilingDiff=selectedMonthly-b.basicLoanPayment;
+    const status=selectedMonthly<=b.loanPayment+1e-8?
+      '生活費と設定した積立を両立できる試算':
+      selectedMonthly<=b.basicLoanPayment+1e-8?
+        '積立の維持には月'+fpYen(Math.max(0,targetDiff))+'の調整が必要':
+        '生活費を優先しても月'+fpYen(Math.max(0,ceilingDiff))+'不足';
+    const warning=b.possibleLivingOverlap?
+      'その他生活費と内訳の重複登録を確認':
+      b.referenceYear!==b.purchaseYear?
+        b.purchaseYear+'年の出産期は年間収支で別途確認':
+        '通常の手取り給与から計算（賞与は除外）';
+    return '<section class="fp-capacity-card" aria-label="住宅ローンの返済目安と借入参考額">'+
+      '<div class="fp-capacity-heading"><strong>住宅ローンの返済予算</strong><span>'+esc(warning)+'</span></div>'+
       '<div class="fp-capacity-columns">'+
-      '<div class="fp-capacity-cell payment"><span>生活費優先の返済上限</span>'+
-      '<strong>'+fpYen(b.basicLoanPayment)+'</strong><small> / 月</small></div>'+
-      '<div class="fp-capacity-cell price"><span>生活費優先の借入参考額</span>'+
-      '<strong>'+fpYen(shownPrincipal)+'</strong>'+
-      '<small class="fp-capacity-interest">（利息込み返済総額 '+fpYen(budgetTotal)+'）</small></div></div>'+
+      '<div class="fp-capacity-cell payment"><span>積立を維持する月返済目安</span>'+
+      '<strong>'+fpYen(suggestedMonthly)+'</strong><small> / 月（住宅維持費は別）</small></div>'+
+      '<div class="fp-capacity-cell price"><span>その場合の借入参考額</span>'+
+      '<strong>'+fpYen(suggestedPrincipal)+'</strong>'+
+      '<small class="fp-capacity-interest">（利息込み総返済 '+fpYen(fullReturn)+'）</small></div></div>'+
       '<div class="fp-capacity-conditions"><span>年利 '+yen(b.rate,2)+'%</span>'+
-      '<span>返済 '+Math.round(b.loanYears)+'年</span><span>全額借入</span></div>'+
+      '<span>返済 '+Math.round(b.loanYears)+'年</span><span>頭金なし・元利均等</span></div>'+
+      '<div class="fp-capacity-ceiling"><span>積立を見直す場合の上限参考（推奨額ではありません）</span>'+
+      '<strong>月 '+fpYen(b.basicLoanPayment)+' ／ 借入 '+fpYen(ceilingPrincipal)+'</strong></div>'+
       '<div class="fp-capacity-example">'+
-      '<div class="fp-capacity-example-main"><span>物件価格 '+fpYen(price)+' の月返済</span>'+
-      '<strong>'+fpYen(selectedMonthly)+' / 月</strong></div>'+
-      '<div class="fp-capacity-example-status '+(within?'within':'over')+'">'+
-      (within?
-        selectedMonthly<=b.loanPayment?'生活費と積立を両立できます':'生活費は確保可能。積立の見直しが必要':
-        '生活費を優先しても月'+fpYen(Math.max(0,over))+'超過')+'</div></div>'+
-      '<p class="fp-capacity-footnote"><span class="fp-capacity-housing-total'+(b.basicRaw<0?' shortfall':'')+'">'+
-        (b.monthlyIncome<=0?'月手取り0円：収入設定を確認':
-          b.basicRaw<0?'生活費に月<strong>'+fpYen(-b.basicRaw)+'</strong>不足':
-          '貯金・NISAを続けた場合：月<strong>'+fpYen(b.loanPayment)+'</strong>（借入'+fpYen(b.amount)+'）')+
-        '</span><button type="button" data-act="fp-capacity-basis" class="fp-capacity-basis-link">計算の内訳 ›</button></p>'+
+      '<div class="fp-capacity-example-main"><span>物件 '+fpYen(price)+' の月返済</span>'+
+      '<strong>'+fpYen(selectedMonthly)+'/月</strong></div>'+
+      '<div class="fp-capacity-example-status '+(selectedMonthly<=b.loanPayment?'within':'over')+'">'+status+'</div></div>'+
+      '<p class="fp-capacity-footnote"><span class="fp-capacity-housing-total'+(b.preferredRaw<0?' shortfall':'')+'">'+
+        (b.preferredRaw<0?'希望の積立を続けると月'+fpYen(-b.preferredRaw)+'不足。':
+          '住宅維持費 '+fpYen(b.maintenance)+'/月を先に控除済み。')+
+        '</span><button type="button" data-act="fp-capacity-basis" class="fp-capacity-basis-link">計算根拠 ›</button></p>'+
       '</section>';
   }
   function fpRating(price){
@@ -1838,17 +1845,17 @@
           '将来の教育費を含む単年の収支チェックは黒字の見込みです。';
       return '<div class="fp-r-body grow fp-budget-evidence">'+
         '<strong class="fp-r-subhead">住宅費の計算（'+b.startYear+'年の家計）</strong>'+
-        '<p class="fp-budget-year-caption">希望の貯金・NISAを維持する場合／支出だけを優先する場合を比較</p>'+
+        '<p class="fp-budget-year-caption">通常の手取り給与から生活費・学校費・住宅維持費・貯金を引く。賞与は月返済の原資にしません。</p>'+
         fpCalcRows([
           ['夫婦の手取り（月額・賞与除く）',fpYen(b.monthlyIncome)],
           ['生活費・保険・車・年払費用','−'+fpYen(b.living)],
           ['その年の学校費','−'+fpYen(b.school)],
           ['急な出費の予備費','−'+fpYen(b.buffer)],
           ['住宅維持費（税・修繕）','−'+fpYen(b.maintenance)],
-          ['生活費優先の返済上限',fpSignedYen(b.basicRaw),fpBalanceTone(b.basicRaw)],
-          ['将来の学費準備（追加分）','−'+fpYen(b.schoolTopUp)],
+          ['生活費優先の月返済上限',fpYen(b.basicLoanPayment)+(b.basicRaw<0?'（生活費不足 '+fpYen(-b.basicRaw)+'）':''),b.basicRaw<0?'negative':''],
           ['NISA等の積立・現金貯金','−'+fpYen(b.investing+b.cashTarget)],
-          ['積立と両立できる返済余力',fpSignedYen(b.preferredRaw),fpBalanceTone(b.preferredRaw)]
+          ['積立を維持する月返済目安',fpYen(b.loanPayment)+(b.preferredRaw<0?'（不足 '+fpYen(-b.preferredRaw)+'）':''),b.preferredRaw<0?'negative':''],
+          ['同条件の借入参考額',fpYen(b.amount)]
         ])+
         (b.possibleLivingOverlap?
           '<div class="fp-duplicate-check"><strong>生活費の二重登録に注意</strong>'+
@@ -1880,7 +1887,7 @@
       '<div><b>収入</b><span>月の手取り×12＋賞与。出産年は妻の月収を最大100,000円、以降は時短収入を仮定。妻賞与は出産年以降0と仮置き。</span></div>'+
       '<div><b>住宅</b><span>指定した購入年月からローン返済に切替。購入時諸費用は物件価格の7％、固定資産税・修繕等は入力値で計算。</span></div>'+
       '<div><b>教育・運用</b><span>教育費は独自の固定概算。保育料、保険、NISAは入力値。税優遇・物価上昇は自動計算せず、運用利回りは仮定。</span></div>'+
-      '<div><b>住宅予算</b><span>生活費・予備費・その年の学校費・住宅維持費を除いた「生活費優先の上限」と、さらに教育費準備・NISA・貯金目標を差し引いた「積立を続ける目安」を分けて表示します。将来の赤字や教育費のピークはリスクとして別表示し、購入時の月額を自動的に0円へ変更しません。</span></div>'+
+      '<div><b>住宅予算</b><span>通常の手取り給与（月額・賞与を除外）から生活費・学校費・保険・予備費・住宅維持費・NISA等の積立・現金貯金目標を控除します。出産年の一時的な減収は年間収支で別途確認。積立を見直す場合の上限は推奨借入額ではありません。未登録支出は0円扱いです。</span></div>'+
       '<div><b>銀行審査</b><span>額面年収の登録がないため総返済負担率は判定しません。手取り比率とは別の指標です。</span></div></div>'+
       '<div class="fp-r-source-links"><a href="https://www.fsa.go.jp/policy/nisa2/lifeplan-simulator/index.html" target="_blank" rel="noopener noreferrer">金融庁｜ライフプランの前提 ↗</a>'+
       '<a href="https://www.flat35.com/loan/lineup/flat35/conditions/index.html" target="_blank" rel="noopener noreferrer">フラット35｜申込条件 ↗</a>'+
@@ -1939,7 +1946,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<span class="fp-build-stamp" title="表示バージョン">r50</span></div></div>';
+      '<span class="fp-build-stamp" title="表示バージョン">r51</span></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -1961,7 +1968,7 @@
     let content='';
     if(page===0){
       const end=current.points.at(-1),min=current.points.reduce((a,b)=>a.cash<b.cash?a:b);
-      const output=rating.budget.amount===0?'返済可能予算は0円の計算。生活費や入力項目を確認してください。':
+      const output=rating.budget.amount===0?'希望の貯金・積立を維持した場合の月返済余力が0円。計算根拠で不足理由を確認してください。':
         (rating.reason||'');
       const negative=current.points.find(x=>x.cash<0);
       const annualPoint=fpYearPoint(current);
@@ -1969,7 +1976,7 @@
         fpSurplusStrip(annualPoint.incomes,annualPoint.netCash,annualPoint.year+'年')+
         fpMortgageCapacityCard()+
         fpLoanSummary(price)+
-        '<div class="fp-r-summary-strip"><span>参考の購入予算</span><strong>'+fpYen(budget.amount)+'</strong>'+
+        '<div class="fp-r-summary-strip"><span>積立を維持する借入参考額</span><strong>'+fpYen(budget.amount)+'</strong>'+
         '<small>金利＋1％なら '+fpYen(budget.stressAmount)+'が目安</small></div>'+
         '<div class="fp-r-verdict"><div><span>物件の予算評価</span><b class="'+fpBadgeClass(rating.level)+'">'+rating.label+'</b></div>'+
         '<p>'+esc(output)+'</p></div>'+
@@ -2253,6 +2260,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r51',date:'2026.10.28',title:'家計余力を基準に住宅ローン予算を再構成',
+        details:['月返済目安をプラス符号なしで表示し借入額と区別','通常給与と出産年の一時減収を分離','貯蓄・予備費の二重控除と重複登録警告を修正','積立を見直す場合の上限は別枠の参考額に変更']},
       {version:'r50',date:'2026.10.28',title:'借入額が小さくなる生活費の重複を診断',
         details:['旧初期値「その他生活費20万円」と食費・光熱費の二重登録の可能性を警告','本人確認後にその他生活費だけを0円にできる操作を追加','入力値を黙って書き換えず実際の借入参考額と計算内訳を維持']},
       {version:'r49',date:'2026.10.28',title:'50万円の借入表示を訂正して2種類の予算を明示',
@@ -2296,7 +2305,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r50</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r51</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

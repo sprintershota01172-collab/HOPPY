@@ -23,6 +23,13 @@ jobs:
           node --check sw.js
           grep -Eq 'app\.js\?v=fp-[0-9]{8}-r[0-9]+' index.html
           grep -Eq 'styles\.css\?v=fp-[0-9]{8}-r[0-9]+' index.html
+      - name: Gate release on financial math and mobile fit
+        run: |
+          node tests/fp-zero-budget-diagnostics-r48.cjs
+          node tests/fp-settings-tab.cjs
+          node tests/fp-settings-viewport.cjs
+          node tests/fp-viewport.cjs
+          node tests/fp-pie-detail-position-r44.cjs
       - name: Run regression tests (report failures separately)
         continue-on-error: true
         run: |

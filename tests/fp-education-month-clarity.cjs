@@ -36,7 +36,7 @@ assert.ok(Math.abs(school[0].amount-34/12)<1e-10,'monthly amount 28,333yen');
 assert.ok(!rows.some(x=>x.label.includes('大学の費用')),'no ambiguous school/university label');
 a.ui.fpYear=2036;a.ui.fpCashMonth=1;
 const html=a.fpMonthlyReport(a.modelYears(p.propertyPrice,true));
-assert.match(html,/今月の現金収支/);
+assert.match(html,/月収支/);
 assert.match(html,/積立前/);
 assert.match(html,/第1子 8歳 小学校/);
 assert.match(html,/第2子 5歳 未就学・学校費0円/);

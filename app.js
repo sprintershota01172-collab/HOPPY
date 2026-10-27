@@ -910,28 +910,52 @@
     const reserve=6*(recurring+housing);
     return {price:cost,rate,payment,income,housing,ratio,spendable,upfront,remaining,reserve,recurring,investing};
   }
+  // Affordable housing is the cash left after life costs, school fees, savings
+  // and a personal emergency buffer. The debt-to-income ratio is advisory only;
+  // it must never silently replace the household's actual spending budget.
+  function fpHousingYearBudget(year,p=state.plan){
+    const months=fpYearlyIncome(year).months;
+    // Wages only, excluding bonus, government benefits and ad hoc event income.
+    const monthlyIncome=months.reduce((sum,m)=>sum+
+      safeNum(m.fields.husbandPay)+safeNum(m.fields.wifePay),0)/12;
+    const school=fpSchoolBreakdown(year,p).reduce((sum,x)=>sum+x.annual,0)/12;
+    const living=fpSpendingMonthly(year); // rent and mortgage are NOT part of this
+    const spending=living+school;
+    const investing=fpNisaForYear(year,p)+fpOtherInvestForYear(year,p);
+    const cashTarget=fpCashGoalMonthly(p),buffer=safeNum(p.cashBufferMonthly);
+    const balanceCap=monthlyIncome-spending-investing-cashTarget-buffer;
+    return {year,monthlyIncome,living,school,spending,investing,cashTarget,buffer,balanceCap,
+      ratioCap:monthlyIncome*.25};
+  }
   function fpBudget(){
-    const p=state.plan,monthlyIncome=fpForecast(0).income;
-    const spending=fpSpendingMonthly(fpDecisionYear());
-    const investing=fpNisaForYear(fpDecisionYear(),p)+fpOtherInvestForYear(fpDecisionYear(),p);
-    const cashTarget=fpCashGoalMonthly(p),buffer=safeNum(p.cashBufferMonthly),
-      ratioCap=monthlyIncome*.25,
-      balanceCap=monthlyIncome-spending-investing-buffer-cashTarget,
-      cap=Math.min(ratioCap,balanceCap);
-    const loanPayment=Math.max(0,cap-safeNum(p.housingOngoing));
-    const term=Math.max(12,Math.round(safeNum(p.loanYears,35)*12));
+    const p=state.plan,start=simNowYear(),purchaseYear=Math.max(start,Math.round(safeNum(p.purchaseYear,start+2))),
+      kids=Math.min(3,Math.max(0,Math.round(safeNum(p.children)))),
+      lastBirth=kids?safeNum(p.firstChildYear)+(kids-1)*Math.max(1,safeNum(p.birthInterval,3)):purchaseYear,
+      // Cover child education through age 22, but do not assume income growth
+      // or make a one-time wedding/purchase cost into a recurring monthly bill.
+      endYear=Math.max(purchaseYear+20,kids?lastBirth+22:purchaseYear),
+      finalYear=Math.min(purchaseYear+30,endYear),
+      years=Array.from({length:finalYear-purchaseYear+1},(_,i)=>fpHousingYearBudget(purchaseYear+i,p)),
+      reference=years.reduce((worst,row)=>row.balanceCap<worst.balanceCap?row:worst,years[0]),
+      cap=Math.max(0,reference.balanceCap),
+      maintenance=safeNum(p.housingOngoing),
+      loanPayment=Math.max(0,cap-maintenance),
+      term=Math.max(12,Math.round(safeNum(p.loanYears,35)*12));
     const loanCap=rate=>{
       const r=Math.max(0,rate)/1200;
       return r===0?loanPayment*term:loanPayment*(1-Math.pow(1+r,-term))/r;
     };
-    const amount=Math.max(0,Math.floor((loanCap(safeNum(p.interest))+0)/50)*50);
-    const stressAmount=Math.max(0,Math.floor((loanCap(safeNum(p.interest)+1)+0)/50)*50);
-    return {amount,stressAmount,monthlyIncome,housingLimit:ratioCap,ratioCap,balanceCap,cashTarget,buffer,
-      housingBudget:Math.max(0,cap),maintenance:safeNum(p.housingOngoing),
-      cashflowHousingLimit:balanceCap,
-      loanPrincipal:loanCap(safeNum(p.interest)),
-      downPayment:0,rate:safeNum(p.interest),loanYears:safeNum(p.loanYears,35),
-      loanPayment,spending,investing,referenceYear:fpDecisionYear()};
+    const amount=Math.max(0,Math.floor(loanCap(safeNum(p.interest))/50)*50);
+    const stressAmount=Math.max(0,Math.floor(loanCap(safeNum(p.interest)+1)/50)*50);
+    return {amount,stressAmount,monthlyIncome:reference.monthlyIncome,housingLimit:reference.ratioCap,
+      ratioCap:reference.ratioCap,balanceCap:reference.balanceCap,school:reference.school,
+      living:reference.living,spending:reference.spending,investing:reference.investing,
+      cashTarget:reference.cashTarget,buffer:reference.buffer,housingBudget:cap,
+      maintenance,cashflowHousingLimit:reference.balanceCap,
+      loanPrincipal:loanCap(safeNum(p.interest)),downPayment:0,
+      rate:safeNum(p.interest),loanYears:safeNum(p.loanYears,35),
+      loanPayment,referenceYear:reference.year,startYear:purchaseYear,endYear:finalYear,
+      years};
   }
   // Households choose a safe payment budget; banks determine actual eligibility.
   // Show the budget separately from the simulated payment for the chosen home.
@@ -945,7 +969,7 @@
       over=selectedMonthly-b.loanPayment,within=over<=1e-8;
     return '<section class="fp-capacity-card" aria-label="返済予算と登録物件のローン返済予測">'+
       '<div class="fp-capacity-heading"><strong>住宅ローンの目安</strong>'+
-      '<span>'+reference+'年の収支で計算</span></div>'+
+      '<span>教育費などを含む'+b.startYear+'〜'+b.endYear+'年で試算</span></div>'+
       '<div class="fp-capacity-columns">'+
       '<div class="fp-capacity-cell payment"><span>毎月返せる目安</span>'+
       '<strong>'+fpYen(b.loanPayment)+'</strong><small> / 月</small></div>'+
@@ -960,7 +984,7 @@
       '<div class="fp-capacity-example-status '+(within?'within':'over')+'">'+
       (within?'返済目安まであと '+fpYen(Math.max(0,-over))+' / 月':
         '返済目安を '+fpYen(over)+' / 月超過')+'</div></div>'+
-      '<p class="fp-capacity-footnote">手取り・生活費・積立・貯金目標から計算。金融機関の審査とは別。'+
+      '<p class="fp-capacity-footnote">生活費・学費・貯金を確保した残りから計算。'+
         '<button type="button" data-act="fp-capacity-basis" class="fp-capacity-basis-link">根拠と計算式 ›</button></p>'+
       '</section>';
   }

@@ -4415,3 +4415,117 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     height:20px!important;min-height:20px!important;max-height:20px!important;flex-basis:20px!important;
   }
 }
+
+
+/* FP r40: move monthly-input controls to an unobtrusive settings tab. */
+#app .fp-report-screen>.fp-result-nav{
+  grid-template-columns:repeat(8,minmax(0,1fr))!important;
+  gap:2px!important;
+}
+#app .fp-report-screen>.fp-result-nav>button{
+  min-width:0!important;
+  padding:0 1px!important;
+  font-size:clamp(8px,2.2vw,10px)!important;
+  letter-spacing:-.05em!important;
+  white-space:nowrap!important;
+}
+/* Reclaim input rows without allowing changes to the donut or fixed grid. */
+#app .fp-focus .fp-month-report{
+  min-height:0!important;
+  overflow:hidden!important;
+}
+#app .fp-settings-report{
+  flex:1 1 0!important;
+  min-height:0!important;
+  min-width:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  gap:9px!important;
+  overflow:hidden!important;
+  padding:6px 2px 4px!important;
+  box-sizing:border-box!important;
+}
+#app .fp-settings-heading{
+  flex:none;
+  display:flex;align-items:baseline;justify-content:space-between;
+  gap:6px;min-height:27px;
+  border-bottom:1px solid #e2e9ed;padding:1px 4px 6px;
+}
+#app .fp-settings-heading>strong{font-size:14px;color:#1f414c}
+#app .fp-settings-heading>span{font-size:9px;color:#81949b}
+#app .fp-setting-card{
+  display:flex;flex-direction:column;gap:5px;flex:none;
+  min-width:0;background:#fff;border:1px solid #dce7e8;
+  border-radius:13px;padding:13px 12px;
+  box-sizing:border-box;
+}
+#app .fp-setting-row{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  min-width:0;min-height:43px;
+}
+#app .fp-setting-copy{
+  display:flex;flex-direction:column;justify-content:center;gap:4px;
+  flex:1 1 0;min-width:0;
+}
+#app .fp-setting-copy>strong{font-size:13px;color:#203e4b;font-weight:800}
+#app .fp-setting-copy>span{font-size:10px;color:#7b8f9a}
+#app .fp-setting-input{
+  display:flex;align-items:center;gap:5px;
+  background:#f2f6f8;border:1px solid #dde7e9;border-radius:10px;
+  padding:4px 7px;min-width:0;flex:0 0 49%;max-width:49%;
+  height:41px;box-sizing:border-box;
+}
+#app .fp-setting-input:focus-within{border-color:#6c9ec5;background:#fff}
+#app .fp-setting-input>input{
+  min-width:0!important;width:100%!important;flex:1 1 0;
+  box-sizing:border-box;background:transparent;border:0;outline:0;
+  color:#205a50;font-size:19px!important;font-weight:800!important;
+  text-align:right;font-variant-numeric:tabular-nums;
+  padding:0!important;height:32px!important;
+}
+#app .fp-setting-input>small{
+  font-size:10px;color:#718996;white-space:nowrap;flex:none;
+}
+#app .fp-setting-computed{
+  min-width:0;color:#216e58;font-size:14px;
+  text-align:right;font-variant-numeric:tabular-nums;
+}
+#app .fp-setting-note{font-size:10px;color:#69838e;margin:0;line-height:1.45}
+#app .fp-setting-action{
+  display:block;width:100%;min-height:29px;text-align:left;
+  background:#eef6f1;color:#256c54;border:1px solid #d1e4d9;
+  border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;
+}
+#app .fp-setting-outcome{
+  display:grid;grid-template-columns:1fr 1fr;gap:7px;flex:none;
+}
+#app .fp-setting-outcome>div{
+  display:flex;flex-direction:column;gap:4px;
+  background:#f0f7f5;border:1px solid #dbeae5;
+  border-radius:11px;padding:11px 9px;min-width:0;
+}
+#app .fp-setting-outcome span{font-size:10px;color:#607c79}
+#app .fp-setting-outcome strong{
+  font-size:14px;color:#266354;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums;
+}
+#app .fp-setting-outcome strong.negative{color:#ad4141}
+#app .fp-setting-footer{
+  flex:none;margin:0 3px;color:#82919c;font-size:9px;
+  line-height:1.45;
+}
+#app .fp-setting-back{
+  display:block;flex:none;align-self:center;margin-top:auto;
+  min-height:31px;border:0;background:transparent;
+  color:#2372b0;font-size:11px;font-weight:750;
+  padding:5px 14px;
+}
+@media(max-height:780px){
+  #app .fp-settings-report{gap:6px!important;padding-top:2px!important}
+  #app .fp-setting-card{padding:8px 9px}
+  #app .fp-setting-row{min-height:35px}
+  #app .fp-setting-input{height:36px}
+  #app .fp-setting-input>input{font-size:16px!important;height:29px!important}
+  #app .fp-setting-outcome>div{padding:6px 8px}
+  #app .fp-setting-footer{font-size:8px}
+}

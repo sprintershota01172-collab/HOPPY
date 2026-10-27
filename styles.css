@@ -5007,3 +5007,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   #app .fp-capacity-ceiling span{font-size:8px}
   #app .fp-capacity-ceiling strong{font-size:9px}
 }
+
+
+/* FP r52: earmarked education balance is separate from spendable cash. */
+#app .fp-education-asset{
+ display:flex;justify-content:space-between;align-items:center;gap:7px;
+ padding:4px 9px;border:1px solid #d6e6dc;border-radius:9px;background:#f5faf6;
+ color:#3b6457;min-width:0;
+}
+#app .fp-education-asset span{font-size:9px;font-weight:700;line-height:1.3;min-width:0}
+#app .fp-education-asset strong{font-size:12px;font-weight:850;white-space:nowrap;font-variant-numeric:tabular-nums}
+@media(max-height:760px){#app .fp-education-asset{padding:2px 6px}#app .fp-education-asset span{font-size:8px}#app .fp-education-asset strong{font-size:10px}}

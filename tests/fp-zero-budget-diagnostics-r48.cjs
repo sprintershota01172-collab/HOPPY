@@ -41,6 +41,8 @@ assert.ok(b.loanPayment===0,'unachievable savings goal can produce a zero recomm
 assert.ok(b.preferredRaw<0,'unachievable savings goal must retain raw negative value');
 const card=api.fpMortgageCapacityCard();
 assert.match(card,/積立を見直す場合の上限/);
+assert.match(card,/積立見直し時の借入額/);
+assert.match(card,/借入額/);
 assert.match(card,/貯金・NISAを続ける場合/);
 assert.ok(card.includes('fp-capacity-basis'));
 api.ui.fpCalcPage=1;

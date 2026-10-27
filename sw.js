@@ -1,5 +1,5 @@
-const CACHE = 'hopposan-static-v57';
-const STATIC = ['./','./index.html','./fp-r33.html','./fp-r34.html','./fp-r39.html','./fp-r40.html','./fp-r41.html','./fp-r42.html','./fp-r43.html','./fp-r44.html','./fp-r45.html','./styles.css','./app.js','./styles.css?v=fp-20261027-r45','./app.js?v=fp-20261027-r45','./manifest.webmanifest','./icon.svg','./icon-192.png'];
+const CACHE = 'hopposan-static-v58';
+const STATIC = ['./','./index.html','./fp-r33.html','./fp-r34.html','./fp-r39.html','./fp-r40.html','./fp-r41.html','./fp-r42.html','./fp-r43.html','./fp-r44.html','./fp-r45.html','./fp-r46.html','./styles.css','./app.js','./styles.css?v=fp-20261027-r46','./app.js?v=fp-20261027-r46','./manifest.webmanifest','./icon.svg','./icon-192.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(STATIC)).then(() => self.skipWaiting()));

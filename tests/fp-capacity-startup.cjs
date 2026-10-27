@@ -40,7 +40,7 @@ assert.ok(api.mortgageMonthly(original.amount,original.downPayment,original.rate
  'rounding is conservative');
 const card=api.fpMortgageCapacityCard();
 assert.match(card,/毎月返せる目安/);
-assert.match(card,/住宅予算（借入額・/);
+assert.match(card,/借入額の目安/);
 assert.match(card,new RegExp(api.fpYen(original.loanPayment)));
 assert.match(card,new RegExp(api.fpYen(original.amount)));
 assert.match(card,/利息込み返済総額/);
@@ -55,7 +55,7 @@ p.propertyPrice=4400;
 let forFifty=api.fpMortgageCapacityCard();
 let actualFifty=api.mortgageMonthly(4400,0,1.5,50);
 assert.match(forFifty,/毎月返せる目安/);
-assert.match(forFifty,/住宅予算（借入額・50年）/);
+assert.match(forFifty,/借入額の目安/);
 assert.match(forFifty,/実際の請求額ではありません/);
 assert.ok(forFifty.includes('入力した物件 '+api.fpYen(4400)+' の返済予測'));
 assert.ok(forFifty.includes(api.fpYen(actualFifty)+' / 月'),
@@ -82,7 +82,7 @@ click('tab','sim');
 for(let i=0;i<7;i++)click('sim-next');
 assert.match(app.innerHTML,/data-fp-cash-month/);
 assert.match(app.innerHTML,/fp-capacity-card/);
-assert.match(app.innerHTML,/住宅予算（借入額・/);
+assert.match(app.innerHTML,/借入額の目安/);
 assert.doesNotMatch(app.innerHTML,/<header class="top/);
 click('fp-result-tab','0');
 assert.match(app.innerHTML,/fp-capacity-card/);

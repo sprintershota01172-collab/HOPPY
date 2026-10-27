@@ -45,8 +45,8 @@ assert.match(card,new RegExp(api.fpYen(original.loanPayment)));
 assert.match(card,new RegExp(api.fpYen(original.amount)));
 assert.match(card,/利息込み返済総額/);
 assert.match(card,/根拠と計算式/);
-assert.match(card,/金利一定/);
-assert.match(card,/金融機関の審査とは別/);
+assert.match(card,/教育費などを含む/);
+assert.match(card,/根拠と計算式/);
 assert.match(card,/借入額の目安/);
 // A household budget limit is not a loan bill. The entered home receives
 // a separate amortized payment at the configured loan length and rate.
@@ -75,7 +75,7 @@ p.downPayment=400;
 assert.equal(api.fpBudget().amount,prior,'zero-down financing keeps home price independent of legacy down payment values');
 p.downPayment=0;
 p.otherSavingsMonthly=40;
-assert.ok(api.fpBudget().amount<prior,'a savings goal beyond the income-ratio cap reduces buying power');
+assert.ok(api.fpBudget().amount<prior,'a larger monthly savings goal reduces available housing cash');
 p.otherSavingsMonthly=5;
 
 click('tab','sim');

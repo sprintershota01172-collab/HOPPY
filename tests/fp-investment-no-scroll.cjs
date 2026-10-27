@@ -76,9 +76,7 @@ try{
   inside('Mortgage note',m.capacity,m.footnote);
   inside('Actual payment',m.capacity,m.actual);
   inside('Monthly surplus sublabel',m.hero,m.heroSmall);
-  inside('Education premium input',m.education,m.educationInput);
-  inside('Education total premium',m.education,m.educationMonthly);
-  inside('Education insurance explanation',m.education,m.educationFootnote);
+  assert.equal(m.education,null,'monthly dashboard does not contain insurance setting form');
   inside('Last expense row',m.panel,m.lastRow);
   inside('Whole detail panel',m.main,m.panel);
   assert.equal(m.category,'investing','the selected panel is investment breakdown');

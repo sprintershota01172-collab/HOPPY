@@ -896,18 +896,18 @@
   }
   function fpForecast(price,extraInterest=0){
     const p=state.plan,cost=Math.max(0,safeNum(price)),
-      b=fpBudget(),reference=fpHousingYearBudget(b.referenceYear,p),
+      budget=fpBudget(),
       rate=Math.max(0,safeNum(p.interest)+extraInterest),
       payment=mortgageMonthly(cost,0,rate,p.loanYears),
       housing=payment+safeNum(p.housingOngoing),
-      ratio=reference.monthlyIncome>0?housing/reference.monthlyIncome:Infinity,
-      spendable=reference.balanceCap-housing+reference.cashTarget+reference.buffer,
+      ratio=budget.monthlyIncome>0?housing/budget.monthlyIncome:Infinity,
+      spendable=budget.monthlyIncome-budget.spending-budget.investing-housing,
       upfront=cost*.07,
       remaining=safeNum(p.cashSavings)+safeNum(p.support)-upfront,
-      reserve=6*(reference.spending+housing);
-    return {price:cost,rate,payment,income:reference.monthlyIncome,housing,ratio,
-      spendable,upfront,remaining,reserve,recurring:reference.spending,
-      investing:reference.investing,referenceYear:reference.year};
+      reserve=6*(budget.spending+housing);
+    return {price:cost,rate,payment,income:budget.monthlyIncome,housing,ratio,
+      spendable,upfront,remaining,reserve,recurring:budget.spending,
+      investing:budget.investing,referenceYear:budget.referenceYear};
   }
   // Affordable housing is the cash left after life costs, school fees, savings
   // and a personal emergency buffer. The debt-to-income ratio is advisory only;
@@ -1805,20 +1805,21 @@
       const b=fpBudget(),n=loan.years*12;
       return '<div class="fp-r-body grow fp-budget-evidence">'+
         '<strong class="fp-r-subhead">住宅予算の計算（'+b.startYear+'〜'+b.endYear+'年を比較）</strong>'+
-        '<p class="fp-budget-year-caption">最も余裕が少ない '+b.referenceYear+'年の家計を表示</p>'+
+        '<p class="fp-budget-year-caption">月額の支出が最も重い '+b.referenceYear+'年が基準。学費は月割で準備</p>'+
         fpCalcRows([
           ['夫婦の手取り（月額・賞与除く）',fpYen(b.monthlyIncome)],
           ['生活費・保険・車・年払費用','−'+fpYen(b.living)],
-          ['子どもの学校・大学費','−'+fpYen(b.school)],
+          ['学校・大学費の月々の備え','−'+fpYen(b.schoolReserve)],
           ['NISA・その他の積立','−'+fpYen(b.investing)],
           ['現金貯金の目標','−'+fpYen(b.cashTarget)],
           ['急な出費の予備費','−'+fpYen(b.buffer)],
-          ['住宅に使える予算',fpSignedYen(b.balanceCap),fpBalanceTone(b.balanceCap)],
+          ['住宅に使える額（不足も表示）',fpSignedYen(b.balanceCap),fpBalanceTone(b.balanceCap)],
           ['住宅維持費（税・修繕など）','−'+fpYen(b.maintenance)],
           ['月々のローン返済に使える額',fpYen(b.loanPayment)]
         ])+
-        '<p class="fp-r-help">賞与・給付金・一時的な出費は月額上限に含めず、現金残高の予測で確認します。25％（'+fpYen(b.ratioCap)+'）は参考比率のみ。家計の目安で銀行の借入審査とは別です。</p>'+
-        '<div class="fp-budget-loan-note">物件'+fpYen(price)+'：月返済'+fpYen(loan.monthly)+
+        '<p class="fp-r-help">学校費はピーク'+b.schoolPeakYear+'年（'+fpYen(b.schoolPeak)+'/月）を一度に差し引かず、必要な時までの学費を月割で準備する想定です。賞与・給付金・学資保険満期金は返済原資に含めません。25％は参考比率。銀行審査とは別です。</p>'+
+        '<div class="fp-budget-loan-note">'+(b.rawLoanPayment<=0?'家計の設定条件では月々'+fpYen(-b.rawLoanPayment)+'不足。設定や家計を確認してください。<br>':'')+
+          '物件'+fpYen(price)+'：月返済'+fpYen(loan.monthly)+
           '／'+loan.years+'年・年利'+yen(loan.rate,2)+'％・総返済'+fpYen(loan.monthly*n)+'</div>'+
         '<button type="button" data-act="fp-result-tab" data-value="1" class="fp-setting-back">‹ 月収支に戻る</button>'+
       '</div>';
@@ -1840,7 +1841,7 @@
       '<div><b>収入</b><span>月の手取り×12＋賞与。出産年は妻の月収を最大100,000円、以降は時短収入を仮定。妻賞与は出産年以降0と仮置き。</span></div>'+
       '<div><b>住宅</b><span>指定した購入年月からローン返済に切替。購入時諸費用は物件価格の7％、固定資産税・修繕等は入力値で計算。</span></div>'+
       '<div><b>教育・運用</b><span>教育費は独自の固定概算。保育料、保険、NISAは入力値。税優遇・物価上昇は自動計算せず、運用利回りは仮定。</span></div>'+
-      '<div><b>返済可能額</b><span>住宅予算は夫婦の安定した手取りから生活費・学校費・積立・貯金目標・予備費を引き、購入後の比較期間で最も厳しい年を採用。住宅維持費を引いた額がローン返済目安。手取り25％は参考表示のみ。</span></div>'+
+      '<div><b>返済可能額</b><span>住宅予算は安定した手取りから生活費・学費準備・積立・現金貯金・予備費を差引きます。学費は将来の支払までの月割準備額で、大学進学年の請求額がそのまま毎月のローン上限を0にすることはありません。住宅維持費を引き、残額がマイナスなら不足額を表示します。将来の現金残高や学資保険の受取金は別に確認が必要です。</span></div>'+
       '<div><b>銀行審査</b><span>額面年収の登録がないため総返済負担率は判定しません。手取り比率とは別の指標です。</span></div></div>'+
       '<div class="fp-r-source-links"><a href="https://www.fsa.go.jp/policy/nisa2/lifeplan-simulator/index.html" target="_blank" rel="noopener noreferrer">金融庁｜ライフプランの前提 ↗</a>'+
       '<a href="https://www.flat35.com/loan/lineup/flat35/conditions/index.html" target="_blank" rel="noopener noreferrer">フラット35｜申込条件 ↗</a>'+

@@ -56,7 +56,7 @@ p.livingMonthly=110;
 b=api.fpBudget();
 assert.equal(b.basicLoanPayment,0,'if actual living costs exceed salary, show no invented capacity');
 assert.ok(b.basicRaw<0);
-assert.match(api.fpMortgageCapacityCard(),/生活費だけで/);
+assert.match(api.fpMortgageCapacityCard(),/生活費に月/);
 p.livingMonthly=9;
 p.nisaMonthly+=2;
 const withNisa=api.fpBudget();

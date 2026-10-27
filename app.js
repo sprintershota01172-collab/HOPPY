@@ -1823,23 +1823,28 @@
         '<p class="fp-r-help">期末現金＝期首現金＋年間収入−年間支出−年間投資積立。預貯金・NISA評価額は別々に計算。</p></div>';
     }
     if(mode===1){
-      const b=fpBudget(),n=loan.years*12;
+      const b=fpBudget(),n=loan.years*12,
+        deficit=Math.max(0,-b.preferredRaw),
+        risk=b.worstSurplus<0?'将来の注意：'+b.worstYear+'年は月'+fpYen(-b.worstSurplus)+
+          'の不足見込み。現金貯金や教育資金で備える必要があります。':
+          '将来の教育費を含む単年の収支チェックは黒字の見込みです。';
       return '<div class="fp-r-body grow fp-budget-evidence">'+
-        '<strong class="fp-r-subhead">住宅予算の計算（'+b.startYear+'〜'+b.endYear+'年を比較）</strong>'+
-        '<p class="fp-budget-year-caption">月額の支出が最も重い '+b.referenceYear+'年が基準。学費は月割で準備</p>'+
+        '<strong class="fp-r-subhead">住宅費の計算（'+b.startYear+'年の家計）</strong>'+
+        '<p class="fp-budget-year-caption">希望の貯金・NISAを維持する場合／支出だけを優先する場合を比較</p>'+
         fpCalcRows([
           ['夫婦の手取り（月額・賞与除く）',fpYen(b.monthlyIncome)],
           ['生活費・保険・車・年払費用','−'+fpYen(b.living)],
-          ['学校・大学費の月々の備え','−'+fpYen(b.schoolReserve)],
-          ['NISA・その他の積立','−'+fpYen(b.investing)],
-          ['現金貯金の目標','−'+fpYen(b.cashTarget)],
+          ['その年の学校費','−'+fpYen(b.school)],
           ['急な出費の予備費','−'+fpYen(b.buffer)],
-          ['住宅に使える額（不足も表示）',fpSignedYen(b.balanceCap),fpBalanceTone(b.balanceCap)],
-          ['住宅維持費（税・修繕など）','−'+fpYen(b.maintenance)],
-          ['月々のローン返済に使える額',fpYen(b.loanPayment)]
+          ['住宅維持費（税・修繕）','−'+fpYen(b.maintenance)],
+          ['生活費優先の返済上限',fpSignedYen(b.basicRaw),fpBalanceTone(b.basicRaw)],
+          ['将来の学費準備（追加分）','−'+fpYen(b.schoolTopUp)],
+          ['NISA等の積立・現金貯金','−'+fpYen(b.investing+b.cashTarget)],
+          ['積立と両立できる返済余力',fpSignedYen(b.preferredRaw),fpBalanceTone(b.preferredRaw)]
         ])+
-        '<p class="fp-r-help">学校費はピーク'+b.schoolPeakYear+'年（'+fpYen(b.schoolPeak)+'/月）を一度に差し引かず、必要な時までの学費を月割で準備する想定です。賞与・給付金・学資保険満期金は返済原資に含めません。25％は参考比率。銀行審査とは別です。</p>'+
-        '<div class="fp-budget-loan-note">'+(b.rawLoanPayment<=0?'家計の設定条件では月々'+fpYen(-b.rawLoanPayment)+'不足。設定や家計を確認してください。<br>':'')+
+        '<p class="fp-r-help">'+risk+
+          ' 学校費の準備は既に生活費に入る学費と重複しないよう計算。賞与・給付金は毎月の返済原資に含めず、別の現金予測で確認します。</p>'+
+        '<div class="fp-budget-loan-note">'+(deficit?'貯金・積立を希望どおり続けると月'+fpYen(deficit)+'不足。':'')+
           '物件'+fpYen(price)+'：月返済'+fpYen(loan.monthly)+
           '／'+loan.years+'年・年利'+yen(loan.rate,2)+'％・総返済'+fpYen(loan.monthly*n)+'</div>'+
         '<button type="button" data-act="fp-result-tab" data-value="1" class="fp-setting-back">‹ 月収支に戻る</button>'+

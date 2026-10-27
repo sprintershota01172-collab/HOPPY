@@ -951,6 +951,13 @@
         (key==='livingMonthly'?0:key==='waterBiMonthly'?safeNum(p[key])/2:safeNum(p[key])),0),
       legacyOtherLiving=safeNum(p.livingMonthly),
       possibleLivingOverlap=legacyOtherLiving>=10&&itemizedLiving>=1,
+      // A zero means not recorded unless the household explicitly put the
+      // entire cost in the catch-all living expense field.
+      missingEssentialInputs=safeNum(p.livingMonthly)>0?[]:[
+        ...(!safeNum(p.foodMonthly)?['食費']:[]),
+        ...(!safeNum(p.utilitiesMonthly)&&!safeNum(p.electricityMonthly)&&
+          !safeNum(p.gasMonthly)&&!safeNum(p.waterBiMonthly)?['光熱費']:[])
+      ],
       // Tuition belongs to its actual year in the annual forecast; never
       // deduct a second tuition provision from the monthly borrowing limit.
       schoolReserve=0,schoolTopUp=0,
@@ -984,7 +991,7 @@
       balanceCap,living:initial.living,school:initial.school,
       schoolTopUp,schoolReserve,schoolPeak:schoolPeak.school,schoolPeakYear:schoolPeak.year,
       spending:initial.living+initial.school+schoolTopUp,
-      itemizedLiving,legacyOtherLiving,possibleLivingOverlap,
+      itemizedLiving,legacyOtherLiving,possibleLivingOverlap,missingEssentialInputs,
       investing:initial.investing,cashTarget:initial.cashTarget,buffer:initial.buffer,
       housingBudget:cap,housingBudgetRaw:balanceCap,
       basicLoanPayment,basicRaw,basicHousingBudget:Math.max(0,basicRaw+maintenance),
@@ -1018,6 +1025,8 @@
         '生活費を優先しても月'+fpYen(Math.max(0,ceilingDiff))+'不足';
     const warning=b.possibleLivingOverlap?
       'その他生活費と内訳の重複登録を確認':
+      b.missingEssentialInputs.length?
+        '未入力：'+b.missingEssentialInputs.join('・')+'（借入目安が過大になる可能性）':
       b.referenceYear!==b.purchaseYear?
         b.purchaseYear+'年の出産期は年間収支で別途確認':
         '通常の手取り給与から計算（賞与は除外）';
@@ -1056,8 +1065,8 @@
     if(info.spendable<0&&level==='good'){
       level='warn';label='家計確認';reason='毎月の保険・子育て・積立を引くと、余裕費が不足します。';
     }
-    if(info.remaining<0&&level==='good'){
-      level='warn';label='資金確認';reason='月々は目安内ですが、住宅購入諸費用の現金が不足します。';
+    if(budget.missingEssentialInputs.length&&level==='good'){
+      level='warn';label='入力不足';reason='食費・光熱費などの未登録項目があり、借入額が過大になり得ます。';
     }
     return {...info,budget,stressed,level,label,reason,monthlyDelta:stressed.payment-info.payment};
   }
@@ -1857,6 +1866,8 @@
           ['積立を維持する月返済目安',fpYen(b.loanPayment)+(b.preferredRaw<0?'（不足 '+fpYen(-b.preferredRaw)+'）':''),b.preferredRaw<0?'negative':''],
           ['同条件の借入参考額',fpYen(b.amount)]
         ])+
+        (b.missingEssentialInputs.length?
+          '<div class="fp-duplicate-check"><strong>生活費の入力が不足しています</strong><span>'+esc(b.missingEssentialInputs.join('・'))+'を確認してください。未入力を0円としているため、借入参考額は過大になり得ます。</span></div>':'')+
         (b.possibleLivingOverlap?
           '<div class="fp-duplicate-check"><strong>生活費の二重登録に注意</strong>'+
           '<span>「その他の生活費」'+fpYen(b.legacyOtherLiving)+'/月と、食費・光熱費などの個別項目'+
@@ -1897,14 +1908,24 @@
     const p=state.plan,rating=fpRating(price),budget=fpBudget(),amort=fpAmortization(price);
     const messages=[],negative=current.points.find(x=>x.cash<0),shortfall=budget.amount-price;
     const push=(level,title,detail)=>messages.push({level,title,detail});
-    if(negative)push('bad','資金不足を見込む年：'+negative.year+'年',
-      '年末現金が'+fpYen(negative.cash)+'。教育費・住宅購入費・収入変化などの時期を再確認してください。');
-    else push('good','期間中の年末現金はプラス',
-      '年末残高の最小値は'+fpYen(current.min)+'。ただし月中の資金不足はこの年次モデルでは判定できません。');
-    if(rating.remaining<rating.reserve)push('bad','購入時の生活防衛資金を確認',
-      '購入諸費用支払後の現金 '+fpYen(rating.remaining)+'に対し、6か月分の目安は '+fpYen(rating.reserve)+'（独自目安）。');
-    else push('good','生活防衛資金は参考目安以上',
-      '購入諸費用支払後の現金は'+fpYen(rating.remaining)+'。半年分の生活費との比較です。');
+    const negativeMonth=current.points.flatMap(point=>fpMonthlyLedger(point).months)
+      .find(x=>x.endingCash<0);
+    if(negativeMonth)push('bad','現金不足の可能性：'+negativeMonth.year+'年'+negativeMonth.month+'月',
+      '月末予測 '+fpYen(negativeMonth.endingCash)+'。年間払いを月割りにした概算のため、実際の支払月を確認してください。');
+    else if(negative)push('bad','資金不足を見込む年：'+negative.year+'年',
+      '年末現金が'+fpYen(negative.cash)+'。教育費・住宅購入費・収入変化などを確認してください。');
+    else push('good','表示期間の月末現金はマイナスなし',
+      '年末残高の最小値は'+fpYen(current.min)+'。年間支出の月割りを含む概算で、支払日ごとの残高は未判定です。');
+    // Use forecast cash at the actual purchase month, not today's initial
+    // savings less transaction costs. Prior wedding/travel events matter.
+    const purchasePoint=current.points.find(x=>x.year===budget.purchaseYear),
+      purchaseCash=purchasePoint?fpMonthlyLedger(purchasePoint).months[fpPurchaseMonth()-1].endingCash:null;
+    if(purchaseCash!==null){
+      if(purchaseCash<rating.reserve)push('bad','購入時の生活防衛資金を確認',
+        '購入月末の予測現金 '+fpYen(purchaseCash)+'に対し、6か月分の生活費・住居費の目安は '+fpYen(rating.reserve)+'。年間費用の月割りを含む概算です。');
+      else push('good','購入時点の生活防衛資金を確認',
+        '購入月末の予測現金 '+fpYen(purchaseCash)+'。6か月分の目安 '+fpYen(rating.reserve)+'以上ですが、月中の支払いタイミングには注意。');
+    }else push('warn','購入時の現金残高は未判定','購入年を資産予測の対象期間に含めてください。');
     if(shortfall<0)push('warn','想定価格が参考予算を超過',
       '約'+fpYen(Math.abs(shortfall))+'上回ります。物件価格・積立額・返済期間の組合せを再試算してください。');
     else push('good','購入価格は参考予算の範囲内',
@@ -1918,8 +1939,14 @@
       '車ローンは'+p.carLoanEndYear+'年まで年末基準で計上。購入年と返済終了時期を比較してください。');
     push('note','審査基準と家計判定は別',
       '額面年収が未入力のためフラット35の返済負担率基準は未判定。表示する手取り負担率はアプリ独自の目安です。');
+    if(safeNum(p.husbandAge)+(budget.purchaseYear+safeNum(p.loanYears)-simNowYear())>65)
+      push('warn','完済時の年齢を確認',
+        '65歳以降も現在の給与水準が続く仮定です。退職年齢と退職後の収入・生活費を別途試算してください。');
+    if(budget.missingEssentialInputs.length)
+      push('warn','支出の未入力で予算が過大になる可能性',
+        budget.missingEssentialInputs.join('・')+'が0円の状態です。入力済みのその他生活費に含めていない場合は登録してください。');
     push('note','未計上の税優遇と将来変動',
-      '住宅ローン控除は要件で異なるため未計上。物価、金利変更、購入月、教育費の進路差なども確認してください。');
+      '住宅ローン控除は未計上。物価上昇、金利変動、退職後の収入、教育費の進路差は自動で補正しません。');
     return messages;
   }
   function fpAdviceScreen(price,current){

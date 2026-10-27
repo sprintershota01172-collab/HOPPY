@@ -39,29 +39,29 @@ assert.ok(Math.abs(api.mortgageMonthly(original.amount,original.downPayment,orig
 assert.ok(api.mortgageMonthly(original.amount,original.downPayment,original.rate,original.loanYears)<=original.loanPayment+1e-8,
  'rounding is conservative');
 const card=api.fpMortgageCapacityCard();
-assert.match(card,/① 返済に回せる上限/);
-assert.match(card,/② この上限で/);
+assert.match(card,/毎月返せる目安/);
+assert.match(card,/住宅予算（借入額・/);
 assert.match(card,new RegExp(api.fpYen(original.loanPayment)));
 assert.match(card,new RegExp(api.fpYen(original.amount)));
-assert.match(card,/金利込み総支払額/);
+assert.match(card,/利息込み返済総額/);
 assert.match(card,/維持費・諸費用/);
 assert.match(card,/50万円単位で切下げ/);
 assert.match(card,/融資承認額ではありません/);
-assert.match(card,/住居費の予算/);
+assert.match(card,/住居費の目安/);
 // A household budget limit is not a loan bill. The entered home receives
 // a separate amortized payment at the configured loan length and rate.
 p.loanYears=50;
 p.propertyPrice=4400;
 let forFifty=api.fpMortgageCapacityCard();
 let actualFifty=api.mortgageMonthly(4400,0,1.5,50);
-assert.match(forFifty,/① 返済に回せる上限/);
-assert.match(forFifty,/② この上限で50年返済なら/);
+assert.match(forFifty,/毎月返せる目安/);
+assert.match(forFifty,/住宅予算（借入額・50年）/);
 assert.match(forFifty,/実際の請求額ではありません/);
 assert.ok(forFifty.includes('入力した物件 '+api.fpYen(4400)+' の返済予測'));
 assert.ok(forFifty.includes(api.fpYen(actualFifty)+' / 月'),
   'chosen property payment is derived from its actual loan size over 50 years');
 p.propertyPrice=api.fpBudget().amount*2;
-assert.match(api.fpMortgageCapacityCard(),/家計上限を/,'expensive chosen property warns about over-budget payment');
+assert.match(api.fpMortgageCapacityCard(),/返済目安を/,'expensive chosen property warns about over-budget payment');
 p.propertyPrice=4400;p.loanYears=35;
 const prior=original.amount;
 p.housingOngoing=4;
@@ -82,7 +82,7 @@ click('tab','sim');
 for(let i=0;i<7;i++)click('sim-next');
 assert.match(app.innerHTML,/data-fp-cash-month/);
 assert.match(app.innerHTML,/fp-capacity-card/);
-assert.match(app.innerHTML,/② この上限で/);
+assert.match(app.innerHTML,/住宅予算（借入額・/);
 assert.doesNotMatch(app.innerHTML,/<header class="top/);
 click('fp-result-tab','0');
 assert.match(app.innerHTML,/fp-capacity-card/);

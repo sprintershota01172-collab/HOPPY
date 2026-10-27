@@ -996,8 +996,10 @@
   function fpMortgageCapacityCard(){
     const b=fpBudget(),p=state.plan,reference=b.referenceYear,
       price=safeNum(p.propertyPrice),term=Math.max(12,Math.round(b.loanYears*12)),
-      downForBudget=Math.min(b.amount,b.downPayment),
-      paymentForBudget=mortgageMonthly(b.amount,b.downPayment,b.rate,b.loanYears),
+      showBasic=b.loanPayment<=0&&b.basicLoanPayment>0,
+      shownPrincipal=showBasic?b.basicAmount:b.amount,
+      downForBudget=Math.min(shownPrincipal,b.downPayment),
+      paymentForBudget=mortgageMonthly(shownPrincipal,b.downPayment,b.rate,b.loanYears),
       budgetTotal=downForBudget+paymentForBudget*term,
       selectedMonthly=mortgageMonthly(price,b.downPayment,b.rate,b.loanYears),
       over=selectedMonthly-b.loanPayment,within=over<=1e-8;
@@ -1007,8 +1009,8 @@
       '<div class="fp-capacity-columns">'+
       '<div class="fp-capacity-cell payment"><span>貯金・NISAを続ける場合</span>'+
       '<strong>'+fpYen(b.loanPayment)+'</strong><small> / 月</small></div>'+
-      '<div class="fp-capacity-cell price"><span>借入額の目安</span>'+
-      '<strong>'+fpYen(b.amount)+'</strong>'+
+      '<div class="fp-capacity-cell price"><span>'+(showBasic?'積立見直し時の借入額':'借入額の目安')+'</span>'+
+      '<strong>'+fpYen(shownPrincipal)+'</strong>'+
       '<small class="fp-capacity-interest">（利息込み返済総額 '+fpYen(budgetTotal)+'）</small></div></div>'+
       '<div class="fp-capacity-conditions"><span>年利 '+yen(b.rate,2)+'%</span>'+
       '<span>返済 '+Math.round(b.loanYears)+'年</span><span>全額借入</span></div>'+

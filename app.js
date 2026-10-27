@@ -1012,7 +1012,7 @@
       over=selectedMonthly-b.basicLoanPayment,within=over<=1e-8;
     return '<section class="fp-capacity-card" aria-label="返済予算と登録物件のローン返済予測">'+
       '<div class="fp-capacity-heading"><strong>住宅ローンの月額</strong>'+
-      '<span>'+b.startYear+'年の家計で計算／将来リスクは別判定</span></div>'+
+      '<span>'+(b.possibleLivingOverlap?'生活費の重複登録を要確認':b.startYear+'年の家計で計算／将来リスクは別判定')+'</span></div>'+
       '<div class="fp-capacity-columns">'+
       '<div class="fp-capacity-cell payment"><span>生活費優先の返済上限</span>'+
       '<strong>'+fpYen(b.basicLoanPayment)+'</strong><small> / 月</small></div>'+
@@ -1851,8 +1851,12 @@
           ['NISA等の積立・現金貯金','−'+fpYen(b.investing+b.cashTarget)],
           ['積立と両立できる返済余力',fpSignedYen(b.preferredRaw),fpBalanceTone(b.preferredRaw)]
         ])+
-        '<p class="fp-r-help">'+risk+
-          ' 学校費の準備は既に生活費に入る学費と重複しないよう計算。賞与・給付金は毎月の返済原資に含めず、別の現金予測で確認します。</p>'+
+        (b.possibleLivingOverlap?
+          '<div class="fp-duplicate-check"><strong>生活費の二重登録に注意</strong>'+
+          '<span>「その他の生活費」'+fpYen(b.legacyOtherLiving)+'/月と、食費・光熱費などの個別項目'+
+          fpYen(b.itemizedLiving)+'/月を両方計上しています。</span>'+
+          '<button type="button" data-act="fp-clear-legacy-living">その他生活費を0円に変更（確認あり）</button></div>':
+          '<p class="fp-r-help">'+risk+' 賞与・給付金は毎月のローン返済原資に含めません。</p>')+
         '<div class="fp-budget-loan-note">'+(deficit?'貯金・積立を希望どおり続けると月'+fpYen(deficit)+'不足。':'')+
           '物件'+fpYen(price)+'：月返済'+fpYen(loan.monthly)+
           '／'+loan.years+'年・年利'+yen(loan.rate,2)+'％・総返済'+fpYen(loan.monthly*n)+'</div>'+
@@ -1936,7 +1940,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<span class="fp-build-stamp" title="表示バージョン">r49</span></div></div>';
+      '<span class="fp-build-stamp" title="表示バージョン">r50</span></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2250,6 +2254,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r50',date:'2026.10.28',title:'借入額が小さくなる生活費の重複を診断',
+        details:['旧初期値「その他生活費20万円」と食費・光熱費の二重登録の可能性を警告','本人確認後にその他生活費だけを0円にできる操作を追加','入力値を黙って書き換えず実際の借入参考額と計算内訳を維持']},
       {version:'r49',date:'2026.10.28',title:'50万円の借入表示を訂正して2種類の予算を明示',
         details:['生活費を優先したローン返済上限と借入参考額を主表示','貯金・NISAを維持する場合の返済余力と借入額を別表示','50万円など積立条件に限定された数字だけで判断させない']},
       {version:'r48',date:'2026.10.28',title:'0円の原因を見える化・住宅予算の計算を再設計',
@@ -2291,7 +2297,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r49</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r50</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+
@@ -2416,6 +2422,21 @@
     if(action==='fp-edit-events')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=6;ui.simSubPage=2;});
     if(action==='fp-pie-open')return step(()=>{ui.simResultPage=3;ui.fpChartPage=3;});
     if(action==='fp-capacity-basis')return step(()=>{ui.simResultPage=5;ui.fpCalcPage=1;});
+    if(action==='fp-clear-legacy-living'){
+      const old=safeNum(state.plan.livingMonthly);
+      if(old<=0)return;
+      if(!confirm('「その他の生活費」'+fpYen(old)+'/月を0円に変更しますか？ 食費や光熱費など個別に入力した金額は残します。'))return;
+      return step(()=>{
+        if(!ui.fpHistoryLive){
+          const snap=fpLatestSnapshot();
+          if(snap)state.plan=JSON.parse(JSON.stringify(snap.plan));
+          ui.fpHistoryLive=true;
+        }
+        state.plan.livingMonthly=0;
+        save();ui.simResultPage=5;ui.fpCalcPage=1;
+        message('その他生活費を0円に変更しました');
+      });
+    }
     if(action==='fp-budget-edit-income')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=1;ui.simSubPage=0;});
     if(action==='fp-result-tab')return step(()=>{ui.fpBreakdownOpen=null;ui.simResultPage=Math.min(7,Math.max(0,Number(v)||0));ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
     if(action==='fp-cash-month')return step(()=>{ui.fpBreakdownOpen=null;ui.fpCashMonth=Math.min(12,Math.max(1,Number(v)||1));});

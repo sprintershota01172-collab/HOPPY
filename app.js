@@ -50,7 +50,7 @@
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:1,fpChartPage:0,fpBreakdownAnnual:'living',fpBreakdownMonthly:'living',fpBreakdownOpen:null,fpEditingRow:null,fpHistoryLive:true,fpIncomePeriod:'year',fpIncomeMonth:1,fpCashMonth:1,fpMonthView:'pie',fpAssetPeriod:'year',fpAssetMonth:1,fpHistoryPage:0,fpHistoryId:null,fpHistoryOpen:false,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:new Date().getFullYear(),simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',axisEdit:false,memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:1,fpChartPage:0,fpBreakdownAnnual:'living',fpBreakdownMonthly:'living',fpBreakdownOpen:null,fpEditingRow:null,fpBreakdownPageKey:'',fpBreakdownPageIndex:0,fpHistoryLive:true,fpIncomePeriod:'year',fpIncomeMonth:1,fpCashMonth:1,fpMonthView:'pie',fpAssetPeriod:'year',fpAssetMonth:1,fpHistoryPage:0,fpHistoryId:null,fpHistoryOpen:false,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:new Date().getFullYear(),simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',axisEdit:false,memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
   if(state.plan.hasRun){ui.simStep=7;ui.simResultPage=1;ui.fpYear=new Date().getFullYear();}
   function normalize(s) {
@@ -1484,22 +1484,53 @@
     const item=items.find(x=>x.id===selectedKey)||items[0],annual=!month;
     if(!item)return '';
     const period=annual?'annual':'monthly',
-      rows=fpPieBreakdownRows(point,month,item.id),
-      income=annual?point.incomes:month.income,
-      percentage=income>0?(item.amount/income*100):null,
-      // Stable four-column footprint: neither cell width nor row pitch
-      // changes when another pie category has fewer/more line items.
+      allRows=fpPieBreakdownRows(point,month,item.id),
+      // Child expenses used to be the final rows in a long, clipped list.
+      // Bring the child/education lines first on the monthly living screen.
+      isChildRow=row=>/^(child|daycare)/.test(row.field||'')||
+        /^第[0-9]+子/.test(row.label)||/出産/.test(row.label),
+      sorted=item.id==='living'&&!annual?
+        [...allRows.filter(isChildRow),...allRows.filter(row=>!isChildRow(row))]:allRows,
       cols=4,
+      // The card and pie keep their existing footprint and 4-column pitch.
+      // Showing more physical rows than fit previously hid costs silently.
+      pageSize=window.matchMedia('(max-height:860px)').matches?4:8,
+      pageCount=Math.max(1,Math.ceil(sorted.length/pageSize)),
+      viewKey=[period,point.year,month?.month||0,item.id].join(':');
+    if(ui.fpBreakdownPageKey!==viewKey){
+      ui.fpBreakdownPageKey=viewKey;
+      ui.fpBreakdownPageIndex=0;
+    }
+    const page=Math.min(pageCount-1,Math.max(0,Number(ui.fpBreakdownPageIndex)||0)),
+      pageStart=page*pageSize,
+      rows=sorted.slice(pageStart,pageStart+pageSize),
       gridRows=Math.max(1,Math.ceil(rows.length/cols)),
+      totalBreakdown=allRows.reduce((sum,row)=>sum+row.amount,0),
+      unmatched=item.amount-totalBreakdown,
+      mismatch=Math.abs(unmatched)>1e-5,
+      pager=pageCount===1?'':(
+        '<div class="fp-breakdown-pager" role="group" aria-label="内訳のページ切替">'+
+        '<button type="button" data-act="fp-breakdown-page" data-period="'+period+
+          '" data-value="-1" aria-label="前の内訳" '+(page===0?'disabled':'')+'>‹</button>'+
+        '<span>'+(page+1)+'/'+pageCount+'</span>'+
+        '<button type="button" data-act="fp-breakdown-page" data-period="'+period+
+          '" data-value="1" aria-label="次の内訳" '+(page===pageCount-1?'disabled':'')+'>›</button></div>'
+      ),
       density='',
       dense=false;
     const children=(item.id==='living'&&!annual||item.id==='education'&&annual)?
       fpSchoolBreakdown(point.year):[];
+    const futureKids=item.id==='living'&&!annual?Math.min(3,Math.max(0,Math.round(safeNum(state.plan.children)))):0,
+      births=Array.from({length:futureKids},(_,i)=>
+        safeNum(state.plan.firstChildYear)+i*Math.max(1,safeNum(state.plan.birthInterval,3))),
+      upcoming=births.filter(year=>year>point.year);
     const schoolContext=children.length?
       '<p class="fp-child-school-context" title="学校費の対象年齢">'+
         children.map(child=>'第'+child.index+'子 '+child.age+'歳 '+child.stage+
           (child.annual===0?'・学校費0円':'')).join(' ／ ')+
-      '</p>':'';
+      '</p>':
+      upcoming.length?
+        '<p class="fp-child-school-context">子ども費は'+Math.min(...upcoming)+'年の出生予定から順次計上</p>':'';
     const entries=rows.map(row=>{
       const type=row.field?'field':row.expenseId?'expense':row.eventId?'event':'',
         key=row.field||row.expenseId||row.eventId||'',editable=!!type,
@@ -1534,7 +1565,10 @@
     return '<section class="fp-breakdown-panel" data-fp-inline-breakdown data-fp-category="'+item.id+'" aria-label="'+esc(item.label)+'の内訳">'+
       '<div class="fp-breakdown-title"><span>'+esc(item.label)+'の内訳</span>'+
       '<strong>'+fpYen(item.amount)+'</strong>'+
-      '<small class="fp-breakdown-meta">'+rows.length+'項目</small>'+
+      '<small class="fp-breakdown-meta">全'+allRows.length+'項目'+
+        (pageCount>1?'（'+(pageStart+1)+'〜'+Math.min(allRows.length,pageStart+pageSize)+'件を表示）':'')+
+      '</small>'+pager+
+      (mismatch?'<span class="fp-breakdown-mismatch">合計差 '+fpSignedYen(unmatched)+'</span>':'')+
       schoolContext+'</div>'+
       '<div class="fp-breakdown-list'+density+(dense?' fp-breakdown-dense':'')+
         '" data-fp-cols="'+cols+'" data-fp-rows="'+gridRows+
@@ -2586,6 +2620,17 @@
       // Only replace the inline breakdown. Recreating #app triggers the
       // screen entrance animation and resets scroll on every category tap.
       fpRefreshSelectedBreakdown(period,v);
+      return;
+    }
+    if(action==='fp-breakdown-page'){
+      const period=button.dataset.period==='annual'?'annual':'monthly',
+        category=period==='annual'?ui.fpBreakdownAnnual:ui.fpBreakdownMonthly,
+        delta=Math.round(Number(v)||0);
+      if(!delta)return;
+      ui.fpBreakdownPageIndex=Math.max(0,(Number(ui.fpBreakdownPageIndex)||0)+delta);
+      ui.fpEditingRow=null;
+      // Swap only the detail panel. Never move the pie, header or other cards.
+      fpRefreshSelectedBreakdown(period,category);
       return;
     }
     if(action==='fp-row-edit'){

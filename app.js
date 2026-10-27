@@ -952,7 +952,7 @@
       },{paid:0,monthly:0}).monthly,
       // The school costs already in the initial monthly cashflow should not
       // be deducted a second time as part of the education provision.
-      schoolTopUp=Math.max(0,schoolReserve-initial.school),
+      schoolTopUp=0, // Future school costs are assessed by year below; do not deduct a second tuition reserve from the initial monthly capacity.
       maintenance=safeNum(p.housingOngoing),
       // Essentials-first ceiling protects everyday expenses and reserves,
       // before optional investments and discretionary cash savings.

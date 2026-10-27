@@ -1638,17 +1638,18 @@
           '<label class="fp-setting-input fp-cash-goal-monthly"><input data-fp-quick-key="otherSavingsMonthly" type="number" min="0" max="100000000" inputmode="numeric" value="'+fpYenNumber(plan.otherSavingsMonthly)+'" aria-label="毎月の現金貯金目標（円）"><small>円/月</small></label>')+
         '<div class="fp-goal-active"><span>計算に使う月額</span><strong>'+fpYen(target)+' / 月</strong></div>'+
         '<small class="fp-goal-no-double">貯金目標は支出に足しません。月収支からこの額を取り分けた残りが「自由に使える余裕」です。</small></section>'+
-      '<div class="fp-setting-outcome"><div><span>'+point.year+'年'+selected.month+'月の現金収支</span>'+
+      '<div class="fp-setting-outcome"><div><span>'+point.year+'年'+selected.month+'月の現金残り</span>'+
         '<strong class="'+fpBalanceTone(selected.net)+'">'+fpSignedYen(selected.net)+'</strong></div>'+
-        '<div><span>貯金目標との比較</span><strong class="'+fpBalanceTone(surplus)+'">'+
-          (target>0?fpSignedYen(surplus):'目標0円')+'</strong></div></div>'+
-      '<p class="fp-setting-footer">貯金目標は支出に含みません。学資保険は加入人数で計算。</p>'+
+        '<div><span>貯金目標を確保した後</span><strong class="'+fpBalanceTone(surplus)+'">'+
+          fpSignedYen(surplus)+'</strong></div></div>'+
+      '<p class="fp-setting-footer">月の現金残り − 貯金目標＝使える余裕。目標は支出に加算しません。</p>'+
       '<button class="fp-setting-back" data-act="fp-result-tab" data-value="1">‹ 月収支に戻る</button></div>';
   }
   function fpMonthlyReport(model){
     const point=fpYearPoint(model),ledger=fpMonthlyLedger(point),
       month=Math.min(12,Math.max(1,ui.fpCashMonth||1)),selected=ledger.months[month-1],
       isPie=ui.fpMonthView!=='detail';
+    const monthlyGoal=fpCashGoalMonthly(state.plan),availableAfterGoal=selected.net-monthlyGoal;
     const monthPicker='<label class="fp-month-select"><span>月</span>'+
       '<select data-fp-cash-month aria-label="収支を表示する月">'+
       ledger.months.map(x=>'<option value="'+x.month+'" '+(x.month===month?'selected':'')+'>'+
@@ -1664,9 +1665,11 @@
       '<div class="fp-month-hero fp-month-surplus '+fpBalanceTone(selected.net)+'" aria-label="'+
         (selected.net>0?'収入から残るプラス':selected.net<0?'収入に対する不足':'収支差額ゼロ')+'"><div>'+
         '<span><em class="fp-balance-chip">'+fpBalanceLabel(selected.net)+'</em> '+
-          '月収支</span>'+
+          '毎月の現金残り</span>'+ 
         '<strong class="'+fpBalanceTone(selected.net)+'">'+fpSignedYen(selected.net)+'</strong>'+
-        '<small class="fp-month-inline-ratio" aria-label="手取り収入に対する割合">手取り比 '+surplusPct+'</small></div>'+
+        '<small class="fp-month-inline-ratio fp-month-goal-gap '+fpBalanceTone(availableAfterGoal)+'" aria-label="貯金目標を引いた後の余裕" title="手取り比 '+surplusPct+'">'+
+          (monthlyGoal>0?'貯金目標 '+fpYen(monthlyGoal)+' 確保後：'+fpSignedYen(availableAfterGoal):'手取り比 '+surplusPct)+
+        '</small></div>'+
         '<div class="fp-month-savings"><span>月末の貯金</span>'+
         '<strong class="fp-month-savings-balance '+fpBalanceTone(selected.endingCash)+'">'+fpYen(selected.endingCash)+'</strong>'+
         fpMonthlySavingsTrend(ledger,month)+'</div></div>'+

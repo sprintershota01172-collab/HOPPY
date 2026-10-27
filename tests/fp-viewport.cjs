@@ -36,7 +36,7 @@ const browserCode=[
  'return {top:b.top,bottom:b.bottom,height:b.height,scrollHeight:e.scrollHeight,clientHeight:e.clientHeight}};',
  'const m={main:r(q("main.main")),capacity:r(q(".fp-capacity-card")),',
  'footnote:r(q(".fp-capacity-footnote")),actual:r(q(".fp-capacity-example")),',
- 'hero:r(q(".fp-month-surplus")),heroSmall:r(q(".fp-month-surplus small")),',
+ 'hero:r(q(".fp-month-surplus")),heroSmall:r(q(".fp-month-surplus small")),savings:r(q(".fp-month-savings-trend")),',
  'education:r(q(".fp-education-card")),educationInput:r(q(".fp-education-input input")),',
  'educationMonthly:r(q(".fp-education-out>strong")),educationFootnote:r(q(".fp-education-footnote")),',
  'panel:r(q(".fp-breakdown-panel")),lastRow:r(Array.from(document.querySelectorAll(".fp-breakdown-panel .fp-breakdown-row:not([hidden])")).at(-1)),',
@@ -71,6 +71,7 @@ try{
   inside('Mortgage note',m.capacity,m.footnote);
   inside('Actual payment',m.capacity,m.actual);
   inside('Monthly surplus sublabel',m.hero,m.heroSmall);
+  inside('Monthly cash-savings trend',m.hero,m.savings);
   inside('Education premium input',m.education,m.educationInput);
   inside('Education total premium',m.education,m.educationMonthly);
   inside('Education insurance explanation',m.education,m.educationFootnote);

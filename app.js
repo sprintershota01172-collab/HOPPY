@@ -1655,7 +1655,7 @@
   function fpCalcRows(rows){
     return '<div class="fp-r-rows">'+rows.map(([label,value,tone])=>
       '<div><span>'+esc(label)+'</span><strong class="'+(tone==='negative'?'fp-amount-negative':
-        tone==='positive'?'fp-amount-positive':'')+'">'+value+'</strong></div>').join('')+'</div>';
+        tone==='positive'?'fp-amount-positive':tone==='interest'?'fp-interest-included':tone==='principal'?'fp-principal-value':'')+'">'+value+'</strong></div>').join('')+'</div>';
   }
   function fpMonthlyAllocation(month){
     const income=Math.max(0,month.income),living=Math.max(0,month.household+month.annualBudget),
@@ -1952,10 +1952,10 @@
           ['その年の学校費','−'+fpYen(b.school)],
           ['急な出費の予備費','−'+fpYen(b.buffer)],
           ['住宅維持費（税・修繕）','−'+fpYen(b.maintenance)],
-          ['生活費優先の月返済上限',fpYen(b.basicLoanPayment)+(b.basicRaw<0?'（生活費不足 '+fpYen(-b.basicRaw)+'）':''),b.basicRaw<0?'negative':''],
+          ['金利込み・生活費優先の月返済上限',fpYen(b.basicLoanPayment)+(b.basicRaw<0?'（生活費不足 '+fpYen(-b.basicRaw)+'）':''),b.basicRaw<0?'negative':'interest'],
           ['NISA等の積立・現金貯金','−'+fpYen(b.investing+b.cashTarget)],
-          ['積立を維持する月返済目安',fpYen(b.loanPayment)+(b.preferredRaw<0?'（不足 '+fpYen(-b.preferredRaw)+'）':''),b.preferredRaw<0?'negative':''],
-          ['同条件の借入参考額',fpYen(b.amount)]
+          ['金利込み・積立維持の月返済目安',fpYen(b.loanPayment)+(b.preferredRaw<0?'（不足 '+fpYen(-b.preferredRaw)+'）':''),b.preferredRaw<0?'negative':'interest'],
+          ['同条件の借入元金（利息別）',fpYen(b.amount),'principal']
         ])+
         (b.missingEssentialInputs.length?
           '<div class="fp-duplicate-check"><strong>生活費の入力が不足しています</strong><span>'+esc(b.missingEssentialInputs.join('・'))+'を確認してください。未入力を0円としているため、借入参考額は過大になり得ます。</span></div>':'')+
@@ -1966,8 +1966,8 @@
           '<button type="button" data-act="fp-clear-legacy-living">その他生活費を0円に変更（確認あり）</button></div>':
           '<p class="fp-r-help">'+risk+' 賞与・給付金は毎月のローン返済原資に含めません。</p>')+
         '<div class="fp-budget-loan-note">'+(deficit?'貯金・積立を維持すると月'+fpYen(deficit)+'不足。':'')+
-          '借入元金 '+fpYen(price)+' ／ 金利込み月返済 <strong class="fp-interest-included">'+fpYen(loan.monthly)+'</strong>'+
-          ' × '+n+'回 ＝ 金利込み総返済 <strong class="fp-interest-included">'+fpYen(loan.monthly*n)+'</strong>（年利'+yen(loan.rate,2)+'％）</div>'+
+          '借入元金 '+fpYen(price)+' ／ 金利込み月返済 <strong class="fp-interest-included">'+fpYen(fpMortgageDisplayAmounts(price,loan.rate,loan.years).monthly)+'</strong>'+
+          ' × '+n+'回 ＝ 金利込み総返済 <strong class="fp-interest-included">'+fpYen(fpMortgageDisplayAmounts(price,loan.rate,loan.years).total)+'</strong>（年利'+yen(loan.rate,2)+'％）</div>'+
         '<button type="button" data-act="fp-budget-edit-income" class="fp-setting-back">手取り収入を確認 ›</button>'+ 
         '<button type="button" data-act="fp-result-tab" data-value="1" class="fp-setting-back">‹ 月収支に戻る</button>'+
       '</div>';

@@ -996,20 +996,22 @@
   function fpMortgageCapacityCard(){
     const b=fpBudget(),p=state.plan,reference=b.referenceYear,
       price=safeNum(p.propertyPrice),term=Math.max(12,Math.round(b.loanYears*12)),
-      showBasic=b.loanPayment<=0&&b.basicLoanPayment>0,
-      shownPrincipal=showBasic?b.basicAmount:b.amount,
+      // Always show an essentials-first ceiling as the headline loan amount;
+      // keeping all chosen savings plans is a separate (often much smaller)
+      // scenario and must never masquerade as the bank borrowing limit.
+      shownPrincipal=b.basicAmount,
       downForBudget=Math.min(shownPrincipal,b.downPayment),
       paymentForBudget=mortgageMonthly(shownPrincipal,b.downPayment,b.rate,b.loanYears),
       budgetTotal=downForBudget+paymentForBudget*term,
       selectedMonthly=mortgageMonthly(price,b.downPayment,b.rate,b.loanYears),
-      over=selectedMonthly-b.loanPayment,within=over<=1e-8;
+      over=selectedMonthly-b.basicLoanPayment,within=over<=1e-8;
     return '<section class="fp-capacity-card" aria-label="返済予算と登録物件のローン返済予測">'+
       '<div class="fp-capacity-heading"><strong>住宅ローンの月額</strong>'+
       '<span>'+b.startYear+'年の家計で計算／将来リスクは別判定</span></div>'+
       '<div class="fp-capacity-columns">'+
-      '<div class="fp-capacity-cell payment"><span>貯金・NISAを続ける場合</span>'+
-      '<strong>'+fpYen(b.loanPayment)+'</strong><small> / 月</small></div>'+
-      '<div class="fp-capacity-cell price"><span>'+(showBasic?'積立見直し時の借入額':'借入額の目安')+'</span>'+
+      '<div class="fp-capacity-cell payment"><span>生活費優先の返済上限</span>'+
+      '<strong>'+fpYen(b.basicLoanPayment)+'</strong><small> / 月</small></div>'+
+      '<div class="fp-capacity-cell price"><span>生活費優先の借入参考額</span>'+
       '<strong>'+fpYen(shownPrincipal)+'</strong>'+
       '<small class="fp-capacity-interest">（利息込み返済総額 '+fpYen(budgetTotal)+'）</small></div></div>'+
       '<div class="fp-capacity-conditions"><span>年利 '+yen(b.rate,2)+'%</span>'+
@@ -1018,14 +1020,13 @@
       '<div class="fp-capacity-example-main"><span>物件価格 '+fpYen(price)+' の月返済</span>'+
       '<strong>'+fpYen(selectedMonthly)+' / 月</strong></div>'+
       '<div class="fp-capacity-example-status '+(within?'within':'over')+'">'+
-      (within?'積立と両立できる余裕 '+fpYen(Math.max(0,-over))+' / 月':
-        b.basicLoanPayment>0&&selectedMonthly<=b.basicLoanPayment?
-        '貯金・NISAを見直すと届く可能性あり':
-        '生活費優先の上限と比較してください')+'</div></div>'+
+      (within?
+        selectedMonthly<=b.loanPayment?'生活費と積立を両立できます':'生活費は確保可能。積立の見直しが必要':
+        '生活費を優先しても月'+fpYen(Math.max(0,over))+'超過')+'</div></div>'+
       '<p class="fp-capacity-footnote"><span class="fp-capacity-housing-total'+(b.basicRaw<0?' shortfall':'')+'">'+
-        (b.monthlyIncome<=0?'夫婦の手取りが0円です。収入設定を確認':
-          b.basicRaw<0?'生活費だけで <strong>'+fpYen(-b.basicRaw)+'/月不足</strong>':
-          '積立を見直す場合の上限 <strong>'+fpYen(b.basicLoanPayment)+'/月</strong>')+
+        (b.monthlyIncome<=0?'月手取り0円：収入設定を確認':
+          b.basicRaw<0?'生活費に月<strong>'+fpYen(-b.basicRaw)+'</strong>不足':
+          '貯金・NISAを続けた場合：月<strong>'+fpYen(b.loanPayment)+'</strong>（借入'+fpYen(b.amount)+'）')+
         '</span><button type="button" data-act="fp-capacity-basis" class="fp-capacity-basis-link">計算の内訳 ›</button></p>'+
       '</section>';
   }

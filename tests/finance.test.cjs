@@ -146,8 +146,8 @@ test('monthly final remainder deducts spending, investments, cash savings and em
   assert.equal(month.buffer,2.5);
   assert.ok(Math.abs(month.endingCash-month.openingCash-month.net)<1e-8);
   const pie=x.fpMonthlyAllocation(month);
-  assert.ok(pie.items.some(i=>i.id==='cash-goal'&&i.amount===3.5));
-  assert.ok(pie.items.some(i=>i.id==='buffer'&&i.amount===2.5));
+  assert.ok(pie.items.some(i=>i.id==='reserved'&&i.amount===6));
+  assert.equal(pie.items.length,6);
   assert.ok(Math.abs(pie.remaining-Math.max(0,month.available))<1e-8);
   assert.match(x.fpMonthlyReport(projection),/全て引いた残額/);
 });
@@ -168,6 +168,9 @@ test('negative balances are marked negative and mortgage interest is not confuse
   assert.match(loan,/× 420回/);
   const matches=loan.match(/class="fp-loan-with-interest"/g)||[];
   assert.equal(matches.length,2);
+  const shown=loan.match(/金利込み・月々の返済<\/span><strong>([\d,]+)円<\/strong>[\s\S]*?× (\d+)回[\s\S]*?金利込み・総返済額<\/span><strong>([\d,]+)円<\/strong>/);
+  assert.ok(shown,'Payment × term = total relationship must be shown');
+  assert.equal(Number(shown[1].replace(/,/g,''))*Number(shown[2]),Number(shown[3].replace(/,/g,'')));
 });
 
 test('cash goal deadline also updates monthly final remainder',()=>{

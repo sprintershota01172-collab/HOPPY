@@ -4899,3 +4899,49 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   #app .fp-budget-evidence .fp-r-rows>div{min-height:23px!important}
   #app .fp-budget-evidence .fp-r-help{font-size:8px!important;line-height:1.24!important}
 }
+
+/* FP r46: show the household's actual spendable housing allowance first. */
+#app .fp-focus .fp-capacity-footnote .fp-capacity-housing-total{
+  display:flex!important;flex:1 1 0!important;min-width:0!important;
+  gap:4px!important;align-items:center!important;
+  font-size:9px!important;line-height:1.15!important;
+  font-weight:750!important;color:#57717c!important;
+  white-space:nowrap!important;
+}
+#app .fp-focus .fp-capacity-footnote .fp-capacity-housing-total strong{
+  color:#216a57!important;font-size:11px!important;
+  font-weight:900!important;white-space:nowrap!important;
+  font-variant-numeric:tabular-nums!important;
+}
+#app .fp-capacity-basis-link{
+  color:#216a57!important;font-weight:800!important;
+  font-size:9px!important;white-space:nowrap!important;
+}
+#app .fp-budget-evidence .fp-budget-year-caption{
+  margin:0!important;flex:none!important;
+  color:#586e7b!important;font-size:10px!important;
+  font-weight:750!important;line-height:1.2!important;
+}
+#app .fp-budget-evidence .fp-r-rows>div:nth-last-child(3){
+  background:#eff7f2!important;
+}
+#app .fp-budget-evidence .fp-r-rows>div:last-child{
+  background:#e2f2e7!important;
+  border-radius:6px!important;
+}
+#app .fp-budget-evidence .fp-r-rows>div:last-child strong{
+  font-size:13px!important;color:#205f4c!important;
+}
+@media(max-height:790px){
+  #app .fp-budget-evidence .fp-budget-year-caption{font-size:9px!important}
+  #app .fp-budget-evidence .fp-r-rows>div{min-height:22px!important}
+  #app .fp-budget-evidence .fp-r-help{font-size:8px!important;line-height:1.2!important}
+  #app .fp-focus .fp-capacity-footnote .fp-capacity-housing-total{font-size:8px!important}
+  #app .fp-focus .fp-capacity-footnote .fp-capacity-housing-total strong{font-size:10px!important}
+}
+@media(max-width:365px){
+  #app .fp-focus .fp-capacity-footnote .fp-capacity-housing-total{
+    font-size:7.5px!important;gap:2px!important;
+  }
+  #app .fp-focus .fp-capacity-footnote .fp-capacity-housing-total strong{font-size:9px!important}
+}

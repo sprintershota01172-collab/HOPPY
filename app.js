@@ -1797,11 +1797,17 @@
     const p=state.plan,price=safeNum(p.propertyPrice),current=modelYears(price,true),rent=modelYears(price,false),
       budget=fpBudget(),rating=fpRating(price),warnings=fpPlanWarnings(),
       page=Math.min(7,Math.max(0,ui.simResultPage||0));
-    const intro='<div class="sim-intro"><span class="kicker">FP</span>'+
+    const intro='<div class="sim-intro"><span class="fp-friend-brand" aria-label="ほっぽさん FP">'+
+      '<svg viewBox="0 0 32 32" width="23" height="23" aria-hidden="true" focusable="false">'+
+      '<rect x="1" y="1" width="30" height="30" rx="11" fill="#def0e4"/>'+
+      '<path d="M7.5 15.5 16 8l8.5 7.5v9H7.5z" fill="#fff9e9" stroke="#387c6b" stroke-width="1.9" stroke-linejoin="round"/>'+
+      '<circle cx="13" cy="18" r="1" fill="#387c6b"/><circle cx="19" cy="18" r="1" fill="#387c6b"/>'+
+      '<path d="M13 21q3 3 6 0" fill="none" stroke="#387c6b" stroke-width="1.4" stroke-linecap="round"/></svg>'+
+      '<strong>ほっぽさん</strong><small>FP</small></span>'+
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<span class="fp-build-stamp" title="表示バージョン">r41</span></div></div>';
+      '<span class="fp-build-stamp" title="表示バージョン">r42</span></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2115,6 +2121,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r42',date:'2026.10.27',title:'内訳位置を固定・丸みのある文字とロゴを追加',
+        details:['円グラフの項目を切り替えてもカード・グラフ・見出し位置を固定','日本語の丸ゴシック系フォントを優先','FPヘッダーに小さな家のロゴを追加']},
       {version:'r41',date:'2026.10.27',title:'月収支の余白とカード間隔を最適化',
         details:['入力欄を移した分、収支・月選択・グラフ・内訳の間隔を広げて配置','収支内訳の帯と貯金推移の余裕を改善','円グラフのサイズ・4列内訳・1画面表示は維持']},
       {version:'r40',date:'2026.10.27',title:'月収支をすっきり整理・FP設定タブを追加',
@@ -2140,7 +2148,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r41</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r42</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

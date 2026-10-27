@@ -933,7 +933,7 @@
       '<div class="fp-capacity-columns">'+
       '<div class="fp-capacity-cell payment"><span>毎月返せる目安</span>'+
       '<strong>'+fpYen(b.loanPayment)+'</strong><small> / 月</small></div>'+
-      '<div class="fp-capacity-cell price"><span>住宅予算（借入額・'+Math.round(b.loanYears)+'年）</span>'+
+      '<div class="fp-capacity-cell price"><span>借入額の目安</span>'+
       '<strong>'+fpYen(b.amount)+'</strong>'+
       '<small class="fp-capacity-interest">（利息込み返済総額 '+fpYen(budgetTotal)+'）</small></div></div>'+
       '<div class="fp-capacity-conditions"><span>年利 '+yen(b.rate,2)+'%</span>'+
@@ -1635,7 +1635,7 @@
         fpMonthlySavingsTrend(ledger,month)+'</div></div>'+
       '<div class="fp-month-summary" aria-label="月の収支計算">'+
         '<span>手取り <b>'+fpYen(selected.income)+'</b></span>'+
-        '<span>生活・住居費 <b>−'+fpYen(selected.spending)+'</b></span>'+
+        '<span>生活・住居ほか <b>−'+fpYen(selected.spending)+'</b></span>'+
         '<span>投資積立 <b>−'+fpYen(selected.investing)+'</b></span></div>'+
       
       (isPie?fpMonthlyPie(selected,point):'<div class="fp-cash-rows">'+

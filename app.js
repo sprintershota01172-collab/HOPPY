@@ -1801,7 +1801,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<span class="fp-build-stamp" title="表示バージョン">r40</span></div></div>';
+      '<span class="fp-build-stamp" title="表示バージョン">r41</span></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2115,6 +2115,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r41',date:'2026.10.27',title:'月収支の余白とカード間隔を最適化',
+        details:['入力欄を移した分、収支・月選択・グラフ・内訳の間隔を広げて配置','収支内訳の帯と貯金推移の余裕を改善','円グラフのサイズ・4列内訳・1画面表示は維持']},
       {version:'r40',date:'2026.10.27',title:'月収支をすっきり整理・FP設定タブを追加',
         details:['自由費・学資保険・現金貯金目標の入力を設定タブへ移動','月収支には収支・現金貯金推移・円グラフと内訳を表示','設定変更は月収支・資産予測に反映']},
       {version:'r39',date:'2026.10.27',title:'月収支と現金貯金の推移を同じ画面で表示',
@@ -2138,7 +2140,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r40</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r41</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

@@ -379,6 +379,11 @@
     if(Number(p.goalCashEnabled)!==1)return safeNum(p.otherSavingsMonthly);
     return fpTargetMonthly(p.goalCashAmount,safeNum(p.cashSavings)+safeNum(p.support),Math.max(1,safeNum(p.goalCashYears))*12,0);
   }
+  // Cash saving is an earmarked balance, not a perpetual expense.
+  function fpCashGoalForYear(year,p=state.plan){
+    const target=fpCashGoalMonthly(p);
+    return Number(p.goalCashEnabled)===1&&year>=simNowYear()+Math.max(1,safeNum(p.goalCashYears))?0:target;
+  }
   function fpEducationGoal(p,index){
     const birth=safeNum(p.firstChildYear)+(index-1)*Math.max(1,safeNum(p.birthInterval,3));
     const age=Math.min(30,Math.max(0,Math.round(safeNum(p['goalEduAge'+index]))));
@@ -901,7 +906,7 @@
       payment=mortgageMonthly(cost,0,rate,p.loanYears),
       housing=payment+safeNum(p.housingOngoing),
       ratio=budget.monthlyIncome>0?housing/budget.monthlyIncome:Infinity,
-      spendable=budget.monthlyIncome-budget.spending-budget.investing-housing,
+      spendable=budget.monthlyIncome-budget.spending-budget.investing-budget.cashTarget-budget.buffer-housing,
       upfront=cost*.07,
       remaining=safeNum(p.cashSavings)+safeNum(p.support)-upfront,
       reserve=6*(budget.spending+housing);
@@ -921,10 +926,10 @@
     const living=fpSpendingMonthly(year); // rent and mortgage are NOT part of this
     const spending=living+school;
     const investing=fpNisaForYear(year,p)+fpOtherInvestForYear(year,p);
-    const cashTarget=fpCashGoalMonthly(p),buffer=safeNum(p.cashBufferMonthly);
+    const cashTarget=fpCashGoalForYear(year,p),buffer=safeNum(p.cashBufferMonthly);
     const balanceCap=monthlyIncome-spending-investing-cashTarget-buffer;
     return {year,monthlyIncome,living,school,spending,investing,cashTarget,buffer,balanceCap,
-      ratioCap:monthlyIncome*.25};
+      ratioCap:null};
   }
   // Main estimate is based on housing expenses the household can pay from
   // ordinary wages in the intended purchase year. Later tuition peaks are
@@ -938,21 +943,17 @@
       endYear=Math.max(purchaseYear+20,kids?lastBirth+22:purchaseYear),
       finalYear=Math.min(purchaseYear+30,endYear),
       years=Array.from({length:finalYear-purchaseYear+1},(_,i)=>fpHousingYearBudget(purchaseYear+i,p)),
-      initial=years[0],
+      // The delivery-year temporary pay reduction is assessed as an annual risk;
+      // normal recurring instalments use the first ordinary post-birth year.
+      referenceYear=kids&&purchaseYear===safeNum(p.firstChildYear)?purchaseYear+1:purchaseYear,
+      initial=years.find(row=>row.year===referenceYear)||years[0],
       itemizedLiving=fpDetailCategories.reduce((sum,[key])=>sum+
-        (key==='waterBiMonthly'?safeNum(p[key])/2:safeNum(p[key])),0),
+        (key==='livingMonthly'?0:key==='waterBiMonthly'?safeNum(p[key])/2:safeNum(p[key])),0),
       legacyOtherLiving=safeNum(p.livingMonthly),
       possibleLivingOverlap=legacyOtherLiving>=10&&itemizedLiving>=1,
-      // School expenses are cash needs in their actual years. For a simple
-      // monthly *planning* provision, cover the maximum cumulative amount
-      // due through each year from the purchase date (0% cash growth).
-      schoolReserve=years.reduce((acc,row,i)=>{
-        const paid=acc.paid+row.school*12;
-        return {paid,monthly:Math.max(acc.monthly,paid/(12*(i+1)))};
-      },{paid:0,monthly:0}).monthly,
-      // The school costs already in the initial monthly cashflow should not
-      // be deducted a second time as part of the education provision.
-      schoolTopUp=0, // Future school costs are assessed by year below; do not deduct a second tuition reserve from the initial monthly capacity.
+      // Tuition belongs to its actual year in the annual forecast; never
+      // deduct a second tuition provision from the monthly borrowing limit.
+      schoolReserve=0,schoolTopUp=0,
       maintenance=safeNum(p.housingOngoing),
       // Essentials-first ceiling protects everyday expenses and reserves,
       // before optional investments and discretionary cash savings.
@@ -979,7 +980,7 @@
     const basicAmount=roundDown(principalFor(basicLoanPayment,safeNum(p.interest)));
     const stressAmount=roundDown(principalFor(loanPayment,safeNum(p.interest)+1));
     return {amount,basicAmount,stressAmount,monthlyIncome:initial.monthlyIncome,
-      housingLimit:initial.ratioCap,ratioCap:initial.ratioCap,
+      housingLimit:null,ratioCap:null,
       balanceCap,living:initial.living,school:initial.school,
       schoolTopUp,schoolReserve,schoolPeak:schoolPeak.school,schoolPeakYear:schoolPeak.year,
       spending:initial.living+initial.school+schoolTopUp,
@@ -991,7 +992,7 @@
       maintenance,cashflowHousingLimit:balanceCap,
       loanPrincipal:principalFor(loanPayment,safeNum(p.interest)),downPayment:0,
       rate:safeNum(p.interest),loanYears:safeNum(p.loanYears,35),
-      loanPayment,referenceYear:purchaseYear,startYear:purchaseYear,endYear:finalYear,
+      loanPayment,referenceYear,startYear:referenceYear,purchaseYear,endYear:finalYear,
       worstYear:worst.year,worstSurplus:worst.annualHousingCap,worst:worst,
       futureDeficitYears:assessed.filter(row=>row.annualHousingCap<0).length,
       years:assessed};
@@ -1044,10 +1045,8 @@
       level='warn';label='積立の見直し';reason='貯金・NISAを希望どおり続けるには予算超過です。';
     }else if(budget.worstSurplus<0){
       level='warn';label='将来の家計注意';reason=budget.worstYear+'年に教育費などで現金収支が不足する予測です。';
-    }else if(info.ratio>.35){
-      level='warn';label='住宅費割合注意';reason='毎月の家計は収まりますが、住宅費の手取り比率が35％を超えます。';
     }
-    if(info.spendable<safeNum(state.plan.cashBufferMonthly)+fpCashGoalMonthly(state.plan)&&level==='good'){
+    if(info.spendable<0&&level==='good'){
       level='warn';label='家計確認';reason='毎月の保険・子育て・積立を引くと、余裕費が不足します。';
     }
     if(info.remaining<0&&level==='good'){
@@ -1977,7 +1976,7 @@
         '<div class="fp-r-compact-stats">'+
         fpMetric('月々の住居費',fpYen(rating.housing))+
         fpMetric('手取り負担率',yen(rating.ratio*100,1)+'％')+
-        fpMetric('毎月の現金貯金の余力',fpSignedYen(rating.spendable),fpBalanceTone(rating.spendable))+
+        fpMetric('貯金・予備費確保後の月余裕',fpSignedYen(rating.spendable),fpBalanceTone(rating.spendable))+
         fpMetric('年末現金の最小値',fpYen(min.cash)+' ('+min.year+'年)',fpBalanceTone(min.cash))+'</div>'+
         '<button class="fp-pie-shortcut" data-act="fp-pie-open"><span class="fp-pie-mini" style="--pie-sweep:'+Math.min(100,Math.max(0,fpIncomeAllocation(fpYearPoint(current)).expensePercent||0))+'%"></span><span>収入に対する支出の割合</span><b>'+(fpIncomeAllocation(fpYearPoint(current)).expensePercent===null?'—':yen(fpIncomeAllocation(fpYearPoint(current)).expensePercent,1)+'%')+' ›</b></button>'+
         '<p class="fp-r-help">'+(negative?'注意：'+negative.year+'年に年末現金がマイナスになる試算です。':'この期間は年末現金のマイナスがありません。')+

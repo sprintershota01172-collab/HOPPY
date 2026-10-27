@@ -4529,3 +4529,87 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   #app .fp-setting-outcome>div{padding:6px 8px}
   #app .fp-setting-footer{font-size:8px}
 }
+
+
+/* FP r41 — make use of the space freed by moving inputs into Settings.
+   Major sections breathe vertically; the fixed-size donut and 4-column
+   breakdown cells are deliberately unchanged. */
+#app .fp-focus .fp-month-report{
+  justify-content:space-between!important;
+  row-gap:8px!important;
+  padding-bottom:8px!important;
+}
+#app .fp-focus .fp-month-report:has(>.fp-month-pie){
+  justify-content:space-between!important;
+  row-gap:8px!important;
+  padding-bottom:8px!important;
+}
+/* Balance strip is a genuine summary card, not a thin text divider. */
+#app .fp-focus .fp-month-report>.fp-month-summary{
+  display:flex!important;
+  flex:0 0 26px!important;
+  height:26px!important;
+  min-height:26px!important;
+  max-height:26px!important;
+  padding:3px 8px!important;
+  border-radius:9px!important;
+  box-sizing:border-box!important;
+  align-items:center!important;
+}
+#app .fp-focus .fp-month-summary span,
+#app .fp-focus .fp-month-summary b{
+  font-size:9px!important;
+  line-height:1.25!important;
+}
+/* Give cashflow/savings their own visual rhythm without enlarging SVGs. */
+#app .fp-focus .fp-month-report>.fp-month-surplus{
+  min-height:72px!important;
+  padding:8px 11px!important;
+}
+#app .fp-focus .fp-month-surplus>.fp-month-savings{
+  gap:2px!important;
+}
+#app .fp-focus .fp-month-report>.fp-month-head{
+  padding-inline:3px!important;
+}
+/* Leave a clean closing margin under the last breakdown row. */
+#app .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-breakdown-panel{
+  margin-bottom:4px!important;
+}
+@media(max-height:800px){
+  #app .fp-focus .fp-month-report,
+  #app .fp-focus .fp-month-report:has(>.fp-month-pie){
+    row-gap:5px!important;
+    padding-bottom:6px!important;
+  }
+  #app .fp-focus .fp-month-report>.fp-month-surplus{
+    min-height:65px!important;
+    padding:6px 8px!important;
+  }
+  #app .fp-focus .fp-month-report>.fp-month-summary{
+    flex-basis:22px!important;
+    height:22px!important;
+    min-height:22px!important;
+    max-height:22px!important;
+    padding:2px 5px!important;
+  }
+  #app .fp-focus .fp-month-summary span,
+  #app .fp-focus .fp-month-summary b{font-size:8px!important}
+}
+@media(max-height:680px){
+  #app .fp-focus .fp-month-report,
+  #app .fp-focus .fp-month-report:has(>.fp-month-pie){
+    row-gap:3px!important;
+    padding-bottom:4px!important;
+  }
+  #app .fp-focus .fp-month-report>.fp-month-surplus{
+    min-height:54px!important;
+    padding:4px 7px!important;
+  }
+  #app .fp-focus .fp-month-report>.fp-month-summary{
+    flex-basis:18px!important;
+    height:18px!important;
+    min-height:18px!important;
+    max-height:18px!important;
+  }
+}

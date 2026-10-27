@@ -5195,3 +5195,67 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   #app .fp-capacity-ceiling strong{white-space:normal!important;line-height:1.2}
   #app .fp-month-surplus .fp-month-final{font-size:17px!important;letter-spacing:-.055em!important}
 }
+
+
+/* r56: never silently clip line items. Keep chart/card dimensions and
+   the four-column, fixed row pitch; paginate inside only the detail panel. */
+#app .fp-breakdown-panel>.fp-breakdown-title{
+  position:relative!important;
+}
+#app .fp-breakdown-panel>.fp-breakdown-title>span:first-child{
+  box-sizing:border-box!important;
+  display:block!important;
+  max-width:100%!important;
+  padding-right:84px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  line-height:1.2!important;
+}
+#app .fp-breakdown-count{
+  font-weight:750!important;
+  color:#557487!important;
+  font-size:8px!important;
+  white-space:nowrap!important;
+}
+#app .fp-breakdown-pager{
+  position:absolute!important;
+  top:0!important;right:0!important;
+  height:21px!important;display:flex!important;
+  gap:3px!important;align-items:center!important;
+  margin:0!important;padding:0!important;
+  background:#fff!important;z-index:2!important;
+  border-radius:5px!important;
+}
+#app .fp-breakdown-pager>button{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  flex:0 0 23px!important;width:23px!important;height:21px!important;
+  min-width:23px!important;min-height:21px!important;
+  margin:0!important;padding:0!important;
+  font-size:18px!important;font-weight:850!important;line-height:1!important;
+  border:1px solid #c9ded8!important;border-radius:6px!important;
+  color:#246a59!important;background:#f3faf7!important;
+  touch-action:manipulation;
+}
+#app .fp-breakdown-pager>button:disabled{
+  opacity:.25!important;cursor:default!important;
+}
+#app .fp-breakdown-pager>span{
+  white-space:nowrap!important;min-width:24px!important;
+  font-size:9px!important;line-height:1!important;font-weight:800!important;
+  text-align:center!important;color:#315b6a!important;
+  font-variant-numeric:tabular-nums;
+}
+#app .fp-breakdown-mismatch{
+  position:absolute!important;
+  top:21px!important;right:0!important;max-width:45%!important;
+  font-size:8px!important;line-height:1.1!important;
+  color:#bc2634!important;background:#fff1f2!important;
+  padding:1px 3px!important;border-radius:4px!important;
+  white-space:nowrap!important;
+}
+#app .fp-breakdown-panel>.fp-breakdown-list{
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  grid-auto-flow:row!important;
+  align-content:start!important;
+}

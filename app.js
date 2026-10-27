@@ -1023,7 +1023,8 @@
         '貯金・NISAを見直すと届く可能性あり':
         '生活費優先の上限と比較してください')+'</div></div>'+
       '<p class="fp-capacity-footnote"><span class="fp-capacity-housing-total'+(b.basicRaw<0?' shortfall':'')+'">'+
-        (b.basicRaw<0?'生活費だけで <strong>'+fpYen(-b.basicRaw)+'/月不足</strong>':
+        (b.monthlyIncome<=0?'夫婦の手取りが0円です。収入設定を確認':
+          b.basicRaw<0?'生活費だけで <strong>'+fpYen(-b.basicRaw)+'/月不足</strong>':
           '積立を見直す場合の上限 <strong>'+fpYen(b.basicLoanPayment)+'/月</strong>')+
         '</span><button type="button" data-act="fp-capacity-basis" class="fp-capacity-basis-link">計算の内訳 ›</button></p>'+
       '</section>';
@@ -1849,6 +1850,7 @@
         '<div class="fp-budget-loan-note">'+(deficit?'貯金・積立を希望どおり続けると月'+fpYen(deficit)+'不足。':'')+
           '物件'+fpYen(price)+'：月返済'+fpYen(loan.monthly)+
           '／'+loan.years+'年・年利'+yen(loan.rate,2)+'％・総返済'+fpYen(loan.monthly*n)+'</div>'+
+        '<button type="button" data-act="fp-budget-edit-income" class="fp-setting-back">手取り収入を確認 ›</button>'+ 
         '<button type="button" data-act="fp-result-tab" data-value="1" class="fp-setting-back">‹ 月収支に戻る</button>'+
       '</div>';
     }
@@ -2406,6 +2408,7 @@
     if(action==='fp-edit-events')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=6;ui.simSubPage=2;});
     if(action==='fp-pie-open')return step(()=>{ui.simResultPage=3;ui.fpChartPage=3;});
     if(action==='fp-capacity-basis')return step(()=>{ui.simResultPage=5;ui.fpCalcPage=1;});
+    if(action==='fp-budget-edit-income')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=1;ui.simSubPage=0;});
     if(action==='fp-result-tab')return step(()=>{ui.fpBreakdownOpen=null;ui.simResultPage=Math.min(7,Math.max(0,Number(v)||0));ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
     if(action==='fp-cash-month')return step(()=>{ui.fpBreakdownOpen=null;ui.fpCashMonth=Math.min(12,Math.max(1,Number(v)||1));});
     if(action==='fp-month-view')return step(()=>{ui.fpMonthView=v==='detail'?'detail':'pie';});

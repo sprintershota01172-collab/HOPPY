@@ -983,8 +983,8 @@
       '<div class="fp-capacity-example-status '+(within?'within':'over')+'">'+
       (within?'返済目安まであと '+fpYen(Math.max(0,-over))+' / 月':
         '返済目安を '+fpYen(over)+' / 月超過')+'</div></div>'+
-      '<p class="fp-capacity-footnote">最も厳しい家計の年：'+reference+'年。'+
-        '<button type="button" data-act="fp-capacity-basis" class="fp-capacity-basis-link">根拠と計算式 ›</button></p>'+
+      '<p class="fp-capacity-footnote"><span class="fp-capacity-housing-total">家賃・住宅費に使える額 <strong>'+fpYen(b.housingBudget)+'/月</strong></span>'+
+        '<button type="button" data-act="fp-capacity-basis" class="fp-capacity-basis-link">計算の内訳 ›</button></p>'+
       '</section>';
   }
   function fpRating(price){
@@ -1797,7 +1797,7 @@
           ['住宅維持費（税・修繕など）','−'+fpYen(b.maintenance)],
           ['月々のローン返済に使える額',fpYen(b.loanPayment)]
         ])+
-        '<p class="fp-r-help">賞与・給付金・一時的な支出は月額の上限に含めません。手取り25％（'+fpYen(b.ratioCap)+'）は参考比率で、返済額を制限する計算には使っていません。銀行審査とは別の家計目安です。</p>'+
+        '<p class="fp-r-help">賞与・給付金・一時的な出費は月額上限に含めず、現金残高の予測で確認します。25％（'+fpYen(b.ratioCap)+'）は参考比率のみ。家計の目安で銀行の借入審査とは別です。</p>'+
         '<div class="fp-budget-loan-note">物件'+fpYen(price)+'：月返済'+fpYen(loan.monthly)+
           '／'+loan.years+'年・年利'+yen(loan.rate,2)+'％・総返済'+fpYen(loan.monthly*n)+'</div>'+
         '<button type="button" data-act="fp-result-tab" data-value="1" class="fp-setting-back">‹ 月収支に戻る</button>'+

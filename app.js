@@ -2098,7 +2098,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<a class="fp-build-stamp" title="更新を確認" href="./refresh.html">r55</a></div></div>';
+      '<a class="fp-build-stamp" title="更新を確認" href="./refresh.html">r56</a></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2413,6 +2413,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r56',date:'2026.10.28',title:'生活・子ども費の明細欠けを修正',
+        details:['子どもの保険・生活費・保育料・学資保険を内訳の先頭に表示','項目が多い場合も固定枠内で全件確認できるページ切替を追加','出産前の年は費用の計上開始年を表示','円グラフと内訳合計の一致を18ケース以上のテストで検証']},
       {version:'r55',date:'2026.10.28',title:'最終残額・金利込みローン・夫婦別貯金',
         details:['生活費・住宅費・NISA・現金貯金・予備費を引いた最終残額を大きく表示','不足は赤、借入元金と金利込み返済額は別色で表示','金利込みの月返済×返済回数＝総返済額を明示','夫と妻の貯金を2段で入力し旧合計を保護して引継ぎ']},
       {version:'r54',date:'2026.10.28',title:'最新版の反映とキャッシュ更新を改善',
@@ -2466,7 +2468,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r55</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r56</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

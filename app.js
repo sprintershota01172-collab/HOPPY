@@ -599,17 +599,24 @@
     if(i===5){
       // Current balance, manual savings, and reverse-calculated goals share tabs.
       pages.push(fpCompactPage('現金・貯金',[
-        f('預貯金残高','cashSavings','万円'),
-        f('これからの援助','support','万円'),
+        '<div class="fp-spouse-savings">'+
+          f('夫の貯金残高','husbandCashSavings','万円')+
+          f('妻の貯金残高','wifeCashSavings','万円')+
+          '<div class="fp-spouse-total">夫婦合計 <strong data-fp-cash-total>'+fpYen(fpHouseholdCashSavings(p))+'</strong></div>'+
+          (Number(p.legacySavingsNotice)===1?'<p class="fp-spouse-migration">旧「夫婦合計」を夫の欄に仮置きしています。夫婦別の金額に修正してください。合計はそのまま保持しています。</p>':'')+
+        '</div>',
+        f('これからの援助','support','万円')
+      ],'夫と妻の貯金を別々に登録。合計は資産推移・住宅購入時の現金へ反映します。'));
+      pages.push(fpCompactPage('現金の積立目標',[
         sSelect('現金貯金の決め方','goalCashEnabled',[[0,'毎月の金額を入力'],[1,'目標額から自動計算']]),
         ...(Number(p.goalCashEnabled)===1?[
           f('目標の現金残高','goalCashAmount','万円'),
           f('達成までの年数','goalCashYears','年')
         ]:[f('毎月残す貯金額','otherSavingsMonthly')]),
-        f('予備費（返済上限の計算用）','cashBufferMonthly')
-      ],'目標額方式は現在の現金残高から利息0％で逆算。貯金目標は支出に含めません。',
-      '<div class="fp-goal-preview"><span>設定する毎月貯金の目安</span><strong>'+
-      fpYen(fpCashGoalMonthly(p))+'</strong><small>月収支から確保する目標で、実際の現金残高への加算はありません</small></div>'));
+        f('予備費（支出ではない確保額）','cashBufferMonthly')
+      ],'現金貯金目標・予備費は支出と区別し、差し引き後の生活余力へ反映します。',
+      '<div class="fp-goal-preview"><span>毎月確保する現金貯金</span><strong>'+
+      fpYen(fpCashGoalMonthly(p))+'</strong><small>夫婦合計。貯金は実際の現金残高に二重加算しません。</small></div>'));
       pages.push(fpCompactPage('NISA｜積立・目標',[
         f('現在のNISA評価額','nisaBalance','万円'),
         sSelect('積立の決め方','goalNisaEnabled',[[0,'月額を入力'],[1,'目標額から計算']]),
@@ -694,7 +701,7 @@
     const p=state.plan,pages=fpWizardPages(i);
     ui.simSubPage=Math.max(0,Math.min(pages.length-1,Number(ui.simSubPage)||0));
     const n=ui.simSubPage;
-    const labels=i===2?['食費・住居','水道光熱','日常費','保険等']:i===3?['教育費',...Array.from({length:Math.min(3,Math.round(safeNum(p.children)))},(_,k)=>'第'+(k+1)+'子')]:i===4?['購入','維持費']:i===5?['現金','NISA','その他投資']:null;
+    const labels=i===2?['食費・住居','水道光熱','日常費','保険等']:i===3?['教育費',...Array.from({length:Math.min(3,Math.round(safeNum(p.children)))},(_,k)=>'第'+(k+1)+'子')]:i===4?['購入','維持費']:i===5?['夫婦の貯金','貯金目標','NISA','その他投資']:null;
     return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP</span>'+
       (p.hasRun?'<button class="fp-recall-btn" data-act="fp-view-budget">前回の診断を見る ↗</button>':'<span class="sim-progress-text">'+(i+1)+' / 7</span>')+
       '</div><div class="sim-progress">'+Array.from({length:7},(_,x)=>'<span class="'+(x<=i?'filled':'')+'"></span>').join('')+'</div>'+
@@ -1441,9 +1448,9 @@
           {editStep:'6:1'}:{eventId:item.id,value:safeNum(item.amount),unit:'万円/回'});
       }
     }else if(category==='investing'){
-      add('NISA積立',monthlyPart(fpNisaForYear(year,p)),{field:'nisaMonthly',unit:'万円/月',editStep:Number(p.goalNisaEnabled)===1?'5:2':'5:1'});
+      add('NISA積立',monthlyPart(fpNisaForYear(year,p)),{field:'nisaMonthly',unit:'万円/月',editStep:'5:2'});
       add('その他の投資積立',monthlyPart(fpOtherInvestForYear(year,p)),
-        {field:'otherInvestMonthly',unit:'万円/月',editStep:'5:1'});
+        {field:'otherInvestMonthly',unit:'万円/月',editStep:'5:3'});
     }else if(category==='remaining'){
       const net=Math.max(0,annual?point.netCash:month.net),
         goal=monthlyPart(safeNum(p.otherSavingsMonthly));
@@ -2502,7 +2509,7 @@
       }else message('この環境ではコピーできません');
       return;
     }
-    if(action==='fp-goal-investment-edit')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=5;ui.simSubPage=1;});
+    if(action==='fp-goal-investment-edit')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=5;ui.simSubPage=2;});
     if(action==='fp-goal-education-edit')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=3;ui.simSubPage=1;});
     if(action==='fp-form-page')return step(()=>{ui.simSubPage=Math.max(0,Math.min(fpWizardPages(ui.simStep).length-1,Number(v)||0));});
     if(action==='fp-ledger-page')return step(()=>{ui.fpLedgerPage=Math.max(0,Number(v)||0);});
@@ -2763,6 +2770,11 @@
       const k=el.dataset.sim, val=el.value;
       state.plan[k]=['propertyId','highSchool','university'].includes(k)?val:
         (val!==''&&Number.isFinite(Number(val))?Number(val)/(el.dataset.simYen==='true'?10000:1):0);
+      if(k==='husbandCashSavings'||k==='wifeCashSavings'){
+        fpSyncHouseholdCashSavings(state.plan);
+        const total=app.querySelector('[data-fp-cash-total]');
+        if(total)total.textContent=fpYen(fpHouseholdCashSavings(state.plan));
+      }
       if(k==='propertyId'){
         const linked=propById(val);
         if(linked && num(linked.price)!==null)state.plan.propertyPrice=Number(linked.price);
@@ -2913,6 +2925,11 @@
       const k=el.dataset.sim,val=el.value;
       state.plan[k]=['propertyId','highSchool','university'].includes(k)?val:
         (val!==''&&Number.isFinite(Number(val))?Number(val)/(el.dataset.simYen==='true'?10000:1):0);
+      if(k==='husbandCashSavings'||k==='wifeCashSavings'){
+        fpSyncHouseholdCashSavings(state.plan);
+        const total=app.querySelector('[data-fp-cash-total]');
+        if(total)total.textContent=fpYen(fpHouseholdCashSavings(state.plan));
+      }
       if(k==='propertyId'){
         const linked=propById(val);
         if(linked&&num(linked.price)!==null)state.plan.propertyPrice=Number(linked.price);

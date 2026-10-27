@@ -77,9 +77,7 @@ try{
   inside('Mortgage note',m.capacity,m.footnote);
   inside('Actual payment',m.capacity,m.actual);
   inside('Monthly surplus sublabel',m.hero,m.heroSmall);
-  inside('Education premium input',m.education,m.educationInput);
-  inside('Education total premium',m.education,m.educationMonthly);
-  inside('Education insurance explanation',m.education,m.educationFootnote);
+  assert.equal(m.education,null,'monthly dashboard does not contain insurance setting form');
   inside('Last expense row',m.panel,m.lastRow);
   assert.ok(m.panel.height>=75,'breakdown remains tappable: '+JSON.stringify(m.panel));
   assert.ok(m.visibleRows>=1,'all nonzero expense entries remain visible on the one card');

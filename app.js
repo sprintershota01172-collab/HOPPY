@@ -1563,7 +1563,7 @@
         '<button type="button" data-act="fp-edit-close">閉じる</button></div>';
     }
     return '<section class="fp-breakdown-panel" data-fp-inline-breakdown data-fp-category="'+item.id+'" aria-label="'+esc(item.label)+'の内訳">'+
-      '<div class="fp-breakdown-title"><span>'+esc(item.label)+'の内訳</span>'+
+      '<div class="fp-breakdown-title"><span>'+esc(item.label)+'の内訳 <b class="fp-breakdown-count">全'+allRows.length+'件</b></span>'+
       '<strong>'+fpYen(item.amount)+'</strong>'+
       '<small class="fp-breakdown-meta">全'+allRows.length+'項目'+
         (pageCount>1?'（'+(pageStart+1)+'〜'+Math.min(allRows.length,pageStart+pageSize)+'件を表示）':'')+

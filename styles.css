@@ -4981,3 +4981,29 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   #app .fp-duplicate-check>strong,#app .fp-duplicate-check>button{font-size:9px!important}
   #app .fp-duplicate-check>span{font-size:8px!important}
 }
+
+
+/* FP r51: repayment budget labels are unsigned monetary amounts; comparison is secondary. */
+#app .fp-capacity-card .fp-capacity-heading>span{
+  white-space:normal!important;text-align:right!important;
+  max-width:55%;line-height:1.25!important;
+}
+#app .fp-capacity-ceiling{
+  display:flex;align-items:baseline;justify-content:space-between;
+  flex-wrap:wrap;gap:2px 8px;
+  border-top:1px solid #dde8e6;padding:4px 1px 1px;
+}
+#app .fp-capacity-ceiling span{
+  font-size:9px;line-height:1.25;color:#5f7479;font-weight:650;
+}
+#app .fp-capacity-ceiling strong{
+  font-size:10px;line-height:1.25;color:#476678;
+  font-variant-numeric:tabular-nums;overflow-wrap:anywhere;
+}
+#app .fp-capacity-cell>span{overflow-wrap:anywhere}
+#app .fp-capacity-cell.price>strong{overflow-wrap:anywhere;white-space:normal}
+@media(max-height:760px){
+  #app .fp-capacity-ceiling{padding-top:2px;gap:1px 5px}
+  #app .fp-capacity-ceiling span{font-size:8px}
+  #app .fp-capacity-ceiling strong{font-size:9px}
+}

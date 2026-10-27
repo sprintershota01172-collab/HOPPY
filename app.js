@@ -1879,7 +1879,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<span class="fp-build-stamp" title="表示バージョン">r45</span></div></div>';
+      '<span class="fp-build-stamp" title="表示バージョン">r46</span></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2193,6 +2193,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r46',date:'2026.10.27',title:'住宅予算を実際の家計と子どもの教育費で計算',
+        details:['手取り25％の固定上限を廃止し、生活費・学校費・積立・貯金・予備費の差額を住宅予算に','購入後20〜30年の各年を比較して教育費が重い年も考慮','住宅に使える予算と住宅維持費を引いたローン返済余力、計算内訳を明示']},
       {version:'r45',date:'2026.10.27',title:'目標と毎月の入力を分離・住宅ローンの根拠を表示',
         details:['現金・NISA・投資の入力を月額方式と目標逆算方式の二者択一に整理','住宅ローン上限の計算式と採用した金額を「根拠」画面で確認可能','毎月の現金残りと貯金目標確保後の余裕を別々に表示']},
       {version:'r44',date:'2026.10.27',title:'円グラフと明細の切り替え位置を固定',
@@ -2226,7 +2228,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r45</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r46</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

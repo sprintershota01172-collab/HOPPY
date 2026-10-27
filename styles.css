@@ -5163,3 +5163,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   #app .fp-loan-with-interest{padding:3px 4px}
   #app .fp-loan-including-flow{margin:1px 0}
 }
+
+/* r55: subtractions are visually distinct from income; net shortfalls stay stronger red. */
+#app .fp-final-breakdown .fp-month-summary-row>span>b.fp-deducted{color:#bd3843!important}
+#app .fp-budget-loan-note .fp-interest-included{color:#c56b1b!important;font-weight:850!important}
+#app .fp-surplus-strip.negative>strong{color:#b42032!important}

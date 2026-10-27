@@ -403,6 +403,30 @@
     }
     return monthly;
   }
+  // Education savings are earmarked funds, not consumed expenses.
+  // Manual insurance premiums have no known payout date, so are excluded.
+  function fpEducationFundYears(p=state.plan,through=simNowYear()+40){
+    const kids=Math.min(3,Math.max(0,Math.round(safeNum(p.children))));
+    const balances=Array(kids).fill(0),annual=new Map();
+    for(let year=simNowYear();year<=through;year++){
+      let deposits=0,covered=0;
+      const uses=Array(kids).fill(0);
+      for(let i=0;i<kids;i++){
+        const g=fpEducationGoal(p,i+1),age=year-g.birth;
+        if(!g.enabled)continue;
+        if(age>=0&&age<g.age&&year>=g.begin&&Number.isFinite(g.monthly)){
+          const add=g.monthly*12;balances[i]+=add;deposits+=add;
+        }
+        if(age>=g.age&&age<22&&age>=6){
+          const applied=Math.min(Math.max(0,balances[i]),educationAnnual(age,p));
+          balances[i]=Math.max(0,balances[i]-applied);
+          covered+=applied;uses[i]=applied;
+        }
+      }
+      annual.set(year,{deposits,covered,uses,closing:balances.reduce((a,b)=>a+b,0)});
+    }
+    return annual;
+  }
   function fpGoalPreview(monthly,summary,note,manual=false){
     return '<div class="fp-goal-preview"><span>'+(manual?'収支に反映する月額':'目標に必要な毎月額')+'</span>'+
       '<strong>'+(Number.isFinite(monthly)?fpYen(monthly):'期限を変更してください')+'</strong>'+
@@ -830,7 +854,8 @@
     let cash=safeNum(p.cashSavings)+safeNum(p.support);
     let nisa=safeNum(p.nisaBalance),otherInvest=safeNum(p.investBalance);
     let investedContributions=0;
-    const points=[],kids=Math.min(3,Math.round(safeNum(p.children)));
+    const points=[],kids=Math.min(3,Math.round(safeNum(p.children))),
+      educationFunds=fpEducationFundYears(p,end);
     const annualGrowth=1+Math.min(.2,Math.max(-.2,Number(p.returnAnnual)||0)/100);
     const monthlyGrowth=Math.pow(annualGrowth,1/12);
     const compoundYear=(initial,deposit)=>{let value=initial;
@@ -863,9 +888,11 @@
         if(age===0)birth+=50;
         school+=educationAnnual(age,p);
       }
+      const eduFundYear=educationFunds.get(year)||{deposits:0,covered:0,uses:[],closing:0};
+      const fundedSchool=Math.min(school,eduFundYear.covered);
       const upfront=buy&&year===purchaseYear?0+safeNum(price)*.07:0;
       const events=fpEventsAnnual(year,'expense');
-      const expenses=monthly*12+annualFixed+school+birth+upfront+events;
+      const expenses=monthly*12+annualFixed+school-fundedSchool+birth+upfront+events;
       const nisaAdd=12*fpNisaForYear(year,p),otherAdd=12*fpOtherInvestForYear(year,p);
       const investing=nisaAdd+otherAdd;
       cash+=income-expenses-investing;
@@ -877,6 +904,8 @@
       investedContributions+=investing;
       const invested=nisa+otherInvest;
       points.push({year,cash,invested,nisa,otherInvest,total:cash+invested,
+        educationFund:eduFundYear.closing,educationDeposits:eduFundYear.deposits,
+        fundedSchool,educationCovers:eduFundYear.uses,
         incomes:income,expenses,investing,netCash:income-expenses-investing,
         monthly,school,birth,annualFixed,upfront,events,housing,housingMonths,
         housingLoan,housingMaintenance,housingRent,ownedMonths,rentMonths,
@@ -917,18 +946,20 @@
   // Affordable housing is the cash left after life costs, school fees, savings
   // and a personal emergency buffer. The debt-to-income ratio is advisory only;
   // it must never silently replace the household's actual spending budget.
-  function fpHousingYearBudget(year,p=state.plan){
+  function fpHousingYearBudget(year,p=state.plan,eduFunding=null){
     const months=fpYearlyIncome(year).months;
     // Wages only, excluding bonus, government benefits and ad hoc event income.
     const monthlyIncome=months.reduce((sum,m)=>sum+
       safeNum(m.fields.husbandPay)+safeNum(m.fields.wifePay),0)/12;
-    const school=fpSchoolBreakdown(year,p).reduce((sum,x)=>sum+x.annual,0)/12;
+    const grossSchool=fpSchoolBreakdown(year,p).reduce((sum,x)=>sum+x.annual,0)/12;
+    const fundedSchool=(eduFunding?.get(year)?.covered||0)/12;
+    const school=Math.max(0,grossSchool-fundedSchool);
     const living=fpSpendingMonthly(year); // rent and mortgage are NOT part of this
     const spending=living+school;
     const investing=fpNisaForYear(year,p)+fpOtherInvestForYear(year,p);
     const cashTarget=fpCashGoalForYear(year,p),buffer=safeNum(p.cashBufferMonthly);
     const balanceCap=monthlyIncome-spending-investing-cashTarget-buffer;
-    return {year,monthlyIncome,living,school,spending,investing,cashTarget,buffer,balanceCap,
+    return {year,monthlyIncome,living,school,grossSchool,fundedSchool,spending,investing,cashTarget,buffer,balanceCap,
       ratioCap:null};
   }
   // Main estimate is based on housing expenses the household can pay from
@@ -942,7 +973,8 @@
       lastBirth=kids?safeNum(p.firstChildYear)+(kids-1)*Math.max(1,safeNum(p.birthInterval,3)):purchaseYear,
       endYear=Math.max(purchaseYear+20,kids?lastBirth+22:purchaseYear),
       finalYear=Math.min(purchaseYear+30,endYear),
-      years=Array.from({length:finalYear-purchaseYear+1},(_,i)=>fpHousingYearBudget(purchaseYear+i,p)),
+      eduFunding=fpEducationFundYears(p,finalYear),
+      years=Array.from({length:finalYear-purchaseYear+1},(_,i)=>fpHousingYearBudget(purchaseYear+i,p,eduFunding)),
       // The delivery-year temporary pay reduction is assessed as an annual risk;
       // normal recurring instalments use the first ordinary post-birth year.
       referenceYear=kids&&purchaseYear===safeNum(p.firstChildYear)?purchaseYear+1:purchaseYear,
@@ -992,6 +1024,7 @@
       schoolTopUp,schoolReserve,schoolPeak:schoolPeak.school,schoolPeakYear:schoolPeak.year,
       spending:initial.living+initial.school+schoolTopUp,
       itemizedLiving,legacyOtherLiving,possibleLivingOverlap,missingEssentialInputs,
+      fundedSchool:initial.fundedSchool,
       investing:initial.investing,cashTarget:initial.cashTarget,buffer:initial.buffer,
       housingBudget:cap,housingBudgetRaw:balanceCap,
       basicLoanPayment,basicRaw,basicHousingBudget:Math.max(0,basicRaw+maintenance),
@@ -1171,7 +1204,7 @@
       ...(buy?fpPieBreakdownRows(point,null,'housing').map(x=>({label:x.label,amount:x.amount})):[
         ['rentMonthly','家賃'],['managementMonthly','管理費'],['commonFeeMonthly','共益費'],['parkingMonthly','駐車場']
       ].map(([key,label])=>({label,amount:safeNum(p[key])*12}))),
-      {label:'学校・大学の費用',amount:point.school},
+      {label:'学校・大学の費用（教育積立充当後）',amount:Math.max(0,point.school-(point.fundedSchool||0))},
       {label:'出産関連',amount:point.birth},
       {label:'自動車税など年払い',amount:safeNum(p.carTaxAnnual)},
       {label:'旅行・帰省',amount:safeNum(p.travelAnnual)},
@@ -1194,7 +1227,7 @@
   function fpMonthlyLedger(point){
     const p=state.plan,inc=fpYearlyIncome(point.year).months,expenseEvents=fpEventsForYear(point.year)
       .filter(x=>x.type==='expense'),living=point.monthly-point.housing,
-      otherAnnual=point.annualFixed+point.school+point.birth,
+      otherAnnual=point.annualFixed+point.school-(point.fundedSchool||0)+point.birth,
       investNisa=fpNisaForYear(point.year,p),investOther=fpOtherInvestForYear(point.year,p);
     // Annual-only expenses without a known payment month are smoothed over 12 months.
     // Purchase costs are placed in the selected purchase month.
@@ -1251,7 +1284,9 @@
     const cash=flows[m-1].endingCash;
     return {year,month:m,cash,nisa,otherInvest,total:cash+nisa+otherInvest,
       cashChange:cash-asset.opening.cash,nisaChange:nisa-asset.opening.nisa,
-      otherChange:otherInvest-asset.opening.otherInvest};
+      otherChange:otherInvest-asset.opening.otherInvest,
+      educationFund:Math.max(0,(asset.opening.educationFund||0)+
+        ((asset.point.educationFund||0)-(asset.opening.educationFund||0))*m/12)};
   }
   function fpYearPoint(model){
     return model.points.find(x=>x.year===ui.fpYear)||model.points.find(x=>x.year===simNowYear())||model.points[0];
@@ -1295,7 +1330,7 @@
   }
   function fpIncomeAllocation(point){
     const income=Math.max(0,point.incomes),housing=Math.max(0,point.housing*12),
-      educationEvents=Math.max(0,point.school+point.events+point.upfront),
+      educationEvents=Math.max(0,point.school-(point.fundedSchool||0)+point.events+point.upfront),
       living=Math.max(0,point.expenses-housing-educationEvents),
       investing=Math.max(0,point.investing),
       spent=Math.max(0,point.expenses+investing),
@@ -1346,7 +1381,7 @@
       if(annual)add('出産関連',point.birth,{editStep:'3:0'});
       else{
         for(const child of fpSchoolBreakdown(year,p)){
-          add('第'+child.index+'子 '+child.stage+'（'+child.age+'歳）',annualPart(child.annual),{editStep:'3:0'});
+          add('第'+child.index+'子 '+child.stage+'（'+child.age+'歳）',annualPart(Math.max(0,child.annual-(point.educationCovers?.[child.index-1]||0))),{editStep:'3:0'});
         }
         add('出産費（月割）',annualPart(point.birth),{editStep:'3:0'});
       }
@@ -1368,7 +1403,7 @@
       }
     }else if(category==='education'){
       if(annual)for(const child of fpSchoolBreakdown(year,p)){
-        add('第'+child.index+'子 '+child.stage+'（'+child.age+'歳）',child.annual,{editStep:'3:0'});
+        add('第'+child.index+'子 '+child.stage+'（'+child.age+'歳）',Math.max(0,child.annual-(point.educationCovers?.[child.index-1]||0)),{editStep:'3:0'});
       }
       if(annual || month.month===fpPurchaseMonth())add('住宅購入諸費用',point.upfront,{editStep:'4:0'});
       for(const item of fpEventsForYear(year)){
@@ -1795,6 +1830,7 @@
         item('その他の株式・投資',selected.otherInvest,monthly?monthlyAsset.otherChange:yearAsset.otherChange)+
         '<div class="fp-asset-tile total"><span>金融資産の合計</span><strong>'+fpYen(selected.total)+'</strong>'+
         '<small>現金＋NISA＋その他投資</small></div></div>'+
+      '<div class="fp-education-asset"><span>教育積立残高（目的別・上記の合計には含めない）</span><strong>'+fpYen(selected.educationFund||0)+'</strong></div>'+ 
       '<div class="fp-goal-assets-action"><button data-act="fp-goal-investment-edit">積立・目標を編集 ↗</button></div>'+
       '<p class="fp-r-help">毎月の積立：NISA '+fpYen(fpNisaForYear(point.year,state.plan))+'・その他 '+fpYen(fpOtherInvestForYear(point.year,state.plan))+
         '。投資額は想定利回りによる試算。住宅・ローンは含みません。</p></div>';
@@ -1897,7 +1933,7 @@
       '<div class="fp-r-assumptions">'+
       '<div><b>収入</b><span>月の手取り×12＋賞与。出産年は妻の月収を最大100,000円、以降は時短収入を仮定。妻賞与は出産年以降0と仮置き。</span></div>'+
       '<div><b>住宅</b><span>指定した購入年月からローン返済に切替。購入時諸費用は物件価格の7％、固定資産税・修繕等は入力値で計算。</span></div>'+
-      '<div><b>教育・運用</b><span>教育費は独自の固定概算。保育料、保険、NISAは入力値。税優遇・物価上昇は自動計算せず、運用利回りは仮定。</span></div>'+
+      '<div><b>教育・運用</b><span>学費は年齢別の概算。目標方式の教育積立は目的別資産として管理し、指定年齢以降の学費に充当します。手入力の学資保険は受取額・受取年が不明のため、満期金を自動計上しません。別途受取を登録する場合は二重計上を避けてください。</span></div>'+
       '<div><b>住宅予算</b><span>通常の手取り給与（月額・賞与を除外）から生活費・学校費・保険・予備費・住宅維持費・NISA等の積立・現金貯金目標を控除します。出産年の一時的な減収は年間収支で別途確認。積立を見直す場合の上限は推奨借入額ではありません。未登録支出は0円扱いです。</span></div>'+
       '<div><b>銀行審査</b><span>額面年収の登録がないため総返済負担率は判定しません。手取り比率とは別の指標です。</span></div></div>'+
       '<div class="fp-r-source-links"><a href="https://www.fsa.go.jp/policy/nisa2/lifeplan-simulator/index.html" target="_blank" rel="noopener noreferrer">金融庁｜ライフプランの前提 ↗</a>'+

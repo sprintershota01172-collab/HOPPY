@@ -930,15 +930,30 @@
     const p=state.plan,start=simNowYear(),purchaseYear=Math.max(start,Math.round(safeNum(p.purchaseYear,start+2))),
       kids=Math.min(3,Math.max(0,Math.round(safeNum(p.children)))),
       lastBirth=kids?safeNum(p.firstChildYear)+(kids-1)*Math.max(1,safeNum(p.birthInterval,3)):purchaseYear,
-      // Cover child education through age 22, but do not assume income growth
-      // or make a one-time wedding/purchase cost into a recurring monthly bill.
+      // Model education through the final child's age 22 within the long-term
+      // forecast window. Do not set an every-month mortgage limit equal to
+      // the single worst annual tuition bill.
       endYear=Math.max(purchaseYear+20,kids?lastBirth+22:purchaseYear),
       finalYear=Math.min(purchaseYear+30,endYear),
       years=Array.from({length:finalYear-purchaseYear+1},(_,i)=>fpHousingYearBudget(purchaseYear+i,p)),
-      reference=years.reduce((worst,row)=>row.balanceCap<worst.balanceCap?row:worst,years[0]),
-      cap=Math.max(0,reference.balanceCap),
+      // Education is a lumpy expense. The maximum cumulative average needed
+      // from purchase onward covers every tuition deadline (assuming zero
+      // separate existing education fund). A recurring reserve is a more
+      // sensible mortgage input than tuition's worst individual month.
+      schoolReserve=years.reduce((acc,row,i)=>{
+        const spent=acc.spent+row.school*12;
+        return {spent,monthly:Math.max(acc.monthly,spent/(12*(i+1)))};
+      },{spent:0,monthly:0}).monthly,
+      assessed=years.map(row=>({...row,
+        regularHousingCap:row.monthlyIncome-row.living-row.investing-
+          row.cashTarget-row.buffer-schoolReserve})),
+      reference=assessed.reduce((worst,row)=>row.regularHousingCap<worst.regularHousingCap?row:worst,assessed[0]),
+      peakSchool=years.reduce((highest,row)=>row.school>highest.school?row:highest,years[0]),
+      rawHousing=reference.regularHousingCap,
+      cap=Math.max(0,rawHousing),
       maintenance=safeNum(p.housingOngoing),
-      loanPayment=Math.max(0,cap-maintenance),
+      rawLoanPayment=rawHousing-maintenance,
+      loanPayment=Math.max(0,rawLoanPayment),
       term=Math.max(12,Math.round(safeNum(p.loanYears,35)*12));
     const loanCap=rate=>{
       const r=Math.max(0,rate)/1200;
@@ -947,14 +962,17 @@
     const amount=Math.max(0,Math.floor(loanCap(safeNum(p.interest))/50)*50);
     const stressAmount=Math.max(0,Math.floor(loanCap(safeNum(p.interest)+1)/50)*50);
     return {amount,stressAmount,monthlyIncome:reference.monthlyIncome,housingLimit:reference.ratioCap,
-      ratioCap:reference.ratioCap,balanceCap:reference.balanceCap,school:reference.school,
-      living:reference.living,spending:reference.spending,investing:reference.investing,
+      ratioCap:reference.ratioCap,balanceCap:rawHousing,annualSchool:reference.school,
+      school:schoolReserve,schoolReserve,schoolPeak:peakSchool.school,
+      schoolPeakYear:peakSchool.year,living:reference.living,
+      spending:reference.living+schoolReserve,investing:reference.investing,
       cashTarget:reference.cashTarget,buffer:reference.buffer,housingBudget:cap,
-      maintenance,cashflowHousingLimit:reference.balanceCap,
+      housingBudgetRaw:rawHousing,rawLoanPayment,
+      maintenance,cashflowHousingLimit:rawHousing,
       loanPrincipal:loanCap(safeNum(p.interest)),downPayment:0,
       rate:safeNum(p.interest),loanYears:safeNum(p.loanYears,35),
       loanPayment,referenceYear:reference.year,startYear:purchaseYear,endYear:finalYear,
-      years};
+      years:assessed};
   }
   // Households choose a safe payment budget; banks determine actual eligibility.
   // Show the budget separately from the simulated payment for the chosen home.
@@ -968,7 +986,7 @@
       over=selectedMonthly-b.loanPayment,within=over<=1e-8;
     return '<section class="fp-capacity-card" aria-label="返済予算と登録物件のローン返済予測">'+
       '<div class="fp-capacity-heading"><strong>住宅ローンの目安</strong>'+
-      '<span>教育費などを含む'+b.startYear+'〜'+b.endYear+'年で試算</span></div>'+
+      '<span>'+b.startYear+'〜'+b.endYear+'年の家計で試算</span></div>'+
       '<div class="fp-capacity-columns">'+
       '<div class="fp-capacity-cell payment"><span>毎月返せる目安</span>'+
       '<strong>'+fpYen(b.loanPayment)+'</strong><small> / 月</small></div>'+
@@ -983,7 +1001,9 @@
       '<div class="fp-capacity-example-status '+(within?'within':'over')+'">'+
       (within?'返済目安まであと '+fpYen(Math.max(0,-over))+' / 月':
         '返済目安を '+fpYen(over)+' / 月超過')+'</div></div>'+
-      '<p class="fp-capacity-footnote"><span class="fp-capacity-housing-total">家賃・住宅費に使える額 <strong>'+fpYen(b.housingBudget)+'/月</strong></span>'+
+      '<p class="fp-capacity-footnote"><span class="fp-capacity-housing-total">'+
+        (b.rawLoanPayment<=0?'生活費・貯金の確保後に不足 <strong>'+fpYen(-b.rawLoanPayment)+'/月</strong>':
+         '住宅に使える額 <strong>'+fpYen(b.housingBudget)+'/月</strong>')+'</span>'+
         '<button type="button" data-act="fp-capacity-basis" class="fp-capacity-basis-link">計算の内訳 ›</button></p>'+
       '</section>';
   }

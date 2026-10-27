@@ -4958,3 +4958,26 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   color:#506675!important;
   line-height:1.35!important;
 }
+
+
+/* FP r50: clearly show old catch-all + itemized costs, without hiding a zero. */
+#app .fp-focus .fp-capacity-heading>span{min-width:0!important}
+#app .fp-budget-evidence .fp-duplicate-check{
+  display:flex!important;flex-direction:column!important;align-items:stretch!important;
+  flex:0 0 auto!important;gap:3px!important;margin:1px 0!important;
+  border:1px solid #eacda3!important;border-radius:9px!important;
+  padding:5px 8px!important;background:#fff8eb!important;
+}
+#app .fp-duplicate-check>strong{font-size:10px!important;color:#82531b!important}
+#app .fp-duplicate-check>span{font-size:9px!important;color:#785b36!important;line-height:1.3!important}
+#app .fp-duplicate-check>button{
+  align-self:flex-start!important;border:1px solid #dfbd86!important;
+  border-radius:7px!important;padding:5px 8px!important;
+  background:#fff!important;color:#7a4d10!important;
+  font-size:10px!important;font-weight:750!important;line-height:1.2!important;
+}
+@media(max-height:800px){
+  #app .fp-budget-evidence .fp-duplicate-check{gap:2px!important;padding:3px 6px!important}
+  #app .fp-duplicate-check>strong,#app .fp-duplicate-check>button{font-size:9px!important}
+  #app .fp-duplicate-check>span{font-size:8px!important}
+}

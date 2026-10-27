@@ -1,4 +1,4 @@
-// Screenshot-derived top baseline test: all seven FP tabs must share the
+// Screenshot-derived top baseline test: all eight FP tabs must share the
 // same fixed toolbar, tab row and content origin, without vertical jumping.
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),
  os=require('node:os'),path=require('node:path'),cp=require('node:child_process'),url=require('node:url');
@@ -19,7 +19,7 @@ vm.runInNewContext(fs.readFileSync('app.js','utf8'),{
 const click=(act,value='')=>handlers.click({target:{closest(){return{dataset:{act,value}}}},preventDefault(){}});
 click('tab','sim');for(let i=0;i<7;i++)click('sim-next');
 const pages=[];
-for(let tab=0;tab<7;tab++){
+for(let tab=0;tab<8;tab++){
  click('fp-result-tab',String(tab));
  assert.match(app.innerHTML,/fp-report-screen/,'result tab '+tab+' loaded');
  assert.match(app.innerHTML,/fp-result-nav/);
@@ -75,5 +75,5 @@ try{
   assert.ok(Math.abs(current.nav.height-33)<1,'FP tab header row is always 33px');
   assert.ok(Math.abs(current.intro.height-29)<1,'FP action row is always 29px');
  }
- console.log('HOPPY FP tabs: 7/7 identical action, nav and content top edges (Chrome) PASS');
+ console.log('HOPPY FP tabs: 8/8 identical action, nav and content top edges (Chrome) PASS');
 }finally{fs.rmSync(tmp,{recursive:true,force:true})}

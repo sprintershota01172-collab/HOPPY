@@ -2011,7 +2011,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<span class="fp-build-stamp" title="表示バージョン">r53</span></div></div>';
+      '<span class="fp-build-stamp" title="表示バージョン">r54</span></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2325,6 +2325,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r54',date:'2026.10.28',title:'最新版の反映とキャッシュ更新を改善',
+        details:['古いキャッシュを残しにくいService Workerへ変更','最新版を直接開ける専用URLを追加','GitHub Pagesの旧画面が残る場合に更新する導線を整備']},
       {version:'r53',date:'2026.10.28',title:'入力不足の際は購入判定を保留',
         details:['食費や光熱費の入力がない場合に予算内と断定しない','月次給与だけの判定と賞与込みの年次資金繰りを明確に区別','住宅ローン計算の自動回帰テストを追加']},
       {version:'r52',date:'2026.10.28',title:'教育資金と将来家計の整合性を改善',
@@ -2374,7 +2376,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r53</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r54</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+
@@ -2991,5 +2993,8 @@
       setTimeout(()=>launch.remove(),reduceMotion?30:280);
     },reduceMotion?100:760);
   }
-  if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+  if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'))window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'})
+      .then(reg=>reg.update().catch(()=>{})).catch(()=>{});
+  });
 })();

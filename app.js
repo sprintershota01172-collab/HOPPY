@@ -1454,13 +1454,15 @@
       add('NISA積立',monthlyPart(fpNisaForYear(year,p)),{field:'nisaMonthly',unit:'万円/月',editStep:'5:2'});
       add('その他の投資積立',monthlyPart(fpOtherInvestForYear(year,p)),
         {field:'otherInvestMonthly',unit:'万円/月',editStep:'5:3'});
+    }else if(category==='cash-goal'){
+      add('現金貯金目標（支出ではなく確保）',monthlyPart(fpCashGoalForYear(year,p)),{editStep:'5:1'});
+    }else if(category==='buffer'){
+      add('予備費（支出ではなく確保）',monthlyPart(safeNum(p.cashBufferMonthly)),{editStep:'5:1'});
     }else if(category==='remaining'){
-      const net=Math.max(0,annual?point.netCash:month.net),
-        goal=monthlyPart(safeNum(p.otherSavingsMonthly));
-      if(goal>0){
-        add('確保できる現金貯金',Math.min(net,goal));
-        add('貯金目標を除いた残額',Math.max(0,net-goal));
-      }else add('現金として残る分',net);
+      // Annual allocation uses the raw cash movement, while monthly allocation
+      // earmarks both the target cash savings and the emergency buffer.
+      add(annual?'現金の増減（確保前）':'全て引いた残額',
+        Math.max(0,annual?point.netCash:month.available));
     }
     return rows;
   }
@@ -1645,14 +1647,19 @@
     const income=Math.max(0,month.income),living=Math.max(0,month.household+month.annualBudget),
       housing=Math.max(0,month.housing),events=Math.max(0,month.eventExpenses+month.purchase),
       investing=Math.max(0,month.investing),spent=Math.max(0,month.spending),
-      totalOutflow=spent+investing,remaining=Math.max(0,month.net),over=Math.max(0,-month.net);
-    return {income,spent,investing,remaining,over,total:Math.max(1,income,totalOutflow),
-      percent:income>0?spent/income*100:null,items:[
+      cashGoal=Math.max(0,month.cashGoal),buffer=Math.max(0,month.buffer),
+      committed=spent+investing+cashGoal+buffer,
+      remaining=Math.max(0,month.available),over=Math.max(0,-month.available);
+    return {income,spent,investing,cashGoal,buffer,remaining,over,
+      total:Math.max(1,income,committed),
+      percent:income>0?committed/income*100:null,items:[
         {id:'living',label:'生活・子ども',amount:living,color:'#6b9eaf'},
         {id:'housing',label:'住居費',amount:housing,color:'#2767ae'},
         {id:'education',label:'臨時支出',amount:events,color:'#d9a164'},
         {id:'investing',label:'投資積立',amount:investing,color:'#729477'},
-        {id:'remaining',label:'現金残',amount:remaining,color:remaining>0?'#2aa78b':'#d5dde2'}
+        {id:'cash-goal',label:'現金貯金',amount:cashGoal,color:'#7e91c2'},
+        {id:'buffer',label:'予備費',amount:buffer,color:'#b0a68b'},
+        {id:'remaining',label:'最終残額',amount:remaining,color:remaining>0?'#2aa78b':'#d5dde2'}
       ]};
   }
 
@@ -1669,7 +1676,7 @@
       '<circle cx="105" cy="105" r="67" stroke="#ecf0f2" stroke-width="28" fill="none"/>'+
       fpPieArcs(data.items,data.total,67,28,'monthly',chosen)+
       '<text x="105" y="101" text-anchor="middle" font-size="28" font-weight="800" fill="#283a4b">'+esc(percent)+'</text>'+
-      '<text x="105" y="122" text-anchor="middle" font-size="10" fill="#758391">支出率</text></svg>':
+      '<text x="105" y="122" text-anchor="middle" font-size="10" fill="#758391">支出・確保率</text></svg>':
       '<svg viewBox="18 18 174 174" class="fp-month-donut fp-month-donut-detail" role="img" aria-label="明細の表示：右側で項目を選ぶと下に内訳が表示されます">'+
       '<rect x="26" y="32" width="158" height="146" rx="25" fill="#f1f7f5" stroke="#d4e8e0" stroke-width="2"/>'+
       '<rect x="56" y="58" width="98" height="9" rx="4.5" fill="#c8e4da"/>'+

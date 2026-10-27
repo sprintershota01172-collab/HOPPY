@@ -1886,7 +1886,7 @@
         '<div class="fp-asset-tile total"><span>現金と投資資産の合計</span><strong>'+fpYen(selected.total)+'</strong>'+
         '<small>現金＋NISA＋その他投資</small></div></div>'+
       '<div class="fp-education-asset"><span>教育積立残高（目的別・上記の合計には含めない）</span><strong>'+fpYen(selected.educationFund||0)+'</strong></div>'+ 
-      '<div class="fp-goal-assets-action"><button data-act="fp-goal-investment-edit">積立・目標を編集 ↗</button></div>'+
+      '<div class="fp-goal-assets-action"><button data-act="fp-cash-savings-edit">夫婦の貯金を編集 ↗</button><button data-act="fp-goal-investment-edit">積立・目標を編集 ↗</button></div>'+
       '<p class="fp-r-help">毎月の積立：NISA '+fpYen(fpNisaForYear(point.year,state.plan))+'・その他 '+fpYen(fpOtherInvestForYear(point.year,state.plan))+
         '。投資額は想定利回りによる試算。住宅・ローンは含みません。</p></div>';
   }
@@ -2533,6 +2533,7 @@
       }else message('この環境ではコピーできません');
       return;
     }
+    if(action==='fp-cash-savings-edit')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=5;ui.simSubPage=0;});
     if(action==='fp-goal-investment-edit')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=5;ui.simSubPage=2;});
     if(action==='fp-goal-education-edit')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=3;ui.simSubPage=1;});
     if(action==='fp-form-page')return step(()=>{ui.simSubPage=Math.max(0,Math.min(fpWizardPages(ui.simStep).length-1,Number(v)||0));});

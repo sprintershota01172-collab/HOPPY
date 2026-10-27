@@ -37,7 +37,7 @@ footer{margin-top:18px;color:#8b9991;font-size:11px;line-height:1.6}
    const res=await fetch(url.href,{cache:'no-store'});
    if(!res.ok)throw Error('公開ファイルへのアクセスに失敗しました（HTTP '+res.status+'）。');
    const js=await res.text();
-   if(!js.includes('表示バージョン')||!js.includes('>r54</span>')){
+   if(!js.includes('表示バージョン')||!js.includes('>r54</span>')&&!js.includes('>r54</a>')){
      set('公開サイトから取得したコードが旧版です。GitHub Pages側の公開がまだ更新されていません。',true);
      return;
    }

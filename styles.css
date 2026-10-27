@@ -4395,3 +4395,23 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     font-size:12px!important;
   }
 }
+
+
+/* FP r39 final fit: no extra row or increase to monthly hero height. */
+#app .fp-focus .fp-month-surplus>.fp-month-savings>.fp-month-savings-trend{
+  height:24px!important;
+  min-height:24px!important;
+  max-height:24px!important;
+  flex-basis:24px!important;
+}
+#app .fp-focus .fp-month-surplus .fp-month-inline-ratio{
+  color:#dbf1e8!important;
+  font-size:8px!important;
+  line-height:1.1!important;
+  white-space:nowrap!important;
+}
+@media(max-height:800px){
+  #app .fp-focus .fp-month-surplus>.fp-month-savings>.fp-month-savings-trend{
+    height:20px!important;min-height:20px!important;max-height:20px!important;flex-basis:20px!important;
+  }
+}

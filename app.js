@@ -1545,6 +1545,31 @@
       '<b>手取り比 '+percent+'</b>'+
       '<small>手取り収入 − 支出 − NISA等の積立</small></div>';
   }
+  // Month-end cash savings for every month of the selected year. The active
+  // point follows the year/month picker, and includes extraordinary expenses.
+  // All values are from the same ledger used to calculate monthly cashflow.
+  function fpMonthlySavingsTrend(ledger,selectedMonth){
+    const months=ledger.months;
+    const values=months.map(m=>Number(m.endingCash)||0);
+    const low=Math.min(...values,Number(ledger.opening)||0,0);
+    const high=Math.max(...values,Number(ledger.opening)||0,0);
+    const spread=Math.max(1,high-low),width=150,height=35;
+    const px=i=>4+i*142/11;
+    const py=v=>3+(high-v)/spread*23;
+    const coords=values.map((v,i)=>[px(i),py(v)]);
+    const d=coords.map(([x,y],i)=>(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)).join(' ');
+    const active=Math.max(0,Math.min(11,Math.round(Number(selectedMonth)||1)-1));
+    const [cx,cy]=coords[active];
+    const zero=low<0&&high>0?'<line x1="4" y1="'+py(0).toFixed(1)+'" x2="146" y2="'+py(0).toFixed(1)+'" stroke="#f9b2a8" stroke-width=".6" stroke-dasharray="2 2" opacity=".7"/>':'';
+    const accessible=ledger.year+'年の月末現金貯金：'+months.map(m=>m.month+'月'+fpYen(m.endingCash)).join('、');
+    return '<svg class="fp-month-savings-trend" viewBox="0 0 '+width+' '+height+'" preserveAspectRatio="none" '+
+      'role="img" aria-label="'+esc(accessible)+'">'+
+      zero+'<path d="'+d+'" fill="none" stroke="#b4f2da" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>'+
+      '<line x1="'+cx.toFixed(1)+'" y1="2" x2="'+cx.toFixed(1)+'" y2="27" stroke="#ffffff" stroke-width=".8" stroke-dasharray="2 2" opacity=".7"/>'+
+      '<circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="3.4" fill="#fff" stroke="#176a57" stroke-width="1.25"/>'+
+      '<text x="4" y="34" font-size="6.5" fill="#e1f7ed">1月</text>'+
+      '<text x="146" y="34" text-anchor="end" font-size="6.5" fill="#e1f7ed">12月</text></svg>';
+  }
   function fpMonthlyReport(model){
     const point=fpYearPoint(model),ledger=fpMonthlyLedger(point),
       month=Math.min(12,Math.max(1,ui.fpCashMonth||1)),selected=ledger.months[month-1],
@@ -1576,9 +1601,10 @@
         '<span><em class="fp-balance-chip">'+fpBalanceLabel(selected.net)+'</em> '+
           point.year+'年'+month+'月 ・ 今月の現金収支</span>'+
         '<strong class="'+fpBalanceTone(selected.net)+'">'+fpSignedYen(selected.net)+'</strong></div>'+
-        '<div><span aria-label="手取り収入に対する割合">手取り比</span><strong class="fp-surplus-percent '+fpBalanceTone(selected.net)+'">'+surplusPct+'</strong>'+
-        '<small>積立前 '+fpSignedYen(selected.income-selected.spending)+'</small>'+
-        '<small>月末現金 '+fpYen(selected.endingCash)+'</small></div></div>'+
+        '<div class="fp-month-savings"><span>月末の現金貯金</span>'+
+        '<strong class="fp-month-savings-balance '+fpBalanceTone(selected.endingCash)+'">'+fpYen(selected.endingCash)+'</strong>'+
+        fpMonthlySavingsTrend(ledger,month)+
+        '<small aria-label="手取り収入に対する割合">手取り比 '+surplusPct+'</small></div></div>'+
       '<div class="fp-month-summary" aria-label="月の収支計算">'+
         '<span>手取り <b>'+fpYen(selected.income)+'</b></span>'+
         '<span>生活・住居など <b>−'+fpYen(selected.spending)+'</b></span>'+
@@ -1747,7 +1773,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<span class="fp-build-stamp" title="表示バージョン">r38</span></div></div>';
+      '<span class="fp-build-stamp" title="表示バージョン">r39</span></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2059,6 +2085,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r39',date:'2026.10.27',title:'月収支と現金貯金の推移を同じ画面で表示',
+        details:['月収支の緑色カードに現金貯金の月末残高を表示','同じ年の1〜12月の貯金推移を小型グラフで表示','選択月の変更に連動し、現金収支と貯金残高を同時に更新']},
       {version:'r38',date:'2026.10.27',title:'円グラフの直径と位置を固定',
         details:['選択した内訳の項目数で円グラフが拡大・縮小しないよう修正','内訳の列幅・行の間隔・文字の左上位置は変更しない']},
       {version:'r37',date:'2026.10.27',title:'FP内訳の列幅・行間を完全固定',
@@ -2078,7 +2106,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r38</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r39</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

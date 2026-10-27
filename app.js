@@ -1051,8 +1051,10 @@
       selectedMonthly=mortgageMonthly(price,0,b.rate,b.loanYears),
       targetDiff=selectedMonthly-b.loanPayment,
       ceilingDiff=selectedMonthly-b.basicLoanPayment;
-    const status=selectedMonthly<=b.loanPayment+1e-8?
-      '生活費と設定した積立を両立できる試算':
+    const status=b.missingEssentialInputs.length?
+      '生活費の未入力があるため、購入の適否は判定保留':
+      selectedMonthly<=b.loanPayment+1e-8?
+      '基準年では生活費と設定した積立を両立':
       selectedMonthly<=b.basicLoanPayment+1e-8?
         '積立の維持には月'+fpYen(Math.max(0,targetDiff))+'の調整が必要':
         '生活費を優先しても月'+fpYen(Math.max(0,ceilingDiff))+'不足';
@@ -1078,7 +1080,7 @@
       '<div class="fp-capacity-example">'+
       '<div class="fp-capacity-example-main"><span>物件 '+fpYen(price)+' の月返済</span>'+
       '<strong>'+fpYen(selectedMonthly)+'/月</strong></div>'+
-      '<div class="fp-capacity-example-status '+(selectedMonthly<=b.loanPayment?'within':'over')+'">'+status+'</div></div>'+
+      '<div class="fp-capacity-example-status '+(!b.missingEssentialInputs.length&&selectedMonthly<=b.loanPayment?'within':'over')+'">'+status+'</div></div>'+
       '<p class="fp-capacity-footnote"><span class="fp-capacity-housing-total'+(b.preferredRaw<0?' shortfall':'')+'">'+
         (b.preferredRaw<0?'希望の積立を続けると月'+fpYen(-b.preferredRaw)+'不足。':
           '住宅維持費 '+fpYen(b.maintenance)+'/月を先に控除済み。')+
@@ -1087,18 +1089,18 @@
   }
   function fpRating(price){
     const info=fpForecast(price),budget=fpBudget(),stressed=fpForecast(price,1);
-    let level='good',label='予算内',reason='住居費と日常の支払いが将来の手取りの範囲内です。';
+    let level='good',label='基準年では予算内',reason='基準年の給与と登録済み支出では両立できる試算です。将来の年間収支も確認してください。';
     if(!Number.isFinite(info.ratio)||price>budget.basicAmount){
       level='bad';label='生活費が不足';reason='生活費を優先した場合でも物件の月返済に届きません。';
     }else if(price>budget.amount){
       level='warn';label='積立の見直し';reason='貯金・NISAを希望どおり続けるには予算超過です。';
     }else if(budget.worstSurplus<0){
-      level='warn';label='将来の家計注意';reason=budget.worstYear+'年に教育費などで現金収支が不足する予測です。';
+      level='warn';label='将来の家計注意';reason=budget.worstYear+'年は賞与を除いた月給基準で家計余力が不足します。年次現金残高も確認してください。';
     }
     if(info.spendable<0&&level==='good'){
       level='warn';label='家計確認';reason='毎月の保険・子育て・積立を引くと、余裕費が不足します。';
     }
-    if(budget.missingEssentialInputs.length&&level==='good'){
+    if(budget.missingEssentialInputs.length&&level!=='bad'){
       level='warn';label='入力不足';reason='食費・光熱費などの未登録項目があり、借入額が過大になり得ます。';
     }
     return {...info,budget,stressed,level,label,reason,monthlyDelta:stressed.payment-info.payment};
@@ -2009,7 +2011,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<span class="fp-build-stamp" title="表示バージョン">r52</span></div></div>';
+      '<span class="fp-build-stamp" title="表示バージョン">r53</span></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2323,6 +2325,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r53',date:'2026.10.28',title:'入力不足の際は購入判定を保留',
+        details:['食費や光熱費の入力がない場合に予算内と断定しない','月次給与だけの判定と賞与込みの年次資金繰りを明確に区別','住宅ローン計算の自動回帰テストを追加']},
       {version:'r52',date:'2026.10.28',title:'教育資金と将来家計の整合性を改善',
         details:['目標方式の学資積立を教育専用残高として累積','設定年齢以降の学校費へ教育資金を充当','購入月の現金残高に結婚式・旅行費用を反映','食費・光熱費が未入力の場合に借入額過大の警告を追加']},
       {version:'r51',date:'2026.10.28',title:'家計余力を基準に住宅ローン予算を再構成',
@@ -2370,7 +2374,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r52</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r53</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

@@ -1279,11 +1279,14 @@
       const spending=nonHousing+housing+eventExpenses+purchase;
       const investing=investNisa+investOther;
       const net=entry.total-spending-investing;
+      // These are reserved, not spent: never remove them again from cash.
+      const cashGoal=fpCashGoalForYear(point.year,p),buffer=safeNum(p.cashBufferMonthly);
+      const available=net-cashGoal-buffer;
       const openingCash=cash;
       cash+=net;
       return {year:point.year,month,income:entry.total,household:living,housing,
         annualBudget,eventExpenses,purchase,spending,nisaAdd:investNisa,otherAdd:investOther,
-        investing,net,openingCash,endingCash:cash,details:entry.fields};
+        investing,net,cashGoal,buffer,available,openingCash,endingCash:cash,details:entry.fields};
     });
     return {year:point.year,opening,months,ending:cash};
   }
@@ -1761,7 +1764,7 @@
       insured=fpChildCounts(point.year).educationInsured,
       goalMode=Array.from({length:children},(_,i)=>fpEducationGoal(plan,i+1).enabled).some(Boolean),
       contribution=fpEducationPremiumForYear(point.year,plan),
-      target=fpCashGoalMonthly(plan),surplus=selected.net-target;
+      target=fpCashGoalForYear(point.year,plan),surplus=selected.available;
     const input=(label,key,note)=>'<section class="fp-setting-card">'+
       '<div class="fp-setting-row"><div class="fp-setting-copy"><strong>'+label+'</strong><span>'+note+'</span></div>'+
       '<label class="fp-setting-input"><input type="number" min="0" max="100000000" step="1" inputmode="numeric"'+
@@ -1798,9 +1801,9 @@
         '<small class="fp-goal-no-double">貯金目標は支出に足しません。月収支からこの額を取り分けた残りが「自由に使える余裕」です。</small></section>'+
       '<div class="fp-setting-outcome"><div><span>'+point.year+'年'+selected.month+'月の現金残り</span>'+
         '<strong class="'+fpBalanceTone(selected.net)+'">'+fpSignedYen(selected.net)+'</strong></div>'+
-        '<div><span>貯金目標を確保した後</span><strong class="'+fpBalanceTone(surplus)+'">'+
+        '<div><span>貯金・予備費を差し引いた残額</span><strong class="'+fpBalanceTone(surplus)+'">'+
           fpSignedYen(surplus)+'</strong></div></div>'+
-      '<p class="fp-setting-footer">月の現金残り − 貯金目標＝使える余裕。目標は支出に加算しません。</p>'+
+      '<p class="fp-setting-footer">収入 − 生活費・住宅費 − 投資積立 − 現金貯金目標 − 予備費＝残額。現金貯金目標と予備費は支出ではなく確保する額です。</p>'+
       '<button class="fp-setting-back" data-act="fp-result-tab" data-value="1">‹ 月収支に戻る</button></div>';
   }
   function fpMonthlyReport(model){

@@ -24,7 +24,7 @@ const api=win.__savingsTest;
 const click=(act,value='')=>listeners.click({target:{closest(){return{dataset:{act,value}}}},preventDefault(){}});
 click('tab','sim');for(let i=0;i<7;i++)click('sim-next');
 assert.match(app.innerHTML,/fp-month-surplus/);
-assert.match(app.innerHTML,/月末の現金貯金/);
+assert.match(app.innerHTML,/月末の貯金/);
 assert.match(app.innerHTML,/fp-month-savings-trend/);
 assert.match(app.innerHTML,/手取り比/);
 const model=api.modelYears(api.state.plan.propertyPrice,true);

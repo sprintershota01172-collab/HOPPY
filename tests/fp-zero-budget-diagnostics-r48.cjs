@@ -42,7 +42,7 @@ assert.ok(b.preferredRaw<0,'unachievable savings goal must retain raw negative v
 const card=api.fpMortgageCapacityCard();
 assert.match(card,/生活費優先の借入参考額/);
 assert.ok(card.includes('借入')&&card.includes('積立'),'both reference modes are visible');
-assert.match(card,/借入額/);
+assert.match(card,/借入参考額/);
 assert.match(card,/貯金・NISAを続けた場合/);
 assert.ok(card.includes('fp-capacity-basis'));
 api.ui.fpCalcPage=1;

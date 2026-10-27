@@ -1479,18 +1479,28 @@
       ]};
   }
 
-  function fpMonthlyPie(month,point){
+  function fpMonthlyPie(month,point,isPie=true){
     point=point||modelYears(safeNum(state.plan.propertyPrice),true).points.find(x=>x.year===month.year);
     ui.fpRenderedPoint=point;ui.fpRenderedMonth=month;ui.fpRenderedPeriod='monthly';
     const data=fpMonthlyAllocation(month),chosen=ui.fpBreakdownMonthly||'living',
       percent=data.percent===null?'—':yen(data.percent,1)+'%';
-    return '<div class="fp-month-pie" data-fp-month-pie>'+
+    // Both views always have exactly the same pie/legend and breakdown slots.
+    // Switching modes changes only the SVG content, never sibling geometry.
+    const graphic=isPie?
       '<svg viewBox="18 18 174 174" class="fp-month-donut" role="img" aria-label="'+
          month.year+'年'+month.month+'月の手取り収入に対する支出割合：'+esc(percent)+'">'+
       '<circle cx="105" cy="105" r="67" stroke="#ecf0f2" stroke-width="28" fill="none"/>'+
       fpPieArcs(data.items,data.total,67,28,'monthly',chosen)+
       '<text x="105" y="101" text-anchor="middle" font-size="28" font-weight="800" fill="#283a4b">'+esc(percent)+'</text>'+
-      '<text x="105" y="122" text-anchor="middle" font-size="10" fill="#758391">支出率</text></svg>'+
+      '<text x="105" y="122" text-anchor="middle" font-size="10" fill="#758391">支出率</text></svg>':
+      '<svg viewBox="18 18 174 174" class="fp-month-donut fp-month-donut-detail" role="img" aria-label="明細の表示：右側で項目を選ぶと下に内訳が表示されます">'+
+      '<rect x="26" y="32" width="158" height="146" rx="25" fill="#f1f7f5" stroke="#d4e8e0" stroke-width="2"/>'+
+      '<rect x="56" y="58" width="98" height="9" rx="4.5" fill="#c8e4da"/>'+
+      '<rect x="56" y="77" width="77" height="9" rx="4.5" fill="#d9e9e6"/>'+
+      '<text x="105" y="125" text-anchor="middle" font-size="24" font-weight="800" fill="#2b6556">明細</text>'+
+      '<text x="105" y="145" text-anchor="middle" font-size="12" fill="#688679">項目を選ぶ</text></svg>';
+    return '<div class="fp-month-pie"'+(isPie?' data-fp-month-pie':' data-fp-detail-view')+'>'+
+      graphic+
       '<div class="fp-month-pie-legend">'+data.items.map(x=>fpPiePick(x,'monthly',chosen)).join('')+'</div></div>'+
       fpPieBreakdownPanel(point,month,data.items,chosen)+
       (data.percent===null?'<p class="fp-month-pie-note">手取り収入が0円のため、支出率は算出できません。</p>':'');
@@ -1638,12 +1648,7 @@
         '<span>生活・住居ほか <b>−'+fpYen(selected.spending)+'</b></span>'+
         '<span>投資積立 <b>−'+fpYen(selected.investing)+'</b></span></div>'+
       
-      (isPie?fpMonthlyPie(selected,point):'<div class="fp-cash-rows">'+
-        row('生活費・保険',selected.household)+
-        row('住居費',selected.housing)+
-        row('年払・教育費',selected.annualBudget)+
-        row('特別支出',selected.eventExpenses+selected.purchase)+
-        row('投資積立',selected.nisaAdd+selected.otherAdd)+'</div>')+
+      fpMonthlyPie(selected,point,isPie)+
       '</div>';
   }
   function fpAssetsReport(model){
@@ -1807,7 +1812,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<span class="fp-build-stamp" title="表示バージョン">r43</span></div></div>';
+      '<span class="fp-build-stamp" title="表示バージョン">r44</span></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2121,6 +2126,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r44',date:'2026.10.27',title:'円グラフと明細の切り替え位置を固定',
+        details:['両表示で円グラフ・凡例・内訳の共通枠を使用','月収支・貯金推移・内訳の位置と高さを維持','切り替え時は左側のグラフと明細案内のみ変更']},
       {version:'r43',date:'2026.10.27',title:'FPの説明文を整理して見やすく',
         details:['住宅ローンの重要な数値に短い項目名を付け直し','月収支・貯金・設定の重複する文章を削減','前提条件と計算値は変えず、必要な注意点を残す']},
       {version:'r42',date:'2026.10.27',title:'内訳位置を固定・丸みのある文字とロゴを追加',
@@ -2150,7 +2157,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r43</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r44</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

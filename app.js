@@ -1600,11 +1600,11 @@
         (selected.net>0?'収入から残るプラス':selected.net<0?'収入に対する不足':'収支差額ゼロ')+'"><div>'+
         '<span><em class="fp-balance-chip">'+fpBalanceLabel(selected.net)+'</em> '+
           point.year+'年'+month+'月 ・ 今月の現金収支</span>'+
-        '<strong class="'+fpBalanceTone(selected.net)+'">'+fpSignedYen(selected.net)+'</strong></div>'+
+        '<strong class="'+fpBalanceTone(selected.net)+'">'+fpSignedYen(selected.net)+'</strong>'+
+        '<small class="fp-month-inline-ratio" aria-label="手取り収入に対する割合">手取り比 '+surplusPct+'</small></div>'+
         '<div class="fp-month-savings"><span>月末の現金貯金</span>'+
         '<strong class="fp-month-savings-balance '+fpBalanceTone(selected.endingCash)+'">'+fpYen(selected.endingCash)+'</strong>'+
-        fpMonthlySavingsTrend(ledger,month)+
-        '<small aria-label="手取り収入に対する割合">手取り比 '+surplusPct+'</small></div></div>'+
+        fpMonthlySavingsTrend(ledger,month)+'</div></div>'+
       '<div class="fp-month-summary" aria-label="月の収支計算">'+
         '<span>手取り <b>'+fpYen(selected.income)+'</b></span>'+
         '<span>生活・住居など <b>−'+fpYen(selected.spending)+'</b></span>'+

@@ -2011,7 +2011,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<span class="fp-build-stamp" title="表示バージョン">r54</span></div></div>';
+      '<a class="fp-build-stamp" title="更新を確認" href="./refresh.html">r54</a></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2384,7 +2384,7 @@
           '<h3>'+esc(entry.title)+'</h3>'+
           '<ul>'+entry.details.map(item=>'<li>'+esc(item)+'</li>').join('')+'</ul>'+
         '</article>').join('')+'</div>'+
-      '<p class="updates-foot">画面が古い場合はSafariで最新ページを開いてください。保存済みの家計データはそのままです。</p>'+
+      '<p class="updates-foot">画面が古い場合は「更新」から最新版を開いてください。家計データはそのままです。</p>'+
     '</section>';
   }
   function pendingScreen(){const sim=ui.tab==='sim';return '<section class="screen">'+empty(sim?'∿':'▦',sim?'人生設計はフェーズ2':'スケジュールはフェーズ3',sim?'貯金推移・住宅ローン・教育費をステップ式で追加予定です。':'内見カレンダー・リマインド通知を追加予定です。')+'</section>';}

@@ -45,7 +45,7 @@ assert.match(card,new RegExp(api.fpYen(original.loanPayment)));
 assert.match(card,new RegExp(api.fpYen(original.amount)));
 assert.match(card,/利息込み返済総額/);
 assert.match(card,/計算の内訳/);
-assert.match(card,/教育費などを含む/);
+assert.match(card,/年の家計で試算/);
 assert.match(card,/計算の内訳/);
 assert.match(card,/借入額の目安/);
 // A household budget limit is not a loan bill. The entered home receives

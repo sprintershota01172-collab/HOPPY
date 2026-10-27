@@ -1551,8 +1551,8 @@
   function fpMonthlySavingsTrend(ledger,selectedMonth){
     const months=ledger.months;
     const values=months.map(m=>Number(m.endingCash)||0);
-    const low=Math.min(...values,Number(ledger.opening)||0,0);
-    const high=Math.max(...values,Number(ledger.opening)||0,0);
+    const low=Math.min(...values,Number(ledger.opening)||0);
+    const high=Math.max(...values,Number(ledger.opening)||0);
     const spread=Math.max(1,high-low),width=150,height=35;
     const px=i=>4+i*142/11;
     const py=v=>3+(high-v)/spread*23;

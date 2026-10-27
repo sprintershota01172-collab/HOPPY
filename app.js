@@ -1867,7 +1867,7 @@
       '<div><b>収入</b><span>月の手取り×12＋賞与。出産年は妻の月収を最大100,000円、以降は時短収入を仮定。妻賞与は出産年以降0と仮置き。</span></div>'+
       '<div><b>住宅</b><span>指定した購入年月からローン返済に切替。購入時諸費用は物件価格の7％、固定資産税・修繕等は入力値で計算。</span></div>'+
       '<div><b>教育・運用</b><span>教育費は独自の固定概算。保育料、保険、NISAは入力値。税優遇・物価上昇は自動計算せず、運用利回りは仮定。</span></div>'+
-      '<div><b>返済可能額</b><span>住宅予算は安定した手取りから生活費・学費準備・積立・現金貯金・予備費を差引きます。学費は将来の支払までの月割準備額で、大学進学年の請求額がそのまま毎月のローン上限を0にすることはありません。住宅維持費を引き、残額がマイナスなら不足額を表示します。将来の現金残高や学資保険の受取金は別に確認が必要です。</span></div>'+
+      '<div><b>住宅予算</b><span>生活費・予備費・その年の学校費・住宅維持費を除いた「生活費優先の上限」と、さらに教育費準備・NISA・貯金目標を差し引いた「積立を続ける目安」を分けて表示します。将来の赤字や教育費のピークはリスクとして別表示し、購入時の月額を自動的に0円へ変更しません。</span></div>'+
       '<div><b>銀行審査</b><span>額面年収の登録がないため総返済負担率は判定しません。手取り比率とは別の指標です。</span></div></div>'+
       '<div class="fp-r-source-links"><a href="https://www.fsa.go.jp/policy/nisa2/lifeplan-simulator/index.html" target="_blank" rel="noopener noreferrer">金融庁｜ライフプランの前提 ↗</a>'+
       '<a href="https://www.flat35.com/loan/lineup/flat35/conditions/index.html" target="_blank" rel="noopener noreferrer">フラット35｜申込条件 ↗</a>'+
@@ -1926,7 +1926,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<span class="fp-build-stamp" title="表示バージョン">r47</span></div></div>';
+      '<span class="fp-build-stamp" title="表示バージョン">r48</span></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2240,6 +2240,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r48',date:'2026.10.28',title:'0円の原因を見える化・住宅予算の計算を再設計',
+        details:['生活費優先の返済上限と貯金・NISAを維持した場合の返済額を分けて表示','大学費用など将来の赤字は住宅予算をゼロにするのではなくリスクとして別表示','赤字の時も切り捨てる前の不足額と計算項目を明示']},
       {version:'r47',date:'2026.10.28',title:'住宅ローンが突然0円になる誤判定を修正',
         details:['大学費用が高い1年だけで毎月の返済可能額を0円にしない','将来の教育費を必要時期までの月々の準備金に換算','本当に家計不足なら不足額と計算の内訳を表示']},
       {version:'r46',date:'2026.10.27',title:'住宅予算を実際の家計と子どもの教育費で計算',
@@ -2277,7 +2279,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r47</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r48</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

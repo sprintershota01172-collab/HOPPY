@@ -984,7 +984,7 @@
       '<div class="fp-capacity-example-status '+(within?'within':'over')+'">'+
       (within?'返済目安まであと '+fpYen(Math.max(0,-over))+' / 月':
         '返済目安を '+fpYen(over)+' / 月超過')+'</div></div>'+
-      '<p class="fp-capacity-footnote">生活費・学費・貯金を確保した残りから計算。'+
+      '<p class="fp-capacity-footnote">最も厳しい家計の年：'+reference+'年。'+
         '<button type="button" data-act="fp-capacity-basis" class="fp-capacity-basis-link">根拠と計算式 ›</button></p>'+
       '</section>';
   }
@@ -1783,19 +1783,20 @@
     if(mode===1){
       const b=fpBudget(),n=loan.years*12;
       return '<div class="fp-r-body grow fp-budget-evidence">'+
-        '<strong class="fp-r-subhead">返済上限の計算根拠（'+b.referenceYear+'年）</strong>'+
+        '<strong class="fp-r-subhead">住宅予算の計算（'+b.startYear+'〜'+b.endYear+'年を比較）</strong>'+
+        '<p class="fp-budget-year-caption">最も余裕が少ない '+b.referenceYear+'年の家計を表示</p>'+
         fpCalcRows([
-          ['夫婦の月手取り（賞与除く）',fpYen(b.monthlyIncome)],
-          ['① 手取りの25％',fpYen(b.ratioCap)],
-          ['生活費・月割年払','−'+fpYen(b.spending)],
-          ['NISA等の積立','−'+fpYen(b.investing)],
-          ['現金貯金目標・予備費','−'+fpYen(b.cashTarget+b.buffer)],
-          ['② 上記差引後の住居費枠',fpSignedYen(b.balanceCap),fpBalanceTone(b.balanceCap)],
-          ['採用する住居費上限',fpYen(b.housingBudget)],
-          ['住宅維持費','−'+fpYen(b.maintenance)],
-          ['毎月のローン返済上限',fpYen(b.loanPayment)]
+          ['夫婦の手取り（月額・賞与除く）',fpYen(b.monthlyIncome)],
+          ['生活費・保険・車・年払費用','−'+fpYen(b.living)],
+          ['子どもの学校・大学費','−'+fpYen(b.school)],
+          ['NISA・その他の積立','−'+fpYen(b.investing)],
+          ['現金貯金の目標','−'+fpYen(b.cashTarget)],
+          ['急な出費の予備費','−'+fpYen(b.buffer)],
+          ['住宅に使える予算',fpSignedYen(b.balanceCap),fpBalanceTone(b.balanceCap)],
+          ['住宅維持費（税・修繕など）','−'+fpYen(b.maintenance)],
+          ['月々のローン返済に使える額',fpYen(b.loanPayment)]
         ])+
-        '<p class="fp-r-help">①と②の小さい方から維持費を引き、0円未満は0円。25％は家計管理用の仮定で銀行審査基準ではありません。賞与・臨時支出は月額上限には直接含めません。</p>'+
+        '<p class="fp-r-help">賞与・給付金・一時的な支出は月額の上限に含めません。手取り25％（'+fpYen(b.ratioCap)+'）は参考比率で、返済額を制限する計算には使っていません。銀行審査とは別の家計目安です。</p>'+
         '<div class="fp-budget-loan-note">物件'+fpYen(price)+'：月返済'+fpYen(loan.monthly)+
           '／'+loan.years+'年・年利'+yen(loan.rate,2)+'％・総返済'+fpYen(loan.monthly*n)+'</div>'+
         '<button type="button" data-act="fp-result-tab" data-value="1" class="fp-setting-back">‹ 月収支に戻る</button>'+
@@ -1818,6 +1819,7 @@
       '<div><b>収入</b><span>月の手取り×12＋賞与。出産年は妻の月収を最大100,000円、以降は時短収入を仮定。妻賞与は出産年以降0と仮置き。</span></div>'+
       '<div><b>住宅</b><span>指定した購入年月からローン返済に切替。購入時諸費用は物件価格の7％、固定資産税・修繕等は入力値で計算。</span></div>'+
       '<div><b>教育・運用</b><span>教育費は独自の固定概算。保育料、保険、NISAは入力値。税優遇・物価上昇は自動計算せず、運用利回りは仮定。</span></div>'+
+      '<div><b>返済可能額</b><span>住宅予算は夫婦の安定した手取りから生活費・学校費・積立・貯金目標・予備費を引き、購入後の比較期間で最も厳しい年を採用。住宅維持費を引いた額がローン返済目安。手取り25％は参考表示のみ。</span></div>'+
       '<div><b>銀行審査</b><span>額面年収の登録がないため総返済負担率は判定しません。手取り比率とは別の指標です。</span></div></div>'+
       '<div class="fp-r-source-links"><a href="https://www.fsa.go.jp/policy/nisa2/lifeplan-simulator/index.html" target="_blank" rel="noopener noreferrer">金融庁｜ライフプランの前提 ↗</a>'+
       '<a href="https://www.flat35.com/loan/lineup/flat35/conditions/index.html" target="_blank" rel="noopener noreferrer">フラット35｜申込条件 ↗</a>'+

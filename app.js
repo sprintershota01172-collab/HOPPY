@@ -1631,8 +1631,8 @@
       const selected=fpYearPoint(current),other=rent.points.find(x=>x.year===selected.year);
       return '<div class="fp-r-body grow"><strong class="fp-r-subhead">購入後の現金残高</strong>'+
         fpChartCanvas(joined,['house','rent'],'line')+fpChartLegend(['購入後','賃貸を継続'])+
-        '<div class="fp-r-compact-stats">'+fpMetric('選択年の現金残高',fpYen(selected.cash))+
-        fpMetric('賃貸との差額',fpYen(selected.cash-(other?.cash||0)))+'</div>'+
+        '<div class="fp-r-compact-stats">'+fpMetric('選択年の現金残高',fpYen(selected.cash),fpBalanceTone(selected.cash))+
+        fpMetric('賃貸との差額',fpSignedYen(selected.cash-(other?.cash||0)),fpBalanceTone(selected.cash-(other?.cash||0)))+'</div>'+
         '<p class="fp-r-help">予測は各年末の現金。赤い点線＝残高0。持ち家の売却価値は含みません。</p></div>';
     }
     if(choice===1){
@@ -1641,7 +1641,7 @@
       return '<div class="fp-r-body grow"><strong class="fp-r-subhead">年間の収入と支出＋投資積立</strong>'+
         fpChartCanvas(joined,['income','spent'],'bar')+fpChartLegend(['手取り・給付','支出＋積立'])+
         '<div class="fp-r-compact-stats">'+fpMetric('選択年の年間収入',fpYen(selected.incomes))+
-        fpMetric('選択年の現金増減',fpYen(selected.netCash))+'</div>'+
+        fpMetric('選択年の現金増減',fpSignedYen(selected.netCash),fpBalanceTone(selected.netCash))+'</div>'+
         '<p class="fp-r-help">現金増減＝収入−支出−NISA等の積立。積立は消費支出とは区別。</p></div>';
     }
     const pts=mortgage.points.map(x=>({year:x.year,balance:x.balance}));

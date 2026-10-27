@@ -1444,7 +1444,7 @@
       if(monthsOwned){
         const loanAmount=annual?point.housingLoan:
           Math.max(0,(point.housingMonths?.[month.month-1]??point.housing)-safeNum(p.housingOngoing));
-        add('住宅ローン返済',loanAmount,{editStep:'4:1'});
+        add('住宅ローン返済（元金＋利息）',loanAmount,{editStep:'4:1'});
         add('住宅維持費',safeNum(p.housingOngoing)*monthsOwned,
           {field:'housingOngoing',unit:'万円/月',editStep:'4:1'});
       }
@@ -1645,7 +1645,7 @@
     return '<div class="fp-r-body grow"><strong class="fp-r-subhead">ローン残債・元金と利息</strong>'+
       fpChartCanvas(pts,['balance'],'line')+fpChartLegend(['ローン残債'])+
       '<div class="fp-r-compact-stats">'+fpMetric('選択年末の残債',fpYen(currentLoan.balance))+
-      fpMetric('選択年の元金／利息',yen(currentLoan.principalPaid,0)+' / '+fpYen(currentLoan.interest))+'</div>'+
+      fpMetric('選択年の元金／利息',fpYen(currentLoan.principalPaid)+' / '+fpYen(currentLoan.interest))+'</div>'+
       '<p class="fp-r-help">元利均等、当初金利が期間中一定の場合の返済予定。繰上返済なし。</p></div>';
   }
   function fpCalcRows(rows){
@@ -2087,7 +2087,8 @@
       const output=rating.budget.amount===0?'希望の貯金・積立を維持した場合の月返済余力が0円。計算根拠で不足理由を確認してください。':
         (rating.reason||'');
       const negative=current.points.find(x=>x.cash<0);
-      const annualPoint=fpYearPoint(current);
+      const annualPoint=fpYearPoint(current),
+        chosenMonth=fpMonthlyLedger(annualPoint).months[Math.max(0,Math.min(11,ui.fpCashMonth-1))];
       content='<div class="fp-r-summary grow">'+
         fpSurplusStrip(annualPoint.incomes,annualPoint.netCash,annualPoint.year+'年')+
         fpMortgageCapacityCard()+
@@ -2099,7 +2100,7 @@
         '<div class="fp-r-compact-stats">'+
         fpMetric('月々の住居費',fpYen(rating.housing))+
         fpMetric('手取り負担率',yen(rating.ratio*100,1)+'％')+
-        fpMetric('貯金・予備費確保後の月余裕',fpSignedYen(rating.spendable),fpBalanceTone(rating.spendable))+
+        fpMetric('全項目差引後の残額（'+chosenMonth.month+'月）',fpSignedYen(chosenMonth.available),fpBalanceTone(chosenMonth.available))+
         fpMetric('年末現金の最小値',fpYen(min.cash)+' ('+min.year+'年)',fpBalanceTone(min.cash))+'</div>'+
         '<button class="fp-pie-shortcut" data-act="fp-pie-open"><span class="fp-pie-mini" style="--pie-sweep:'+Math.min(100,Math.max(0,fpIncomeAllocation(fpYearPoint(current)).expensePercent||0))+'%"></span><span>収入に対する支出の割合</span><b>'+(fpIncomeAllocation(fpYearPoint(current)).expensePercent===null?'—':yen(fpIncomeAllocation(fpYearPoint(current)).expensePercent,1)+'%')+' ›</b></button>'+
         '<p class="fp-r-help">'+(negative?'注意：'+negative.year+'年に年末現金がマイナスになる試算です。':'この期間は年末現金のマイナスがありません。')+

@@ -895,20 +895,19 @@
     return fpBaseMonthly(year).reduce((sum,x)=>sum+x.value,0)+fpAnnualExtras(year,true)/12;
   }
   function fpForecast(price,extraInterest=0){
-    const p=state.plan,cost=Math.max(0,safeNum(price));
-    const rate=Math.max(0,safeNum(p.interest)+extraInterest);
-    const payment=mortgageMonthly(cost,0,rate,p.loanYears);
-    const income=safeNum(p.husbandMonthly)+(safeNum(p.children)>0
-      ?Math.min(safeNum(p.wifeMonthly),safeNum(p.wifeReduced)):safeNum(p.wifeMonthly));
-    const housing=payment+safeNum(p.housingOngoing);
-    const ratio=income>0?housing/income:Infinity;
-    const recurring=fpSpendingMonthly(fpDecisionYear());
-    const investing=fpNisaForYear(fpDecisionYear(),p)+fpOtherInvestForYear(fpDecisionYear(),p);
-    const spendable=income-recurring-investing-housing;
-    const upfront=0+cost*.07;
-    const remaining=safeNum(p.cashSavings)+safeNum(p.support)-upfront;
-    const reserve=6*(recurring+housing);
-    return {price:cost,rate,payment,income,housing,ratio,spendable,upfront,remaining,reserve,recurring,investing};
+    const p=state.plan,cost=Math.max(0,safeNum(price)),
+      b=fpBudget(),reference=fpHousingYearBudget(b.referenceYear,p),
+      rate=Math.max(0,safeNum(p.interest)+extraInterest),
+      payment=mortgageMonthly(cost,0,rate,p.loanYears),
+      housing=payment+safeNum(p.housingOngoing),
+      ratio=reference.monthlyIncome>0?housing/reference.monthlyIncome:Infinity,
+      spendable=reference.balanceCap-housing+reference.cashTarget+reference.buffer,
+      upfront=cost*.07,
+      remaining=safeNum(p.cashSavings)+safeNum(p.support)-upfront,
+      reserve=6*(reference.spending+housing);
+    return {price:cost,rate,payment,income:reference.monthlyIncome,housing,ratio,
+      spendable,upfront,remaining,reserve,recurring:reference.spending,
+      investing:reference.investing,referenceYear:reference.year};
   }
   // Affordable housing is the cash left after life costs, school fees, savings
   // and a personal emergency buffer. The debt-to-income ratio is advisory only;
@@ -991,12 +990,14 @@
   function fpRating(price){
     const info=fpForecast(price),budget=fpBudget(),stressed=fpForecast(price,1);
     let level='good',label='予算内',reason='住居費と日常の支払いが将来の手取りの範囲内です。';
-    if(!Number.isFinite(info.ratio)||info.ratio>.30||price>budget.amount*1.2){
-      level='bad';label='予算超過';reason='将来の手取りに対して住居費や生活費の負担が大きくなっています。';
-    }else if(info.ratio>.25||price>budget.amount){
-      level='warn';label='慎重に';reason='保険・子育て・NISAを含めた参考予算を超えています。';
+    if(price>budget.amount*1.2||!Number.isFinite(info.ratio)){
+      level='bad';label='予算超過';reason='生活費・教育費・貯金目標を確保すると住宅費が不足します。';
+    }else if(price>budget.amount){
+      level='warn';label='家計超過';reason='家計の残額から求めた住宅予算を超えています。';
+    }else if(info.ratio>.35){
+      level='warn';label='返済割合注意';reason='家計予算内ですが、住宅費が安定した手取りの35％を超えています。';
     }
-    if(info.spendable<safeNum(state.plan.cashBufferMonthly)+safeNum(state.plan.otherSavingsMonthly)&&level==='good'){
+    if(info.spendable<safeNum(state.plan.cashBufferMonthly)+fpCashGoalMonthly(state.plan)&&level==='good'){
       level='warn';label='家計確認';reason='毎月の保険・子育て・積立を引くと、余裕費が不足します。';
     }
     if(info.remaining<0&&level==='good'){

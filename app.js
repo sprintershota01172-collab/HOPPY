@@ -961,9 +961,8 @@
       '<div class="fp-capacity-example-status '+(within?'within':'over')+'">'+
       (within?'返済目安まであと '+fpYen(Math.max(0,-over))+' / 月':
         '返済目安を '+fpYen(over)+' / 月超過')+'</div></div>'+
-      '<p class="fp-capacity-footnote">住居費の目安 '+fpYen(b.housingBudget)+'/月 − 維持費 '+
-        fpYen(b.maintenance)+'/月。'+
-        '購入諸費用（約7%）は別。融資可能額ではなく試算です。</p>'+
+      '<p class="fp-capacity-footnote">手取り・生活費・積立・貯金目標から計算。金融機関の審査とは別。'+
+        '<button type="button" data-act="fp-capacity-basis" class="fp-capacity-basis-link">根拠と計算式 ›</button></p>'+
       '</section>';
   }
   function fpRating(price){
@@ -1756,14 +1755,25 @@
         '<p class="fp-r-help">期末現金＝期首現金＋年間収入−年間支出−年間投資積立。預貯金・NISA評価額は別々に計算。</p></div>';
     }
     if(mode===1){
-      const n=loan.years*12,r=loan.rate/1200;
-      return '<div class="fp-r-body grow">'+fpCalcRows([
-        ['物件価格',fpYen(price)],
-        ['借入元金',fpYen(loan.principal)],['返済期間',loan.years+'年 × 12か月'],
-        ['想定金利',yen(loan.rate,2)+'％/年'],['ローン月額',fpYen(loan.monthly)],
-        ['ローン総返済',fpYen(loan.monthly*n)]
-      ])+
-        '<p class="fp-r-help">元利均等：月額＝元金×月利÷{1−(1＋月利)^−回数}。月利＝年利÷1200。金利0％なら元金÷回数。</p></div>';
+      const b=fpBudget(),n=loan.years*12;
+      return '<div class="fp-r-body grow fp-budget-evidence">'+
+        '<strong class="fp-r-subhead">返済上限の計算根拠（'+b.referenceYear+'年）</strong>'+
+        fpCalcRows([
+          ['夫婦の月手取り（賞与除く）',fpYen(b.monthlyIncome)],
+          ['① 手取りの25％',fpYen(b.ratioCap)],
+          ['生活費・月割年払','−'+fpYen(b.spending)],
+          ['NISA等の積立','−'+fpYen(b.investing)],
+          ['現金貯金目標・予備費','−'+fpYen(b.cashTarget+b.buffer)],
+          ['② 上記差引後の住居費枠',fpSignedYen(b.balanceCap),fpBalanceTone(b.balanceCap)],
+          ['採用する住居費上限',fpYen(b.housingBudget)],
+          ['住宅維持費','−'+fpYen(b.maintenance)],
+          ['毎月のローン返済上限',fpYen(b.loanPayment)]
+        ])+
+        '<p class="fp-r-help">①と②の小さい方から維持費を引き、0円未満は0円。25％は家計管理用の仮定で銀行審査基準ではありません。賞与・臨時支出は月額上限には直接含めません。</p>'+
+        '<div class="fp-budget-loan-note">物件'+fpYen(price)+'：月返済'+fpYen(loan.monthly)+
+          '／'+loan.years+'年・年利'+yen(loan.rate,2)+'％・総返済'+fpYen(loan.monthly*n)+'</div>'+
+        '<button type="button" data-act="fp-result-tab" data-value="1" class="fp-setting-back">‹ 月収支に戻る</button>'+
+      '</div>';
     }
     if(mode===2){
       const items=fpExpenseDetails(point,true);
@@ -2309,6 +2319,7 @@
     if(action==='fp-history-latest')return step(()=>{ui.fpHistoryId=state.planHistory[0]?.id||null;ui.fpHistoryOpen=false;ui.fpHistoryLive=true;ui.simResultPage=1;ui.fpYear=simNowYear();});
     if(action==='fp-edit-events')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=6;ui.simSubPage=2;});
     if(action==='fp-pie-open')return step(()=>{ui.simResultPage=3;ui.fpChartPage=3;});
+    if(action==='fp-capacity-basis')return step(()=>{ui.simResultPage=5;ui.fpCalcPage=1;});
     if(action==='fp-result-tab')return step(()=>{ui.fpBreakdownOpen=null;ui.simResultPage=Math.min(7,Math.max(0,Number(v)||0));ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
     if(action==='fp-cash-month')return step(()=>{ui.fpBreakdownOpen=null;ui.fpCashMonth=Math.min(12,Math.max(1,Number(v)||1));});
     if(action==='fp-month-view')return step(()=>{ui.fpMonthView=v==='detail'?'detail':'pie';});

@@ -64,4 +64,8 @@ assert.ok(withNisa.loanPayment<initialPreferred,'NISA affects preferred payment 
 assert.equal(withNisa.basicLoanPayment,initialBasic);
 const expenses=api.fpBudget().years;
 assert.ok(expenses.length>=20,'future stress assessed independently');
+p.husbandMonthly=0;p.wifeMonthly=0;p.wifeReduced=0;
+assert.equal(api.fpBudget().basicLoanPayment,0);
+assert.match(api.fpMortgageCapacityCard(),/夫婦の手取りが0円です/);
+assert.match(api.fpCalculationData(p.propertyPrice,api.modelYears(p.propertyPrice,true)),/手取り収入を確認/);
 console.log('FP r48: positive house budgets, zero diagnostics, optional savings separation, education, long-term stress PASS');

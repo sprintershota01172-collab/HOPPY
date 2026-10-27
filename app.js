@@ -1828,7 +1828,7 @@
         item('現金預金',selected.cash,monthly?monthlyAsset.cashChange:yearAsset.cashChange)+
         item('NISA評価額',selected.nisa,monthly?monthlyAsset.nisaChange:yearAsset.nisaChange)+
         item('その他の株式・投資',selected.otherInvest,monthly?monthlyAsset.otherChange:yearAsset.otherChange)+
-        '<div class="fp-asset-tile total"><span>金融資産の合計</span><strong>'+fpYen(selected.total)+'</strong>'+
+        '<div class="fp-asset-tile total"><span>現金と投資資産の合計</span><strong>'+fpYen(selected.total)+'</strong>'+
         '<small>現金＋NISA＋その他投資</small></div></div>'+
       '<div class="fp-education-asset"><span>教育積立残高（目的別・上記の合計には含めない）</span><strong>'+fpYen(selected.educationFund||0)+'</strong></div>'+ 
       '<div class="fp-goal-assets-action"><button data-act="fp-goal-investment-edit">積立・目標を編集 ↗</button></div>'+
@@ -1933,7 +1933,7 @@
       '<div class="fp-r-assumptions">'+
       '<div><b>収入</b><span>月の手取り×12＋賞与。出産年は妻の月収を最大100,000円、以降は時短収入を仮定。妻賞与は出産年以降0と仮置き。</span></div>'+
       '<div><b>住宅</b><span>指定した購入年月からローン返済に切替。購入時諸費用は物件価格の7％、固定資産税・修繕等は入力値で計算。</span></div>'+
-      '<div><b>教育・運用</b><span>学費は年齢別の概算。目標方式の教育積立は目的別資産として管理し、指定年齢以降の学費に充当します。手入力の学資保険は受取額・受取年が不明のため、満期金を自動計上しません。別途受取を登録する場合は二重計上を避けてください。</span></div>'+
+      '<div><b>教育・運用</b><span>学費は年齢別の概算。目標方式の教育積立は目的別資産として管理し、指定年齢以降の学費に充当します。手入力の学資保険は受取額・受取年が不明のため、満期金を自動計上しません。現金貯蓄目標の月額は初期残高からの単純逆算で、一時支出による目標未達も起こり得ます。</span></div>'+
       '<div><b>住宅予算</b><span>通常の手取り給与（月額・賞与を除外）から生活費・学校費・保険・予備費・住宅維持費・NISA等の積立・現金貯金目標を控除します。出産年の一時的な減収は年間収支で別途確認。積立を見直す場合の上限は推奨借入額ではありません。未登録支出は0円扱いです。</span></div>'+
       '<div><b>銀行審査</b><span>額面年収の登録がないため総返済負担率は判定しません。手取り比率とは別の指標です。</span></div></div>'+
       '<div class="fp-r-source-links"><a href="https://www.fsa.go.jp/policy/nisa2/lifeplan-simulator/index.html" target="_blank" rel="noopener noreferrer">金融庁｜ライフプランの前提 ↗</a>'+
@@ -2009,7 +2009,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<span class="fp-build-stamp" title="表示バージョン">r51</span></div></div>';
+      '<span class="fp-build-stamp" title="表示バージョン">r52</span></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2323,6 +2323,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r52',date:'2026.10.28',title:'教育資金と将来家計の整合性を改善',
+        details:['目標方式の学資積立を教育専用残高として累積','設定年齢以降の学校費へ教育資金を充当','購入月の現金残高に結婚式・旅行費用を反映','食費・光熱費が未入力の場合に借入額過大の警告を追加']},
       {version:'r51',date:'2026.10.28',title:'家計余力を基準に住宅ローン予算を再構成',
         details:['月返済目安をプラス符号なしで表示し借入額と区別','通常給与と出産年の一時減収を分離','貯蓄・予備費の二重控除と重複登録警告を修正','積立を見直す場合の上限は別枠の参考額に変更']},
       {version:'r50',date:'2026.10.28',title:'借入額が小さくなる生活費の重複を診断',
@@ -2368,7 +2370,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r51</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r52</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

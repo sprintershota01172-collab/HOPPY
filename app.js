@@ -1002,10 +1002,10 @@
       selectedMonthly=mortgageMonthly(price,b.downPayment,b.rate,b.loanYears),
       over=selectedMonthly-b.loanPayment,within=over<=1e-8;
     return '<section class="fp-capacity-card" aria-label="返済予算と登録物件のローン返済予測">'+
-      '<div class="fp-capacity-heading"><strong>住宅ローンの目安</strong>'+
-      '<span>'+b.startYear+'〜'+b.endYear+'年の家計で試算</span></div>'+
+      '<div class="fp-capacity-heading"><strong>住宅ローンの月額</strong>'+
+      '<span>'+b.startYear+'年の家計で計算／将来リスクは別判定</span></div>'+
       '<div class="fp-capacity-columns">'+
-      '<div class="fp-capacity-cell payment"><span>毎月返せる目安</span>'+
+      '<div class="fp-capacity-cell payment"><span>貯金・NISAを続ける場合</span>'+
       '<strong>'+fpYen(b.loanPayment)+'</strong><small> / 月</small></div>'+
       '<div class="fp-capacity-cell price"><span>借入額の目安</span>'+
       '<strong>'+fpYen(b.amount)+'</strong>'+
@@ -1016,23 +1016,27 @@
       '<div class="fp-capacity-example-main"><span>物件価格 '+fpYen(price)+' の月返済</span>'+
       '<strong>'+fpYen(selectedMonthly)+' / 月</strong></div>'+
       '<div class="fp-capacity-example-status '+(within?'within':'over')+'">'+
-      (within?'返済目安まであと '+fpYen(Math.max(0,-over))+' / 月':
-        '返済目安を '+fpYen(over)+' / 月超過')+'</div></div>'+
-      '<p class="fp-capacity-footnote"><span class="fp-capacity-housing-total'+(b.rawLoanPayment<=0?' shortfall':'')+'">'+
-        (b.rawLoanPayment<=0?'住宅費の予算が不足 <strong>'+fpYen(-b.rawLoanPayment)+'/月</strong>':
-         '住宅に使える額 <strong>'+fpYen(b.housingBudget)+'/月</strong>')+'</span>'+
-        '<button type="button" data-act="fp-capacity-basis" class="fp-capacity-basis-link">計算の内訳 ›</button></p>'+
+      (within?'積立と両立できる余裕 '+fpYen(Math.max(0,-over))+' / 月':
+        b.basicLoanPayment>0&&selectedMonthly<=b.basicLoanPayment?
+        '貯金・NISAを見直すと届く可能性あり':
+        '生活費優先の上限と比較してください')+'</div></div>'+
+      '<p class="fp-capacity-footnote"><span class="fp-capacity-housing-total'+(b.basicRaw<0?' shortfall':'')+'">'+
+        (b.basicRaw<0?'生活費だけで <strong>'+fpYen(-b.basicRaw)+'/月不足</strong>':
+          '積立を見直す場合の上限 <strong>'+fpYen(b.basicLoanPayment)+'/月</strong>')+
+        '</span><button type="button" data-act="fp-capacity-basis" class="fp-capacity-basis-link">計算の内訳 ›</button></p>'+
       '</section>';
   }
   function fpRating(price){
     const info=fpForecast(price),budget=fpBudget(),stressed=fpForecast(price,1);
     let level='good',label='予算内',reason='住居費と日常の支払いが将来の手取りの範囲内です。';
-    if(price>budget.amount*1.2||!Number.isFinite(info.ratio)){
-      level='bad';label='予算超過';reason='生活費・教育費・貯金目標を確保すると住宅費が不足します。';
+    if(!Number.isFinite(info.ratio)||price>budget.basicAmount){
+      level='bad';label='生活費が不足';reason='生活費を優先した場合でも物件の月返済に届きません。';
     }else if(price>budget.amount){
-      level='warn';label='家計超過';reason='家計の残額から求めた住宅予算を超えています。';
+      level='warn';label='積立の見直し';reason='貯金・NISAを希望どおり続けるには予算超過です。';
+    }else if(budget.worstSurplus<0){
+      level='warn';label='将来の家計注意';reason=budget.worstYear+'年に教育費などで現金収支が不足する予測です。';
     }else if(info.ratio>.35){
-      level='warn';label='返済割合注意';reason='家計予算内ですが、住宅費が安定した手取りの35％を超えています。';
+      level='warn';label='住宅費割合注意';reason='毎月の家計は収まりますが、住宅費の手取り比率が35％を超えます。';
     }
     if(info.spendable<safeNum(state.plan.cashBufferMonthly)+fpCashGoalMonthly(state.plan)&&level==='good'){
       level='warn';label='家計確認';reason='毎月の保険・子育て・積立を引くと、余裕費が不足します。';

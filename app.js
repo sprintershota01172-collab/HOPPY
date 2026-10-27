@@ -1664,10 +1664,10 @@
       '<div class="fp-month-hero fp-month-surplus '+fpBalanceTone(selected.net)+'" aria-label="'+
         (selected.net>0?'収入から残るプラス':selected.net<0?'収入に対する不足':'収支差額ゼロ')+'"><div>'+
         '<span><em class="fp-balance-chip">'+fpBalanceLabel(selected.net)+'</em> '+
-          '毎月の現金残り</span>'+ 
+          '毎月の残り</span>'+ 
         '<strong class="'+fpBalanceTone(selected.net)+'">'+fpSignedYen(selected.net)+'</strong>'+
         '<small class="fp-month-inline-ratio fp-month-goal-gap '+fpBalanceTone(availableAfterGoal)+'" aria-label="貯金目標を引いた後の余裕" title="手取り比 '+surplusPct+'">'+
-          (monthlyGoal>0?'貯金目標 '+fpYen(monthlyGoal)+' 確保後：'+fpSignedYen(availableAfterGoal):'手取り比 '+surplusPct)+
+          (monthlyGoal>0?'貯金目標後の余裕 '+fpSignedYen(availableAfterGoal):'手取り比 '+surplusPct)+
         '</small></div>'+
         '<div class="fp-month-savings"><span>月末の貯金</span>'+
         '<strong class="fp-month-savings-balance '+fpBalanceTone(selected.endingCash)+'">'+fpYen(selected.endingCash)+'</strong>'+

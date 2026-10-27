@@ -398,8 +398,8 @@
     }
     return monthly;
   }
-  function fpGoalPreview(monthly,summary,note){
-    return '<div class="fp-goal-preview"><span>必要な毎月積立額</span>'+
+  function fpGoalPreview(monthly,summary,note,manual=false){
+    return '<div class="fp-goal-preview"><span>'+(manual?'収支に反映する月額':'目標に必要な毎月額')+'</span>'+
       '<strong>'+(Number.isFinite(monthly)?fpYen(monthly):'期限を変更してください')+'</strong>'+
       '<small>'+esc(summary)+'</small><p>'+esc(note||'')+'</p></div>';
   }
@@ -413,9 +413,8 @@
       ]:[])
     ],'手入力は前ページの学資保険料を採用。目標方式の逆算額は教育資金の積立目安で、保険商品の見積ではありません。',
       fpGoalPreview(g.enabled?g.monthly:safeNum(p.childEducationInsuranceMonthly),
-        g.year+'年／'+g.age+'歳で'+fpYen(g.target)+'（'+(g.enabled?'逆算':'手入力')+'）',
-        g.months?'積立可能期間 '+g.months/12+'年・出生予定 '+g.birth+'年':
-          '目標期限が到来済みです。目標年齢を見直してください。'));
+        (g.enabled?g.year+'年・'+g.age+'歳に '+fpYen(g.target):'学資保険料の手入力を採用'),
+        (g.enabled?g.months?'積立期間 '+g.months/12+'年・出生予定 '+g.birth+'年':'期限が到来しています。目標を変更してください。':'前ページの保険料を月々の支出に計上します。'),!g.enabled));
   }
   const mortgageMonthly=(price,down,rate,years)=>{
     const principal=Math.max(0,safeNum(price)-safeNum(down));
@@ -567,10 +566,10 @@
           f('達成まで','goalNisaYears','年'),
           f('想定利回り','returnAnnual','％/年')
         ]:[f('毎月積み立てる金額','nisaMonthly')])
-      ],'目標から逆算した月額を家計予測に反映します。',
+      ],'上で選んだ方法だけが収支予測に適用されます。',
         fpGoalPreview(fpEffectiveNisaMonthly(p),
-          safeNum(p.goalNisaYears)+'年後・目標 '+fpYen(safeNum(p.goalNisaAmount)),
-          '元本保証なし。利回りは仮定です。')));
+          Number(p.goalNisaEnabled)===1?safeNum(p.goalNisaYears)+'年後・目標 '+fpYen(safeNum(p.goalNisaAmount)):'手入力した毎月積立額を採用',
+          '運用利回りは仮定であり、元本保証はありません。',Number(p.goalNisaEnabled)!==1)));
       pages.push(fpCompactPage('その他投資｜積立・目標',[
         f('現在の評価額','investBalance','万円'),
         sSelect('積立の決め方','goalOtherEnabled',[[0,'月額を入力'],[1,'目標額から計算']]),
@@ -578,10 +577,10 @@
           f('目標額','goalOtherAmount','万円'),
           f('達成まで','goalOtherYears','年')
         ]:[f('毎月積み立てる金額','otherInvestMonthly')])
-      ],'利回りはNISA画面と共通です。',
+      ],'逆算するときの利回りはNISAと共通です。',
         fpGoalPreview(fpEffectiveOtherInvestMonthly(p),
-          safeNum(p.goalOtherYears)+'年後・目標 '+fpYen(safeNum(p.goalOtherAmount)),
-          '目標から逆算した月額を家計予測に反映します。')));
+          Number(p.goalOtherEnabled)===1?safeNum(p.goalOtherYears)+'年後・目標 '+fpYen(safeNum(p.goalOtherAmount)):'手入力した毎月積立額を採用',
+          '上で選んだ方法だけを収支予測に適用します。',Number(p.goalOtherEnabled)!==1)));
     }
     if(i===6){
       pages.push(fpCompactPage('年払いの支出',[

@@ -146,8 +146,8 @@ test('monthly final remainder deducts spending, investments, cash savings and em
   assert.equal(month.buffer,2.5);
   assert.ok(Math.abs(month.endingCash-month.openingCash-month.net)<1e-8);
   const pie=x.fpMonthlyAllocation(month);
-  assert.ok(pie.items.some(i=>i.id==='reserved'&&i.amount===6));
-  assert.equal(pie.items.length,6);
+  assert.ok(pie.items.some(i=>i.id==='investing'&&Math.abs(i.amount-(month.investing+month.cashGoal+month.buffer))<1e-8));
+  assert.equal(pie.items.length,5,'Donut retains its previous five-item footprint');
   assert.ok(Math.abs(pie.remaining-Math.max(0,month.available))<1e-8);
   assert.match(x.fpMonthlyReport(projection),/全て引いた残額/);
 });

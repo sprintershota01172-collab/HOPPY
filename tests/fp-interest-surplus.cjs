@@ -31,11 +31,11 @@ const budget=api.fpBudget(),payments=Math.max(12,Math.round(budget.loanYears*12)
   interest=Math.max(0,interestInclusive-budget.amount);
 assert.ok(interest>0,'positive interest rate produces loan interest');
 const card=api.fpMortgageCapacityCard();
-assert.ok(card.includes('（金利込み総支払額 '+api.fpYen(interestInclusive)+'）'),
+assert.ok(card.includes('（利息込み返済総額 '+api.fpYen(interestInclusive)+'）'),
   'purchase price has correctly calculated parenthetical interest-inclusive total');
 assert.ok(card.includes('入力した物件 '+api.fpYen(p.propertyPrice)));
-assert.ok(card.includes('返済に回せる上限'));
-assert.ok(card.includes('家計上限'));
+assert.ok(card.includes('毎月返せる目安'));
+assert.ok(card.includes('返済目安'));
 assert.ok(interest>0,'loan total includes interest at positive APR');
 assert.ok(card.includes('維持費・諸費用'),'non-loan costs are explicitly excluded');
 assert.ok(card.includes('金利一定'),'full-term payment assumes constant interest');
@@ -49,7 +49,7 @@ assert.ok(selectedLoan.includes(api.fpYen(propertyTotal)));
 p.interest=0;
 const noInterest=api.fpBudget(),
   noInterestCard=api.fpMortgageCapacityCard();
-assert.ok(noInterestCard.includes('（金利込み総支払額 '+api.fpYen(noInterest.amount)+'）'),
+assert.ok(noInterestCard.includes('（利息込み返済総額 '+api.fpYen(noInterest.amount)+'）'),
   'at zero interest, total inclusive of down payment equals shown property price');
 p.interest=1.5;
 const positive=api.fpSurplusStrip(50,10,'2026年');

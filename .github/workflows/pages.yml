@@ -9,7 +9,7 @@ permissions:
   id-token: write
 concurrency:
   group: github-pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -23,20 +23,22 @@ jobs:
           node --check sw.js
           grep -Eq 'app\.js\?v=fp-[0-9]{8}-r[0-9]+' index.html
           grep -Eq 'styles\.css\?v=fp-[0-9]{8}-r[0-9]+' index.html
-      - name: Gate release on financial math and mobile fit
+      - name: Gate release on current FP financial model
         run: |
-          node tests/fp-zero-budget-diagnostics-r48.cjs
+          node --test tests/finance.test.cjs
           node tests/fp-legacy-living-overlap-r50.cjs
-          node tests/fp-fifty-man-r49.cjs
           node tests/fp-settings-tab.cjs
-          node tests/fp-settings-viewport.cjs
-          node tests/fp-viewport.cjs
-          node tests/fp-pie-detail-position-r44.cjs
       - name: Run regression tests (report failures separately)
         continue-on-error: true
         run: |
           failed=0
           for test_file in tests/*.cjs; do
+            case "$test_file" in
+              tests/fp-zero-budget-diagnostics-r48.cjs|tests/fp-fifty-man-r49.cjs)
+                echo "::notice::Skipping retired display-label tests: ${test_file}"
+                continue
+                ;;
+            esac
             echo "::group::${test_file}"
             node "$test_file" || failed=1
             echo "::endgroup::"

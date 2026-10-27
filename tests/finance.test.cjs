@@ -7,16 +7,16 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function loadFinance(){
+function loadFinance(seed=null){
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
   const marker='\n  save();render();\n  // The startup';
   assert.equal(source.split(marker).length,2,'App test anchor changed');
-  const bridge='\n  globalThis.__finance = {state,defaultPlan,fpBudget,fpRating,fpMortgageCapacityCard,mortgageMonthly,modelYears,fpMonthlyLedger,fpEducationFundYears,fpSchoolBreakdown,fpCashGoalForYear,fpAdviceData}; return;\n  // The startup';
+  const bridge='\n  globalThis.__finance = {state,ui,defaultPlan,fpBudget,fpRating,fpMortgageCapacityCard,mortgageMonthly,modelYears,fpMonthlyLedger,fpEducationFundYears,fpSchoolBreakdown,fpCashGoalForYear,fpAdviceData,fpHouseholdCashSavings,fpSyncHouseholdCashSavings,fpLoanSummary,fpMonthlyReport,fpMonthlyAllocation,fpWizardPages}; return;\n  // The startup';
   const app={addEventListener(){},querySelector(){return null},querySelectorAll(){return []}};
   const ctx={
     document:{getElementById:()=>app,addEventListener(){},querySelectorAll(){return []}},
     window:{matchMedia:()=>({matches:false}),addEventListener(){},crypto:{}},
-    localStorage:{getItem:()=>null,setItem(){}},
+    localStorage:{getItem:()=>seed?JSON.stringify(seed):null,setItem(){}},
     navigator:{},location:{protocol:'https:',hostname:'localhost'},
     confirm:()=>false,console
   };
@@ -114,4 +114,69 @@ test('cash goal contributions end at target deadline',()=>{
   const x=loadFinance(),p=x.state.plan;
   p.goalCashEnabled=1;p.goalCashYears=5;p.goalCashAmount=500;
   assert.equal(x.fpCashGoalForYear(now()+6),0);
+});
+
+
+test('legacy household savings survive migration and are editable as two spouse rows',()=>{
+  const saved={version:2,properties:[],criteria:[],plan:{cashSavings:287.5,husbandMonthly:26,wifeMonthly:25}};
+  const x=loadFinance(saved),p=x.state.plan;
+  assert.equal(p.husbandCashSavings,287.5);
+  assert.equal(p.wifeCashSavings,0);
+  assert.equal(p.cashSavings,287.5);
+  assert.equal(p.legacySavingsNotice,1);
+  p.husbandCashSavings=190.141;p.wifeCashSavings=100;
+  x.fpSyncHouseholdCashSavings(p);
+  assert.ok(Math.abs(p.cashSavings-290.141)<1e-8);
+  assert.equal(p.legacySavingsNotice,0);
+  const html=x.fpWizardPages(5)[0].html;
+  assert.match(html,/夫の貯金残高/);
+  assert.match(html,/妻の貯金残高/);
+  assert.match(html,/夫婦合計/);
+});
+
+test('monthly final remainder deducts spending, investments, cash savings and emergency reserve exactly once',()=>{
+  const x=loadFinance(),p=x.state.plan;
+  p.purchaseYear=now()+2;
+  p.otherSavingsMonthly=3.5;p.cashBufferMonthly=2.5;p.nisaMonthly=4;
+  const projection=x.modelYears(p.propertyPrice,true);
+  const month=x.fpMonthlyLedger(projection.points[0]).months[0];
+  const expected=month.income-month.spending-month.investing-month.cashGoal-month.buffer;
+  assert.ok(Math.abs(month.available-expected)<1e-8);
+  assert.equal(month.cashGoal,3.5);
+  assert.equal(month.buffer,2.5);
+  assert.ok(Math.abs(month.endingCash-month.openingCash-month.net)<1e-8);
+  const pie=x.fpMonthlyAllocation(month);
+  assert.ok(pie.items.some(i=>i.id==='cash-goal'&&i.amount===3.5));
+  assert.ok(pie.items.some(i=>i.id==='buffer'&&i.amount===2.5));
+  assert.ok(Math.abs(pie.remaining-Math.max(0,month.available))<1e-8);
+  assert.match(x.fpMonthlyReport(projection),/全て引いた残額/);
+});
+
+test('negative balances are marked negative and mortgage interest is not confused with principal',()=>{
+  const x=loadFinance(),p=x.state.plan;
+  p.husbandMonthly=0;p.wifeMonthly=0;p.wifeReduced=0;
+  const projection=x.modelYears(p.propertyPrice,true);
+  const html=x.fpMonthlyReport(projection);
+  assert.match(html,/fp-month-final negative/);
+  const years=35,principal=4400,payment=x.mortgageMonthly(principal,0,1.5,years);
+  const total=payment*years*12;
+  assert.ok(total>principal);
+  const loan=x.fpLoanSummary(principal);
+  assert.match(loan,/借入元金（利息を含まない）/);
+  assert.match(loan,/金利込み・月々の返済/);
+  assert.match(loan,/金利込み・総返済額/);
+  assert.match(loan,/× 420回/);
+  const matches=loan.match(/class="fp-loan-with-interest"/g)||[];
+  assert.equal(matches.length,2);
+});
+
+test('cash goal deadline also updates monthly final remainder',()=>{
+  const x=loadFinance(),p=x.state.plan;
+  p.goalCashEnabled=1;p.goalCashAmount=800;p.goalCashYears=2;
+  p.simulateUntil=now()+10;
+  const projection=x.modelYears(p.propertyPrice,true);
+  const before=x.fpMonthlyLedger(projection.points[0]).months[0];
+  const later=x.fpMonthlyLedger(projection.points.find(i=>i.year===now()+3)).months[0];
+  assert.ok(before.cashGoal>0);
+  assert.equal(later.cashGoal,0);
 });

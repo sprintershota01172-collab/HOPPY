@@ -26,6 +26,7 @@ jobs:
       - name: Gate release on financial math and mobile fit
         run: |
           node tests/fp-zero-budget-diagnostics-r48.cjs
+          node tests/fp-fifty-man-r49.cjs
           node tests/fp-settings-tab.cjs
           node tests/fp-settings-viewport.cjs
           node tests/fp-viewport.cjs

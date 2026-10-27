@@ -1809,36 +1809,35 @@
   function fpMonthlyReport(model){
     const point=fpYearPoint(model),ledger=fpMonthlyLedger(point),
       month=Math.min(12,Math.max(1,ui.fpCashMonth||1)),selected=ledger.months[month-1],
-      isPie=ui.fpMonthView!=='detail';
-    const monthlyGoal=fpCashGoalMonthly(state.plan),availableAfterGoal=selected.net-monthlyGoal;
+      isPie=ui.fpMonthView!=='detail',
+      remaining=selected.available;
     const monthPicker='<label class="fp-month-select"><span>月</span>'+
       '<select data-fp-cash-month aria-label="収支を表示する月">'+
       ledger.months.map(x=>'<option value="'+x.month+'" '+(x.month===month?'selected':'')+'>'+
       x.month+'月</option>').join('')+'</select></label>';
-    const row=(label,value)=>'<div class="fp-cash-row"><span>'+esc(label)+'</span><strong>'+fpYen(value)+'</strong></div>';
-    const surplusRatio=selected.income>0?selected.net/selected.income*100:null,
-      surplusPct=surplusRatio===null?'—':(surplusRatio>0?'+':'')+yen(surplusRatio,1)+'%';
     return '<div class="fp-month-report grow">'+fpYearSelect(model)+fpMortgageCapacityCard()+
       '<div class="fp-month-head">'+monthPicker+
         '<div class="fp-month-switch" role="group" aria-label="月収支の表示形式">'+
           '<button data-act="fp-month-view" data-value="pie" class="'+(isPie?'active':'')+'">円グラフ</button>'+
           '<button data-act="fp-month-view" data-value="detail" class="'+(!isPie?'active':'')+'">明細</button></div></div>'+
-      '<div class="fp-month-hero fp-month-surplus '+fpBalanceTone(selected.net)+'" aria-label="'+
-        (selected.net>0?'収入から残るプラス':selected.net<0?'収入に対する不足':'収支差額ゼロ')+'"><div>'+
-        '<span><em class="fp-balance-chip">'+fpBalanceLabel(selected.net)+'</em> '+
-          '毎月の残り</span>'+ 
-        '<strong class="'+fpBalanceTone(selected.net)+'">'+fpSignedYen(selected.net)+'</strong>'+
-        '<small class="fp-month-inline-ratio fp-month-goal-gap '+fpBalanceTone(availableAfterGoal)+'" aria-label="貯金目標を引いた後の余裕" title="手取り比 '+surplusPct+'">'+
-          (monthlyGoal>0?'貯金目標後の余裕 '+fpSignedYen(availableAfterGoal):'手取り比 '+surplusPct)+
-        '</small></div>'+
-        '<div class="fp-month-savings"><span>月末の貯金</span>'+
+      '<div class="fp-month-hero fp-month-surplus '+fpBalanceTone(remaining)+'" aria-label="全て差し引いた残額"><div>'+
+        '<span><em class="fp-balance-chip">'+(remaining<0?'不足':remaining>0?'余裕':'収支±0')+'</em> '+
+          '全て引いた残額</span>'+
+        '<strong class="fp-month-final '+fpBalanceTone(remaining)+'">'+fpSignedYen(remaining)+'</strong>'+
+        '<small class="fp-month-inline-ratio fp-month-goal-gap">生活費・ローン・NISA・貯金目標・予備費を控除</small></div>'+
+        '<div class="fp-month-savings"><span>月末の現金預金</span>'+
         '<strong class="fp-month-savings-balance '+fpBalanceTone(selected.endingCash)+'">'+fpYen(selected.endingCash)+'</strong>'+
         fpMonthlySavingsTrend(ledger,month)+'</div></div>'+
-      '<div class="fp-month-summary" aria-label="月の収支計算">'+
-        '<span>手取り <b>'+fpYen(selected.income)+'</b></span>'+
-        '<span>生活・住居ほか <b>−'+fpYen(selected.spending)+'</b></span>'+
-        '<span>投資積立 <b>−'+fpYen(selected.investing)+'</b></span></div>'+
-      
+      '<div class="fp-month-summary fp-final-breakdown" aria-label="月の全控除内訳">'+
+        '<div class="fp-month-summary-row">'+
+          '<span>手取り <b>'+fpYen(selected.income)+'</b></span>'+
+          '<span>生活・住居・特別費 <b>−'+fpYen(selected.spending)+'</b></span>'+
+          '<span>NISA等 <b>−'+fpYen(selected.investing)+'</b></span></div>'+
+        '<div class="fp-month-summary-row">'+
+          '<span>現金貯金 <b>−'+fpYen(selected.cashGoal)+'</b></span>'+
+          '<span>予備費 <b>−'+fpYen(selected.buffer)+'</b></span>'+
+          '<span class="fp-month-summary-result '+fpBalanceTone(remaining)+'">残額 <b>'+fpSignedYen(remaining)+'</b></span></div>'+
+      '</div>'+
       fpMonthlyPie(selected,point,isPie)+
       '</div>';
   }

@@ -11,7 +11,7 @@ function loadFinance(seed=null){
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
   const marker='\n  save();render();\n  // The startup';
   assert.equal(source.split(marker).length,2,'App test anchor changed');
-  const bridge='\n  globalThis.__finance = {state,ui,defaultPlan,fpBudget,fpRating,fpMortgageCapacityCard,mortgageMonthly,modelYears,fpMonthlyLedger,fpEducationFundYears,fpSchoolBreakdown,fpCashGoalForYear,fpAdviceData,fpHouseholdCashSavings,fpSyncHouseholdCashSavings,fpLoanSummary,fpMonthlyReport,fpMonthlyAllocation,fpWizardPages}; return;\n  // The startup';
+  const bridge='\n  globalThis.__finance = {state,ui,defaultPlan,fpBudget,fpRating,fpMortgageCapacityCard,mortgageMonthly,modelYears,fpMonthlyLedger,fpEducationFundYears,fpSchoolBreakdown,fpCashGoalForYear,fpAdviceData,fpHouseholdCashSavings,fpSyncHouseholdCashSavings,fpLoanSummary,fpMonthlyReport,fpMonthlyAllocation,fpIncomeAllocation,fpPieBreakdownRows,fpPieBreakdownPanel,fpWizardPages}; return;\n  // The startup';
   const app={addEventListener(){},querySelector(){return null},querySelectorAll(){return []}};
   const ctx={
     document:{getElementById:()=>app,addEventListener(){},querySelectorAll(){return []}},
@@ -182,4 +182,91 @@ test('cash goal deadline also updates monthly final remainder',()=>{
   const later=x.fpMonthlyLedger(projection.points.find(i=>i.year===now()+3)).months[0];
   assert.ok(before.cashGoal>0);
   assert.equal(later.cashGoal,0);
+});
+
+
+test('living and children itemization reconciles for every year and representative month',()=>{
+  const x=loadFinance(),p=x.state.plan;
+  Object.assign(p,{
+    children:2,firstChildYear:now(),birthInterval:2,
+    childLivingMonthly:4,daycareMonthly:3,childInsuranceMonthly:.8,
+    childEducationInsuranceMonthly:1.5,
+    foodMonthly:5,electricityMonthly:1.5,gasMonthly:1,waterBiMonthly:1,
+    telecomMonthly:1.2,leisureMonthly:2,carMonthly:2,
+    annualTax:10,carTaxAnnual:5,travelAnnual:12,annualEvents:8,
+    expenses:Array.from({length:12},(_,i)=>({
+      id:'extra-'+i,name:'その他追加費'+i,amount:.1,cycle:'month',start:0,end:0
+    }))
+  });
+  const projection=x.modelYears(p.propertyPrice,true);
+  for(const year of [now(),now()+2,now()+6,now()+15]){
+    const point=projection.points.find(row=>row.year===year);
+    for(const monthNumber of [1,6,12]){
+      const month=x.fpMonthlyLedger(point).months[monthNumber-1];
+      const allocation=x.fpMonthlyAllocation(month);
+      const living=allocation.items.find(i=>i.id==='living');
+      const details=x.fpPieBreakdownRows(point,month,'living');
+      const detailTotal=details.reduce((acc,row)=>acc+row.amount,0);
+      assert.ok(Math.abs(detailTotal-living.amount)<1e-8,
+        year+'-'+monthNumber+' living and child itemization must match allocation');
+      for(const name of ['子どもの保険','子どもの生活費','保育料・幼稚園'])
+        if(year>=p.firstChildYear)
+          assert.ok(details.some(row=>row.label===name),'Missing '+name);
+    }
+    const incomePie=x.fpIncomeAllocation(point);
+    for(const category of ['living','education','housing']){
+      const item=incomePie.items.find(i=>i.id===category);
+      const sum=x.fpPieBreakdownRows(point,null,category).reduce((acc,row)=>acc+row.amount,0);
+      assert.ok(Math.abs(sum-item.amount)<1e-8,year+' '+category+' annual detail mismatch');
+    }
+  }
+});
+
+test('long living-detail lists display all child costs first and every other row is reachable without scrolling',()=>{
+  const x=loadFinance(),p=x.state.plan;
+  Object.assign(p,{
+    children:2,firstChildYear:now(),birthInterval:1,
+    childLivingMonthly:4,daycareMonthly:2,childInsuranceMonthly:.5,
+    childEducationInsuranceMonthly:1.5,
+    foodMonthly:4,gasMonthly:1,electricityMonthly:1.2,
+    telecomMonthly:1.5,lifeInsuranceMonthly:1,carMonthly:2,
+    expenses:Array.from({length:26},(_,i)=>({
+      id:'extra-'+i,name:'登録済み追加費'+i,amount:.1,cycle:'month',start:0,end:0
+    }))
+  });
+  const projection=x.modelYears(p.propertyPrice,true);
+  const point=projection.points[1];
+  const month=x.fpMonthlyLedger(point).months[0];
+  const allocation=x.fpMonthlyAllocation(month);
+  const rows=x.fpPieBreakdownRows(point,month,'living');
+  assert.ok(rows.length>24,'must exercise a genuinely overflowing detail');
+  const covered=[];
+  for(let page=0;page<Math.ceil(rows.length/8);page++){
+    x.ui.fpBreakdownPageIndex=page;
+    const markup=x.fpPieBreakdownPanel(point,month,allocation.items,'living');
+    assert.match(markup,/--fp-cols:4/);
+    assert.match(markup,/data-act="fp-breakdown-page"/);
+    assert.match(markup,new RegExp((page+1)+'/'+Math.ceil(rows.length/8)));
+    const itemCount=(markup.match(/class="fp-breakdown-row"/g)||[]).length;
+    assert.equal(itemCount,Math.min(8,rows.length-page*8));
+    const labels=[...markup.matchAll(/<span class="fp-row-label">([^<]+)<\/span>/g)].map(m=>m[1]);
+    covered.push(...labels);
+    if(page===0){
+      assert.match(markup,/子どもの生活費/);
+      assert.match(markup,/保育料・幼稚園/);
+      assert.match(markup,/学資保険/);
+    }
+  }
+  assert.equal(covered.length,rows.length);
+  for(const row of rows)assert.ok(covered.includes(row.label),'hidden expense '+row.label);
+});
+
+test('before first birth, child costs do not disappear silently without explanation',()=>{
+  const x=loadFinance(),p=x.state.plan;
+  p.children=2;p.firstChildYear=now()+2;p.birthInterval=3;
+  const point=x.modelYears(p.propertyPrice,true).points[0];
+  const month=x.fpMonthlyLedger(point).months[0];
+  const allocation=x.fpMonthlyAllocation(month);
+  const html=x.fpPieBreakdownPanel(point,month,allocation.items,'living');
+  assert.match(html,new RegExp('子ども費は'+p.firstChildYear+'年の出生予定から順次計上'));
 });

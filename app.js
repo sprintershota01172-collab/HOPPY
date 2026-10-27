@@ -926,52 +926,69 @@
     return {year,monthlyIncome,living,school,spending,investing,cashTarget,buffer,balanceCap,
       ratioCap:monthlyIncome*.25};
   }
+  // Main estimate is based on housing expenses the household can pay from
+  // ordinary wages in the intended purchase year. Later tuition peaks are
+  // a separate explicit risk, not an all-or-nothing zero-mortgage switch.
+  // Unit for every monetary amount below: 10,000 JPY per month.
   function fpBudget(){
-    const p=state.plan,start=simNowYear(),purchaseYear=Math.max(start,Math.round(safeNum(p.purchaseYear,start+2))),
+    const p=state.plan,start=simNowYear(),
+      purchaseYear=Math.max(start,Math.round(safeNum(p.purchaseYear,start+2))),
       kids=Math.min(3,Math.max(0,Math.round(safeNum(p.children)))),
       lastBirth=kids?safeNum(p.firstChildYear)+(kids-1)*Math.max(1,safeNum(p.birthInterval,3)):purchaseYear,
-      // Model education through the final child's age 22 within the long-term
-      // forecast window. Do not set an every-month mortgage limit equal to
-      // the single worst annual tuition bill.
       endYear=Math.max(purchaseYear+20,kids?lastBirth+22:purchaseYear),
       finalYear=Math.min(purchaseYear+30,endYear),
       years=Array.from({length:finalYear-purchaseYear+1},(_,i)=>fpHousingYearBudget(purchaseYear+i,p)),
-      // Education is a lumpy expense. The maximum cumulative average needed
-      // from purchase onward covers every tuition deadline (assuming zero
-      // separate existing education fund). A recurring reserve is a more
-      // sensible mortgage input than tuition's worst individual month.
+      initial=years[0],
+      // School expenses are cash needs in their actual years. For a simple
+      // monthly *planning* provision, cover the maximum cumulative amount
+      // due through each year from the purchase date (0% cash growth).
       schoolReserve=years.reduce((acc,row,i)=>{
-        const spent=acc.spent+row.school*12;
-        return {spent,monthly:Math.max(acc.monthly,spent/(12*(i+1)))};
-      },{spent:0,monthly:0}).monthly,
-      assessed=years.map(row=>({...row,
-        regularHousingCap:row.monthlyIncome-row.living-row.investing-
-          row.cashTarget-row.buffer-schoolReserve})),
-      reference=assessed.reduce((worst,row)=>row.regularHousingCap<worst.regularHousingCap?row:worst,assessed[0]),
-      peakSchool=years.reduce((highest,row)=>row.school>highest.school?row:highest,years[0]),
-      rawHousing=reference.regularHousingCap,
-      cap=Math.max(0,rawHousing),
+        const paid=acc.paid+row.school*12;
+        return {paid,monthly:Math.max(acc.monthly,paid/(12*(i+1)))};
+      },{paid:0,monthly:0}).monthly,
+      // The school costs already in the initial monthly cashflow should not
+      // be deducted a second time as part of the education provision.
+      schoolTopUp=Math.max(0,schoolReserve-initial.school),
       maintenance=safeNum(p.housingOngoing),
-      rawLoanPayment=rawHousing-maintenance,
-      loanPayment=Math.max(0,rawLoanPayment),
+      // Essentials-first ceiling protects everyday expenses and reserves,
+      // before optional investments and discretionary cash savings.
+      basicRaw=initial.monthlyIncome-initial.living-initial.school-initial.buffer-maintenance,
+      basicLoanPayment=Math.max(0,basicRaw),
+      savingsAndInvesting=initial.investing+initial.cashTarget,
+      preferredRaw=basicRaw-schoolTopUp-savingsAndInvesting,
+      loanPayment=Math.max(0,preferredRaw),
+      balanceCap=preferredRaw+maintenance,
+      cap=Math.max(0,balanceCap),
+      // Future-year annual deficits are disclosed, but not silently used to
+      // erase an otherwise non-zero payment capacity at origination.
+      assessed=years.map(row=>({...row,annualHousingCap:
+        row.monthlyIncome-row.living-row.school-row.investing-row.cashTarget-row.buffer-maintenance})),
+      worst=assessed.reduce((a,b)=>b.annualHousingCap<a.annualHousingCap?b:a,assessed[0]),
+      schoolPeak=years.reduce((a,b)=>b.school>a.school?b:a,years[0]),
       term=Math.max(12,Math.round(safeNum(p.loanYears,35)*12));
-    const loanCap=rate=>{
+    const principalFor=(monthly,rate)=>{
       const r=Math.max(0,rate)/1200;
-      return r===0?loanPayment*term:loanPayment*(1-Math.pow(1+r,-term))/r;
+      return r===0?monthly*term:monthly*(1-Math.pow(1+r,-term))/r;
     };
-    const amount=Math.max(0,Math.floor(loanCap(safeNum(p.interest))/50)*50);
-    const stressAmount=Math.max(0,Math.floor(loanCap(safeNum(p.interest)+1)/50)*50);
-    return {amount,stressAmount,monthlyIncome:reference.monthlyIncome,housingLimit:reference.ratioCap,
-      ratioCap:reference.ratioCap,balanceCap:rawHousing,annualSchool:reference.school,
-      school:schoolReserve,schoolReserve,schoolPeak:peakSchool.school,
-      schoolPeakYear:peakSchool.year,living:reference.living,
-      spending:reference.living+schoolReserve,investing:reference.investing,
-      cashTarget:reference.cashTarget,buffer:reference.buffer,housingBudget:cap,
-      housingBudgetRaw:rawHousing,rawLoanPayment,
-      maintenance,cashflowHousingLimit:rawHousing,
-      loanPrincipal:loanCap(safeNum(p.interest)),downPayment:0,
+    const roundDown=amount=>Math.max(0,Math.floor(amount/50)*50);
+    const amount=roundDown(principalFor(loanPayment,safeNum(p.interest)));
+    const basicAmount=roundDown(principalFor(basicLoanPayment,safeNum(p.interest)));
+    const stressAmount=roundDown(principalFor(loanPayment,safeNum(p.interest)+1));
+    return {amount,basicAmount,stressAmount,monthlyIncome:initial.monthlyIncome,
+      housingLimit:initial.ratioCap,ratioCap:initial.ratioCap,
+      balanceCap,living:initial.living,school:initial.school,
+      schoolTopUp,schoolReserve,schoolPeak:schoolPeak.school,schoolPeakYear:schoolPeak.year,
+      spending:initial.living+initial.school+schoolTopUp,
+      investing:initial.investing,cashTarget:initial.cashTarget,buffer:initial.buffer,
+      housingBudget:cap,housingBudgetRaw:balanceCap,
+      basicLoanPayment,basicRaw,basicHousingBudget:Math.max(0,basicRaw+maintenance),
+      preferredRaw,rawLoanPayment:preferredRaw,
+      maintenance,cashflowHousingLimit:balanceCap,
+      loanPrincipal:principalFor(loanPayment,safeNum(p.interest)),downPayment:0,
       rate:safeNum(p.interest),loanYears:safeNum(p.loanYears,35),
-      loanPayment,referenceYear:reference.year,startYear:purchaseYear,endYear:finalYear,
+      loanPayment,referenceYear:purchaseYear,startYear:purchaseYear,endYear:finalYear,
+      worstYear:worst.year,worstSurplus:worst.annualHousingCap,worst:worst,
+      futureDeficitYears:assessed.filter(row=>row.annualHousingCap<0).length,
       years:assessed};
   }
   // Households choose a safe payment budget; banks determine actual eligibility.

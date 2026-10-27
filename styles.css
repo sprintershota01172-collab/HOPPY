@@ -5168,3 +5168,30 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .fp-final-breakdown .fp-month-summary-row>span>b.fp-deducted{color:#bd3843!important}
 #app .fp-budget-loan-note .fp-interest-included{color:#c56b1b!important;font-weight:850!important}
 #app .fp-surplus-strip.negative>strong{color:#b42032!important}
+
+
+/* r55 finishing: consistent financial semantic colors and one-tap savings editing. */
+#app .fp-r-rows strong.fp-interest-included,
+#app .fp-capacity-ceiling .fp-interest-included{
+  color:#c66b18!important;font-weight:850!important;
+}
+#app .fp-r-rows strong.fp-principal-value,
+#app .fp-capacity-ceiling .fp-principal-value{
+  color:#1a745b!important;font-weight:850!important;
+}
+#app .fp-goal-assets-action{
+  display:flex!important;justify-content:flex-end!important;
+  gap:5px!important;flex-wrap:nowrap!important;min-width:0!important;
+}
+#app .fp-goal-assets-action>button{
+  flex:1 1 0!important;min-width:0!important;max-width:50%!important;
+  font-size:clamp(8px,2.4vw,10px)!important;white-space:nowrap!important;
+  padding:5px 4px!important;
+}
+@media(max-width:365px){
+  #app .fp-spouse-savings>.sim-field{gap:4px!important}
+  #app .fp-spouse-savings>.sim-field>span:first-child{font-size:10px!important}
+  #app .fp-goal-assets-action>button{font-size:8px!important}
+  #app .fp-capacity-ceiling strong{white-space:normal!important;line-height:1.2}
+  #app .fp-month-surplus .fp-month-final{font-size:17px!important;letter-spacing:-.055em!important}
+}

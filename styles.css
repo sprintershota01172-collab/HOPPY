@@ -5018,3 +5018,148 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .fp-education-asset span{font-size:9px;font-weight:700;line-height:1.3;min-width:0}
 #app .fp-education-asset strong{font-size:12px;font-weight:850;white-space:nowrap;font-variant-numeric:tabular-nums}
 @media(max-height:760px){#app .fp-education-asset{padding:2px 6px}#app .fp-education-asset span{font-size:8px}#app .fp-education-asset strong{font-size:10px}}
+
+
+/* FP r55 — loan principal vs interest-inclusive repayments and final household balance */
+#app .fp-spouse-savings{
+  grid-column:1/-1!important;min-width:0!important;
+  display:flex!important;flex-direction:column!important;gap:7px!important;
+  border-radius:11px;border:1px solid #d8e5e1;background:#f8fbf9;
+  padding:9px!important;
+}
+#app .fp-spouse-savings>.sim-field{
+  display:flex!important;align-items:center!important;justify-content:space-between!important;
+  gap:8px!important;width:100%!important;min-width:0!important;
+  margin:0!important;
+}
+#app .fp-spouse-savings>.sim-field>span:first-child{
+  flex:1 1 auto!important;min-width:0!important;
+  font-weight:760!important;white-space:nowrap!important;
+}
+#app .fp-spouse-savings>.sim-field>.sim-input-wrap{
+  flex:0 1 56%!important;min-width:0!important;
+}
+#app .fp-spouse-total{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding-top:6px;margin-top:1px;border-top:1px solid #d8e5e1;
+  color:#31574c;font-size:11px;font-weight:760;
+}
+#app .fp-spouse-total strong{font-size:16px;color:#196854;font-weight:850;white-space:nowrap}
+#app .fp-spouse-migration{
+  font-size:9px;line-height:1.35;color:#8e511f;background:#fff6e7;
+  border-radius:7px;padding:5px 7px;margin:0;
+}
+#app .fp-final-breakdown{
+  display:flex!important;flex-direction:column!important;
+  flex:0 0 36px!important;height:36px!important;
+  min-height:36px!important;max-height:36px!important;
+  justify-content:center!important;gap:2px!important;
+  padding:3px 6px!important;
+  background:#f2f6f6!important;border:1px solid #e1e9e7!important;
+  border-radius:8px!important;overflow:hidden!important;
+}
+#app .fp-final-breakdown .fp-month-summary-row{
+  width:100%;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  align-items:center!important;gap:3px!important;min-height:0;
+}
+#app .fp-final-breakdown .fp-month-summary-row>span{
+  display:flex;align-items:baseline;gap:2px;min-width:0;
+  font-size:clamp(7px,1.95vw,9px)!important;line-height:1.1!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:clip!important;
+  color:#5c707a!important;
+}
+#app .fp-final-breakdown .fp-month-summary-row>span>b{
+  min-width:0;font-size:clamp(7.5px,2.02vw,9px)!important;line-height:1.1!important;
+  font-weight:850!important;letter-spacing:-.04em;
+}
+#app .fp-final-breakdown .fp-month-summary-result{font-weight:850!important}
+#app .fp-final-breakdown .fp-month-summary-result.positive b{color:#11734e!important}
+#app .fp-final-breakdown .fp-month-summary-result.negative,
+#app .fp-final-breakdown .fp-month-summary-result.negative b{color:#be2636!important}
+#app .fp-month-surplus .fp-month-final{
+  font-size:clamp(17px,4.6vw,23px)!important;line-height:1.2!important;
+  font-weight:900!important;letter-spacing:-.04em!important;
+  font-variant-numeric:tabular-nums;
+  color:#fff!important;
+  white-space:nowrap;max-width:100%;
+}
+#app .fp-month-surplus.negative{
+  background:linear-gradient(125deg,#fff1f0,#ffe4e4)!important;
+  color:#9b1c2e!important;border:1px solid #eaa4a9!important;
+}
+#app .fp-month-surplus.negative .fp-month-final,
+#app .fp-month-surplus.negative strong.negative,
+#app .fp-month-surplus.negative .fp-month-savings-balance.negative{
+  color:#b42032!important;
+}
+#app .fp-month-surplus.negative .fp-month-savings-balance:not(.negative){
+  color:#246f5d!important;
+}
+#app .fp-month-surplus.negative .fp-month-goal-gap,
+#app .fp-month-surplus.negative span,
+#app .fp-month-surplus.negative small{color:#894d54!important}
+#app .fp-month-surplus.negative .fp-balance-chip{color:#fff!important;background:#b42032!important}
+#app .fp-month-surplus.negative .fp-month-hero>div+div,
+#app .fp-month-surplus.negative>div+div{border-left-color:#e8a1a7!important}
+#app .fp-month-surplus.negative .fp-month-savings-trend path{stroke:#bd3946!important}
+#app .fp-month-surplus.negative .fp-month-savings-trend text{fill:#8e5160!important}
+#app .fp-month-surplus .fp-month-savings-balance.negative,
+#app .fp-assets-report .fp-asset-tile .fp-amount-negative,
+#app .fp-r-metric .fp-amount-negative,
+#app .fp-setting-outcome .negative{color:#c42336!important}
+#app .fp-capacity-cell.payment>strong.fp-interest-included,
+#app .fp-capacity-example-main>strong.fp-interest-included,
+#app .fp-capacity-example-formula .fp-interest-included,
+#app .fp-capacity-cell .fp-interest-included{
+  color:#cc6b1a!important;
+}
+#app .fp-capacity-cell.price>strong.fp-principal-value{color:#19715b!important}
+#app .fp-capacity-example-formula{
+  color:#9b692e;font-size:8px;line-height:1.2;font-weight:700;
+  padding:0 1px;white-space:normal;overflow-wrap:anywhere;
+}
+#app .fp-capacity-remainder{
+  display:flex;justify-content:space-between;align-items:baseline;gap:5px;
+  min-width:0;border-radius:6px;padding:3px 5px;
+  background:#edf8f1;color:#356c58;font-size:8.5px;font-weight:750;
+}
+#app .fp-capacity-remainder>span{flex:1;min-width:0;line-height:1.2}
+#app .fp-capacity-remainder>strong{font-size:12px;white-space:nowrap;font-weight:900;color:#187653}
+#app .fp-capacity-remainder.negative{background:#fff0f0;color:#bc2a39!important}
+#app .fp-capacity-remainder.negative>strong{color:#bc2a39!important}
+#app .fp-loan-principal-row,
+#app .fp-loan-interest-row,
+#app .fp-loan-maintenance{
+  display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+  font-size:9px;line-height:1.25;color:#cbdce7;
+}
+#app .fp-loan-principal-row strong{color:#9bdfc8;font-weight:850;font-size:12px;white-space:nowrap}
+#app .fp-loan-interest-row strong{color:#ffbc76;font-weight:850;font-size:11px;white-space:nowrap}
+#app .fp-loan-maintenance{border-top:1px solid #5b6974;padding-top:3px;margin-top:1px}
+#app .fp-loan-maintenance strong{color:#fff;font-size:10px;white-space:nowrap}
+#app .fp-loan-including-flow{
+  display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  gap:4px;align-items:center;min-width:0;margin:3px 0;
+}
+#app .fp-loan-with-interest{
+  min-width:0;display:flex;flex-direction:column;gap:2px;
+  border:1px solid #9b6734;border-radius:8px;padding:5px 6px;
+  background:#3f342d;
+}
+#app .fp-loan-with-interest>span{
+  font-size:9px;line-height:1.15;color:#ffddb9;font-weight:750;
+}
+#app .fp-loan-with-interest>strong{
+  font-size:clamp(11px,3.3vw,16px)!important;
+  line-height:1.18;color:#ffb252!important;font-weight:900!important;
+  white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:-.04em;
+}
+#app .fp-loan-multiplier{font-size:9px;font-weight:850;color:#ffcf98;white-space:nowrap}
+#app .fp-repayment-card .fp-repayment-note{font-size:8px!important;line-height:1.25}
+@media(max-height:790px){
+  #app .fp-spouse-savings{gap:4px!important;padding:6px!important}
+  #app .fp-final-breakdown{flex-basis:32px!important;height:32px!important;min-height:32px!important;max-height:32px!important;padding:2px 4px!important}
+  #app .fp-final-breakdown .fp-month-summary-row>span{font-size:7.5px!important}
+  #app .fp-loan-with-interest{padding:3px 4px}
+  #app .fp-loan-including-flow{margin:1px 0}
+}

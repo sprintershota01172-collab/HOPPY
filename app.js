@@ -1468,9 +1468,10 @@
       add('NISA積立',monthlyPart(fpNisaForYear(year,p)),{field:'nisaMonthly',unit:'万円/月',editStep:'5:2'});
       add('その他の投資積立',monthlyPart(fpOtherInvestForYear(year,p)),
         {field:'otherInvestMonthly',unit:'万円/月',editStep:'5:3'});
-    }else if(category==='reserved'){
-      add('現金貯金目標（支出ではなく確保）',monthlyPart(fpCashGoalForYear(year,p)),{editStep:'5:1'});
-      add('予備費（支出ではなく確保）',monthlyPart(safeNum(p.cashBufferMonthly)),{editStep:'5:1'});
+      if(!annual){
+        add('現金貯金目標（支出ではなく確保）',fpCashGoalForYear(year,p),{editStep:'5:1'});
+        add('予備費（支出ではなく確保）',safeNum(p.cashBufferMonthly),{editStep:'5:1'});
+      }
     }else if(category==='remaining'){
       // Annual allocation uses the raw cash movement, while monthly allocation
       // earmarks both the target cash savings and the emergency buffer.
@@ -1669,8 +1670,7 @@
         {id:'living',label:'生活・子ども',amount:living,color:'#6b9eaf'},
         {id:'housing',label:'住居費',amount:housing,color:'#2767ae'},
         {id:'education',label:'臨時支出',amount:events,color:'#d9a164'},
-        {id:'investing',label:'投資積立',amount:investing,color:'#729477'},
-        {id:'reserved',label:'貯金・予備費',amount:cashGoal+buffer,color:'#7e91c2'},
+        {id:'investing',label:'積立・貯金・予備費',amount:investing+cashGoal+buffer,color:'#729477'},
         {id:'remaining',label:'最終残額',amount:remaining,color:remaining>0?'#2aa78b':'#d5dde2'}
       ]};
   }

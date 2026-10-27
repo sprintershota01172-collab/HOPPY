@@ -406,10 +406,12 @@
   function fpEducationGoalForm(index){
     const p=state.plan,g=fpEducationGoal(p,index);
     return fpCompactPage('第'+index+'子の教育資金',[
-      sSelect('計算方法','goalEduEnabled'+index,[[0,'月額を手入力'],[1,'目標から逆算']]),
-      nField('目標金額','goalEduAmount'+index,'万円'),
-      nField('何歳で達成する？','goalEduAge'+index,'歳')
-    ],'学資保険の保険料や満期金は契約で異なります。逆算額は積立原資の目安であり、保険料見積ではありません。',
+      sSelect('積立の決め方','goalEduEnabled'+index,[[0,'学資保険料を入力'],[1,'目標から月額を計算']]),
+      ...(g.enabled?[
+        nField('目標金額','goalEduAmount'+index,'万円'),
+        nField('何歳で達成する？','goalEduAge'+index,'歳')
+      ]:[])
+    ],'手入力は前ページの学資保険料を採用。目標方式の逆算額は教育資金の積立目安で、保険商品の見積ではありません。',
       fpGoalPreview(g.enabled?g.monthly:safeNum(p.childEducationInsuranceMonthly),
         g.year+'年／'+g.age+'歳で'+fpYen(g.target)+'（'+(g.enabled?'逆算':'手入力')+'）',
         g.months?'積立可能期間 '+g.months/12+'年・出生予定 '+g.birth+'年':
@@ -548,26 +550,34 @@
       pages.push(fpCompactPage('現金・貯金',[
         f('預貯金残高','cashSavings','万円'),
         f('これからの援助','support','万円'),
-        f('毎月の現金貯金目標','otherSavingsMonthly'),
-        f('毎月の余裕費','cashBufferMonthly')
-      ],'現金貯金目標は支出に含めません。'));
+        sSelect('現金貯金の決め方','goalCashEnabled',[[0,'毎月の金額を入力'],[1,'目標額から自動計算']]),
+        ...(Number(p.goalCashEnabled)===1?[
+          f('目標の現金残高','goalCashAmount','万円'),
+          f('達成までの年数','goalCashYears','年')
+        ]:[f('毎月残す貯金額','otherSavingsMonthly')]),
+        f('毎月の予備費','cashBufferMonthly')
+      ],'目標額方式は現在の現金残高から利息0％で逆算。貯金目標は支出に含めません。',
+      '<div class="fp-goal-preview"><span>設定する毎月貯金の目安</span><strong>'+
+      fpYen(fpCashGoalMonthly(p))+'</strong><small>月収支から確保する目標で、実際の現金残高への加算はありません</small></div>'));
       pages.push(fpCompactPage('NISA｜積立・目標',[
         f('現在のNISA評価額','nisaBalance','万円'),
-        f('毎月積立（手入力）','nisaMonthly'),
-        sSelect('積立の決め方','goalNisaEnabled',[[0,'月額を入力'],[1,'目標から逆算']]),
-        f('目標額','goalNisaAmount','万円'),
-        f('達成まで','goalNisaYears','年'),
-        f('想定利回り','returnAnnual','％/年')
+        sSelect('積立の決め方','goalNisaEnabled',[[0,'月額を入力'],[1,'目標額から計算']]),
+        ...(Number(p.goalNisaEnabled)===1?[
+          f('目標額','goalNisaAmount','万円'),
+          f('達成まで','goalNisaYears','年'),
+          f('想定利回り','returnAnnual','％/年')
+        ]:[f('毎月積み立てる金額','nisaMonthly')])
       ],'目標から逆算した月額を家計予測に反映します。',
         fpGoalPreview(fpEffectiveNisaMonthly(p),
           safeNum(p.goalNisaYears)+'年後・目標 '+fpYen(safeNum(p.goalNisaAmount)),
           '元本保証なし。利回りは仮定です。')));
       pages.push(fpCompactPage('その他投資｜積立・目標',[
         f('現在の評価額','investBalance','万円'),
-        f('毎月積立（手入力）','otherInvestMonthly'),
-        sSelect('積立の決め方','goalOtherEnabled',[[0,'月額を入力'],[1,'目標から逆算']]),
-        f('目標額','goalOtherAmount','万円'),
-        f('達成まで','goalOtherYears','年')
+        sSelect('積立の決め方','goalOtherEnabled',[[0,'月額を入力'],[1,'目標額から計算']]),
+        ...(Number(p.goalOtherEnabled)===1?[
+          f('目標額','goalOtherAmount','万円'),
+          f('達成まで','goalOtherYears','年')
+        ]:[f('毎月積み立てる金額','otherInvestMonthly')])
       ],'利回りはNISA画面と共通です。',
         fpGoalPreview(fpEffectiveOtherInvestMonthly(p),
           safeNum(p.goalOtherYears)+'年後・目標 '+fpYen(safeNum(p.goalOtherAmount)),

@@ -38,7 +38,7 @@
     carMaintenanceMonthly:0,otherLoanMonthly:0,otherLoanEndYear:0,childInsuranceMonthly:0,
     childLivingMonthly:0,daycareMonthly:0,childBenefitMonthly:0,childEducationInsuranceMonthly:0,
     annualTax:0,carTaxAnnual:0,travelAnnual:0,annualEvents:0,homeInsuranceAnnual:0,
-    otherSavingsMonthly:0,otherInvestMonthly:0,nisaBalance:0,investBalance:0,returnAnnual:0,carLoanEndYear:0,
+    otherSavingsMonthly:0,goalCashEnabled:0,goalCashAmount:300,goalCashYears:5,otherInvestMonthly:0,nisaBalance:0,investBalance:0,returnAnnual:0,carLoanEndYear:0,
     goalNisaEnabled:0,goalNisaAmount:1000,goalNisaYears:20,
     goalOtherEnabled:0,goalOtherAmount:300,goalOtherYears:10,
     goalEduEnabled1:0,goalEduAmount1:500,goalEduAge1:18,
@@ -374,6 +374,10 @@
   function fpOtherInvestForYear(year,p=state.plan){
     return Number(p.goalOtherEnabled)===1&&year>=simNowYear()+safeNum(p.goalOtherYears)
       ?0:fpEffectiveOtherInvestMonthly(p);
+  }
+  function fpCashGoalMonthly(p=state.plan){
+    if(Number(p.goalCashEnabled)!==1)return safeNum(p.otherSavingsMonthly);
+    return fpTargetMonthly(p.goalCashAmount,safeNum(p.cashSavings)+safeNum(p.support),safeNum(p.goalCashYears)*12,0);
   }
   function fpEducationGoal(p,index){
     const birth=safeNum(p.firstChildYear)+(index-1)*Math.max(1,safeNum(p.birthInterval,3));
@@ -901,7 +905,10 @@
     const p=state.plan,monthlyIncome=fpForecast(0).income;
     const spending=fpSpendingMonthly(fpDecisionYear());
     const investing=fpNisaForYear(fpDecisionYear(),p)+fpOtherInvestForYear(fpDecisionYear(),p);
-    const cap=Math.min(monthlyIncome*.25,monthlyIncome-spending-investing-safeNum(p.cashBufferMonthly)-safeNum(p.otherSavingsMonthly));
+    const cashTarget=fpCashGoalMonthly(p),buffer=safeNum(p.cashBufferMonthly),
+      ratioCap=monthlyIncome*.25,
+      balanceCap=monthlyIncome-spending-investing-buffer-cashTarget,
+      cap=Math.min(ratioCap,balanceCap);
     const loanPayment=Math.max(0,cap-safeNum(p.housingOngoing));
     const term=Math.max(12,Math.round(safeNum(p.loanYears,35)*12));
     const loanCap=rate=>{
@@ -910,9 +917,9 @@
     };
     const amount=Math.max(0,Math.floor((loanCap(safeNum(p.interest))+0)/50)*50);
     const stressAmount=Math.max(0,Math.floor((loanCap(safeNum(p.interest)+1)+0)/50)*50);
-    return {amount,stressAmount,monthlyIncome,housingLimit:monthlyIncome*.25,
+    return {amount,stressAmount,monthlyIncome,housingLimit:ratioCap,ratioCap,balanceCap,cashTarget,buffer,
       housingBudget:Math.max(0,cap),maintenance:safeNum(p.housingOngoing),
-      cashflowHousingLimit:monthlyIncome-spending-investing-safeNum(p.cashBufferMonthly)-safeNum(p.otherSavingsMonthly),
+      cashflowHousingLimit:balanceCap,
       loanPrincipal:loanCap(safeNum(p.interest)),
       downPayment:0,rate:safeNum(p.interest),loanYears:safeNum(p.loanYears,35),
       loanPayment,spending,investing,referenceYear:fpDecisionYear()};
@@ -1587,7 +1594,7 @@
       insured=fpChildCounts(point.year).educationInsured,
       goalMode=Array.from({length:children},(_,i)=>fpEducationGoal(plan,i+1).enabled).some(Boolean),
       contribution=fpEducationPremiumForYear(point.year,plan),
-      target=safeNum(plan.otherSavingsMonthly),surplus=selected.net-target;
+      target=fpCashGoalMonthly(plan),surplus=selected.net-target;
     const input=(label,key,note)=>'<section class="fp-setting-card">'+
       '<div class="fp-setting-row"><div class="fp-setting-copy"><strong>'+label+'</strong><span>'+note+'</span></div>'+
       '<label class="fp-setting-input"><input type="number" min="0" max="100000000" step="1" inputmode="numeric"'+

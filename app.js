@@ -1001,8 +1001,8 @@
       '<div class="fp-capacity-example-status '+(within?'within':'over')+'">'+
       (within?'返済目安まであと '+fpYen(Math.max(0,-over))+' / 月':
         '返済目安を '+fpYen(over)+' / 月超過')+'</div></div>'+
-      '<p class="fp-capacity-footnote"><span class="fp-capacity-housing-total">'+
-        (b.rawLoanPayment<=0?'生活費・貯金の確保後に不足 <strong>'+fpYen(-b.rawLoanPayment)+'/月</strong>':
+      '<p class="fp-capacity-footnote"><span class="fp-capacity-housing-total'+(b.rawLoanPayment<=0?' shortfall':'')+'">'+
+        (b.rawLoanPayment<=0?'住宅費の予算が不足 <strong>'+fpYen(-b.rawLoanPayment)+'/月</strong>':
          '住宅に使える額 <strong>'+fpYen(b.housingBudget)+'/月</strong>')+'</span>'+
         '<button type="button" data-act="fp-capacity-basis" class="fp-capacity-basis-link">計算の内訳 ›</button></p>'+
       '</section>';
@@ -1900,7 +1900,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<span class="fp-build-stamp" title="表示バージョン">r46</span></div></div>';
+      '<span class="fp-build-stamp" title="表示バージョン">r47</span></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2214,6 +2214,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r47',date:'2026.10.28',title:'住宅ローンが突然0円になる誤判定を修正',
+        details:['大学費用が高い1年だけで毎月の返済可能額を0円にしない','将来の教育費を必要時期までの月々の準備金に換算','本当に家計不足なら不足額と計算の内訳を表示']},
       {version:'r46',date:'2026.10.27',title:'住宅予算を実際の家計と子どもの教育費で計算',
         details:['手取り25％の固定上限を廃止し、生活費・学校費・積立・貯金・予備費の差額を住宅予算に','購入後20〜30年の各年を比較して教育費が重い年も考慮','住宅に使える予算と住宅維持費を引いたローン返済余力、計算内訳を明示']},
       {version:'r45',date:'2026.10.27',title:'目標と毎月の入力を分離・住宅ローンの根拠を表示',
@@ -2249,7 +2251,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r46</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r47</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

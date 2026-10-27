@@ -44,10 +44,10 @@ assert.match(card,/借入額の目安/);
 assert.match(card,new RegExp(api.fpYen(original.loanPayment)));
 assert.match(card,new RegExp(api.fpYen(original.amount)));
 assert.match(card,/利息込み返済総額/);
-assert.match(card,/維持費・諸費用/);
-assert.match(card,/50万円単位で切下げ/);
-assert.match(card,/融資承認額ではありません/);
-assert.match(card,/住居費の目安/);
+assert.match(card,/根拠と計算式/);
+assert.match(card,/金利一定/);
+assert.match(card,/金融機関の審査とは別/);
+assert.match(card,/借入額の目安/);
 // A household budget limit is not a loan bill. The entered home receives
 // a separate amortized payment at the configured loan length and rate.
 p.loanYears=50;
@@ -56,8 +56,8 @@ let forFifty=api.fpMortgageCapacityCard();
 let actualFifty=api.mortgageMonthly(4400,0,1.5,50);
 assert.match(forFifty,/毎月返せる目安/);
 assert.match(forFifty,/借入額の目安/);
-assert.match(forFifty,/実際の請求額ではありません/);
-assert.ok(forFifty.includes('入力した物件 '+api.fpYen(4400)+' の返済予測'));
+assert.match(forFifty,/根拠と計算式/);
+assert.ok(forFifty.includes('物件価格 '+api.fpYen(4400)+' の月返済'));
 assert.ok(forFifty.includes(api.fpYen(actualFifty)+' / 月'),
   'chosen property payment is derived from its actual loan size over 50 years');
 p.propertyPrice=api.fpBudget().amount*2;

@@ -1931,7 +1931,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<span class="fp-build-stamp" title="表示バージョン">r48</span></div></div>';
+      '<span class="fp-build-stamp" title="表示バージョン">r49</span></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2245,6 +2245,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r49',date:'2026.10.28',title:'50万円の借入表示を訂正して2種類の予算を明示',
+        details:['生活費を優先したローン返済上限と借入参考額を主表示','貯金・NISAを維持する場合の返済余力と借入額を別表示','50万円など積立条件に限定された数字だけで判断させない']},
       {version:'r48',date:'2026.10.28',title:'0円の原因を見える化・住宅予算の計算を再設計',
         details:['生活費優先の返済上限と貯金・NISAを維持した場合の返済額を分けて表示','大学費用など将来の赤字は住宅予算をゼロにするのではなくリスクとして別表示','赤字の時も切り捨てる前の不足額と計算項目を明示']},
       {version:'r47',date:'2026.10.28',title:'住宅ローンが突然0円になる誤判定を修正',
@@ -2284,7 +2286,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r48</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r49</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

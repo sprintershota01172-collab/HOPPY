@@ -377,7 +377,7 @@
   }
   function fpCashGoalMonthly(p=state.plan){
     if(Number(p.goalCashEnabled)!==1)return safeNum(p.otherSavingsMonthly);
-    return fpTargetMonthly(p.goalCashAmount,safeNum(p.cashSavings)+safeNum(p.support),safeNum(p.goalCashYears)*12,0);
+    return fpTargetMonthly(p.goalCashAmount,safeNum(p.cashSavings)+safeNum(p.support),Math.max(1,safeNum(p.goalCashYears))*12,0);
   }
   function fpEducationGoal(p,index){
     const birth=safeNum(p.firstChildYear)+(index-1)*Math.max(1,safeNum(p.birthInterval,3));
@@ -554,7 +554,7 @@
           f('目標の現金残高','goalCashAmount','万円'),
           f('達成までの年数','goalCashYears','年')
         ]:[f('毎月残す貯金額','otherSavingsMonthly')]),
-        f('毎月の予備費','cashBufferMonthly')
+        f('予備費（返済上限の計算用）','cashBufferMonthly')
       ],'目標額方式は現在の現金残高から利息0％で逆算。貯金目標は支出に含めません。',
       '<div class="fp-goal-preview"><span>設定する毎月貯金の目安</span><strong>'+
       fpYen(fpCashGoalMonthly(p))+'</strong><small>月収支から確保する目標で、実際の現金残高への加算はありません</small></div>'));
@@ -1609,8 +1609,8 @@
       ' data-fp-quick-key="'+key+'" value="'+fpYenNumber(plan[key])+'" aria-label="'+label+'（円/月）"><small>円/月</small></label></div></section>';
     const education=goalMode?
       '<section class="fp-setting-card"><div class="fp-setting-row">'+
-        '<div class="fp-setting-copy"><strong>学資保険・教育資金</strong>'+
-        '<span>目標から月額を計算</span></div>'+
+        '<div class="fp-setting-copy"><strong>教育資金積立（学資保険含む）</strong>'+ 
+        '<span>目標方式は保険料の見積ではありません</span></div>'+ 
         '<strong class="fp-setting-computed">'+fpYen(contribution)+' / 月</strong></div>'+
         '<button class="fp-setting-action" data-act="fp-goal-education-edit">教育資金目標を編集　›</button></section>':
       '<section class="fp-setting-card"><div class="fp-setting-row">'+
@@ -1852,7 +1852,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<span class="fp-build-stamp" title="表示バージョン">r44</span></div></div>';
+      '<span class="fp-build-stamp" title="表示バージョン">r45</span></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2166,6 +2166,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r45',date:'2026.10.27',title:'目標と毎月の入力を分離・住宅ローンの根拠を表示',
+        details:['現金・NISA・投資の入力を月額方式と目標逆算方式の二者択一に整理','住宅ローン上限の計算式と採用した金額を「根拠」画面で確認可能','毎月の現金残りと貯金目標確保後の余裕を別々に表示']},
       {version:'r44',date:'2026.10.27',title:'円グラフと明細の切り替え位置を固定',
         details:['両表示で円グラフ・凡例・内訳の共通枠を使用','月収支・貯金推移・内訳の位置と高さを維持','切り替え時は左側のグラフと明細案内のみ変更']},
       {version:'r43',date:'2026.10.27',title:'FPの説明文を整理して見やすく',
@@ -2197,7 +2199,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r44</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r45</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

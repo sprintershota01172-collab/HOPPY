@@ -1098,19 +1098,23 @@
     return '<section class="fp-capacity-card" aria-label="住宅ローンの返済目安と借入参考額">'+
       '<div class="fp-capacity-heading"><strong>住宅ローンの返済予算</strong><span>'+esc(warning)+'</span></div>'+
       '<div class="fp-capacity-columns">'+
-      '<div class="fp-capacity-cell payment"><span>積立を維持する月返済目安</span>'+
-      '<strong>'+fpYen(suggestedMonthly)+'</strong><small> / 月（住宅維持費は別）</small></div>'+
-      '<div class="fp-capacity-cell price"><span>その場合の借入参考額</span>'+
-      '<strong>'+fpYen(suggestedPrincipal)+'</strong>'+
-      '<small class="fp-capacity-interest">（利息込み総返済 '+fpYen(fullReturn)+'）</small></div></div>'+
+      '<div class="fp-capacity-cell payment"><span>金利込み・積立維持の月返済目安</span>'+
+      '<strong class="fp-interest-included">'+fpYen(suggestedMonthly)+'</strong><small> / 月（維持費別）</small></div>'+
+      '<div class="fp-capacity-cell price"><span>借入元金の参考額（利息別）</span>'+
+      '<strong class="fp-principal-value">'+fpYen(suggestedPrincipal)+'</strong>'+
+      '<small class="fp-capacity-interest fp-interest-included">（金利込み総返済 '+fpYen(fullReturn)+'）</small></div></div>'+
       '<div class="fp-capacity-conditions"><span>年利 '+yen(b.rate,2)+'%</span>'+
       '<span>返済 '+Math.round(b.loanYears)+'年</span><span>頭金なし・元利均等</span></div>'+
       '<div class="fp-capacity-ceiling"><span>積立を見直す場合の上限参考（推奨額ではありません）</span>'+
       '<strong>月 '+fpYen(b.basicLoanPayment)+' ／ 借入 '+fpYen(ceilingPrincipal)+'</strong></div>'+
       '<div class="fp-capacity-example">'+
-      '<div class="fp-capacity-example-main"><span>物件 '+fpYen(price)+' の月返済</span>'+
-      '<strong>'+fpYen(selectedMonthly)+'/月</strong></div>'+
+      '<div class="fp-capacity-example-main"><span>物件 '+fpYen(price)+'・金利込みの月返済</span>'+
+      '<strong class="fp-interest-included">'+fpYen(selectedMonthly)+'/月</strong></div>'+
+      '<div class="fp-capacity-example-formula">金利込み：月 '+fpYen(selectedMonthly)+' × '+term+'回 ＝ <strong class="fp-interest-included">総返済 '+fpYen(selectedMonthly*term)+'</strong></div>'+
       '<div class="fp-capacity-example-status '+(!b.missingEssentialInputs.length&&selectedMonthly<=b.loanPayment?'within':'over')+'">'+status+'</div></div>'+
+      '<div class="fp-capacity-remainder '+fpBalanceTone(b.preferredRaw-selectedMonthly)+'">'+
+      '<span>この物件で貯金・予備費まで確保した後の月残額</span>'+
+      '<strong>'+fpSignedYen(b.preferredRaw-selectedMonthly)+'</strong></div>'+
       '<p class="fp-capacity-footnote"><span class="fp-capacity-housing-total'+(b.preferredRaw<0?' shortfall':'')+'">'+
         (b.preferredRaw<0?'希望の積立を続けると月'+fpYen(-b.preferredRaw)+'不足。':
           '住宅維持費 '+fpYen(b.maintenance)+'/月を先に控除済み。')+
@@ -1190,19 +1194,25 @@
     const p=state.plan;
     if(!Number.isFinite(Number(p.loanYears))||Number(p.loanYears)<1||Number(p.loanYears)>50||
       !Number.isFinite(Number(p.interest))||Number(p.interest)<0||Number(p.interest)>20)
-      return '<div class="fp-repayment-card"><div class="fp-repayment-eyebrow">住宅ローンの返済額</div>'+
+      return '<div class="fp-repayment-card"><div class="fp-repayment-eyebrow">住宅ローン返済</div>'+
         '<div class="fp-repayment-terms">金利・返済年数を確認してください</div></div>';
     const years=Math.max(1,Math.min(50,safeNum(p.loanYears,35))),
-      principal=Math.max(0,safeNum(price)-0),
-      rate=safeNum(p.interest),payment=mortgageMonthly(price,0,rate,years);
-    return '<div class="fp-repayment-card">'+
-      '<div class="fp-repayment-eyebrow">住宅ローンの毎月返済（元利均等）</div>'+
-      '<div class="fp-repayment-value">'+fpYen(payment)+'<span>/ 月</span></div>'+
-      '<div class="fp-repayment-terms">借入 '+fpYen(principal)+'　｜　'+yen(years,0)+'年ローン　｜　年利 '+yen(rate,2)+'%</div>'+
-      '<div class="fp-repayment-detail"><span>住居維持費を加えると</span><strong>'+fpYen(payment+safeNum(p.housingOngoing))+' / 月</strong></div>'+
-      '<div class="fp-repayment-detail"><span>ローン総返済額（利息込み）</span><strong>'+fpYen(payment*Math.round(years*12))+'</strong></div>'+
-      '<div class="fp-repayment-note">全額借入・購入諸費用は別途</div>'+
-      '<div class="fp-repayment-note">ボーナス返済なし・金利一定。固定資産税・火災保険などは別途。</div></div>';
+      months=Math.round(years*12),
+      principal=Math.max(0,safeNum(price)),
+      rate=safeNum(p.interest),
+      payment=mortgageMonthly(principal,0,rate,years),
+      total=payment*months,
+      interest=Math.max(0,total-principal);
+    return '<div class="fp-repayment-card" aria-label="元金・利息とローン総返済額">'+
+      '<div class="fp-repayment-eyebrow">住宅ローン｜元金と金利込みの支払額</div>'+
+      '<div class="fp-loan-principal-row"><span>借入元金（利息を含まない）</span><strong>'+fpYen(principal)+'</strong></div>'+
+      '<div class="fp-loan-interest-row"><span>利息の総額</span><strong>'+fpYen(interest)+'</strong></div>'+
+      '<div class="fp-loan-including-flow">'+
+        '<div class="fp-loan-with-interest"><span>金利込み・月々の返済</span><strong>'+fpYen(payment)+'</strong></div>'+
+        '<span class="fp-loan-multiplier">× '+months+'回</span>'+
+        '<div class="fp-loan-with-interest"><span>金利込み・総返済額</span><strong>'+fpYen(total)+'</strong></div></div>'+
+      '<div class="fp-loan-maintenance"><span>月返済＋住居維持費</span><strong>'+fpYen(payment+safeNum(p.housingOngoing))+' / 月</strong></div>'+
+      '<div class="fp-repayment-note">金利込み＝元金＋利息。年利'+yen(rate,2)+'％・'+years+'年・元利均等、頭金0円・ボーナス返済なし。購入諸費用は別途。</div></div>';
   }
   function fpBadgeClass(level){return level==='good'?'fp-good':level==='warn'?'fp-warn':'fp-bad';}
   function fpRatingRow(p){

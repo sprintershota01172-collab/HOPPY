@@ -42,6 +42,8 @@ assert.match(cardNow,/2026年の払込：0人分/);
 assert.match(cardNow,/出生予定年以降に支出計上/);
 const before=api.modelYears(p.propertyPrice,true).points.find(x=>x.year===2031);
 click('tab','sim');for(let i=0;i<7;i++)click('sim-next');
+assert.doesNotMatch(app.innerHTML,/data-fp-edu-insurance="true"/,'the monthly dashboard is read-only');
+click('fp-result-tab','7');
 assert.match(app.innerHTML,/data-fp-edu-insurance="true"/);
 assert.match(app.innerHTML,/予定2人の合計/);
 change({fpEduInsurance:'true'},'12000');

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="theme-color" content="#f5f5f7">
+<title>ほっぽさん｜アプリを最新版に更新</title>
+<style>
+:root{color-scheme:light;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#f5f5f7;color:#26332f;min-height:100vh;display:grid;place-items:center;padding:18px}
+main{width:min(100%,430px);background:#fff;padding:24px 20px;border:1px solid #e0e6e3;border-radius:22px;box-shadow:0 8px 28px #1e443b10}
+small{font-weight:800;color:#688477;letter-spacing:.08em}h1{font-size:22px;margin:9px 0 13px}p{line-height:1.6;font-size:13px;margin:0 0 14px;color:#607269}
+button,a{display:block;width:100%;text-align:center;border-radius:12px;padding:13px 12px;margin-top:12px;font-weight:800;font-size:15px;text-decoration:none}
+button{border:0;background:#246f5a;color:#fff}button:disabled{opacity:.55}a{border:1px solid #dbe4df;color:#396b59}
+#status{border-radius:10px;background:#f2f7f3;padding:12px;font-size:12px;line-height:1.55;min-height:40px;color:#395849}
+#status.error{background:#fff3e9;color:#97521f}
+footer{margin-top:18px;color:#8b9991;font-size:11px;line-height:1.6}
+</style>
+</head>
+<body>
+<main>
+<small>HOPPY · RELEASE r54</small>
+<h1>アプリを最新版に更新</h1>
+<p>オフライン用の古い一時ファイルを入れ替えます。家計・物件・メモなどの保存データは削除しません。</p>
+<div id="status" role="status" aria-live="polite">公開されているアプリのバージョンを確認しています。</div>
+<button id="repair" type="button" disabled>更新してアプリを開く</button>
+<a href="./fp-r54.html?source=refresh">最新版を直接開く</a>
+<footer>更新対象はほっぽさんのキャッシュとService Workerのみです。ブラウザの履歴、写真、localStorage、IndexedDBを消去する処理はありません。</footer>
+</main>
+<script>
+(async()=>{
+ const status=document.getElementById('status'),button=document.getElementById('repair');
+ function set(t,bad=false){status.textContent=t;status.className=bad?'error':''}
+ try{
+   const url=new URL('./app.js?release=r54&verify='+Date.now(),location.href);
+   const res=await fetch(url.href,{cache:'no-store'});
+   if(!res.ok)throw Error('公開ファイルへのアクセスに失敗しました（HTTP '+res.status+'）。');
+   const js=await res.text();
+   if(!js.includes('表示バージョン')||!js.includes('>r54</span>')){
+     set('公開サイトから取得したコードが旧版です。GitHub Pages側の公開がまだ更新されていません。',true);
+     return;
+   }
+   set('最新版r54の公開コードを確認しました。更新ボタンを押してください。');
+   button.disabled=false;
+ }catch(e){set('公開版を確認できません。通信状態を確認してから再度開いてください。 '+String(e.message||e),true);return}
+ button.onclick=async()=>{
+   button.disabled=true;set('ほっぽさんの古い一時ファイルを整理しています。');
+   try{
+     const scope=new URL('./',location.href).href;
+     if('serviceWorker' in navigator){
+       const registrations=await navigator.serviceWorker.getRegistrations();
+       for(const registration of registrations){
+         if(registration.scope===scope)await registration.unregister();
+       }
+     }
+     if('caches' in window){
+       const keys=await caches.keys();
+       for(const key of keys)if(key.startsWith('hopposan-'))await caches.delete(key);
+     }
+     location.replace('./fp-r54.html?fresh='+Date.now());
+   }catch(e){
+     set('一部のキャッシュ削除に失敗しました。下の「最新版を直接開く」を利用してください。 '+String(e.message||e),true);
+     button.disabled=false;
+   }
+ };
+})();
+</script>
+</body>
+</html>

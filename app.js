@@ -1627,7 +1627,18 @@
       '<span>変更は収支予測に反映</span></div>'+
       input('自由費','freeSpendingMonthly','夫婦合計・毎月')+
       education+
-      input('現金貯金目標','otherSavingsMonthly','毎月の目標額')+
+      '<section class="fp-setting-card fp-cash-goal-card">'+
+        '<div class="fp-setting-copy"><strong>現金貯金の目標</strong><span>入力するのは月額か、達成したい残高のどちらか一方</span></div>'+
+        '<label class="fp-goal-mode-label">設定方法 <select data-fp-cash-goal="enabled" aria-label="現金貯金の設定方法">'+
+          '<option value="0" '+(Number(plan.goalCashEnabled)!==1?'selected':'')+'>毎月の貯金額を入力</option>'+
+          '<option value="1" '+(Number(plan.goalCashEnabled)===1?'selected':'')+'>目標残高から逆算</option>'+
+        '</select></label>'+
+        (Number(plan.goalCashEnabled)===1?
+          '<div class="fp-goal-target-fields"><label>目標残高 <input data-fp-cash-goal="amount" type="number" min="0" max="1000000000" step="1" inputmode="numeric" value="'+fpYenNumber(plan.goalCashAmount)+'" aria-label="目標の現金残高（円）">円</label>'+
+          '<label>達成まで <input data-fp-cash-goal="years" type="number" min="1" max="60" step="1" inputmode="numeric" value="'+safeNum(plan.goalCashYears)+'" aria-label="現金貯金の目標までの年数">年</label></div>':
+          '<label class="fp-setting-input fp-cash-goal-monthly"><input data-fp-quick-key="otherSavingsMonthly" type="number" min="0" max="100000000" inputmode="numeric" value="'+fpYenNumber(plan.otherSavingsMonthly)+'" aria-label="毎月の現金貯金目標（円）"><small>円/月</small></label>')+
+        '<div class="fp-goal-active"><span>計算に使う月額</span><strong>'+fpYen(target)+' / 月</strong></div>'+
+        '<small class="fp-goal-no-double">貯金目標は支出に足しません。月収支からこの額を取り分けた残りが「自由に使える余裕」です。</small></section>'+
       '<div class="fp-setting-outcome"><div><span>'+point.year+'年'+selected.month+'月の現金収支</span>'+
         '<strong class="'+fpBalanceTone(selected.net)+'">'+fpSignedYen(selected.net)+'</strong></div>'+
         '<div><span>貯金目標との比較</span><strong class="'+fpBalanceTone(surplus)+'">'+
@@ -2590,6 +2601,16 @@
         ui.fpHistoryLive=true;
       }
       state.plan.childEducationInsuranceMonthly=yenValue/10000;
+      save();render();return;
+    }
+    if(el.dataset?.fpCashGoal!==undefined){
+      if(!ui.fpHistoryLive){const snap=fpLatestSnapshot();if(snap)state.plan=JSON.parse(JSON.stringify(snap.plan));ui.fpHistoryLive=true;}
+      const key=el.dataset.fpCashGoal,value=Number(el.value);
+      if(!Number.isFinite(value)||value<0){render();return;}
+      if(key==='enabled')state.plan.goalCashEnabled=value===1?1:0;
+      else if(key==='amount')state.plan.goalCashAmount=Math.min(100000,value/10000);
+      else if(key==='years')state.plan.goalCashYears=Math.max(1,Math.min(60,Math.round(value)));
+      else return;
       save();render();return;
     }
     if(el.dataset?.fpQuickKey!==undefined){

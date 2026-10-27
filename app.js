@@ -1672,8 +1672,8 @@
         '<div class="fp-asset-tile total"><span>金融資産の合計</span><strong>'+fpYen(selected.total)+'</strong>'+
         '<small>現金＋NISA＋その他投資</small></div></div>'+
       '<div class="fp-goal-assets-action"><button data-act="fp-goal-investment-edit">積立・目標を編集 ↗</button></div>'+
-      '<p class="fp-r-help">NISAの積立 '+fpYen(fpNisaForYear(point.year,state.plan))+'/月、その他投資 '+fpYen(fpOtherInvestForYear(point.year,state.plan))+
-        '/月。折れ線は年末残高。投資の月末評価額は年率の仮定から近似計算、時価実績ではありません。住宅価値とローン残債は含みません。</p></div>';
+      '<p class="fp-r-help">毎月の積立：NISA '+fpYen(fpNisaForYear(point.year,state.plan))+'・その他 '+fpYen(fpOtherInvestForYear(point.year,state.plan))+
+        '。投資額は想定利回りによる試算。住宅・ローンは含みません。</p></div>';
   }
   function fpIncomeReport(model){
     const point=fpYearPoint(model),income=fpYearlyIncome(point.year),

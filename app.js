@@ -1744,7 +1744,7 @@
     return '<div class="fp-surplus-strip '+fpBalanceTone(net)+'" aria-label="'+esc(label)+'の'+
       fpBalanceLabel(net)+' '+fpYen(Math.abs(net))+'">'+
       '<span><em class="fp-balance-chip">'+fpBalanceLabel(net)+'</em> '+esc(label)+'：'+
-        (net>0?'収入から残るプラス':net<0?'収入に対する不足':'収支差額ゼロ')+'</span>'+
+        '年間現金増減（貯金目標・予備費確保前）</span>'+
       '<strong>'+fpSignedYen(net)+'</strong>'+
       '<b>手取り比 '+percent+'</b>'+
       '<small>手取り収入 − 支出 − NISA等の積立</small></div>';
@@ -1963,9 +1963,9 @@
           fpYen(b.itemizedLiving)+'/月を両方計上しています。</span>'+
           '<button type="button" data-act="fp-clear-legacy-living">その他生活費を0円に変更（確認あり）</button></div>':
           '<p class="fp-r-help">'+risk+' 賞与・給付金は毎月のローン返済原資に含めません。</p>')+
-        '<div class="fp-budget-loan-note">'+(deficit?'貯金・積立を希望どおり続けると月'+fpYen(deficit)+'不足。':'')+
-          '物件'+fpYen(price)+'：月返済'+fpYen(loan.monthly)+
-          '／'+loan.years+'年・年利'+yen(loan.rate,2)+'％・総返済'+fpYen(loan.monthly*n)+'</div>'+
+        '<div class="fp-budget-loan-note">'+(deficit?'貯金・積立を維持すると月'+fpYen(deficit)+'不足。':'')+
+          '借入元金 '+fpYen(price)+' ／ 金利込み月返済 <strong class="fp-interest-included">'+fpYen(loan.monthly)+'</strong>'+
+          ' × '+n+'回 ＝ 金利込み総返済 <strong class="fp-interest-included">'+fpYen(loan.monthly*n)+'</strong>（年利'+yen(loan.rate,2)+'％）</div>'+
         '<button type="button" data-act="fp-budget-edit-income" class="fp-setting-back">手取り収入を確認 ›</button>'+ 
         '<button type="button" data-act="fp-result-tab" data-value="1" class="fp-setting-back">‹ 月収支に戻る</button>'+
       '</div>';

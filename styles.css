@@ -4945,3 +4945,16 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   }
   #app .fp-focus .fp-capacity-footnote .fp-capacity-housing-total strong{font-size:9px!important}
 }
+
+
+/* FP r47: deficits must be explained, not disguised as an unexplained 0 yen. */
+#app .fp-capacity-footnote .fp-capacity-housing-total.shortfall{
+  color:#9c3030!important;
+}
+#app .fp-capacity-footnote .fp-capacity-housing-total.shortfall strong{
+  color:#be3333!important;
+}
+#app .fp-budget-evidence .fp-r-help{
+  color:#506675!important;
+  line-height:1.35!important;
+}

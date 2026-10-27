@@ -27,7 +27,7 @@
     husbandAge:27,wifeAge:29,children:2,firstChildYear:2028,birthInterval:3,
     husbandMonthly:26,wifeMonthly:25,husbandBonus:120,wifeBonus:20,wifeReduced:12.5,
     husbandBonusMonth1:6,husbandBonusMonth2:12,wifeBonusMonth1:6,wifeBonusMonth2:12,
-    cashSavings:300,support:0,livingMonthly:0,rentMonthly:8.2,carMonthly:1.18,
+    cashSavings:300,husbandCashSavings:300,wifeCashSavings:0,legacySavingsNotice:0,support:0,livingMonthly:0,rentMonthly:8.2,carMonthly:1.18,
     propertyPrice:4400,propertyId:'',purchaseYear:2028,purchaseMonth:1,downPayment:0,interest:1.5,loanYears:35,
     housingOngoing:2.5,weddingYear:2027,weddingCost:350,honeymoonCost:98,
     nisaMonthly:3,highSchool:'public',university:'public',simulateUntil:2045,hasRun:0,
@@ -81,6 +81,20 @@
       if(raw&&typeof raw==='object')for(const key of Object.keys(plan)){
         if(key in raw&&(typeof raw[key]==='string'||typeof raw[key]==='number'))plan[key]=raw[key];
       }
+      // Earlier plans held one household total. Preserve it in full and
+      // flag the temporary allocation to husband until confirmed.
+      const hasSplit=raw&&Object.prototype.hasOwnProperty.call(raw,'husbandCashSavings')&&
+        Object.prototype.hasOwnProperty.call(raw,'wifeCashSavings');
+      if(!hasSplit){
+        const old=Number(raw?.cashSavings);
+        plan.husbandCashSavings=raw&&Number.isFinite(old)?Math.max(0,old):300;
+        plan.wifeCashSavings=0;
+        plan.legacySavingsNotice=raw&&raw.cashSavings!==undefined?1:0;
+      }else{
+        plan.husbandCashSavings=Math.max(0,Number(plan.husbandCashSavings)||0);
+        plan.wifeCashSavings=Math.max(0,Number(plan.wifeCashSavings)||0);
+      }
+      plan.cashSavings=plan.husbandCashSavings+plan.wifeCashSavings;
       plan.expenses=normalizeExpenses(raw?.expenses);
       plan.events=normalizeEvents(raw?.events);
       return plan;
@@ -375,9 +389,18 @@
     return Number(p.goalOtherEnabled)===1&&year>=simNowYear()+safeNum(p.goalOtherYears)
       ?0:fpEffectiveOtherInvestMonthly(p);
   }
+  // Spouse balances are the source of truth; cashSavings is a compatibility alias.
+  function fpHouseholdCashSavings(p=state.plan){
+    return safeNum(p.husbandCashSavings)+safeNum(p.wifeCashSavings);
+  }
+  function fpSyncHouseholdCashSavings(p=state.plan){
+    p.cashSavings=fpHouseholdCashSavings(p);
+    p.legacySavingsNotice=0;
+    return p.cashSavings;
+  }
   function fpCashGoalMonthly(p=state.plan){
     if(Number(p.goalCashEnabled)!==1)return safeNum(p.otherSavingsMonthly);
-    return fpTargetMonthly(p.goalCashAmount,safeNum(p.cashSavings)+safeNum(p.support),Math.max(1,safeNum(p.goalCashYears))*12,0);
+    return fpTargetMonthly(p.goalCashAmount,fpHouseholdCashSavings(p)+safeNum(p.support),Math.max(1,safeNum(p.goalCashYears))*12,0);
   }
   // Cash saving is an earmarked balance, not a perpetual expense.
   function fpCashGoalForYear(year,p=state.plan){
@@ -851,7 +874,7 @@
       amort=fpAmortization(price),payment=amort.monthly;
     const loanByYear=new Map(amort.points.map(x=>[x.year,x]));
     const loanByMonth=new Map(amort.months.map(x=>[x.year+'-'+x.month,x.payment]));
-    let cash=safeNum(p.cashSavings)+safeNum(p.support);
+    let cash=fpHouseholdCashSavings(p)+safeNum(p.support);
     let nisa=safeNum(p.nisaBalance),otherInvest=safeNum(p.investBalance);
     let investedContributions=0;
     const points=[],kids=Math.min(3,Math.round(safeNum(p.children))),
@@ -937,7 +960,7 @@
       ratio=budget.monthlyIncome>0?housing/budget.monthlyIncome:Infinity,
       spendable=budget.monthlyIncome-budget.spending-budget.investing-budget.cashTarget-budget.buffer-housing,
       upfront=cost*.07,
-      remaining=safeNum(p.cashSavings)+safeNum(p.support)-upfront,
+      remaining=fpHouseholdCashSavings(p)+safeNum(p.support)-upfront,
       reserve=6*(budget.spending+housing);
     return {price:cost,rate,payment,income:budget.monthlyIncome,housing,ratio,
       spendable,upfront,remaining,reserve,recurring:budget.spending,
@@ -1123,7 +1146,9 @@
       {step:6,page:0,limit:1200,keys:[['annualTax','年払い税金'],['carTaxAnnual','自動車税'],['travelAnnual','旅行・帰省'],['annualEvents','年内イベント']]},
       {step:6,page:1,limit:3000,keys:[['weddingCost','結婚式自己負担'],['honeymoonCost','新婚旅行費']]},
       {step:4,page:0,limit:100000,keys:[['propertyPrice','物件価格']]},
-      {step:5,page:0,limit:100000,keys:[['cashSavings','預貯金'],['support','援助'],['nisaBalance','NISA評価額'],['investBalance','その他投資残高']]}
+      {step:5,page:0,limit:100000,keys:[['husbandCashSavings','夫の貯金'],['wifeCashSavings','妻の貯金'],['support','援助']]},
+      {step:5,page:2,limit:100000,keys:[['nisaBalance','NISA評価額']]},
+      {step:5,page:3,limit:100000,keys:[['investBalance','その他投資残高']]}
     ];
     for(const group of groups)for(const [key,label] of group.keys){
       const v=Number(p[key]);
@@ -1259,7 +1284,7 @@
     const p=state.plan,point=model.points.find(x=>x.year===year)||model.points[0],
       prev=model.points.find(x=>x.year===point.year-1);
     const opening=prev||{
-      cash:safeNum(p.cashSavings)+safeNum(p.support),
+      cash:fpHouseholdCashSavings(p)+safeNum(p.support),
       nisa:safeNum(p.nisaBalance),otherInvest:safeNum(p.investBalance)
     };
     return {point,opening,cashChange:point.cash-opening.cash,
@@ -1873,7 +1898,7 @@
     const p=state.plan,point=fpYearPoint(current),mode=ui.fpCalcPage||0,loan=fpAmortization(price);
     if(mode===0){
       const previous=current.points.find(x=>x.year===point.year-1);
-      const opening=previous?previous.cash:safeNum(p.cashSavings)+safeNum(p.support);
+      const opening=previous?previous.cash:fpHouseholdCashSavings(p)+safeNum(p.support);
       return '<div class="fp-r-body grow">'+fpYearSelect(current)+
         fpCalcRows([
           ['期首現金残高',fpYen(opening)],['年間手取り＋給付',fpYen(point.incomes)],

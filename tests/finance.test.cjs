@@ -7,7 +7,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function loadFinance(seed=null){
+function loadFinance(seed=null,shortViewport=false){
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
   const marker='\n  save();render();\n  // The startup';
   assert.equal(source.split(marker).length,2,'App test anchor changed');
@@ -15,7 +15,7 @@ function loadFinance(seed=null){
   const app={addEventListener(){},querySelector(){return null},querySelectorAll(){return []}};
   const ctx={
     document:{getElementById:()=>app,addEventListener(){},querySelectorAll(){return []}},
-    window:{matchMedia:()=>({matches:false}),addEventListener(){},crypto:{}},
+    window:{matchMedia:q=>({matches:shortViewport&&q.includes('max-height:860px')}),addEventListener(){},crypto:{}},
     localStorage:{getItem:()=>seed?JSON.stringify(seed):null,setItem(){}},
     navigator:{},location:{protocol:'https:',hostname:'localhost'},
     confirm:()=>false,console
@@ -275,4 +275,26 @@ test('before first birth, child costs do not disappear silently without explanat
   const allocation=x.fpMonthlyAllocation(month);
   const html=x.fpPieBreakdownPanel(point,month,allocation.items,'living');
   assert.match(html,new RegExp('子ども費は'+p.firstChildYear+'年の出生予定から順次計上'));
+});
+
+
+test('short mobile viewport shows four fixed detail cells per page without cutting the category total',()=>{
+  const x=loadFinance(null,true),p=x.state.plan;
+  p.children=2;p.firstChildYear=now();p.birthInterval=1;
+  p.childLivingMonthly=2;p.daycareMonthly=2;
+  p.childEducationInsuranceMonthly=1;p.childInsuranceMonthly=.4;
+  p.foodMonthly=4;p.electricityMonthly=1.1;p.gasMonthly=.5;
+  const point=x.modelYears(p.propertyPrice,true).points[1],
+    month=x.fpMonthlyLedger(point).months[0],
+    alloc=x.fpMonthlyAllocation(month),
+    rows=x.fpPieBreakdownRows(point,month,'living');
+  assert.ok(rows.length>4);
+  const first=x.fpPieBreakdownPanel(point,month,alloc.items,'living');
+  assert.equal((first.match(/class="fp-breakdown-row"/g)||[]).length,4);
+  assert.match(first,/class="fp-breakdown-pager"/);
+  assert.match(first,/全\d+件/);
+  x.ui.fpBreakdownPageIndex=1;
+  const second=x.fpPieBreakdownPanel(point,month,alloc.items,'living');
+  assert.match(second,/2\/\d+/);
+  assert.equal((second.match(/class="fp-breakdown-row"/g)||[]).length,4);
 });

@@ -4332,3 +4332,66 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     max-width:96px!important;max-height:96px!important;
   }
 }
+
+
+/* FP r39 — shared monthly cashflow/savings card.
+   The 12-month savings sparkline lives inside the existing hero, so the
+   donut diameter, four-column expense grid and row pitch remain unchanged. */
+#app .fp-focus .fp-month-surplus{
+  grid-template-columns:minmax(0,1.07fr) minmax(0,.93fr)!important;
+  align-items:center!important;
+}
+#app .fp-focus .fp-month-surplus>.fp-month-savings{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  justify-content:center!important;
+  gap:1px!important;
+  text-align:right!important;
+  padding-left:7px!important;
+  min-width:0!important;
+}
+#app .fp-focus .fp-month-surplus>.fp-month-savings>span{
+  font-size:9px!important;
+  font-weight:700!important;
+  white-space:nowrap!important;
+  text-align:right!important;
+}
+#app .fp-focus .fp-month-surplus>.fp-month-savings>.fp-month-savings-balance{
+  width:100%!important;
+  font-size:clamp(13px,3.6vw,18px)!important;
+  font-variant-numeric:tabular-nums!important;
+  line-height:1.1!important;
+  text-align:right!important;
+  letter-spacing:-.035em!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+#app .fp-focus .fp-month-surplus>.fp-month-savings>.fp-month-savings-trend{
+  display:block!important;
+  width:100%!important;
+  height:31px!important;
+  min-width:0!important;
+  min-height:31px!important;
+  max-height:31px!important;
+  flex:0 0 31px!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:visible!important;
+  box-sizing:border-box!important;
+}
+#app .fp-focus .fp-month-surplus>.fp-month-savings>small{
+  font-size:8px!important;
+  line-height:1.1!important;
+  align-self:flex-end!important;
+  color:#e0efe9!important;
+  white-space:nowrap!important;
+}
+@media(max-height:800px){
+  #app .fp-focus .fp-month-surplus>.fp-month-savings>.fp-month-savings-trend{
+    height:22px!important;min-height:22px!important;max-height:22px!important;flex-basis:22px!important;
+  }
+  #app .fp-focus .fp-month-surplus>.fp-month-savings>.fp-month-savings-balance{
+    font-size:12px!important;
+  }
+}

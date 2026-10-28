@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const BUILD = 'r63';
+  const BUILD = 'r64';
   // A tiny non-sensitive marker helps diagnose installed PWA update issues.
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'hoppy-phase1-v1';
@@ -202,7 +202,7 @@
   }
   function empty(icon,title,desc,action,label){return '<section class="panel grow empty"><div class="big">'+icon+'</div><h2 class="section-title">'+esc(title)+'</h2><p>'+esc(desc)+'</p>'+ (action?'<button class="btn primary" data-act="'+action+'">'+esc(label)+'</button>':'')+'</section>';}
   function navPager(index,total,act){return '<div class="pager"><button class="page-arrow" data-act="'+act+'" data-value="-1" '+(total<2?'disabled':'')+' aria-label="前へ">‹</button><div class="counter">'+(total?index+1:0)+' / '+total+'</div>'+dots(index,Math.max(total,1))+'<button class="page-arrow" data-act="'+act+'" data-value="1" '+(total<2?'disabled':'')+' aria-label="次へ">›</button></div>';}
-  const homePageSize=()=>window.matchMedia('(max-height: 710px)').matches?2:window.matchMedia('(max-height: 910px)').matches?3:4;
+  const homePageSize=()=>Math.max(2,Math.min(6,Math.floor(((window.innerHeight||800)-430)/75)));
   function propertyCard(p){
     const now=Date.now(),ms=(p.meetings||[]).filter(m=>m.at);
     const future=ms.filter(m=>new Date(m.at).getTime()>=now).sort((a,b)=>a.at.localeCompare(b.at))[0];
@@ -222,8 +222,7 @@
     const page=ps.slice(ui.homePage*perPage,(ui.homePage+1)*perPage);
     const chips=[['','すべて','◫'],['気になる','気になる','♡'],['内見予定','内見予定','▦'],['本命','本命','★']];
     const textScope=state.properties.filter(p=>(p.name+' '+p.address+' '+(p.manufacturer||'')+' '+p.tags.join(' ')).toLowerCase().includes((state.filter.query||'').toLowerCase())&&(!state.filter.tag||p.tags.includes(state.filter.tag)));
-    return '<div class="home-summary home-visual-toolbar"><div class="home-summary-label"><strong>'+ps.length+'件</strong><span>表示中</span></div><button class="summary-action" data-act="home-compare" aria-label="物件を比較する">⇄ 比較</button></div>'+
-      '<div class="status-chip-row" role="group" aria-label="検討状況で絞り込み">'+chips.map(([v,label,sym])=>'<button class="status-chip home-visual-filter '+((state.filter.status||'')===v?'is-active':'')+'" data-act="home-status" data-value="'+esc(v)+'" aria-label="'+label+'で絞り込み" title="'+label+'"><b>'+sym+'</b><span>'+(v?textScope.filter(p=>p.status===v).length:textScope.length)+'</span></button>').join('')+'</div>'+
+    return '<div class="status-chip-row" role="group" aria-label="検討状況で絞り込み">'+chips.map(([v,label,sym])=>'<button class="status-chip home-visual-filter '+((state.filter.status||'')===v?'is-active':'')+'" data-act="home-status" data-value="'+esc(v)+'" aria-label="'+label+'で絞り込み" title="'+label+'"><b>'+sym+'</b><span>'+(v?textScope.filter(p=>p.status===v).length:textScope.length)+'</span></button>').join('')+'</div>'+
       '<div class="property-list swipe-zone">'+(page.length?page.map(propertyCard).join(''):'<div class="home-no-match"><strong>該当する物件がありません</strong><span>検索や絞り込みを変更してください</span><button class="btn" data-act="filter-clear">条件をリセット</button></div>')+'</div>'+
       (total>1?navPager(ui.homePage,total,'home-page'):'<div class="home-page-single" aria-label="1ページ目"></div>');
   }
@@ -232,7 +231,7 @@
     const budget=state.plan.hasRun?fpBudget():null;
     const price=budget&&budget.amount>0?yen(Math.floor(budget.amount),0)+'<small>万円</small>':'設定する';
     return '<section class="screen home-screen home-visual-screen">'+
-      '<div class="home-visual-header"><span class="home-visual-title">住まい <i>HOME</i></span><button data-act="tab" data-value="updates" class="home-visual-version" title="更新履歴" aria-label="現在のバージョンr63">r63</button></div>'+
+      '<div class="home-visual-header"><span class="home-visual-title">住まい <i>HOME</i></span><button data-act="diagnostics" class="home-visual-version" title="更新状態を確認" aria-label="更新状態を確認する r64">r64</button></div>'+
       '<div class="home-visual-hero">'+
         '<button data-act="home-compare" class="home-visual-stat"><span>検討中</span><strong>'+count+'<small>件</small></strong><em>物件を比較 ›</em></button>'+
         '<button data-act="tab" data-value="sim" class="home-visual-stat fp"><span>購入の目安</span><strong>'+price+'</strong><em>FPで確認 ›</em></button></div>'+
@@ -2357,8 +2356,7 @@ function fpMetaDashboard(){
      <button data-act="fp-result-tab" data-value="1">収支を見る ›</button>
    </div>
  </section>
- <div class="fp-meta-shortcuts"><button data-act="fp-result-tab" data-value="2">◉ 資産</button><button data-act="fp-result-tab" data-value="3">▥ 将来</button><button data-act="fp-capacity-basis">⌗ ローン</button></div>
- <div class="fp-meta-warning">${warning} <button data-act="fp-capacity-basis">詳細 ›</button></div>
+ ${needsCheck||futureDeficit?'<div class="fp-meta-warning">'+warning+' <button data-act="fp-capacity-basis">詳細 ›</button></div>':''}
  </div>`;
 }
   function fpMetaIcon(page){
@@ -2379,7 +2377,7 @@ function fpMetaDashboard(){
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open" aria-label="診断履歴" title="診断履歴">◷</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events" aria-label="イベント登録" title="イベント登録">＋</button>'+
       '<button class="btn compact" data-act="sim-restart" aria-label="家計の編集" title="家計の編集">✎</button>'+
-      '<a class="fp-build-stamp" title="更新を確認" href="./refresh.html">r63</a></div></div>';
+      '<a class="fp-build-stamp" title="更新状態を確認" href="./diagnose.html">r64</a></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2676,8 +2674,8 @@ function fpMetaDashboard(){
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
-      {version:'r63',date:'2026.10.28',title:'視覚中心のホームとFP、更新経路を改善',
-        details:['起動時の物件画面に大きな物件・購入予算カードを配置','写真・価格を主役としたコンパクトな物件カードとアイコン絞り込み','FPの重要な3数値・円グラフ・アイコン操作を簡潔化','新規URLと公開ファイル照合により旧版を識別','入力値と計算ロジックは維持']},
+      {version:'r64',date:'2026.10.28',title:'余白・文字サイズ統一と更新診断',
+        details:['余分な物件一覧見出しを削除し、カードの上下間隔を統一','価格・月残額・アイコン以外の文字を小さく整理','FPの重複ショートカットと不要な補足を削減','公開版と端末読込版を比較できる更新診断ページを追加','入力値・FP計算ロジックは維持']},
       {version:'r59',date:'2026.10.28',title:'公的FP資料と検算に基づく計算モデル改訂',
         details:['頭金を借入元金と購入月現金へ反映','将来年の返済後余力と6か月の防衛資金を点検','金利＋1％の家計余力・完済時年齢・試算期限を表示','児童手当の制度額概算と任意の物価上昇を追加','既存の入力値は維持して新機能は選択式']},
       {version:'r58',date:'2026.10.28',title:'住宅購入の予算・検討価格・月の残額を1画面に統合',
@@ -2739,7 +2737,7 @@ function fpMetaDashboard(){
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r63</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r64</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+
@@ -2771,6 +2769,7 @@ function fpMetaDashboard(){
     let v=button.dataset.value, p=curProp();
     if(action==='hoppo-update-dismiss'){remoteRelease.notice='';renderReleaseBanner();return;}
     if(action==='hoppo-hard-refresh'){window.location.assign('./refresh.html?new='+encodeURIComponent(remoteRelease.latest||BUILD));return;}
+    if(action==='diagnostics'){window.location.assign('./diagnose.html');return;}
     if(action==='tab')return chooseTab(v);
     if(action==='home-axis-toggle')return step(()=>{ui.axisEdit=!ui.axisEdit;});
     if(action==='memo-scope')return step(()=>{ui.memoScope=v;ui.memoPage=0;ui.memoSwipeKey=null;});

@@ -75,7 +75,7 @@ const server=http.createServer((req,res)=>{
   ],{encoding:'utf8',timeout:90000,maxBuffer:16*1024*1024},(error,stdout,stderr)=>{
     if(error)return reject(Error('Chromium: '+error.message+' '+stderr.slice(-1000)));
     resolve({stdout});
-  })));
+  }));
   const match=stdout.match(/<pre id="result">([^<]+)<\/pre>/);
   assert.ok(match,'viewport report not returned from browser: '+stdout.slice(-1200));
   const cases=JSON.parse(match[1].replaceAll('&quot;','"').replaceAll('&amp;','&'));

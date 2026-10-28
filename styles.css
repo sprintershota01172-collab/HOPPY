@@ -5891,3 +5891,38 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .fp-meta-remain.negative,#app .fp-loan-feature.negative strong{color:#bd2d42!important}
 @media(max-width:375px){#app .fp-timebar{gap:2px;padding:4px}#app .fp-time-switch{gap:2px}#app .fp-time-switch>button{width:26px;min-width:26px}#app .fp-time-picker{padding:1px 4px}#app .fp-time-picker>span{display:none}#app .fp-time-picker>select{min-width:72px}#app .fp-time-presets{gap:2px}#app .fp-time-presets>button{padding:3px 4px;font-size:9px!important}}
 @media(prefers-reduced-motion:reduce){#app .fp-result-nav>button{transition:none!important}}
+
+/* r71: one-row FP navigation and contextual currency typography */
+#app .fp-report-screen .fp-result-nav{
+ position:relative!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;
+ height:53px!important;min-height:53px!important;max-height:53px!important;
+ isolation:isolate;z-index:6
+}
+#app .fp-report-screen .fp-result-nav>button{min-width:0!important}
+#app .fp-report-screen .fp-result-nav>button .fp-nav-text{font-size:10px!important}
+#app .fp-report-screen .fp-result-nav>button.fp-nav-more.active{background:#e6f5ef!important;color:#167159!important}
+#app .fp-report-screen .fp-meta-action-menu{
+ position:absolute!important;right:0;top:calc(100% + 5px);z-index:30;
+ width:min(270px,82vw);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:6px;padding:9px;background:#fff;border:1px solid #d9e6df;border-radius:14px;
+ box-shadow:0 12px 35px #1d413021
+}
+#app .fp-report-screen .fp-meta-action-menu>button,
+#app .fp-report-screen .fp-meta-action-menu>a{
+ box-sizing:border-box;display:flex;align-items:center;justify-content:center;
+ min-width:0;min-height:43px;padding:7px 4px;
+ border:1px solid #e2eae4;border-radius:10px;background:#f7faf8;
+ color:#2a674f;font-size:11px!important;font-weight:800;text-align:center;
+ text-decoration:none;white-space:nowrap
+}
+#app .fp-report-screen .fp-meta-action-menu>a{grid-column:1/-1;min-height:36px}
+#app .fp-meta-budget>strong{font-size:clamp(25px,7.5vw,34px)!important;letter-spacing:-.04em!important}
+#app .fp-meta-remain{font-size:clamp(24px,7.1vw,32px)!important;letter-spacing:-.045em!important}
+#app .fp-meta-pair>div b{font-size:clamp(12px,3.7vw,16px)!important;letter-spacing:-.035em!important}
+#app .fp-meta-ring b{font-size:clamp(10px,2.6vw,12px)!important;letter-spacing:-.055em!important}
+#app .fp-meta-status small{font-variant-numeric:tabular-nums}
+@media(max-width:350px){
+ #app .fp-meta-budget>strong{font-size:25px!important}
+ #app .fp-meta-remain{font-size:23px!important}
+ #app .fp-meta-pair>div b{font-size:12px!important}
+}

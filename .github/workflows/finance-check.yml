@@ -19,4 +19,4 @@ jobs:
         with:
           node-version: '22'
       - name: Check financial calculations
-        run: node --test tests/finance.test.cjs
+        run: node --test tests/finance.test.cjs tests/fp-visual-r71.cjs

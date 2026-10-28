@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const BUILD = 'r70';
+  const BUILD = 'r71';
   // A tiny non-sensitive marker helps diagnose installed PWA update issues.
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'hoppy-phase1-v1';
@@ -20,6 +20,17 @@
   const uid = () => (window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
   const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmt = n => n === '' || n == null ? '未登録' : digits.format(Number(n)) + '万円';
+  // Display only: FP amounts remain stored and calculated in units of 10,000 yen.
+  function fpDashboardMoney(amount,{large=false,signed=false}={}){
+    const value=Number(amount)||0,abs=Math.abs(value);
+    let body;
+    if(large||abs>=100){
+      const whole=Math.round(abs),oku=Math.floor(whole/10000),rest=whole%10000;
+      body=oku?digits.format(oku)+'億'+(rest?digits.format(rest)+'万円':'円'):
+        digits.format(whole)+'万円';
+    }else body=digits.format(Math.round(abs*10000))+'円';
+    return (value<0?'−':signed&&value>0?'+':'')+body;
+  }
   const num = v => v === '' || v == null ? null : Number.isFinite(Number(v)) ? Number(v) : null;
   const truncate = (s,n) => String(s || '').length > n ? String(s).slice(0,n - 1) + '…' : String(s || '');
   const dots = (index,count) => '<div class="dots" aria-label="' + (index+1) + ' / ' + count + 'ページ">' + Array.from({length:Math.min(count,5)},(_,i)=>'<span class="dot ' + (i===Math.round(index*(Math.min(count,5)-1)/Math.max(1,count-1))?'active':'') + '"></span>').join('') + '</div>';
@@ -2353,8 +2364,8 @@ function fpMetaDashboard(){
  const futureDeficit=b.worstSurplus-loan.monthly<0;
  const stateName=needsCheck?'入力を確認':!hasBudget?'家計を入力':!hasPrice?'物件価格を入力':!within?'予算オーバー':remaining<0?'赤字に注意':futureDeficit?'将来の家計に注意':'予算内';
  const tone=needsCheck||!hasBudget||!hasPrice||futureDeficit?'caution':!within||remaining<0?'negative':'positive';
- const compact=v=>yen(Math.abs(v),1)+'万円';
- const signed=v=>(v<0?'−':v>0?'+':'')+compact(v);
+ const compact=v=>fpDashboardMoney(v);
+ const signed=v=>fpDashboardMoney(v,{signed:true});
  const ratio=hasBudget?Math.min(100,Math.max(0,price/b.amount*100)):0;
  const share=b.monthlyIncome>0?Math.round((b.living+b.school+b.investing+b.cashTarget+b.buffer+housing)/b.monthlyIncome*100):0;
  const segments=[
@@ -2372,14 +2383,14 @@ function fpMetaDashboard(){
  return `<div class="fp-meta-dashboard grow">
  <section class="fp-meta-lead">
   <div class="fp-meta-overline">買える家の目安 <span>${b.referenceYear}年の給与で試算</span></div>
-  <div class="fp-meta-budget"><strong>${hasBudget?yen(Math.floor(b.amount),0):'—'}<small>万円</small></strong><button data-act="fp-capacity-basis" aria-label="計算の根拠を見る">ⓘ</button></div>
-  <div class="fp-meta-target"><span>検討中 <b>${hasPrice?yen(price,0)+'万円':'未入力'}</b></span><button data-act="fp-fix-input" data-value="4:0">変更 ›</button></div>
+  <div class="fp-meta-budget"><strong>${hasBudget?fpDashboardMoney(b.amount,{large:true}):'—'}</strong><button data-act="fp-capacity-basis" aria-label="計算の根拠を見る">ⓘ</button></div>
+  <div class="fp-meta-target"><span>検討中 <b>${hasPrice?fpDashboardMoney(price,{large:true}):'未入力'}</b></span><button data-act="fp-fix-input" data-value="4:0">変更 ›</button></div>
   <div class="fp-meta-gauge" role="meter" aria-label="検討価格に対する予算比" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(ratio)}"><i class="${hasPrice&&!within?'over':''}" style="width:${ratio}%"></i></div>
   <div class="fp-meta-status ${tone}"><span>● ${stateName}</span><small>${hasBudget&&hasPrice?'差 '+signed(b.amount-price):'価格・収入を確認'}</small></div>
  </section>
  <section class="fp-meta-month">
   <div class="fp-meta-row"><span>毎月、最後に残るお金</span><button data-act="fp-result-tab" data-value="1">内訳 ›</button></div>
-  <strong class="fp-meta-remain ${fpBalanceTone(remaining)}">${signed(remaining)}<small>${fpSignedYen(remaining)}</small></strong>
+  <strong class="fp-meta-remain ${fpBalanceTone(remaining)}">${signed(remaining)}</strong>
   <div class="fp-meta-pair"><div><span>住居に使える</span><b class="${housingRoom<0?'negative':''}">${housingRoom<0?'−':''}${compact(housingRoom)}</b></div><div><span>ローン＋維持費</span><b class="interest">${compact(housing)}</b></div></div>
   <div class="fp-meta-inline"><i></i> 住宅ローン ${compact(loan.monthly)}/月・金利込み</div>
  </section>
@@ -2411,7 +2422,7 @@ function fpMetaDashboard(){
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open" aria-label="診断履歴" title="診断履歴">◷</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events" aria-label="イベント登録" title="イベント登録">＋</button>'+
       '<button class="btn compact" data-act="sim-restart" aria-label="家計の編集" title="家計の編集">✎</button>'+
-      '<a class="fp-build-stamp" title="更新状態を確認" href="./diagnose.html">r70</a></div></div>';
+      '<a class="fp-build-stamp" title="更新状態を確認" href="./diagnose.html">r71</a></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2428,9 +2439,17 @@ function fpMetaDashboard(){
         '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">最初から見直す</button>'+
         '<button class="btn primary" data-act="fp-fix-input" data-value="'+warnings[0].step+':'+warnings[0].page+'">該当項目を修正 →</button></div></section>';
     }
-    const primaryTabs=[[0,'概要'],[1,'月収支'],[5,'ローン'],[3,'将来'],[2,'資産'],[7,'設定']];
-    const tabs='<div class="fp-result-nav" role="tablist" aria-label="FPの画面">'+
-      primaryTabs.map(([i,label])=>'<button role="tab" title="'+label+'" aria-label="'+label+'" aria-selected="'+(page===i)+'" data-act="fp-result-tab" data-value="'+i+'" class="'+(page===i?'active':'')+'"><span class="fp-nav-mark">'+fpMetaIcon(i)+'</span><span class="fp-nav-text">'+label+'</span></button>').join('')+'</div>';
+    const primaryTabs=[[0,'概要'],[1,'月収支'],[5,'ローン'],[3,'将来'],[2,'資産']];
+    // Keep all FP navigation in one row. Auxiliary actions live in the menu.
+    const tabs='<div class="fp-result-nav" role="navigation" aria-label="FPの画面">'+
+      primaryTabs.map(([i,label])=>'<button title="'+label+'" aria-label="'+label+'" aria-current="'+(page===i?'page':'false')+'" data-act="fp-result-tab" data-value="'+i+'" class="'+(page===i?'active':'')+'"><span class="fp-nav-mark">'+fpMetaIcon(i)+'</span><span class="fp-nav-text">'+label+'</span></button>').join('')+
+      '<button type="button" data-act="fp-more-toggle" class="fp-nav-more '+(page===7||ui.fpMoreOpen?'active':'')+'" aria-haspopup="true" aria-expanded="'+!!ui.fpMoreOpen+'" aria-label="FPの操作メニュー"><span class="fp-nav-mark">'+fpMetaIcon('more')+'</span><span class="fp-nav-text">操作</span></button>'+
+      (ui.fpMoreOpen?'<div class="fp-meta-action-menu" role="group" aria-label="FPの操作">'+
+        '<button data-act="fp-history-open">◷　診断履歴</button>'+
+        '<button data-act="fp-edit-events">＋　イベント</button>'+
+        '<button data-act="sim-restart">✎　家計を編集</button>'+
+        '<button data-act="fp-result-tab" data-value="7">⚙　設定</button>'+
+        '<a href="./diagnose.html">更新確認 · r71</a></div>':'')+'</div>';
     let content='';
     if(page===0){
       content=fpMetaDashboard();
@@ -2452,7 +2471,7 @@ function fpMetaDashboard(){
     }else if(page===6){
       content=fpAdviceScreen(price,current);
     }else content=fpMonthlySettingsScreen(current);
-    return '<section class="screen sim-screen fp-result-screen fp-report-screen '+((page===1||page===3&&ui.fpChartPage===3)?'fp-focus':'')+'">'+intro+
+    return '<section class="screen sim-screen fp-result-screen fp-report-screen '+((page===1||page===3&&ui.fpChartPage===3)?'fp-focus':'')+'">'+
       (snapshot?'<div class="fp-snapshot-label">'+esc(fpHistoryDate(snapshot))+'</div>':'')+tabs+
       ([0,1,2,3,5].includes(page)?fpYearTimebar(current):'')+content+
       (page===0?'':'<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">↶ 条件を見直す</button>'+
@@ -2704,6 +2723,8 @@ function fpMetaDashboard(){
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r71',date:'2026.10.28',title:'金額表示とFP上部の操作を整理',
+        details:['1億円以上の住宅価格を億・万円で読みやすく表示','月々の収支は円表示にして同じ金額の二重表示を削除','上部タブを1列に統合し、編集・イベント・履歴・設定は操作に集約','計算方法と保存データは変更なし']},
       {version:'r64',date:'2026.10.28',title:'余白・文字サイズ統一と更新診断',
         details:['余分な物件一覧見出しを削除し、カードの上下間隔を統一','価格・月残額・アイコン以外の文字を小さく整理','FPの重複ショートカットと不要な補足を削減','公開版と端末読込版を比較できる更新診断ページを追加','入力値・FP計算ロジックは維持']},
       {version:'r59',date:'2026.10.28',title:'公的FP資料と検算に基づく計算モデル改訂',
@@ -2885,16 +2906,16 @@ function fpMetaDashboard(){
     if(action==='fp-advice-page')return step(()=>{ui.fpAdvicePage=Math.max(0,Number(v)||0);});
     if(action==='sim-next')return step(()=>{if(ui.simStep===6){state.plan.hasRun=1;fpRecordHistory();}ui.simStep=Math.min(7,ui.simStep+1);ui.simSubPage=0;ui.simResultPage=0;ui.fpHistoryLive=true;ui.fpIssuePage=0;save();});
     if(action==='sim-back')return step(()=>{ui.simStep=Math.max(0,ui.simStep-1);ui.simSubPage=0;});
-    if(action==='sim-restart')return step(()=>{ui.fpBreakdownOpen=null;ui.simStep=0;ui.simSubPage=0;ui.simResultPage=0;ui.fpHistoryOpen=false;});
+    if(action==='sim-restart')return step(()=>{ui.fpMoreOpen=false;ui.fpBreakdownOpen=null;ui.simStep=0;ui.simSubPage=0;ui.simResultPage=0;ui.fpHistoryOpen=false;});
     if(action==='sim-result-page')return step(()=>changePage('simResultPage',7,Number(v)));
-    if(action==='fp-history-open')return step(()=>{ui.fpHistoryOpen=true;ui.fpHistoryPage=0;});
+    if(action==='fp-history-open')return step(()=>{ui.fpMoreOpen=false;ui.fpHistoryOpen=true;ui.fpHistoryPage=0;});
     if(action==='fp-history-close')return step(()=>{ui.fpHistoryOpen=false;});
     if(action==='fp-history-page')return step(()=>{ui.fpHistoryPage=Math.max(0,Number(v)||0);});
     if(action==='fp-history-select')return step(()=>{
       if(state.planHistory.some(x=>x.id===v)){ui.fpHistoryId=v;ui.fpHistoryOpen=false;ui.fpHistoryLive=false;ui.simResultPage=0;}
     });
     if(action==='fp-history-latest')return step(()=>{ui.fpHistoryId=state.planHistory[0]?.id||null;ui.fpHistoryOpen=false;ui.fpHistoryLive=true;ui.simResultPage=0;});
-    if(action==='fp-edit-events')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=6;ui.simSubPage=2;});
+    if(action==='fp-edit-events')return step(()=>{ui.fpMoreOpen=false;ui.fpHistoryOpen=false;ui.simStep=6;ui.simSubPage=2;});
     if(action==='fp-pie-open')return step(()=>{ui.simResultPage=3;ui.fpChartPage=3;});
     if(action==='fp-capacity-basis')return step(()=>{ui.simResultPage=5;});
     if(action==='fp-clear-legacy-living'){

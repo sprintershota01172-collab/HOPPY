@@ -1,10 +1,10 @@
 {
-  "version": "r70",
+  "version": "r71",
   "ui": "compact-visual",
   "revised": "2026-10-28",
   "data_schema": "hoppy-phase1-v1",
-  "entrypoint": "visual-r70.html",
+  "entrypoint": "visual-r71.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Selectable per-year housing budget and mortgage cashflow; Meta-like quick navigation"
+  "release_note": "Single FP navigation row, adaptive yen/man/oku display"
 }

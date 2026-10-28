@@ -1,0 +1,27 @@
+name: Simulated iPhone viewport checks
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  viewport:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser driver
+        run: npm install --no-save playwright
+      - name: Simulate iPhone viewports
+        run: node scripts/check-viewport.cjs
+      - name: Retain screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fp-viewport-screenshots
+          path: artifacts/*.png
+          if-no-files-found: ignore

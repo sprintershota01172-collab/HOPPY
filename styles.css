@@ -5259,3 +5259,126 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   grid-auto-flow:row!important;
   align-content:start!important;
 }
+
+
+/* r58 — one purchase decision, one monthly balance, details only on demand. */
+#app .fp-r-summary-decision{
+  overflow-y:auto!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;gap:7px!important;padding:1px 1px 6px!important;
+}
+#app .fp-r-summary-decision::-webkit-scrollbar{display:none}
+#app .fp-decision-card{
+  box-sizing:border-box;min-width:0;flex:none;display:flex;flex-direction:column;gap:8px;
+  border:1px solid #dce6e4;background:#fff;border-radius:17px;
+  padding:13px 13px 11px;box-shadow:0 3px 16px #2a453b0b;
+  color:#223b36;
+}
+#app .fp-decision-heading{display:flex;justify-content:space-between;align-items:center;gap:8px}
+#app .fp-decision-heading strong{font-weight:850;font-size:12px;color:#265f50}
+#app .fp-decision-heading>span{font-size:9px;color:#748980;font-weight:700;white-space:nowrap}
+#app .fp-decision-hero{display:flex;flex-direction:column;gap:3px;min-width:0}
+#app .fp-decision-hero>span{font-size:11px;color:#435c53;font-weight:780;line-height:1.35}
+#app .fp-decision-hero>strong{
+  font-size:clamp(28px,8vw,38px);line-height:1.13;letter-spacing:-.065em;
+  color:#20715c;font-weight:880;font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+#app .fp-decision-hero>small{font-size:9px;line-height:1.4;color:#7a8983}
+#app .fp-decision-compare{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px;
+}
+#app .fp-decision-compare>div{
+  display:flex;flex-direction:column;gap:3px;min-width:0;
+  padding:9px 10px;border:1px solid #e4e9e7;border-radius:10px;background:#fafcfb;
+}
+#app .fp-decision-compare span{font-size:10px;line-height:1.25;color:#6b7c75;font-weight:700}
+#app .fp-decision-compare strong{
+  font-size:clamp(16px,4.5vw,22px);line-height:1.12;letter-spacing:-.06em;
+  font-weight:850;color:#354d45;white-space:nowrap;font-variant-numeric:tabular-nums;
+}
+#app .fp-decision-price-diff.positive strong{color:#197357}
+#app .fp-decision-price-diff.negative strong{color:#ba3544}
+#app .fp-decision-price-diff>small{font-size:9px;color:#71847c;font-weight:700}
+#app .fp-decision-verdict{
+  display:flex;align-items:flex-start;gap:7px;padding:7px 9px;border-radius:9px;
+  background:#f2f8f5;color:#226d52;
+}
+#app .fp-decision-verdict.over{background:#fff1f2;color:#b5293e}
+#app .fp-decision-verdict.caution{background:#fff6e9;color:#9f621c}
+#app .fp-decision-verdict>span{
+  display:grid;place-items:center;flex:none;width:15px;height:15px;border-radius:50%;
+  border:1px solid currentColor;font-size:10px;font-weight:900;line-height:1;
+}
+#app .fp-decision-verdict strong{font-size:10px;line-height:1.45;font-weight:800}
+#app .fp-decision-month-title{font-size:11px;font-weight:850;color:#364d44;line-height:1.2}
+#app .fp-decision-month{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;min-width:0;
+  border:1px solid #e5ece9;border-radius:10px;overflow:hidden;background:#fff;
+}
+#app .fp-decision-month>div{
+  min-width:0;display:flex;flex-direction:column;justify-content:center;gap:4px;
+  padding:8px 5px;text-align:center;border-right:1px solid #e5ece9;
+}
+#app .fp-decision-month>div:last-child{border-right:0}
+#app .fp-decision-month span{font-size:9px;color:#687f75;font-weight:750;line-height:1.25;overflow-wrap:anywhere}
+#app .fp-decision-month strong{
+  font-size:clamp(10px,3.05vw,15px);font-weight:880;color:#31594b;
+  line-height:1.15;letter-spacing:-.055em;white-space:nowrap;font-variant-numeric:tabular-nums;
+}
+#app .fp-decision-month strong.fp-interest-included{color:#bd6b16!important}
+#app .fp-decision-month .fp-decision-remain{background:#f5faf7}
+#app .fp-decision-month .fp-decision-remain.negative{background:#fff2f3}
+#app .fp-decision-month .fp-decision-remain.negative strong{color:#c02b40!important}
+#app .fp-decision-month .fp-decision-remain.positive strong{color:#187c59!important}
+#app .fp-decision-payment-detail{
+  font-size:9px;line-height:1.4;color:#687a71;margin:0;overflow-wrap:anywhere;
+}
+#app .fp-decision-payment-detail b.fp-interest-included{color:#bf701f!important;font-weight:850}
+#app .fp-decision-warning{
+  margin:0;padding:5px 7px;background:#fff6eb;border-radius:7px;color:#9f5b21;
+  font-size:9px;font-weight:750;line-height:1.4;
+}
+#app .fp-decision-details{
+  min-width:0;border-top:1px solid #edf0ed;padding-top:5px;
+}
+#app .fp-decision-details>summary{
+  display:list-item;cursor:pointer;list-style:revert;color:#54746b;
+  font-weight:780;font-size:10px;padding:3px 1px;touch-action:manipulation;
+}
+#app .fp-decision-detail-body{
+  display:flex;flex-direction:column;gap:7px;padding:8px 1px 3px;
+}
+#app .fp-decision-detail-body p{
+  margin:0;color:#526a61;font-size:10px;line-height:1.5;overflow-wrap:anywhere;
+}
+#app .fp-decision-detail-body .fp-interest-included{color:#b96718!important}
+#app .fp-decision-detail-body button,
+#app .fp-decision-edit{
+  width:100%;min-height:29px;border:0;border-radius:8px;padding:6px 9px;
+  color:#356d5b;background:#edf6f1;font-size:10px;font-weight:800;text-align:center;
+  touch-action:manipulation;
+}
+#app .fp-decision-edit{background:#f3f5f3;color:#4d7062}
+#app .fp-decision-secondary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+#app .fp-decision-secondary>.fp-r-metric{min-width:0}
+#app .fp-decision-secondary .fp-r-metric>span{
+  white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25;
+}
+#app .fp-decision-secondary .fp-r-metric>strong{
+  font-size:clamp(10px,3vw,13px);white-space:normal;overflow-wrap:anywhere;
+}
+#app .fp-decision-secondary .fp-r-metric>strong.fp-amount-negative{color:#be263b!important}
+#app .fp-decision-secondary .fp-r-metric>strong.fp-amount-positive{color:#16805b!important}
+@media(max-width:375px){
+ #app .fp-decision-card{padding:10px 9px 9px;gap:6px}
+ #app .fp-decision-hero>strong{font-size:30px}
+ #app .fp-decision-compare>div{padding:7px 6px}
+ #app .fp-decision-month>div{padding:7px 3px}
+ #app .fp-decision-month span{font-size:8px}
+ #app .fp-decision-month strong{font-size:clamp(10px,2.9vw,12px)}
+}
+@media(max-height:735px){
+ #app .fp-decision-card{padding:9px 10px;gap:6px}
+ #app .fp-decision-hero>strong{font-size:clamp(26px,7vw,32px)}
+ #app .fp-decision-month>div{padding-top:6px;padding-bottom:6px}
+ #app .fp-decision-edit{min-height:26px;padding:5px}
+}

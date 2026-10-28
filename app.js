@@ -389,12 +389,14 @@
   }
   function fpEffectiveNisaMonthly(p=state.plan){
     return Number(p.goalNisaEnabled)===1?
-      fpTargetMonthly(p.goalNisaAmount,p.nisaBalance,safeNum(p.goalNisaYears)*12,p.returnAnnual):
+      fpTargetMonthly(p.goalNisaAmount,p.nisaBalance,
+        Math.max(0,safeNum(p.goalNisaYears)*12-fpAsOfMonth()),p.returnAnnual):
       safeNum(p.nisaMonthly);
   }
   function fpEffectiveOtherInvestMonthly(p=state.plan){
     return Number(p.goalOtherEnabled)===1?
-      fpTargetMonthly(p.goalOtherAmount,p.investBalance,safeNum(p.goalOtherYears)*12,p.returnAnnual):
+      fpTargetMonthly(p.goalOtherAmount,p.investBalance,
+        Math.max(0,safeNum(p.goalOtherYears)*12-fpAsOfMonth()),p.returnAnnual):
       safeNum(p.otherInvestMonthly);
   }
   function fpNisaForYear(year,p=state.plan){
@@ -416,7 +418,8 @@
   }
   function fpCashGoalMonthly(p=state.plan){
     if(Number(p.goalCashEnabled)!==1)return safeNum(p.otherSavingsMonthly);
-    return fpTargetMonthly(p.goalCashAmount,fpHouseholdCashSavings(p)+safeNum(p.support),Math.max(1,safeNum(p.goalCashYears))*12,0);
+    return fpTargetMonthly(p.goalCashAmount,fpHouseholdCashSavings(p)+safeNum(p.support),
+      Math.max(0,Math.max(1,safeNum(p.goalCashYears))*12-fpAsOfMonth()),0);
   }
   // Cash saving is an earmarked balance, not a perpetual expense.
   function fpCashGoalForYear(year,p=state.plan){
@@ -426,7 +429,8 @@
   function fpEducationGoal(p,index){
     const birth=safeNum(p.firstChildYear)+(index-1)*Math.max(1,safeNum(p.birthInterval,3));
     const age=Math.min(30,Math.max(0,Math.round(safeNum(p['goalEduAge'+index]))));
-    const year=birth+age,begin=Math.max(simNowYear(),birth),months=Math.max(0,(year-begin)*12);
+    const year=birth+age,begin=Math.max(simNowYear(),birth),
+      months=Math.max(0,(year-begin)*12-(begin===simNowYear()?fpAsOfMonth():0));
     const target=safeNum(p['goalEduAmount'+index]);
     return {birth,age,year,begin,months,target,
       monthly:fpTargetMonthly(target,0,months,0),
@@ -454,7 +458,7 @@
         const g=fpEducationGoal(p,i+1),age=year-g.birth;
         if(!g.enabled)continue;
         if(age>=0&&age<g.age&&year>=g.begin&&Number.isFinite(g.monthly)){
-          const add=g.monthly*12;balances[i]+=add;deposits+=add;
+          const add=g.monthly*fpForecastMonths(year);balances[i]+=add;deposits+=add;
         }
         if(age>=g.age&&age<22&&age>=6){
           const applied=Math.min(Math.max(0,balances[i]),educationAnnual(age,p,year));

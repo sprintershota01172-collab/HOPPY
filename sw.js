@@ -1,8 +1,8 @@
-// HOPPY r63: small, reliable cache. Always prefer server files when online.
-const CACHE = 'hopposan-static-r63';
-const SCRIPT = './app.js?v=fp-20261028-r63';
-const STYLE = './styles.css?v=fp-20261028-r63';
-const PRECACHE = ['./index.html','./visual-r63.html','./fp-r60.html',SCRIPT,STYLE,'./manifest.webmanifest','./icon.svg'];
+// HOPPY r64: small, reliable cache. Always prefer server files when online.
+const CACHE = 'hopposan-static-r64';
+const SCRIPT = './app.js?v=fp-20261028-r64';
+const STYLE = './styles.css?v=fp-20261028-r64';
+const PRECACHE = ['./index.html','./visual-r64.html','./fp-r60.html',SCRIPT,STYLE,'./manifest.webmanifest','./icon.svg'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -34,7 +34,7 @@ self.addEventListener('fetch', event => {
   }
   const navigation = request.mode === 'navigate';
   const appAsset = /\/(?:app\.js|styles\.css|manifest\.webmanifest)$/.test(url.pathname);
-  const refreshPage = url.pathname.endsWith('/refresh.html');
+  const refreshPage = url.pathname.endsWith('/refresh.html') || url.pathname.endsWith('/diagnose.html');
 
   if(navigation || appAsset){
     event.respondWith((async()=>{
@@ -44,7 +44,7 @@ self.addEventListener('fetch', event => {
         if(response.ok && !refreshPage){
           const copy=response.clone();
           const key=navigation?
-            (url.pathname.endsWith('/visual-r63.html')?'./visual-r63.html':url.pathname.endsWith('/fp-r60.html')?'./fp-r60.html':'./index.html'):
+            (url.pathname.endsWith('/visual-r64.html')?'./visual-r64.html':url.pathname.endsWith('/fp-r60.html')?'./fp-r60.html':'./index.html'):
             request;
           event.waitUntil(caches.open(CACHE).then(c=>c.put(key,copy)).catch(()=>{}));
         }
@@ -52,7 +52,7 @@ self.addEventListener('fetch', event => {
       }catch(_){
         if(refreshPage)return Response.error();
         if(navigation){
-          return await caches.match(request) || await caches.match('./visual-r63.html') || await caches.match('./fp-r60.html') ||
+          return await caches.match(request) || await caches.match('./visual-r64.html') || await caches.match('./fp-r60.html') ||
             await caches.match('./index.html') || Response.error();
         }
         if(url.pathname.endsWith('/app.js')){

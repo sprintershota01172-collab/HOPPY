@@ -130,7 +130,7 @@
     return ps;
   }
   function selectedProperties(){return state.selected.map(propById).filter(Boolean).slice(0,3);}
-  function step(action){if(Date.now()<ui.lock)return;ui.lock=Date.now()+(ui.tab==='sim'?65:130);action();render();}
+  function step(action){if(Date.now()<ui.lock)return;ui.lock=Date.now()+(ui.tab==='sim'?0:130);action();render();}
   function closeOverlay(){step(()=>{ui.overlay='';ui.draft=null;});}
   function openOverlay(kind, setup){step(()=>{ui.overlay=kind;if(setup)setup();});}
   function chooseTab(tab){step(()=>{ui.tab=tab;ui.overlay='';ui.fpBreakdownOpen=null;ui.draft=null;if(tab==='sim'&&state.plan.hasRun){if(!ui.fpMonthVisited){ui.fpMonthYear=new Date().getFullYear();ui.fpCashMonth=new Date().getMonth()+1;ui.fpMonthVisited=true;}ui.simStep=7;ui.fpHistoryLive=true;ui.fpHistoryOpen=false;ui.fpHistoryId=state.planHistory[0]?.id||null;}});}

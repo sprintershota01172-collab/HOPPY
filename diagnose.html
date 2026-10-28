@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>ほっぽさん｜更新診断</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Meiryo UI",sans-serif;color:#274235;background:#f5f6f3}
+*{box-sizing:border-box}body{margin:0;padding:calc(env(safe-area-inset-top) + 18px) 14px calc(env(safe-area-inset-bottom) + 22px);min-height:100dvh}
+main{margin:auto;width:min(100%,460px);display:grid;gap:11px}
+header{padding:4px 2px}header small{color:#5a8872;font-size:10px;letter-spacing:.15em;font-weight:800}
+h1{font-size:22px;letter-spacing:-.04em;margin:7px 0 5px}p{font-size:12px;line-height:1.6;color:#718278;margin:0}
+article{background:#fff;border:1px solid #dfe7e1;border-radius:14px;padding:15px 14px}
+article h2{font-size:12px;color:#617b6c;margin:0 0 10px}
+.status{font-size:23px;font-weight:860;letter-spacing:-.04em;color:#24775b;margin:4px 0}
+.status.fail{color:#b64643}
+.line{display:flex;gap:12px;align-items:center;justify-content:space-between;min-height:31px;border-bottom:1px solid #edf1ed;font-size:12px}
+.line:last-child{border:0}.line span{color:#667a6e}.line b{font-size:12px;font-variant-numeric:tabular-nums;text-align:right;word-break:break-all}
+.btn{border:0;width:100%;min-height:44px;border-radius:12px;font-size:13px;font-weight:820;background:#26775b;color:#fff}
+.btn.secondary{background:#fff;border:1px solid #d5e1d8;color:#356a51}
+.btn:disabled{opacity:.45}
+.note{font-size:11px;color:#61766b;line-height:1.6}
+</style>
+</head>
+<body>
+<main>
+ <header><small>HOPPY · VERSION CHECK</small><h1>更新状態を確認</h1>
+ <p>公開中のコードと、この端末で最後に起動した版を照合します。</p></header>
+ <article><h2>診断結果</h2><div class="status" id="overall">確認しています</div><p id="detail">通信を確認しています。</p></article>
+ <article><h2>バージョン</h2>
+ <div class="line"><span>公開中の版</span><b id="remote">—</b></div>
+ <div class="line"><span>端末で起動した版</span><b id="device">—</b></div>
+ <div class="line"><span>配信されるJavaScript</span><b id="js">—</b></div>
+ <div class="line"><span>オフライン制御</span><b id="worker">—</b></div>
+ </article>
+ <button id="repair" class="btn" type="button" disabled>最新版に更新して開く</button>
+ <button id="check" class="btn secondary" type="button">再確認する</button>
+ <a class="btn secondary" style="display:grid;place-items:center;text-decoration:none" href="./index.html">アプリへ戻る</a>
+ <p class="note">更新処理はアプリの一時キャッシュとService Workerだけを整理します。物件・家計・写真の保存データ（localStorage／IndexedDB）は消しません。ホーム画面に追加したアプリから開くと、そのアプリの保存領域を確認できます。</p>
+</main>
+<script>
+(function(){
+ const ids={};for(const key of ['overall','detail','remote','device','js','worker','repair','check'])ids[key]=document.getElementById(key);
+ let release=null;
+ const set=(key,value)=>{ids[key].textContent=String(value)};
+ const loadText=async path=>{
+   const response=await fetch(path+(path.includes('?')?'&':'?')+'verify='+Date.now(),{cache:'no-store'});
+   if(!response.ok)throw Error('HTTP '+response.status+' '+path);
+   return response.text();
+ };
+ const num=x=>/^r[0-9]+$/.test(String(x))?Number(String(x).slice(1)):NaN;
+ async function check(){
+   ids.repair.disabled=true;set('overall','確認しています');ids.overall.className='status';
+   set('detail','公開先と端末の情報を照合中です。');
+   const local=localStorage.getItem('hoppy-last-build')||'未記録';
+   set('device',local);
+   const controller=navigator.serviceWorker&&navigator.serviceWorker.controller;
+   set('worker',controller?'有効':'未制御');
+   try{
+     const remote=JSON.parse(await loadText('./release.json'));
+     if(!/^r[0-9]+$/.test(String(remote.version)))throw Error('公開版の番号が不正です');
+     release=remote;
+     set('remote',remote.version);
+     const script=await loadText('./app.js');
+     const marker=script.match(/const BUILD = ['"](r[0-9]+)['"]/);
+     set('js',marker?marker[1]:'判別不可');
+     if(!marker||marker[1]!==remote.version)throw Error('公開情報とJavaScriptが一致しません');
+     const page=await loadText('./'+remote.entrypoint);
+     if(!page.includes('data-build="'+remote.version+'"'))throw Error('起動画面の版が一致しません');
+     if(num(local)<num(remote.version)||local==='未記録'){
+       set('overall','更新が必要');
+       set('detail','公開版 '+remote.version+' が利用できます。下のボタンで最新版を開いてください。');
+     }else if(local===remote.version){
+       set('overall','最新版です');
+       set('detail','公開情報と端末の版が一致しています。表示が古い場合も再読込できます。');
+     }else{
+       set('overall','配信の確認が必要');
+       set('detail','端末の版が公開情報より新しいため、公開先の設定を確認してください。');
+     }
+     ids.repair.disabled=false;
+   }catch(err){
+     set('overall','公開版を確認できません');ids.overall.className='status fail';
+     set('detail',String(err.message||err)+'。ネット接続またはGitHub Pagesの公開状況をご確認ください。');
+   }
+ }
+ ids.check.addEventListener('click',check);
+ ids.repair.addEventListener('click',async()=>{
+   if(!release||!/^r[0-9]+$/.test(String(release.version)))return;
+   ids.repair.disabled=true;set('overall','更新中');set('detail','アプリデータは維持したまま一時キャッシュを更新しています。');
+   try{
+     if('serviceWorker' in navigator){
+       const scope=new URL('./',location.href).href;
+       const registrations=await navigator.serviceWorker.getRegistrations();
+       for(const reg of registrations)if(reg.scope===scope)await reg.unregister();
+     }
+     if('caches' in window){
+       const keys=await caches.keys();
+       for(const key of keys)if(key.startsWith('hopposan-'))await caches.delete(key);
+     }
+     location.replace('./'+release.entrypoint+'?fresh='+Date.now());
+   }catch(err){
+     set('overall','一部の更新に失敗');set('detail',String(err.message||err));
+     ids.repair.disabled=false;
+   }
+ });
+ check();
+})();
+</script>
+</body></html>

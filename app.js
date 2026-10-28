@@ -729,7 +729,7 @@
     const labels=i===2?['食費・住居','水道光熱','日常費','保険等']:i===3?['教育費',...Array.from({length:Math.min(3,Math.round(safeNum(p.children)))},(_,k)=>'第'+(k+1)+'子')]:i===4?['購入','維持費']:i===5?['夫婦の貯金','貯金目標','NISA','その他投資']:null;
     return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP</span>'+
       (p.hasRun?'<button class="fp-recall-btn" data-act="fp-view-budget">前回の診断を見る ↗</button>':'<span class="sim-progress-text">'+(i+1)+' / 7</span>')+
-      '</div><div class="sim-progress">'+Array.from({length:7},(_,x)=>'<span class="'+(x<=i?'filled':'')+'"></span>').join('')+'</div>'+
+      '</div><div class="sim-progress fp-icon-progress" role="group" aria-label="入力カテゴリ">'+Array.from({length:7},(_,x)=>'<button type="button" data-act="fp-step-jump" data-value="'+x+'" class="'+(x===i?'current':x<i?'filled':'')+'" title="'+simQuestions[x][0]+'" aria-label="'+simQuestions[x][0]+'">'+['♙','¥','▦','♡','⌂','◉','✦'][x]+'</button>').join('')+'</div>'+
       '<div class="sim-question"><h2>'+simQuestions[i][0]+'</h2></div>'+
       fpPageNav(pages.length,n,'fp-form-page',labels)+
       '<div class="panel sim-form grow fp-wizard-body">'+pages[n].html+'</div>'+
@@ -2801,6 +2801,7 @@ function fpMetaDashboard(){
     if(action==='fp-cash-savings-edit')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=5;ui.simSubPage=0;});
     if(action==='fp-goal-investment-edit')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=5;ui.simSubPage=2;});
     if(action==='fp-goal-education-edit')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=3;ui.simSubPage=1;});
+    if(action==='fp-step-jump')return step(()=>{ui.simStep=Math.max(0,Math.min(6,Number(v)||0));ui.simSubPage=0;});
     if(action==='fp-form-page')return step(()=>{ui.simSubPage=Math.max(0,Math.min(fpWizardPages(ui.simStep).length-1,Number(v)||0));});
     if(action==='fp-ledger-page')return step(()=>{ui.fpLedgerPage=Math.max(0,Number(v)||0);});
     if(action==='fp-issue-page')return step(()=>{ui.fpIssuePage=Math.max(0,Number(v)||0);});

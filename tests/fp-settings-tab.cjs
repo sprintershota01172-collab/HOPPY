@@ -17,6 +17,8 @@ vm.runInNewContext(script,{document:{getElementById(){return app}},window:win,
 const a=win.__settingsTest,click=(act,value='')=>handlers.click({target:{closest(){return{dataset:{act,value}}}},preventDefault(){}});
 const change=(dataset,value)=>handlers.change({target:{dataset,value}});
 click('tab','sim');for(let i=0;i<7;i++)click('sim-next');
+assert.match(app.innerHTML,/fp-decision-card/,'FP begins with simplified home purchase summary');
+click('fp-result-tab','1');
 assert.match(app.innerHTML,/fp-month-report/);
 assert.match(app.innerHTML,/fp-month-savings-trend/);
 assert.match(app.innerHTML,/fp-month-pie/);

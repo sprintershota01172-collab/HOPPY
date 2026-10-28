@@ -231,7 +231,7 @@
     const budget=state.plan.hasRun?fpBudget():null;
     const price=budget&&budget.amount>0?yen(Math.floor(budget.amount),0)+'<small>万円</small>':'設定する';
     return '<section class="screen home-screen home-visual-screen">'+
-      '<div class="home-visual-header"><span class="home-visual-title">住まい <i>HOME</i></span><button data-act="diagnostics" class="home-visual-version" title="更新状態を確認" aria-label="更新状態を確認する r64">r64</button></div>'+
+      '<div class="home-visual-header"><span class="home-visual-title">住まい <i>HOME</i></span><button data-act="diagnostics" class="home-visual-version" title="更新状態を確認" aria-label="更新状態を確認する r65">r65</button></div>'+
       '<div class="home-visual-hero">'+
         '<button data-act="home-compare" class="home-visual-stat"><span>検討中</span><strong>'+count+'<small>件</small></strong><em>物件を比較 ›</em></button>'+
         '<button data-act="tab" data-value="sim" class="home-visual-stat fp"><span>購入の目安</span><strong>'+price+'</strong><em>FPで確認 ›</em></button></div>'+
@@ -1195,7 +1195,7 @@
   function fpLoanFocusCard(){
     const b=fpBudget(),p=state.plan,price=Math.max(0,safeNum(p.propertyPrice)),
       down=fpDownPayment(price,p),principal=Math.max(0,price-down),
-      pay=fpMortgageDisplayAmounts(principal,b.rate,b.loanYears),left=b.loanPayment-pay.monthly;
+      pay=fpMortgageDisplayAmounts(principal,b.rate,b.loanYears),left=b.rawLoanPayment-pay.monthly;
     const row=(name,value)=>'<div class="fp-loan-row"><span>'+name+'</span><b>'+value+'</b></div>';
     return '<div class="fp-loan-focus"><div class="fp-loan-year">購入後の家計：'+b.referenceYear+'年</div>'+
       '<section class="fp-loan-card"><strong>家計から逆算</strong>'+
@@ -2113,12 +2113,12 @@
   function fpMonthlyReport(model){
     const point=fpYearPoint(model),months=fpMonthlyLedger(point).months,
       m=months[Math.max(0,Math.min(11,(ui.fpCashMonth||1)-1))],
-      tile=(label,v,tone='')=>'<div class="fp-focus-tile '+tone+'"><span>'+label+'</span><strong>'+v+'</strong></div>';
+      tile=(label,v,tone='')=>'<div class="fp-focus-tile '+tone+'"><span>'+label+'</span><strong class="'+(label==='全て引いた残額'?'fp-month-final '+tone:'')+'">'+v+'</strong></div>';
     return '<div class="fp-month-report fp-focus-report"><div class="fp-month-controls">'+fpYearSelect(model)+
       '<label class="fp-month-select">月 <select data-fp-cash-month>'+months.map(x=>'<option value="'+x.month+'" '+(x.month===m.month?'selected':'')+'>'+x.month+'月</option>').join('')+'</select></label>'+
       '<small>'+(m.historical?'実績未登録':'月次予測')+'</small></div>'+
       '<div class="fp-month-four">'+tile('月の手取り',fpYen(m.income))+tile('支出合計',fpYen(m.spending))+
-      tile('最終残額',fpSignedYen(m.available),fpBalanceTone(m.available))+
+      tile('全て引いた残額',fpSignedYen(m.available),fpBalanceTone(m.available))+
       tile('月末現金残高',fpYen(m.endingCash),fpBalanceTone(m.endingCash))+'</div>'+
       '<div class="fp-month-mini"><span>生活・子ども <b>'+fpYen(m.household+m.annualBudget)+'</b></span>'+
       '<span>住宅 <b>'+fpYen(m.housing)+'</b></span><span>NISA等 <b>'+fpYen(m.investing)+'</b></span>'+
@@ -2738,7 +2738,7 @@ function fpMetaDashboard(){
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r64</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r65</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

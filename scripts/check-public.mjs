@@ -29,7 +29,8 @@ for (let attempt = 1; attempt <= 36; attempt++) {
     const cssResponse = await fetch(base + "/styles.css?verified=" + now, { cache: "no-store", signal: AbortSignal.timeout(16000) });
     if (!cssResponse.ok) throw Error("styles.css HTTP " + cssResponse.status);
     const css = await cssResponse.text();
-    if (!css.includes("/* " + expectedVersion + ": natural height")) throw Error("New stylesheet missing");
+    // CSS feature checks must not rely on a comment whose release number gets outdated.
+    if (!css.includes("#app .fp-report-screen .fp-result-nav") || !css.includes("#app .fp-meta-budget>strong")) throw Error("FP stylesheet missing");
     const indexResponse = await fetch(base + "/index.html?verified=" + now, {cache:"no-store", signal:AbortSignal.timeout(16000)});
     if (!indexResponse.ok) throw Error("index.html HTTP " + indexResponse.status);
     const index = await indexResponse.text();

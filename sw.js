@@ -1,7 +1,7 @@
-// HOPPY r60: small, reliable cache. Always prefer server files when online.
-const CACHE = 'hopposan-static-r60';
-const SCRIPT = './app.js?v=fp-20261028-r60';
-const STYLE = './styles.css?v=fp-20261028-r60';
+// HOPPY r61: small, reliable cache. Always prefer server files when online.
+const CACHE = 'hopposan-static-r61';
+const SCRIPT = './app.js?v=fp-20261028-r61';
+const STYLE = './styles.css?v=fp-20261028-r61';
 const PRECACHE = ['./index.html','./fp-r60.html',SCRIPT,STYLE,'./manifest.webmanifest','./icon.svg'];
 
 self.addEventListener('install', event => {

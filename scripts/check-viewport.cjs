@@ -39,7 +39,8 @@ const server=createServer((req,res)=>{
     for(const s of ['.fp-month-four','.fp-month-donut','.fp-breakdown-panel']){const r=document.querySelector(s)?.getBoundingClientRect();bounds[s]=r?{left:r.left,right:r.right,width:r.width,height:r.height}:null;}
     return {bounds,scrollWidth:document.documentElement.scrollWidth,year:document.querySelector('[data-fp-year]')?.value,month:document.querySelector('[data-fp-cash-month]')?.value};
    });
-   assert.equal(info.year,String(new Date().getFullYear()));assert.equal(info.month,String(new Date().getMonth()+1));
+   const browserClock=await page.evaluate(()=>({year:String(new Date().getFullYear()),month:String(new Date().getMonth()+1)}));
+   assert.equal(info.year,browserClock.year);assert.equal(info.month,browserClock.month);
    assert.ok(info.scrollWidth<=width+2,'Horizontal page overflow');
    for(const [key,r] of Object.entries(info.bounds)){assert.ok(r,key+' missing');assert.ok(r.left>=-2&&r.right<=width+2,key+' outside viewport');}
    const oldDiameter=info.bounds['.fp-month-donut'].width;

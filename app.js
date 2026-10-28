@@ -1514,7 +1514,7 @@
     }
     // Bootstrap only: after the initial DOM mount, render() measures the real card
     // and immediately replaces this provisional list without moving the chart.
-    return window.matchMedia('(max-height:700px)').matches?8:12;
+    return window.matchMedia('(max-height:860px)').matches?8:12;
   }
   function fpPieBreakdownPanel(point,month,items,selectedKey){
     const item=items.find(x=>x.id===selectedKey)||items[0],annual=!month;

@@ -25,8 +25,20 @@ for (let attempt = 1; attempt <= 36; attempt++) {
     if (!jsResponse.ok) throw Error("app.js HTTP " + jsResponse.status);
     const js = await jsResponse.text();
     if (!js.includes("const BUILD = '" + expectedVersion + "'")) throw Error("JavaScript build marker mismatch");
-    if (!js.includes("home-visual-header")) throw Error("new visual design missing");
-    console.log("LIVE VERIFIED:", expectedVersion, expectedSha, base);
+    if (!js.includes("home-visual-header") || !js.includes("fp-loan-focus")) throw Error("FP UI missing");
+    const cssResponse = await fetch(base + "/styles.css?verified=" + now, { cache: "no-store", signal: AbortSignal.timeout(16000) });
+    if (!cssResponse.ok) throw Error("styles.css HTTP " + cssResponse.status);
+    const css = await cssResponse.text();
+    if (!css.includes("/* " + expectedVersion + ": natural height")) throw Error("New stylesheet missing");
+    const indexResponse = await fetch(base + "/index.html?verified=" + now, {cache:"no-store", signal:AbortSignal.timeout(16000)});
+    if (!indexResponse.ok) throw Error("index.html HTTP " + indexResponse.status);
+    const index = await indexResponse.text();
+    if (!index.includes("app.js?v=fp-20261028-" + expectedVersion) || !index.includes("styles.css?v=fp-20261028-" + expectedVersion)) throw Error("HTML does not reference new JS+CSS");
+    const swResponse = await fetch(base + "/sw.js?verified=" + now, {cache:"no-store", signal:AbortSignal.timeout(16000)});
+    if (!swResponse.ok || !(await swResponse.text()).includes("hopposan-static-" + expectedVersion)) throw Error("Service Worker version mismatch");
+    const manifestResponse = await fetch(base + "/manifest.webmanifest?verified=" + now, {cache:"no-store", signal:AbortSignal.timeout(16000)});
+    if (!manifestResponse.ok || (await manifestResponse.json()).start_url !== "./visual-" + expectedVersion + ".html") throw Error("PWA start URL mismatch");
+    console.log("LIVE VERIFIED (HTML, JS, CSS, SW, PWA):", expectedVersion, expectedSha, base);
     process.exit(0);
   } catch (error) {
     last = String(error.message || error);

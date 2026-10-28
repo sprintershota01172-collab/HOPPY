@@ -367,6 +367,11 @@
   }
   function questionForm(){return modalFrame('営業担当に聞くこと','<div class="panel detail grow form-view"><div class="field"><label>質問（120文字まで）</label><textarea data-question-input maxlength="120" placeholder="例: 長期保証の適用条件は？"></textarea></div><p class="subtle">内見時に確認する質問をリストで管理できます。</p></div><button class="btn primary wide" data-act="question-save">質問を保存</button>');}
   const simNowYear=()=>new Date().getFullYear();
+  // Balances entered today are already inclusive of elapsed months.
+  // Planning starts from next month; historical months are not fabricated.
+  const fpAsOfMonth=()=>new Date().getMonth()+1;
+  const fpForecastMonths=year=>year===simNowYear()?Math.max(0,12-fpAsOfMonth()):12;
+  const fpForecastFraction=year=>fpForecastMonths(year)/12;
   const yen=(v,d=0)=>Number.isFinite(v)?Number(v).toLocaleString('ja-JP',{maximumFractionDigits:d,minimumFractionDigits:d}):'—';
   const safeNum=(v,fallback=0)=>Number.isFinite(Number(v))?Math.max(0,Number(v)):fallback;
   // Monthly contributions are at the end of each month; amounts are in 10,000 yen.
@@ -734,8 +739,12 @@
   }
   function educationAnnual(age,p,year=simNowYear()){
     if(age<6 || age>=22)return 0;
-    const baseline=age<12?34:age<15?55:age<18?
-      (p.highSchool==='private'?135:60):(p.university==='private'?185:125);
+    // MEXT 2026-01 corrected 2023 annual learning-cost survey:
+    // public elementary ¥366,599, middle ¥542,450,
+    // public HS ¥596,954, private HS ¥1,179,261.
+    // University is still an APP PLANNING ASSUMPTION, not a survey figure.
+    const baseline=age<12?36.6599:age<15?54.245:age<18?
+      (p.highSchool==='private'?117.9261:59.6954):(p.university==='private'?185:125);
     return baseline*fpPriceFactor(year,p.educationInflationAnnual);
   }
   // Display the exact school-age cohort behind the forecast. Education is
@@ -930,13 +939,17 @@
       educationFunds=fpEducationFundYears(p,end);
     const annualGrowth=1+Math.min(.2,Math.max(-.2,Number(p.returnAnnual)||0)/100);
     const monthlyGrowth=Math.pow(annualGrowth,1/12);
-    const compoundYear=(initial,deposit)=>{let value=initial;
-      for(let month=0;month<12;month++)value=Math.max(0,value*monthlyGrowth+deposit);
+    const compoundYear=(initial,deposit,months=12)=>{let value=initial;
+      for(let month=0;month<months;month++)value=Math.max(0,value*monthlyGrowth+deposit);
       return value;
     };
     for(let year=start;year<=end;year++){
-      const children=fpChildCounts(year);
-      const income=fpYearlyIncome(year).total;
+      const children=fpChildCounts(year),
+        activeStart=year===start?fpAsOfMonth()+1:1,
+        activeMonths=Math.max(0,13-activeStart),
+        fraction=activeMonths/12;
+      const income=fpYearlyIncome(year).months
+        .filter(entry=>entry.month>=activeStart).reduce((sum,entry)=>sum+entry.total,0);
       const monthlyParts=fpBaseMonthly(year);
       const loan=buy&&year>=purchaseYear?loanByYear.get(year):null;
       const housingMonths=Array.from({length:12},(_,index)=>{
@@ -945,12 +958,15 @@
           return fpRentMonthly(p);
         return (loanByMonth.get(year+'-'+month)||0)+safeNum(p.housingOngoing);
       });
-      const ownedMonths=buy?(year>purchaseYear?12:year===purchaseYear?13-purchaseMonth:0):0;
-      const rentMonths=12-ownedMonths;
-      const housingLoan=buy?(loan?.payment||0):0;
+      const ownedMonths=Array.from({length:12},(_,i)=>i+1)
+        .filter(m=>m>=activeStart&&buy&&(year>purchaseYear||
+          (year===purchaseYear&&m>=purchaseMonth))).length;
+      const rentMonths=activeMonths-ownedMonths;
+      const housingLoan=buy?amort.months
+        .filter(m=>m.year===year&&m.month>=activeStart).reduce((sum,m)=>sum+m.payment,0):0;
       const housingMaintenance=ownedMonths*safeNum(p.housingOngoing);
       const housingRent=rentMonths*fpRentMonthly(p);
-      const housing=housingMonths.reduce((sum,x)=>sum+x,0)/12;
+      const housing=(housingLoan+housingMaintenance+housingRent)/12;
       const monthly=monthlyParts.reduce((sum,x)=>sum+x.value,0)+housing;
       const annualFixed=safeNum(p.annualTax)+safeNum(p.carTaxAnnual)+safeNum(p.travelAnnual)+
         safeNum(p.annualEvents)+(ownedMonths>0?safeNum(p.homeInsuranceAnnual):0)+fpCustomAnnual(year);
@@ -962,20 +978,29 @@
       }
       const eduFundYear=educationFunds.get(year)||{deposits:0,covered:0,uses:[],closing:0};
       const fundedSchool=Math.min(school,eduFundYear.covered);
-      const upfront=buy&&year===purchaseYear?fpDownPayment(price,p)+safeNum(price)*.07:0;
-      const events=fpEventsAnnual(year,'expense');
-      const expenses=monthly*12+annualFixed+school-fundedSchool+birth+upfront+events;
-      const nisaAdd=12*fpNisaForYear(year,p),otherAdd=12*fpOtherInvestForYear(year,p);
+      const upfront=buy&&year===purchaseYear&&purchaseMonth>=activeStart?
+        fpDownPayment(price,p)+safeNum(price)*.07:0;
+      const events=fpEventsForYear(year).filter(event=>event.type==='expense')
+        .reduce((sum,event)=>sum+(event.month>=1&&event.month<=12?
+          (event.month>=activeStart?safeNum(event.amount):0):
+          safeNum(event.amount)*fraction),0);
+      const monthlyLiving=monthlyParts.reduce((sum,part)=>sum+part.value,0);
+      const expenses=monthlyLiving*activeMonths+housingLoan+housingMaintenance+
+        housingRent+(annualFixed+school-fundedSchool+birth)*fraction+upfront+events;
+      const nisaAdd=activeMonths*fpNisaForYear(year,p),
+        otherAdd=activeMonths*fpOtherInvestForYear(year,p);
       const investing=nisaAdd+otherAdd;
       cash+=income-expenses-investing;
       // Preserve legacy projections unless a target-based plan was explicitly enabled.
+      const growthToDate=Math.pow(annualGrowth,fraction);
       nisa=Number(p.goalNisaEnabled)===1?
-        compoundYear(nisa,fpNisaForYear(year,p)):Math.max(0,(nisa+nisaAdd)*annualGrowth);
+        compoundYear(nisa,fpNisaForYear(year,p),activeMonths):Math.max(0,(nisa+nisaAdd)*growthToDate);
       otherInvest=Number(p.goalOtherEnabled)===1?
-        compoundYear(otherInvest,fpOtherInvestForYear(year,p)):Math.max(0,(otherInvest+otherAdd)*annualGrowth);
+        compoundYear(otherInvest,fpOtherInvestForYear(year,p),activeMonths):Math.max(0,(otherInvest+otherAdd)*growthToDate);
       investedContributions+=investing;
       const invested=nisa+otherInvest;
       points.push({year,cash,invested,nisa,otherInvest,total:cash+invested,
+        forecastFromMonth:activeStart,activeMonths,fraction,
         educationFund:eduFundYear.closing,educationDeposits:eduFundYear.deposits,
         fundedSchool,educationCovers:eduFundYear.uses,
         incomes:income,expenses,investing,netCash:income-expenses-investing,
@@ -1387,6 +1412,12 @@
     let cash=opening;
     const months=inc.map((entry,i)=>{
       const month=i+1;
+      if(month<(point.forecastFromMonth||1)){
+        return {year:point.year,month,historical:true,income:0,household:0,housing:0,
+          annualBudget:0,eventExpenses:0,purchase:0,spending:0,nisaAdd:0,otherAdd:0,
+          investing:0,net:0,cashGoal:0,buffer:0,available:0,
+          openingCash:cash,endingCash:cash,details:{}};
+      }
       const eventExpenses=expenseEvents.reduce((sum,x)=>sum+(
         x.month>=1&&x.month<=12?(x.month===month?safeNum(x.amount):0):safeNum(x.amount)/12
       ),0);
@@ -1485,7 +1516,7 @@
   }
   function fpIncomeAllocation(point){
     const income=Math.max(0,point.incomes),housing=Math.max(0,point.housing*12),
-      educationEvents=Math.max(0,point.school-(point.fundedSchool||0)+point.events+point.upfront),
+      educationEvents=Math.max(0,(point.school-(point.fundedSchool||0))*(point.fraction??1)+point.events+point.upfront),
       living=Math.max(0,point.expenses-housing-educationEvents),
       investing=Math.max(0,point.investing),
       spent=Math.max(0,point.expenses+investing),
@@ -1507,13 +1538,15 @@
   // as the parent annual or monthly pie slice. Edits change the source fields,
   // never an allocated or derived amount, to keep subsequent forecasts consistent.
   function fpPieBreakdownRows(point,month,category){
-    const p=state.plan,year=point.year,annual=!month,scale=annual?12:1,rows=[];
+    const p=state.plan,year=point.year,annual=!month,scale=annual?12:1,
+      fraction=point.fraction??1,rows=[];
+    if(month?.historical)return rows;
     const add=(label,amount,options={})=>{
       const amountValue=Math.max(0,Number(amount)||0);
       if(amountValue>1e-8)rows.push({label,amount:amountValue,...options});
     };
-    const annualPart=amount=>annual?amount:amount/12;
-    const monthlyPart=amount=>amount*scale;
+    const annualPart=amount=>annual?amount*fraction:amount/12;
+    const monthlyPart=amount=>amount*(annual?point.activeMonths??12:1);
     const activeHousing=point.ownedMonths>0;
     if(category==='living'){
       for(const item of point.monthlyParts){
@@ -1533,7 +1566,7 @@
         add(item.name,annualPart(safeNum(item.amount)*(item.cycle==='year'?1:12)),
           {expenseId:item.id,value:safeNum(item.amount),unit:item.cycle==='year'?'万円/年':'万円/月'});
       }
-      if(annual)add('出産関連',point.birth,{editStep:'3:0'});
+      if(annual)add('出産関連',point.birth*fraction,{editStep:'3:0'});
       else{
         for(const child of fpSchoolBreakdown(year,p)){
           add('第'+child.index+'子 '+child.stage+'（'+child.age+'歳）',annualPart(Math.max(0,child.annual-(point.educationCovers?.[child.index-1]||0))),{editStep:'3:0'});
@@ -1558,12 +1591,16 @@
       }
     }else if(category==='education'){
       if(annual)for(const child of fpSchoolBreakdown(year,p)){
-        add('第'+child.index+'子 '+child.stage+'（'+child.age+'歳）',Math.max(0,child.annual-(point.educationCovers?.[child.index-1]||0)),{editStep:'3:0'});
+        add('第'+child.index+'子 '+child.stage+'（'+child.age+'歳）',
+          Math.max(0,child.annual-(point.educationCovers?.[child.index-1]||0))*fraction,{editStep:'3:0'});
       }
       if(annual || month.month===fpPurchaseMonth())add('住宅購入諸費用',point.upfront,{editStep:'4:0'});
       for(const item of fpEventsForYear(year)){
         if(item.type!=='expense')continue;
-        const eventAmount=annual?safeNum(item.amount):
+        const eventAmount=annual?
+          (item.month>=1&&item.month<=12?
+            (item.month>=(point.forecastFromMonth||1)?safeNum(item.amount):0):
+            safeNum(item.amount)*fraction):
           (item.month>=1&&item.month<=12?(item.month===month.month?safeNum(item.amount):0):safeNum(item.amount)/12);
         add(item.name,eventAmount,item.id.startsWith('legacy-')?
           {editStep:'6:1'}:{eventId:item.id,value:safeNum(item.amount),unit:'万円/回'});

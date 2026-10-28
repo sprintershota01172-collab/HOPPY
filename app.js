@@ -1382,7 +1382,7 @@
       ...point.monthlyParts.map(x=>({label:x.label,amount:x.value*(point.activeMonths??12)})),
       ...(buy?fpPieBreakdownRows(point,null,'housing').map(x=>({label:x.label,amount:x.amount})):[
         ['rentMonthly','家賃'],['managementMonthly','管理費'],['commonFeeMonthly','共益費'],['parkingMonthly','駐車場']
-      ].map(([key,label])=>({label,amount:safeNum(p[key])*12}))),
+      ].map(([key,label])=>({label,amount:safeNum(p[key])*(point.activeMonths??12)}))),
       {label:'学校・大学の費用（教育積立充当後）',amount:Math.max(0,point.school-(point.fundedSchool||0))*(point.fraction??1)},
       {label:'出産関連',amount:point.birth*(point.fraction??1)},
       {label:'自動車税など年払い',amount:safeNum(p.carTaxAnnual)*(point.fraction??1)},

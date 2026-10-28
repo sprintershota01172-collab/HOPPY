@@ -29,7 +29,16 @@ assert.ok(sw.includes("hopposan-static-" + version), "Service Worker is stale");
 assert.ok(sw.includes("release.json"), "Release check cannot bypass Service Worker cache");
 assert.ok(refresh.includes("const BUILD = '" + version + "'"), "Recovery page checks the wrong version");
 assert.ok(refresh.includes(entry), "Recovery page opens an old entrypoint");
-assert.equal(manifest.start_url, "./" + entry, "PWA start_url is not current");
+assert.equal(manifest.start_url, "./index.html", "PWA start_url must be stable across releases");
+assert.equal(manifest.id, "./index.html", "PWA identity must not change on subsequent releases");
+const olderEntrypoints = fs.readdirSync(".").filter(x => /^(?:fp|visual)-r\\d+\\.html$/.test(x) && x !== entry);
+assert.ok(olderEntrypoints.includes("visual-r64.html"), "Pinned r64 launcher not present");
+for (const path of olderEntrypoints) {
+  const text = read(path);
+  assert.ok(text.includes('data-hoppy-legacy-launcher="1"'), path + ": legacy entry does not redirect");
+  assert.ok(text.includes("location.replace('./index.html'"), path + ": legacy entry does not target stable index");
+  assert.ok(!text.includes("app.js?v="), path + ": pinned versioned JS would prevent updates");
+}
 new Function(js);
 new Function(sw);
 

@@ -73,5 +73,13 @@ const server=createServer((req,res)=>{
    console.log('PASS simulated iPhone viewport '+width+'x'+height+'; layout, donut, dates and loan UI');
    await ctx.close();
   }
+   const compat=await browser.newPage();
+   try{
+     await compat.goto(origin+'/visual-r64.html');
+     await compat.waitForURL('**/index.html**');
+     assert.equal(await compat.locator('body').getAttribute('data-build'),ver,'Legacy iOS home-screen launcher loads outdated build');
+     assert.ok(await compat.locator('.home-visual-header').count(),'Legacy iOS PWA did not boot home');
+     console.log('PASS pinned r64 launcher forwards to stable index with '+ver);
+   }finally{await compat.close();}
  }finally{await browser.close();server.close();}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});

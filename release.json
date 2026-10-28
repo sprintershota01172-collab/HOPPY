@@ -1,9 +1,10 @@
 {
-  "version": "r67",
+  "version": "r68",
   "ui": "compact-visual",
   "revised": "2026-10-28",
   "data_schema": "hoppy-phase1-v1",
-  "entrypoint": "visual-r67.html",
+  "entrypoint": "visual-r68.html",
   "diagnostics": "diagnose.html",
-  "layout": "unified-compact"
+  "layout": "unified-compact",
+  "release_note": "Fix pinned legacy iOS PWA launch paths, stable index entrypoint and offline cache navigation"
 }

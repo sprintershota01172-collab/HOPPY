@@ -37,8 +37,15 @@ for (let attempt = 1; attempt <= 36; attempt++) {
     const swResponse = await fetch(base + "/sw.js?verified=" + now, {cache:"no-store", signal:AbortSignal.timeout(16000)});
     if (!swResponse.ok || !(await swResponse.text()).includes("hopposan-static-" + expectedVersion)) throw Error("Service Worker version mismatch");
     const manifestResponse = await fetch(base + "/manifest.webmanifest?verified=" + now, {cache:"no-store", signal:AbortSignal.timeout(16000)});
-    if (!manifestResponse.ok || (await manifestResponse.json()).start_url !== "./visual-" + expectedVersion + ".html") throw Error("PWA start URL mismatch");
-    console.log("LIVE VERIFIED (HTML, JS, CSS, SW, PWA):", expectedVersion, expectedSha, base);
+    if (!manifestResponse.ok || (await manifestResponse.json()).start_url !== "./index.html") throw Error("PWA start URL mismatch");
+    for (const old of ["visual-r64.html", "visual-r67.html", "fp-r60.html"]) {
+      const oldRes=await fetch(base + "/" + old + "?verified=" + now,{cache:"no-store",signal:AbortSignal.timeout(16000)});
+      if(!oldRes.ok)throw Error("legacy launcher HTTP " + oldRes.status + " (" + old + ")");
+      const oldHtml=await oldRes.text();
+      if(!oldHtml.includes('data-hoppy-legacy-launcher="1"') || !oldHtml.includes("location.replace('./index.html'"))
+        throw Error("legacy pinned startup was not upgraded (" + old + ")");
+    }
+    console.log("LIVE VERIFIED (HTML, JS, CSS, SW, PWA, legacy launchers):", expectedVersion, expectedSha, base);
     process.exit(0);
   } catch (error) {
     last = String(error.message || error);

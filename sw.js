@@ -1,8 +1,8 @@
-// HOPPY r68: small, reliable cache. Always prefer server files when online.
-const CACHE = 'hopposan-static-r68';
-const SCRIPT = './app.js?v=fp-20261028-r68';
-const STYLE = './styles.css?v=fp-20261028-r68';
-const PRECACHE = ['./index.html','./visual-r68.html','./visual-r64.html','./fp-r60.html',SCRIPT,STYLE,'./manifest.webmanifest','./icon.svg'];
+// HOPPY r69: small, reliable cache. Always prefer server files when online.
+const CACHE = 'hopposan-static-r69';
+const SCRIPT = './app.js?v=fp-20261028-r69';
+const STYLE = './styles.css?v=fp-20261028-r69';
+const PRECACHE = ['./index.html','./visual-r69.html','./visual-r64.html','./fp-r60.html',SCRIPT,STYLE,'./manifest.webmanifest','./icon.svg'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -55,7 +55,7 @@ self.addEventListener('fetch', event => {
         if(refreshPage)return Response.error();
         if(navigation){
           return await caches.match(request) || await caches.match('./index.html') ||
-            await caches.match('./visual-r68.html') || Response.error();
+            await caches.match('./visual-r69.html') || Response.error();
         }
         if(url.pathname.endsWith('/app.js')){
           return await caches.match(request) || await caches.match(SCRIPT) || Response.error();

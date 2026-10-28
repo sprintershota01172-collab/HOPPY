@@ -1,76 +1,86 @@
 <!doctype html>
-<html lang="ja">
-<head>
+<html lang="ja"><head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f5f5f7">
-<title>ほっぽさん｜アプリを最新版に更新</title>
+<meta http-equiv="Cache-Control" content="no-store, max-age=0">
+<title>ほっぽさん｜更新と復旧</title>
 <style>
-:root{color-scheme:light;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif}
-*{box-sizing:border-box}body{margin:0;background:#f5f5f7;color:#26332f;min-height:100vh;display:grid;place-items:center;padding:18px}
-main{width:min(100%,430px);background:#fff;padding:24px 20px;border:1px solid #e0e6e3;border-radius:22px;box-shadow:0 8px 28px #1e443b10}
-small{font-weight:800;color:#688477;letter-spacing:.08em}h1{font-size:22px;margin:9px 0 13px}p{line-height:1.6;font-size:13px;margin:0 0 14px;color:#607269}
-button,a{display:block;width:100%;text-align:center;border-radius:12px;padding:13px 12px;margin-top:12px;font-weight:800;font-size:15px;text-decoration:none}
-button{border:0;background:#246f5a;color:#fff}button:disabled{opacity:.55}a{border:1px solid #dbe4df;color:#396b59}
-#status{border-radius:10px;background:#f2f7f3;padding:12px;font-size:12px;line-height:1.55;min-height:40px;color:#395849}
-#status.error{background:#fff3e9;color:#97521f}
-footer{margin-top:18px;color:#8b9991;font-size:11px;line-height:1.6}
-</style>
-</head>
-<body>
-<main>
-<small>HOPPY · RELEASE r68</small>
-<h1>アプリを最新版に更新</h1>
-<p>オフライン用の古い一時ファイルを入れ替えます。家計・物件・メモなどの保存データは削除しません。</p>
-<div id="status" role="status" aria-live="polite">公開されているアプリのバージョンを確認しています。</div>
-<button id="repair" type="button" disabled>更新してアプリを開く</button>
-<a href="./visual-r68.html?source=refresh">最新版を直接開く</a>
-<a href="./diagnose.html">端末と公開版の状況を確認する</a>
-<footer>更新対象はほっぽさんのキャッシュとService Workerのみです。ブラウザの履歴、写真、localStorage、IndexedDBを消去する処理はありません。</footer>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Meiryo UI",sans-serif;color:#23382f;background:#f5f6f4;color-scheme:light}
+*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;padding:18px}
+main{background:white;border:1px solid #e1e8e2;border-radius:20px;width:min(100%,410px);padding:24px 18px;box-shadow:0 10px 25px #14362b0d}
+small{font-weight:800;color:#53846e;letter-spacing:.08em}h1{font-size:23px;margin:9px 0}p{font-size:13px;line-height:1.65;color:#5f7268;margin:8px 0 16px}
+button,a.action{display:block;width:100%;border-radius:12px;padding:13px 10px;margin-top:11px;text-align:center;font-size:14px;font-weight:750;text-decoration:none}
+button{border:0;background:#236b53;color:white}button.secondary,a.action{background:white;border:1px solid #d7e2d9;color:#35674d}
+button:disabled{opacity:.65}#status{font-size:12px;line-height:1.6;padding:11px;border-radius:10px;background:#f0f6f2;white-space:pre-wrap;overflow-wrap:anywhere}
+#diag{white-space:pre-wrap;font-size:11px;line-height:1.6;color:#536b5c;background:#f6f8f6;border-radius:9px;padding:10px;overflow-wrap:anywhere}
+.note{font-size:11px;color:#708175}
+</style></head><body><main>
+<small>HOPPY · SAFE RECOVERY</small>
+<h1>最新版に更新</h1>
+<p>旧版を使っていても修復できます。<b>家計・物件・メモ・写真は消しません。</b> 修復するのはキャッシュとオフライン制御のみです。</p>
+<div id="status" role="status" aria-live="polite">更新ボタンはいつでも利用できます。公開状態を確認しています。</div>
+<button id="repair" type="button">古いキャッシュを修復して開く</button>
+<a class="action" href="./index.html?direct=1">修復せずにアプリを開く</a>
+<button id="check" class="secondary" type="button">診断情報を更新</button>
+<details><summary style="font-size:12px;margin:16px 0 8px">更新できないときの診断情報</summary><div id="diag">確認中</div><button id="copy" class="secondary" type="button">診断情報をコピー</button></details>
+<p class="note">重要：ホーム画面の「ほっぽさん」とSafariは保存領域が異なる場合があります。記録を引き継ぐには、<b>使っていたホーム画面アプリの中で</b>右上または画面内のバージョン表示をタップして、この修復画面を開いてください。保存記録のバックアップ前にアプリのアイコンを削除したり、サイトデータを消去しないでください。</p>
 </main>
 <script>
-(async()=>{
- const status=document.getElementById('status'),button=document.getElementById('repair');
- function set(t,bad=false){status.textContent=t;status.className=bad?'error':''}
- try{
-   const url=new URL('./app.js?release=r68&verify='+Date.now(),location.href);
-   const res=await fetch(url.href,{cache:'no-store'});
-   if(!res.ok)throw Error('公開ファイルへのアクセスに失敗しました（HTTP '+res.status+'）。');
-   const js=await res.text();
-   if(!js.includes("const BUILD = 'r68'") || !js.includes('home-visual-header')){
-     set('公開中のJavaScriptは旧版です。GitHub Pagesの公開反映を確認してください。',true);
-     return;
-   }
-   const pageResponse=await fetch('./visual-r68.html?verify='+Date.now(),{cache:'no-store'});
-   if(!pageResponse.ok || !(await pageResponse.text()).includes('data-build="r68"')){
-     set('新画面r68が公開されていません。GitHub Pagesの配信状況を確認してください。',true);
-     return;
-   }
-   set('公開コードと新画面のr68を確認しました。更新できます。');
-   button.disabled=false;
- }catch(e){set('公開版を確認できません。通信状態を確認してから再度開いてください。 '+String(e.message||e),true);return}
- button.onclick=async()=>{
-   button.disabled=true;set('ほっぽさんの古い一時ファイルを整理しています。');
+(()=>{
+ 'use strict';
+ const REPAIR_RELEASE = 'r69';
+ const status=document.getElementById('status'),diag=document.getElementById('diag'),repair=document.getElementById('repair');
+ const mark=(s)=>{status.textContent=s};
+ const timeout=(promise,ms=3500)=>Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(Error('確認が時間切れになりました')),ms))]);
+ const get=async(path)=>{const r=await timeout(fetch(path+(path.includes('?')?'&':'?')+'nocache='+Date.now(),{cache:'no-store'}),4500);if(!r.ok)throw Error(path+': HTTP '+r.status);return r.text()};
+ const isStandalone=()=>!!(navigator.standalone||window.matchMedia('(display-mode: standalone)').matches);
+ async function check(){
+   let report=['この画面: '+location.pathname,'起動方法: '+(isStandalone()?'ホーム画面アプリ':'ブラウザ'),'修復ページ: '+REPAIR_RELEASE];
+   try{report.push('端末で起動した版: '+(localStorage.getItem('hoppy-last-build')||'未記録'))}catch(e){report.push('端末保存版: 参照できません')}
+   try{report.push('端末の保存データ: '+(localStorage.getItem('hoppy-phase1-v1')?'あり':'なし'))}catch(e){report.push('端末の保存データ: 参照できません')}
+   report.push('オフライン制御: '+(navigator.serviceWorker?.controller?'有効':'なし'));
    try{
-     const scope=new URL('./',location.href).href;
+     const r=JSON.parse(await get('./release.json'));
+     const js=await get('./app.js');
+     const match=js.match(/const BUILD = ['"](r\d+)['"]/);
+     report.push('公開版: '+(r.version||'不明'));
+     report.push('公開JS: '+(match?.[1]||'不明'));
+     mark(r.version===match?.[1]?'公開中: '+r.version+'。修復操作が可能です。':'公開ファイルに不一致があります。修復ボタンは利用できます。');
+   }catch(e){report.push('公開確認: '+String(e.message||e));mark('公開状態を確認できません。通信を確認してください。修復ボタンは利用できます。')}
+   diag.textContent=report.join('\n');
+ }
+ document.getElementById('check').addEventListener('click',check);
+ document.getElementById('copy').addEventListener('click',async()=>{
+    const content=diag.textContent;
+    try{await navigator.clipboard.writeText(content);mark('診断情報をコピーしました')}catch(e){mark('診断情報を選択してコピーしてください。')}
+ });
+ repair.addEventListener('click',async()=>{
+   repair.disabled=true;mark('保存データは残したまま一時キャッシュを修復しています。');
+   const errors=[];
+   try{
      if('serviceWorker' in navigator){
-       const registrations=await navigator.serviceWorker.getRegistrations();
-       for(const registration of registrations){
-         if(registration.scope===scope)await registration.unregister();
-       }
+       try{
+         const regs=await timeout(navigator.serviceWorker.getRegistrations(),3500);
+         const scope=new URL('./',location.href).href;
+         for(const reg of regs.filter(r=>r.scope===scope)){
+           try{await timeout(reg.unregister(),3500)}catch(e){errors.push('オフライン制御: '+String(e.message||e))}
+         }
+       }catch(e){errors.push('オフライン制御: '+String(e.message||e))}
      }
      if('caches' in window){
-       const keys=await caches.keys();
-       for(const key of keys)if(key.startsWith('hopposan-'))await caches.delete(key);
+       try{
+         const keys=await timeout(caches.keys(),3500);
+         for(const key of keys.filter(x=>x.startsWith('hopposan-'))){
+            try{await timeout(caches.delete(key),3500)}catch(e){errors.push('キャッシュ: '+String(e.message||e))}
+         }
+       }catch(e){errors.push('キャッシュ: '+String(e.message||e))}
      }
-     location.replace('./index.html?fresh='+Date.now());
-   }catch(e){
-     set('一部のキャッシュ削除に失敗しました。下の「最新版を直接開く」を利用してください。 '+String(e.message||e),true);
-     button.disabled=false;
-   }
- };
+   }catch(e){errors.push(String(e.message||e))}
+   if(errors.length)mark('一部の修復処理が完了しませんでしたが、新版の起動を試みます。\n'+errors.join('\n'));
+   location.replace('./index.html?fresh='+Date.now());
+ });
+ check();
 })();
 </script>
-</body>
-</html>
+</body></html>

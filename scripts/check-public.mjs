@@ -45,7 +45,12 @@ for (let attempt = 1; attempt <= 36; attempt++) {
       if(!oldHtml.includes('data-hoppy-legacy-launcher="1"') || !oldHtml.includes("location.replace('./index.html'"))
         throw Error("legacy pinned startup was not upgraded (" + old + ")");
     }
-    console.log("LIVE VERIFIED (HTML, JS, CSS, SW, PWA, legacy launchers):", expectedVersion, expectedSha, base);
+    const recoveryResponse=await fetch(base + "/refresh.html?verified=" + now,{cache:"no-store",signal:AbortSignal.timeout(16000)});
+    if(!recoveryResponse.ok)throw Error("recovery endpoint HTTP "+recoveryResponse.status);
+    const recovery=await recoveryResponse.text();
+    if(!recovery.includes("const REPAIR_RELEASE = '"+expectedVersion+"'") || !recovery.includes('id="repair" type="button"'))
+      throw Error("One-tap repair endpoint is unavailable or stale");
+    console.log("LIVE VERIFIED (HTML, JS, CSS, SW, PWA, legacy launchers, one-tap recovery):", expectedVersion, expectedSha, base);
     process.exit(0);
   } catch (error) {
     last = String(error.message || error);

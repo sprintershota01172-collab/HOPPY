@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const BUILD = 'r68';
+  const BUILD = 'r69';
   // A tiny non-sensitive marker helps diagnose installed PWA update issues.
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'hoppy-phase1-v1';
@@ -231,7 +231,7 @@
     const budget=state.plan.hasRun?fpBudget():null;
     const price=budget&&budget.amount>0?yen(Math.floor(budget.amount),0)+'<small>万円</small>':'設定する';
     return '<section class="screen home-screen home-visual-screen">'+
-      '<div class="home-visual-header"><span class="home-visual-title">住まい <i>HOME</i></span><button data-act="diagnostics" class="home-visual-version" title="更新状態を確認" aria-label="更新状態を確認する r68">r68</button></div>'+
+      '<div class="home-visual-header"><span class="home-visual-title">住まい <i>HOME</i></span><button data-act="diagnostics" class="home-visual-version" title="更新状態を確認" aria-label="更新状態を確認する r69">r69</button></div>'+
       '<div class="home-visual-hero">'+
         '<button data-act="home-compare" class="home-visual-stat"><span>検討中</span><strong>'+count+'<small>件</small></strong><em>物件を比較 ›</em></button>'+
         '<button data-act="tab" data-value="sim" class="home-visual-stat fp"><span>購入の目安</span><strong>'+price+'</strong><em>FPで確認 ›</em></button></div>'+
@@ -2389,7 +2389,7 @@ function fpMetaDashboard(){
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open" aria-label="診断履歴" title="診断履歴">◷</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events" aria-label="イベント登録" title="イベント登録">＋</button>'+
       '<button class="btn compact" data-act="sim-restart" aria-label="家計の編集" title="家計の編集">✎</button>'+
-      '<a class="fp-build-stamp" title="更新状態を確認" href="./diagnose.html">r68</a></div></div>';
+      '<a class="fp-build-stamp" title="更新状態を確認" href="./diagnose.html">r69</a></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);

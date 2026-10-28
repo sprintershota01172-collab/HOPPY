@@ -27,8 +27,10 @@ for (const [path, html] of [["index.html", index], [entry, modern]]) {
 assert.ok(modern.includes('data-build="' + version + '"'), "Fresh entry has no version marker");
 assert.ok(sw.includes("hopposan-static-" + version), "Service Worker is stale");
 assert.ok(sw.includes("release.json"), "Release check cannot bypass Service Worker cache");
-assert.ok(refresh.includes("const BUILD = '" + version + "'"), "Recovery page checks the wrong version");
-assert.ok(refresh.includes(entry), "Recovery page opens an old entrypoint");
+assert.ok(refresh.includes("const REPAIR_RELEASE = '" + version + "'"), "Recovery page checks the wrong version");
+assert.ok(refresh.includes("location.replace('./index.html?fresh='"), "Recovery page must open a stable entrypoint");
+assert.ok(!/id="repair"[^>]*disabled/.test(refresh), "Recovery button must work when version validation fails");
+assert.ok(!/localStorage\.(clear|removeItem)|indexedDB\.deleteDatabase/.test(refresh), "Recovery may not erase household data");
 assert.equal(manifest.start_url, "./index.html", "PWA start_url must be stable across releases");
 assert.equal(manifest.id, "./index.html", "PWA identity must not change on subsequent releases");
 const olderEntrypoints = fs.readdirSync(".").filter(x => /^(?:fp|visual)-r\d+\.html$/.test(x) && x !== entry);

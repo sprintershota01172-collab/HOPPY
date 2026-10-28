@@ -80,6 +80,27 @@ const server=createServer((req,res)=>{
      assert.equal(await compat.locator('body').getAttribute('data-build'),ver,'Legacy iOS home-screen launcher loads outdated build');
      assert.ok(await compat.locator('.home-visual-header').count(),'Legacy iOS PWA did not boot home');
      console.log('PASS pinned r64 launcher forwards to stable index with '+ver);
+     const sentinel={version:2,properties:[],criteria:[],plan:{hasRun:0,husbandCashSavings:555,wifeCashSavings:222,cashSavings:777}};
+     await compat.evaluate(async state=>{
+       localStorage.setItem('hoppy-phase1-v1',JSON.stringify(state));
+       localStorage.setItem('hoppy-recovery-test-marker','user-data-untouched');
+       const cache=await caches.open('hopposan-static-r64');
+       await cache.put('./index.html',new Response('outdated r64 app shell',{headers:{'Content-Type':'text/html'}}));
+     },sentinel);
+     await compat.goto(origin+'/refresh.html');
+     await compat.locator('#repair').click();
+     await compat.waitForURL('**/index.html?fresh=*');
+     const preserved=await compat.evaluate(async()=>({
+       version:document.body.dataset.build,
+       sentinel:localStorage.getItem('hoppy-recovery-test-marker'),
+       cash:JSON.parse(localStorage.getItem('hoppy-phase1-v1')).plan.cashSavings,
+       oldCache: (await caches.keys()).includes('hopposan-static-r64')
+     }));
+     assert.equal(preserved.version,ver,'Recovery reopened an old version');
+     assert.equal(preserved.sentinel,'user-data-untouched','Recovery deleted device storage');
+     assert.equal(preserved.cash,777,'Recovery changed saved household cash');
+     assert.equal(preserved.oldCache,false,'Recovery left old PWA caches');
+     console.log('PASS one-tap recovery preserves saved household data and removes old cache');
    }finally{await compat.close();}
  }finally{await browser.close();server.close();}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});

@@ -34,10 +34,10 @@ article h2{font-size:12px;color:#617b6c;margin:0 0 10px}
  <div class="line"><span>配信されるJavaScript</span><b id="js">—</b></div>
  <div class="line"><span>オフライン制御</span><b id="worker">—</b></div>
  </article>
- <button id="repair" class="btn" type="button" disabled>最新版に更新して開く</button>
+ <button id="repair" class="btn" type="button">古いキャッシュを修復して開く</button>
  <button id="check" class="btn secondary" type="button">再確認する</button>
  <a class="btn secondary" style="display:grid;place-items:center;text-decoration:none" href="./index.html">アプリへ戻る</a>
- <p class="note">更新処理はアプリの一時キャッシュとService Workerだけを整理します。物件・家計・写真の保存データ（localStorage／IndexedDB）は消しません。ホーム画面に追加したアプリから開くと、そのアプリの保存領域を確認できます。</p>
+ <p class="note">更新処理はアプリの一時キャッシュとService Workerだけを整理します。物件・家計・写真の保存データは消しません。<strong>ホーム画面アプリのデータを守るため、使っていたアプリ内でこの画面を開き、修復してください。</strong> バックアップ前にアイコンを削除したりサイトデータを消さないでください。</p>
 </main>
 <script>
 (function(){
@@ -51,7 +51,7 @@ article h2{font-size:12px;color:#617b6c;margin:0 0 10px}
  };
  const num=x=>/^r[0-9]+$/.test(String(x))?Number(String(x).slice(1)):NaN;
  async function check(){
-   ids.repair.disabled=true;set('overall','確認しています');ids.overall.className='status';
+   set('overall','確認しています');ids.overall.className='status';
    set('detail','公開先と端末の情報を照合中です。');
    const local=localStorage.getItem('hoppy-last-build')||'未記録';
    set('device',local);
@@ -78,30 +78,28 @@ article h2{font-size:12px;color:#617b6c;margin:0 0 10px}
        set('overall','配信の確認が必要');
        set('detail','端末の版が公開情報より新しいため、公開先の設定を確認してください。');
      }
-     ids.repair.disabled=false;
    }catch(err){
      set('overall','公開版を確認できません');ids.overall.className='status fail';
-     set('detail',String(err.message||err)+'。ネット接続またはGitHub Pagesの公開状況をご確認ください。');
+     set('detail',String(err.message||err)+'。公開状態を確認できなくても修復ボタンは利用できます。');
    }
  }
  ids.check.addEventListener('click',check);
  ids.repair.addEventListener('click',async()=>{
-   if(!release||!/^r[0-9]+$/.test(String(release.version)))return;
    ids.repair.disabled=true;set('overall','更新中');set('detail','アプリデータは維持したまま一時キャッシュを更新しています。');
    try{
      if('serviceWorker' in navigator){
        const scope=new URL('./',location.href).href;
        const registrations=await navigator.serviceWorker.getRegistrations();
-       for(const reg of registrations)if(reg.scope===scope)await reg.unregister();
+       for(const reg of registrations)if(reg.scope===scope)try{await reg.unregister()}catch(_){}
      }
      if('caches' in window){
        const keys=await caches.keys();
-       for(const key of keys)if(key.startsWith('hopposan-'))await caches.delete(key);
+       for(const key of keys)if(key.startsWith('hopposan-'))try{await caches.delete(key)}catch(_){}
      }
-     location.replace('./'+release.entrypoint+'?fresh='+Date.now());
+     location.replace('./index.html?fresh='+Date.now());
    }catch(err){
-     set('overall','一部の更新に失敗');set('detail',String(err.message||err));
-     ids.repair.disabled=false;
+     set('overall','復旧起動を試行します');set('detail',String(err.message||err));
+     location.replace('./index.html?fresh='+Date.now());
    }
  });
  check();

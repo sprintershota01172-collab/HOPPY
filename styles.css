@@ -5812,7 +5812,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   #app .fp-meta-dashboard{overflow-y:auto!important}
 }
 
-/* r65: natural height, stable grid, separated loan card */
+/* r66: natural height, stable grid, separated loan card */
 :root,html,body,#app,#app button,#app input,#app select{font-family:"Meiryo UI","メイリオ","Meiryo",sans-serif!important}
 #app .fp-result-nav{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:3px!important;height:42px!important;min-height:42px!important;max-height:42px!important}
 #app .fp-result-nav>button{min-width:0!important;width:100%!important}

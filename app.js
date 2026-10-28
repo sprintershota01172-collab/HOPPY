@@ -242,7 +242,7 @@
     const budget=state.plan.hasRun?fpBudget():null;
     const price=budget&&budget.amount>0?yen(Math.floor(budget.amount),0)+'<small>万円</small>':'設定する';
     return '<section class="screen home-screen home-visual-screen">'+
-      '<div class="home-visual-header"><span class="home-visual-title">住まい <i>HOME</i></span><button data-act="diagnostics" class="home-visual-version" title="更新状態を確認" aria-label="更新状態を確認する r70">r70</button></div>'+
+      '<div class="home-visual-header"><span class="home-visual-title">住まい <i>HOME</i></span><button data-act="diagnostics" class="home-visual-version" title="更新状態を確認" aria-label="更新状態を確認する '+BUILD+'">'+BUILD+'</button></div>'+
       '<div class="home-visual-hero">'+
         '<button data-act="home-compare" class="home-visual-stat"><span>検討中</span><strong>'+count+'<small>件</small></strong><em>物件を比較 ›</em></button>'+
         '<button data-act="tab" data-value="sim" class="home-visual-stat fp"><span>購入の目安</span><strong>'+price+'</strong><em>FPで確認 ›</em></button></div>'+

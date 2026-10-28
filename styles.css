@@ -5811,3 +5811,49 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   #app .home-visual-screen .home-visual-card .property-thumb{width:51px!important;height:51px!important;min-width:51px!important;flex-basis:51px!important}
   #app .fp-meta-dashboard{overflow-y:auto!important}
 }
+
+/* r65: natural height, stable grid, separated loan card */
+:root,html,body,#app,#app button,#app input,#app select{font-family:"Meiryo UI","メイリオ","Meiryo",sans-serif!important}
+#app .fp-result-nav{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:3px!important;height:42px!important;min-height:42px!important;max-height:42px!important}
+#app .fp-result-nav>button{min-width:0!important;width:100%!important}
+#app .fp-report-screen>.fp-bottom-actions{display:none!important}
+#app .fp-focus-report,#app .fp-loan-focus{flex:0 1 auto!important;height:auto!important;min-height:0!important;max-height:100%!important;display:flex!important;flex-direction:column!important;gap:7px!important;justify-content:flex-start!important;overflow-y:auto!important;overflow-x:hidden!important}
+#app .fp-month-controls{display:flex;align-items:center;gap:7px;min-height:29px}
+#app .fp-month-controls .fp-year-select,#app .fp-month-controls .fp-month-select{flex:none!important;min-height:29px!important;width:auto!important;padding:3px 7px!important;background:#fff;border:1px solid #e2e9e3;border-radius:9px}
+#app .fp-month-controls small{margin-left:auto;color:#718677;font-size:10px}
+#app .fp-month-four{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;flex:none}
+#app .fp-focus-tile{min-height:66px;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:8px 9px;background:#fff;border:1px solid #dfe8e1;border-radius:13px}
+#app .fp-focus-tile span{font-size:11px;color:#6e8073}
+#app .fp-focus-tile strong{font-size:clamp(14px,3.8vw,18px)!important;color:#286c4b;white-space:nowrap;font-variant-numeric:tabular-nums}
+#app .fp-focus-tile:nth-child(3){background:#edf8ef}
+#app .fp-focus-tile:nth-child(3) strong{font-size:clamp(18px,4.6vw,27px)!important}
+#app .fp-focus-tile.negative{background:#fff0f1}
+#app .fp-focus-tile.negative strong{color:#ba2a3f!important}
+#app .fp-month-mini{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 8px;padding:7px 9px;background:#f8f9f6;border:1px solid #e2e9e1;border-radius:10px}
+#app .fp-month-mini span{display:flex;justify-content:space-between;gap:6px;min-width:0;font-size:10px;white-space:nowrap}
+#app .fp-month-mini b{font-size:11px;color:#385c48}
+#app .fp-focus .fp-month-report:has(>.fp-month-pie){height:auto!important;min-height:0!important;max-height:100%!important;justify-content:flex-start!important;gap:7px!important}
+#app .fp-focus .fp-month-report:has(>.fp-month-pie)>.fp-breakdown-panel{flex:0 0 auto!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;padding:7px 8px!important;margin:0!important}
+#app .fp-focus .fp-month-report>.fp-breakdown-panel>.fp-breakdown-title{flex:0 0 auto!important;height:auto!important;min-height:35px!important;max-height:none!important;overflow:visible!important}
+#app .fp-focus .fp-month-report>.fp-breakdown-panel>.fp-breakdown-list{flex:0 0 auto!important;height:auto!important;min-height:0!important;max-height:none!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-auto-rows:32px!important;gap:4px!important;overflow:visible!important}
+#app .fp-month-donut{width:124px!important;height:124px!important;min-width:124px!important;max-width:124px!important;min-height:124px!important;max-height:124px!important}
+#app .fp-loan-year{font-size:12px;color:#347356;padding:3px 5px}
+#app .fp-loan-card{display:flex;flex-direction:column;gap:6px;padding:10px 11px;background:#fff;border:1px solid #dce7df;border-radius:13px}
+#app .fp-loan-card>strong{font-size:12px;color:#35624c}
+#app .fp-loan-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:5px 0;border-bottom:1px solid #edf1ec}
+#app .fp-loan-row span{font-size:11px;color:#6d8374}
+#app .fp-loan-row b{font-size:clamp(11px,3.3vw,15px);color:#2f624c;white-space:nowrap;font-variant-numeric:tabular-nums}
+#app .fp-loan-feature{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px;border-radius:10px;background:#edf7ef}
+#app .fp-loan-feature span{font-size:11px;color:#457459}
+#app .fp-loan-feature strong{font-size:clamp(16px,4.5vw,25px);color:#18704d;white-space:nowrap}
+#app .fp-loan-feature.negative{background:#fff0f1}
+#app .fp-loan-feature.negative strong{color:#bb2d43!important}
+#app .fp-loan-interest{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#app .fp-loan-interest>div{display:flex;flex-direction:column;gap:4px;padding:8px 6px;min-width:0;border-radius:10px;background:#fff5e9}
+#app .fp-loan-interest span{font-size:10px;color:#ad6c2c}
+#app .fp-loan-interest strong{font-size:clamp(12px,3.5vw,18px)!important;white-space:nowrap;color:#bb6b15!important}
+#app .fp-loan-warning{font-size:10px;color:#9b5720;background:#fff4e6;padding:7px;border-radius:8px}
+#app .fp-loan-proof{border:1px solid #dce7df;border-radius:12px;background:#fff;padding:8px 12px}
+#app .fp-loan-proof summary{font-size:12px;font-weight:800;color:#316c50;min-height:30px}
+#app .fp-loan-proof p{font-size:11px;line-height:1.5;color:#63776a}
+#app .fp-loan-proof button{min-height:40px;background:#f3f7f3;border:1px solid #dce5de;color:#326b52;border-radius:9px}

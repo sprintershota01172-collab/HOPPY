@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const BUILD = 'r64';
+  const BUILD = 'r65';
   // A tiny non-sensitive marker helps diagnose installed PWA update issues.
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'hoppy-phase1-v1';
@@ -54,7 +54,7 @@
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',fpMoreOpen:false,propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpChartPage:0,fpBreakdownAnnual:'living',fpBreakdownMonthly:'living',fpBreakdownOpen:null,fpEditingRow:null,fpBreakdownPageKey:'',fpBreakdownPageIndex:0,fpHistoryLive:true,fpIncomePeriod:'year',fpIncomeMonth:1,fpCashMonth:1,fpMonthView:'pie',fpAssetPeriod:'year',fpAssetMonth:1,fpHistoryPage:0,fpHistoryId:null,fpHistoryOpen:false,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:new Date().getFullYear(),simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',axisEdit:false,memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',fpMoreOpen:false,propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpChartPage:0,fpBreakdownAnnual:'living',fpBreakdownMonthly:'living',fpBreakdownOpen:null,fpEditingRow:null,fpBreakdownPageKey:'',fpBreakdownPageIndex:0,fpHistoryLive:true,fpIncomePeriod:'year',fpIncomeMonth:1,fpCashMonth:new Date().getMonth()+1,fpMonthYear:new Date().getFullYear(),fpMonthView:'pie',fpAssetPeriod:'year',fpAssetMonth:1,fpHistoryPage:0,fpHistoryId:null,fpHistoryOpen:false,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:new Date().getFullYear(),simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',axisEdit:false,memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
   if(state.plan.hasRun){ui.simStep=7;ui.simResultPage=0;ui.fpYear=new Date().getFullYear();}
   function normalize(s) {
@@ -133,7 +133,7 @@
   function step(action){if(Date.now()<ui.lock)return;ui.lock=Date.now()+(ui.tab==='sim'?65:130);action();render();}
   function closeOverlay(){step(()=>{ui.overlay='';ui.draft=null;});}
   function openOverlay(kind, setup){step(()=>{ui.overlay=kind;if(setup)setup();});}
-  function chooseTab(tab){step(()=>{ui.tab=tab;ui.overlay='';ui.fpBreakdownOpen=null;ui.draft=null;if(tab==='sim'&&state.plan.hasRun){ui.simStep=7;ui.simResultPage=0;ui.fpYear=simNowYear();ui.fpHistoryLive=true;ui.fpHistoryOpen=false;ui.fpHistoryId=state.planHistory[0]?.id||null;}});}
+  function chooseTab(tab){step(()=>{ui.tab=tab;ui.overlay='';ui.fpBreakdownOpen=null;ui.draft=null;if(tab==='sim'&&state.plan.hasRun){ui.simStep=7;ui.fpHistoryLive=true;ui.fpHistoryOpen=false;ui.fpHistoryId=state.planHistory[0]?.id||null;}});}
   function tabIcon(key){
     const paths={property:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',compare:'<path d="M12 3v18M5 7h14M7 7l-4 7h8L7 7Zm10 0-4 7h8l-4-7ZM4 18h16"/>',sim:'<rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8 11h2m4 0h2M8 15h2m4 0h2M8 19h2m4 0h2"/>',schedule:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 2v6m10-6v6M3 10h18"/>',memo:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',updates:'<path d="M3 12a9 9 0 1 0 2.6-6.4M3 4v5h5"/><path d="M12 7v5l3.5 2"/>'};
     return '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+paths[key]+'</svg>';
@@ -1192,6 +1192,31 @@
   // The home decision is one chain: affordable PROPERTY PRICE -> chosen
   // PROPERTY PRICE -> monthly ALL-IN housing cost -> remainder. Loan interest,
   // cash transaction costs and underwriting are explicitly separated.
+  function fpLoanFocusCard(){
+    const b=fpBudget(),p=state.plan,price=Math.max(0,safeNum(p.propertyPrice)),
+      down=fpDownPayment(price,p),principal=Math.max(0,price-down),
+      pay=fpMortgageDisplayAmounts(principal,b.rate,b.loanYears),left=b.loanPayment-pay.monthly;
+    const row=(name,value)=>'<div class="fp-loan-row"><span>'+name+'</span><b>'+value+'</b></div>';
+    return '<div class="fp-loan-focus"><div class="fp-loan-year">購入後の家計：'+b.referenceYear+'年</div>'+
+      '<section class="fp-loan-card"><strong>家計から逆算</strong>'+
+      row('夫婦の月手取り',fpYen(b.monthlyIncome))+
+      row('生活費・教育費・積立・予備費','−'+fpYen(b.living+b.school+b.investing+b.cashTarget+b.buffer))+
+      row('住宅維持費','−'+fpYen(b.maintenance))+
+      '<div class="fp-loan-feature"><span>返済に使える月額</span><strong>'+fpYen(b.loanPayment)+'</strong></div>'+
+      row('借入可能額の目安',fpYen(b.loanPrincipal))+
+      (b.missingEssentialInputs.length||b.possibleLivingOverlap?'<small class="fp-loan-warning">生活費の未入力・重複を確認してください。判定は保留です。</small>':'')+'</section>'+
+      '<section class="fp-loan-card"><strong>検討中の住宅</strong>'+
+      row('住宅価格',fpYen(price))+row('頭金',fpYen(down))+row('借入元金',fpYen(principal))+
+      '<div class="fp-loan-interest"><div><span>金利込み月返済額</span><strong>'+fpYen(pay.monthly)+'</strong></div>'+
+      '<div><span>金利込み総返済額</span><strong>'+fpYen(pay.total)+'</strong></div></div>'+
+      row('金利・期間',yen(b.rate,2)+'％・'+Math.round(b.loanYears)+'年')+
+      '<div class="fp-loan-feature '+fpBalanceTone(left)+'"><span>月々の最終残額</span><strong>'+fpSignedYen(left)+'</strong></div></section>'+
+      '<details class="fp-loan-proof"><summary>計算根拠を見る</summary><p>購入年'+b.purchaseYear+'年／返済基準年'+b.referenceYear+'年。'+
+      (b.referenceYear!==b.purchaseYear?'出産年の一時的な減収と翌年の通常収入を区別。':'購入年の給与を採用。')+'</p>'+
+      '<p>返済可能額＝月手取り－生活・教育費－積立－予備費－維持費。賞与は除外。</p>'+
+      '<p>借入目安は元利均等で逆算。総額は月返済×'+pay.months+'回（利息 '+fpYen(pay.interest)+'）。銀行審査とは異なります。</p>'+
+      '<button data-act="fp-fix-input" data-value="4:1">金利・年数・維持費を編集 ›</button></details></div>';
+  }
   function fpMortgageCapacityCard(){
     const b=fpBudget(),p=state.plan,price=Math.max(0,safeNum(p.propertyPrice)),
       down=fpDownPayment(price,p),loan=fpMortgageDisplayAmounts(price-down,b.rate,b.loanYears),
@@ -1419,9 +1444,9 @@
       '<text x="8" y="195" font-size="9" fill="#76837a">'+first+'</text><text x="145" y="195" font-size="9" fill="#76837a">'+Math.round((first+last)/2)+'</text><text x="300" y="195" font-size="9" fill="#76837a">'+last+'</text></svg>';
   }
   function fpYearSelect(model){
-    const points=model.points;
-    if(!ui.fpYear||!points.some(x=>x.year===ui.fpYear))ui.fpYear=Math.max(points[0].year,Math.min(points.at(-1).year,simNowYear()));
-    return '<label class="fp-year-select"><span>表示する年</span><select data-fp-year aria-label="収支を表示する年">'+points.map(x=>'<option value="'+x.year+'" '+(x.year===ui.fpYear?'selected':'')+'>'+x.year+'年</option>').join('')+'</select></label>';
+    const pts=model.points,month=ui.simResultPage===1||ui.simResultPage===7,key=month?'fpMonthYear':'fpYear';
+    if(!pts.some(x=>x.year===ui[key]))ui[key]=Math.max(pts[0].year,Math.min(pts.at(-1).year,simNowYear()));
+    return '<label class="fp-year-select"><span>'+(month?'家計':'将来')+'</span><select data-fp-year aria-label="表示年">'+pts.map(x=>'<option value="'+x.year+'" '+(x.year===ui[key]?'selected':'')+'>'+x.year+'年</option>').join('')+'</select></label>';
   }
   function fpExpenseDetails(point,buy){
     const p=state.plan,year=point.year;
@@ -1531,7 +1556,8 @@
         ((asset.point.educationFund||0)-(asset.opening.educationFund||0))*m/12)};
   }
   function fpYearPoint(model){
-    return model.points.find(x=>x.year===ui.fpYear)||model.points.find(x=>x.year===simNowYear())||model.points[0];
+    const year=ui.simResultPage===1||ui.simResultPage===7?ui.fpMonthYear:ui.fpYear;
+    return model.points.find(x=>x.year===year)||model.points.find(x=>x.year===simNowYear())||model.points[0];
   }
   function fpChartCanvas(points,keys,mode){
     // Responsive SVG generated locally: no external chart library or connection is needed.
@@ -1681,6 +1707,7 @@
   // The chart, card dimensions and 38px cell pitch must never change when
   // selecting a category; additional items stay accessible through pagination.
   function fpBreakdownPageSize(period){
+    if(period==='monthly'&&ui.simResultPage===1)return 12;
     const host=app.querySelector(period==='monthly'?'.fp-month-report':'.fp-pie-panel');
     const panel=host?.querySelector?.('.fp-breakdown-panel');
     const title=panel?.querySelector?.('.fp-breakdown-title');
@@ -2084,40 +2111,19 @@
       '<button class="fp-setting-back" data-act="fp-result-tab" data-value="1">‹ 月収支に戻る</button></div>';
   }
   function fpMonthlyReport(model){
-    const point=fpYearPoint(model),ledger=fpMonthlyLedger(point),
-      month=Math.min(12,Math.max(1,ui.fpCashMonth||1)),selected=ledger.months[month-1],
-      isPie=ui.fpMonthView!=='detail',
-      remaining=selected.available;
-    const monthPicker='<label class="fp-month-select"><span>'+
-      (selected.historical?'過去月（実績未登録）':'月')+'</span>'+
-      '<select data-fp-cash-month aria-label="収支を表示する月">'+
-      ledger.months.map(x=>'<option value="'+x.month+'" '+(x.month===month?'selected':'')+'>'+
-      x.month+'月</option>').join('')+'</select></label>';
-    return '<div class="fp-month-report grow">'+fpYearSelect(model)+
-      '<div class="fp-month-head">'+monthPicker+
-        '<div class="fp-month-switch" role="group" aria-label="月収支の表示形式">'+
-          '<button data-act="fp-month-view" data-value="pie" class="'+(isPie?'active':'')+'">円グラフ</button>'+
-          '<button data-act="fp-month-view" data-value="detail" class="'+(!isPie?'active':'')+'">明細</button></div></div>'+
-      '<div class="fp-month-hero fp-month-surplus '+fpBalanceTone(remaining)+'" aria-label="全て差し引いた残額"><div>'+
-        '<span><em class="fp-balance-chip">'+(remaining<0?'不足':remaining>0?'余裕':'収支±0')+'</em> '+
-          '全て引いた残額</span>'+
-        '<strong class="fp-month-final '+fpBalanceTone(remaining)+'">'+fpSignedYen(remaining)+'</strong>'+
-        '<small class="fp-month-inline-ratio fp-month-goal-gap">生活費・住居費・NISA・貯金目標・予備費を控除</small></div>'+
-        '<div class="fp-month-savings"><span>月末の現金預金</span>'+
-        '<strong class="fp-month-savings-balance '+fpBalanceTone(selected.endingCash)+'">'+fpYen(selected.endingCash)+'</strong>'+
-        fpMonthlySavingsTrend(ledger,month)+'</div></div>'+
-      '<div class="fp-month-summary fp-final-breakdown" aria-label="月の全控除内訳">'+
-        '<div class="fp-month-summary-row">'+
-          '<span>手取り <b>'+fpYen(selected.income)+'</b></span>'+
-          '<span>生活・住居・特別費 <b class="fp-deducted">−'+fpYen(selected.spending)+'</b></span>'+
-          '<span>NISA等 <b class="fp-deducted">−'+fpYen(selected.investing)+'</b></span></div>'+
-        '<div class="fp-month-summary-row">'+
-          '<span>現金貯金 <b class="fp-deducted">−'+fpYen(selected.cashGoal)+'</b></span>'+
-          '<span>予備費 <b class="fp-deducted">−'+fpYen(selected.buffer)+'</b></span>'+
-          '<span class="fp-month-summary-result '+fpBalanceTone(remaining)+'">残額 <b>'+fpSignedYen(remaining)+'</b></span></div>'+
-      '</div>'+
-      fpMonthlyPie(selected,point,isPie)+
-      '</div>';
+    const point=fpYearPoint(model),months=fpMonthlyLedger(point).months,
+      m=months[Math.max(0,Math.min(11,(ui.fpCashMonth||1)-1))],
+      tile=(label,v,tone='')=>'<div class="fp-focus-tile '+tone+'"><span>'+label+'</span><strong>'+v+'</strong></div>';
+    return '<div class="fp-month-report fp-focus-report"><div class="fp-month-controls">'+fpYearSelect(model)+
+      '<label class="fp-month-select">月 <select data-fp-cash-month>'+months.map(x=>'<option value="'+x.month+'" '+(x.month===m.month?'selected':'')+'>'+x.month+'月</option>').join('')+'</select></label>'+
+      '<small>'+(m.historical?'実績未登録':'月次予測')+'</small></div>'+
+      '<div class="fp-month-four">'+tile('月の手取り',fpYen(m.income))+tile('支出合計',fpYen(m.spending))+
+      tile('最終残額',fpSignedYen(m.available),fpBalanceTone(m.available))+
+      tile('月末現金残高',fpYen(m.endingCash),fpBalanceTone(m.endingCash))+'</div>'+
+      '<div class="fp-month-mini"><span>生活・子ども <b>'+fpYen(m.household+m.annualBudget)+'</b></span>'+
+      '<span>住宅 <b>'+fpYen(m.housing)+'</b></span><span>NISA等 <b>'+fpYen(m.investing)+'</b></span>'+
+      '<span>現金確保 <b>'+fpYen(m.cashGoal+m.buffer)+'</b></span></div>'+
+      fpMonthlyPie(m,point,true)+'</div>';
   }
   function fpAssetsReport(model){
     const point=fpYearPoint(model),period=ui.fpAssetPeriod==='month'?'month':'year',
@@ -2337,7 +2343,7 @@ function fpMetaDashboard(){
   futureDeficit?'将来の家計にも注意':'金額をタップすると詳細を確認できます';
  return `<div class="fp-meta-dashboard grow">
  <section class="fp-meta-lead">
-  <div class="fp-meta-overline">買える家の目安 <span>${b.referenceYear}年の家計</span></div>
+  <div class="fp-meta-overline">買える家の目安 <span>購入後の家計：${b.referenceYear}年</span></div>
   <div class="fp-meta-budget"><strong>${hasBudget?yen(Math.floor(b.amount),0):'—'}<small>万円</small></strong><button data-act="fp-capacity-basis" aria-label="計算の根拠を見る">ⓘ</button></div>
   <div class="fp-meta-target"><span>検討中 <b>${hasPrice?yen(price,0)+'万円':'未入力'}</b></span><button data-act="fp-fix-input" data-value="4:0">変更 ›</button></div>
   <div class="fp-meta-gauge" role="meter" aria-label="検討価格に対する予算比" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(ratio)}"><i class="${hasPrice&&!within?'over':''}" style="width:${ratio}%"></i></div>
@@ -2360,7 +2366,7 @@ function fpMetaDashboard(){
  </div>`;
 }
   function fpMetaIcon(page){
- const paths={0:'<path d="M3 12 12 4l9 8v8H3z"/><path d="M9 20v-6h6v6"/>',1:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 10h3m4 0h3M7 15h3m4 0h3"/>',2:'<path d="M3 7h18v12H3zM3 11h18"/><path d="M7 15h5"/>',3:'<path d="M4 19V9m6 10V5m6 14v-7m5 7H3"/>',7:'<path d="M4 7h16M4 12h16M4 17h16"/><path d="M8 5v4m8 1v4"/>',more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'};
+ const paths={0:'<path d="M3 12 12 4l9 8v8H3z"/><path d="M9 20v-6h6v6"/>',1:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 10h3m4 0h3M7 15h3m4 0h3"/>',2:'<path d="M3 7h18v12H3zM3 11h18"/><path d="M7 15h5"/>',3:'<path d="M4 19V9m6 10V5m6 14v-7m5 7H3"/>',5:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8m-8 4h8m-8 4h8"/>',7:'<path d="M4 7h16M4 12h16M4 17h16"/><path d="M8 5v4m8 1v4"/>',more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'};
  return '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(paths[page]||paths.more)+'</svg>';
 }
   function simulationResultsScreen(snapshot){
@@ -2377,7 +2383,7 @@ function fpMetaDashboard(){
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open" aria-label="診断履歴" title="診断履歴">◷</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events" aria-label="イベント登録" title="イベント登録">＋</button>'+
       '<button class="btn compact" data-act="sim-restart" aria-label="家計の編集" title="家計の編集">✎</button>'+
-      '<a class="fp-build-stamp" title="更新状態を確認" href="./diagnose.html">r64</a></div></div>';
+      '<a class="fp-build-stamp" title="更新状態を確認" href="./diagnose.html">r65</a></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2394,11 +2400,9 @@ function fpMetaDashboard(){
         '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">最初から見直す</button>'+
         '<button class="btn primary" data-act="fp-fix-input" data-value="'+warnings[0].step+':'+warnings[0].page+'">該当項目を修正 →</button></div></section>';
     }
-    const primaryTabs=[[0,'まとめ'],[1,'月収支'],[2,'資産'],[3,'年収支'],[7,'設定']];
+    const primaryTabs=[[0,'概要'],[1,'月収支'],[5,'ローン'],[3,'将来'],[2,'資産'],[7,'設定']];
     const tabs='<div class="fp-result-nav" role="tablist" aria-label="FPの画面">'+
-      primaryTabs.map(([i,label])=>'<button role="tab" aria-label="'+label+'" title="'+label+'" aria-selected="'+(page===i)+'" data-act="fp-result-tab" data-value="'+i+'" class="'+(page===i?'active':'')+'">'+fpMetaIcon(i)+'</button>').join('')+
-      '<button aria-label="その他" title="その他" data-act="fp-more-toggle" class="'+(ui.fpMoreOpen||page>=4&&page<=6?'active':'')+'">'+fpMetaIcon('more')+'</button></div>'+
-      (ui.fpMoreOpen||page>=4&&page<=6?'<div class="fp-meta-more">'+[[4,'収入'],[5,'計算'],[6,'助言']].map(([i,label])=>'<button data-act="fp-result-tab" data-value="'+i+'" class="'+(page===i?'active':'')+'">'+label+'</button>').join('')+'</div>':'');
+      primaryTabs.map(([i,label])=>'<button role="tab" title="'+label+'" aria-label="'+label+'" aria-selected="'+(page===i)+'" data-act="fp-result-tab" data-value="'+i+'" class="'+(page===i?'active':'')+'">'+fpMetaIcon(i)+'</button>').join('')+'</div>';
     let content='';
     if(page===0){
       content=fpMetaDashboard();
@@ -2416,10 +2420,7 @@ function fpMetaDashboard(){
     }else if(page===4){
       content=fpIncomeReport(current);
     }else if(page===5){
-      const calcPage=Math.max(0,Math.min(3,ui.fpCalcPage||0));
-      content='<div class="fp-r-calc-page grow">'+
-        fpPageNav(4,calcPage,'fp-calc-page',['収支式','ローン','支出明細','前提'])+
-        fpCalculationData(price,current)+'</div>';
+      content=fpLoanFocusCard();
     }else if(page===6){
       content=fpAdviceScreen(price,current);
     }else content=fpMonthlySettingsScreen(current);
@@ -2853,7 +2854,7 @@ function fpMetaDashboard(){
     if(action==='fp-chart-page')return step(()=>{ui.fpBreakdownOpen=null;ui.fpChartPage=Math.max(0,Math.min(3,Number(v)||0));});
     if(action==='fp-calc-page')return step(()=>{ui.fpCalcPage=Math.max(0,Math.min(3,Number(v)||0));ui.fpLedgerPage=0;});
     if(action==='fp-advice-page')return step(()=>{ui.fpAdvicePage=Math.max(0,Number(v)||0);});
-    if(action==='sim-next')return step(()=>{if(ui.simStep===6){state.plan.hasRun=1;fpRecordHistory();}ui.simStep=Math.min(7,ui.simStep+1);ui.simSubPage=0;ui.simResultPage=0;ui.fpYear=simNowYear();ui.fpHistoryLive=true;ui.fpIssuePage=0;save();});
+    if(action==='sim-next')return step(()=>{if(ui.simStep===6){state.plan.hasRun=1;fpRecordHistory();}ui.simStep=Math.min(7,ui.simStep+1);ui.simSubPage=0;ui.simResultPage=0;ui.fpHistoryLive=true;ui.fpIssuePage=0;save();});
     if(action==='sim-back')return step(()=>{ui.simStep=Math.max(0,ui.simStep-1);ui.simSubPage=0;});
     if(action==='sim-restart')return step(()=>{ui.fpBreakdownOpen=null;ui.simStep=0;ui.simSubPage=0;ui.simResultPage=0;ui.fpHistoryOpen=false;});
     if(action==='sim-result-page')return step(()=>changePage('simResultPage',7,Number(v)));
@@ -2861,12 +2862,12 @@ function fpMetaDashboard(){
     if(action==='fp-history-close')return step(()=>{ui.fpHistoryOpen=false;});
     if(action==='fp-history-page')return step(()=>{ui.fpHistoryPage=Math.max(0,Number(v)||0);});
     if(action==='fp-history-select')return step(()=>{
-      if(state.planHistory.some(x=>x.id===v)){ui.fpHistoryId=v;ui.fpHistoryOpen=false;ui.fpHistoryLive=false;ui.simResultPage=0;ui.fpYear=simNowYear();}
+      if(state.planHistory.some(x=>x.id===v)){ui.fpHistoryId=v;ui.fpHistoryOpen=false;ui.fpHistoryLive=false;ui.simResultPage=0;}
     });
-    if(action==='fp-history-latest')return step(()=>{ui.fpHistoryId=state.planHistory[0]?.id||null;ui.fpHistoryOpen=false;ui.fpHistoryLive=true;ui.simResultPage=0;ui.fpYear=simNowYear();});
+    if(action==='fp-history-latest')return step(()=>{ui.fpHistoryId=state.planHistory[0]?.id||null;ui.fpHistoryOpen=false;ui.fpHistoryLive=true;ui.simResultPage=0;});
     if(action==='fp-edit-events')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=6;ui.simSubPage=2;});
     if(action==='fp-pie-open')return step(()=>{ui.simResultPage=3;ui.fpChartPage=3;});
-    if(action==='fp-capacity-basis')return step(()=>{ui.simResultPage=5;ui.fpCalcPage=1;});
+    if(action==='fp-capacity-basis')return step(()=>{ui.simResultPage=5;});
     if(action==='fp-clear-legacy-living'){
       const old=safeNum(state.plan.livingMonthly);
       if(old<=0)return;
@@ -2967,7 +2968,7 @@ function fpMetaDashboard(){
     if(action==='fp-expense-delete'){if(!confirm('この追加支出を削除しますか？'))return;return step(()=>{state.plan.expenses=state.plan.expenses.filter(x=>x.id!==v);ui.simSubPage=Math.min(ui.simSubPage,fpWizardPages(6).length-1);save();});}
     if(action==='fp-result-next')return step(()=>{ui.simResultPage=(ui.simResultPage+1)%8;ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
     if(action==='sim-choice')return step(()=>{ui.simChoice=v;save();});
-    if(action==='fp-view-budget')return step(()=>{ui.tab='sim';ui.simStep=7;ui.simResultPage=0;ui.fpYear=simNowYear();ui.fpHistoryLive=true;ui.fpHistoryOpen=false;ui.overlay='';});
+    if(action==='fp-view-budget')return step(()=>{ui.tab='sim';ui.simStep=7;ui.simResultPage=0;ui.fpHistoryLive=true;ui.fpHistoryOpen=false;ui.overlay='';});
     if(action==='fp-open-home')return openOverlay('detail',()=>{ui.propertyId=v;ui.propertyPage=0;});
 
     if(action==='search')return openOverlay('search');
@@ -3093,7 +3094,7 @@ function fpMetaDashboard(){
     if(el.dataset.homeQuery!==undefined){state.filter.query=el.value;ui.homePage=0;save();const list=app.querySelector('.home-results');if(list){list.innerHTML=homeResults();hydratePhotos();}}
     if(el.dataset.memoProperty!==undefined){ui.memoPropertyId=el.value;ui.memoPage=0;ui.memoSwipeKey=null;render();return;}
     if(el.dataset.study && ui.studyDraft){ui.studyDraft[el.dataset.study]=el.value;}
-    if(el.dataset?.fpYear!==undefined){ui.fpYear=Math.floor(Number(el.value)||0);ui.fpLedgerPage=0;render();return;}
+    if(el.dataset?.fpYear!==undefined){const y=Math.floor(Number(el.value)||0);if(ui.simResultPage===1||ui.simResultPage===7)ui.fpMonthYear=y;else ui.fpYear=y;ui.fpLedgerPage=0;render();return;}
     if(el.dataset?.eventId && el.dataset?.eventKey){
       const item=state.plan.events.find(x=>x.id===el.dataset.eventId);
       if(item){

@@ -3,7 +3,7 @@
   "short_name": "ほっぽさん",
   "description": "物件・家計・FP資金計画・NISAの積立をオフラインで管理する家探しアプリ",
   "lang": "ja",
-  "start_url": "./visual-r64.html",
+  "start_url": "./visual-r65.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f5f5f7",

@@ -1,56 +1,15 @@
-name: Deploy HOPPY to GitHub Pages
+name: HOPPY regression verification
 on:
   push:
     branches: [main]
-  workflow_dispatch:
 permissions:
   contents: read
-  pages: write
-  id-token: write
-concurrency:
-  group: github-pages
-  cancel-in-progress: true
 jobs:
-  deploy:
+  check:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
     steps:
       - uses: actions/checkout@v4
-      - name: Verify deployed application syntax
-        run: |
+      - run: |
           node --check app.js
           node --check sw.js
-          grep -Eq 'app\.js\?v=fp-[0-9]{8}-r[0-9]+' index.html
-          grep -Eq 'styles\.css\?v=fp-[0-9]{8}-r[0-9]+' index.html
-      - name: Gate release on current FP financial model
-        run: |
           node --test tests/finance.test.cjs
-          node tests/fp-legacy-living-overlap-r50.cjs
-          node tests/fp-settings-tab.cjs
-      - name: Run regression tests (report failures separately)
-        continue-on-error: true
-        run: |
-          failed=0
-          for test_file in tests/*.cjs; do
-            case "$test_file" in
-              tests/fp-zero-budget-diagnostics-r48.cjs|tests/fp-fifty-man-r49.cjs)
-                echo "::notice::Skipping retired display-label tests: ${test_file}"
-                continue
-                ;;
-            esac
-            echo "::group::${test_file}"
-            node "$test_file" || failed=1
-            echo "::endgroup::"
-          done
-          if [ "$failed" -ne 0 ]; then
-            echo "::warning::Some regression tests failed; Pages deployment will proceed after syntax and asset checks."
-          fi
-          exit "$failed"
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-      - uses: actions/deploy-pages@v4

@@ -1,9 +1,9 @@
 {
-  "version": "r64",
+  "version": "r65",
   "ui": "compact-visual",
   "revised": "2026-10-28",
   "data_schema": "hoppy-phase1-v1",
-  "entrypoint": "visual-r64.html",
+  "entrypoint": "visual-r65.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact"
 }

@@ -1,10 +1,10 @@
 {
-  "version": "r71",
+  "version": "r72",
   "ui": "compact-visual",
   "revised": "2026-10-28",
   "data_schema": "hoppy-phase1-v1",
-  "entrypoint": "visual-r71.html",
+  "entrypoint": "visual-r72.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Single FP navigation row, adaptive yen/man/oku display"
+  "release_note": "Fix property budget to purchase benchmark; year selector changes cashflow only"
 }

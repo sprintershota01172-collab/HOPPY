@@ -3,7 +3,7 @@ on:
   push:
     paths:
       - app.js
-      - tests/finance.test.cjs
+      - 'tests/*.cjs'
       - .github/workflows/finance-check.yml
   pull_request:
     paths:
@@ -19,4 +19,4 @@ jobs:
         with:
           node-version: '22'
       - name: Check financial calculations
-        run: node --test tests/finance.test.cjs tests/fp-visual-r71.cjs
+        run: node --test tests/finance.test.cjs tests/fp-visual-r71.cjs tests/fp-budget-year-fixed-r72.cjs

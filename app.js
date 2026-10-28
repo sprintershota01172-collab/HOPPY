@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const BUILD = 'r71';
+  const BUILD = 'r72';
   // A tiny non-sensitive marker helps diagnose installed PWA update issues.
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'hoppy-phase1-v1';
@@ -1206,13 +1206,30 @@
   // The home decision is one chain: affordable PROPERTY PRICE -> chosen
   // PROPERTY PRICE -> monthly ALL-IN housing cost -> remainder. Loan interest,
   // cash transaction costs and underwriting are explicitly separated.
+  // The selected display year changes forecast cashflow, not the home price budget.
+  function fpSelectedYearCashflow(year,price,budget=fpBudget()){
+    const p=state.plan,model=modelYears(price,true),point=model.points.find(x=>x.year===year),
+      funding=fpEducationFundYears(p,Math.max(year,budget.endYear)),
+      recurring=budget.years.find(x=>x.year===year)||fpHousingYearBudget(year,p,funding),
+      loan=fpMortgageDisplayAmounts(Math.max(0,price-fpDownPayment(price,p)),budget.rate,budget.loanYears),
+      housing=point?point.housingMonths.reduce((sum,v)=>sum+v,0)/12:
+        (year<budget.purchaseYear?fpRentMonthly(p):
+          (year<budget.purchaseYear+budget.loanYears?loan.monthly:0)+budget.maintenance),
+      usable=recurring.monthlyIncome-recurring.living-recurring.school-
+        recurring.investing-recurring.cashTarget-recurring.buffer,
+      period=year<budget.purchaseYear?'購入前・家賃':
+        year===budget.purchaseYear?'購入年・家賃とローン':
+        year>=budget.purchaseYear+budget.loanYears?'返済終了・維持費のみ':'購入後・ローンと維持費';
+    return {year,recurring,housing,usable,remaining:usable-housing,period};
+  }
   function fpLoanFocusCard(){
-    const b=fpBudget(ui.fpYear),p=state.plan,price=Math.max(0,safeNum(p.propertyPrice)),
+    const b=fpBudget(),p=state.plan,price=Math.max(0,safeNum(p.propertyPrice)),
       down=fpDownPayment(price,p),principal=Math.max(0,price-down),
-      pay=fpMortgageDisplayAmounts(principal,b.rate,b.loanYears),left=b.rawLoanPayment-pay.monthly;
+      pay=fpMortgageDisplayAmounts(principal,b.rate,b.loanYears),left=b.rawLoanPayment-pay.monthly,
+      selected=fpSelectedYearCashflow(ui.fpYear,price,b);
     const row=(name,value)=>'<div class="fp-loan-row"><span>'+name+'</span><b>'+value+'</b></div>';
     return '<div class="fp-loan-focus"><div class="fp-loan-year">'+
-      (b.referenceYear<b.purchaseYear?'購入前の家計で仮試算：':'購入後の家計：')+b.referenceYear+'年</div>'+
+      '購入判断の基準：'+b.referenceYear+'年（購入予定 '+b.purchaseYear+'年）</div>'+
       '<section class="fp-loan-card"><strong>家計から逆算</strong>'+
       row('夫婦の月手取り',fpYen(b.monthlyIncome))+
       row('生活費・教育費・積立・予備費','−'+fpYen(b.living+b.school+b.investing+b.cashTarget+b.buffer))+
@@ -1225,9 +1242,12 @@
       '<div class="fp-loan-interest"><div><span>金利込み月返済額</span><strong>'+fpYen(pay.monthly)+'</strong></div>'+
       '<div><span>金利込み総返済額</span><strong>'+fpYen(pay.total)+'</strong></div></div>'+
       row('金利・期間',yen(b.rate,2)+'％・'+Math.round(b.loanYears)+'年')+
-      '<div class="fp-loan-feature '+fpBalanceTone(left)+'"><span>月々の最終残額</span><strong>'+fpSignedYen(left)+'</strong></div></section>'+
-      '<details class="fp-loan-proof"><summary>計算根拠を見る</summary><p>購入予定'+b.purchaseYear+'年／表示中'+b.referenceYear+'年。'+
-      (b.referenceYear<b.purchaseYear?'購入前の給与・生活費を用いた比較用の仮試算。住宅ローンは購入予定年から計上。':'選択年の給与・生活費・教育費を用いた家計試算。')+'</p>'+
+      '<div class="fp-loan-feature '+fpBalanceTone(left)+'"><span>購入判断時の月残額</span><strong>'+fpSignedYen(left)+'</strong></div></section>'+ 
+      '<section class="fp-loan-card fp-loan-year-check"><strong>'+selected.year+'年の収支（'+selected.period+'）</strong>'+ 
+      row('その年の住居費（月平均）',fpYen(selected.housing))+
+      '<div class="fp-loan-feature '+fpBalanceTone(selected.remaining)+'"><span>月の残額（通常月・概算）</span><strong>'+fpSignedYen(selected.remaining)+'</strong></div>'+ 
+      '<small class="fp-loan-warning-note">賞与・購入時費用などの一時金は「将来」で確認</small></section>'+
+      '<details class="fp-loan-proof"><summary>計算根拠を見る</summary><p>購入予定'+b.purchaseYear+'年／購入判断の家計基準'+b.referenceYear+'年／表示中'+selected.year+'年。表示年を変更しても住宅予算は変わりません。購入年と出産年が重なる場合は翌年の通常給与を返済基準とし、一時的な減収は年次収支で確認します。</p>'+
       '<p>返済可能額＝月手取り－生活・教育費－積立－予備費－維持費。賞与は除外。</p>'+
       '<p>借入目安は元利均等で逆算。総額は月返済×'+pay.months+'回（利息 '+fpYen(pay.interest)+'）。銀行審査とは異なります。</p>'+
       '<button data-act="fp-fix-input" data-value="4:1">金利・年数・維持費を編集 ›</button></details></div>';
@@ -2355,26 +2375,25 @@
       '<p class="fp-r-help">公的資料を参照した計算上の助言です。安全の保証や金融機関の事前審査ではありません。</p></div>';
   }
 function fpMetaDashboard(){
- const b=fpBudget(ui.fpYear),p=state.plan,price=Math.max(0,safeNum(p.propertyPrice)),down=fpDownPayment(price,p);
- const loan=fpMortgageDisplayAmounts(price-down,b.rate,b.loanYears),housing=loan.monthly+b.maintenance;
- const housingRoom=b.monthlyIncome-b.living-b.school-b.investing-b.cashTarget-b.buffer;
- const remaining=housingRoom-housing;
+ const b=fpBudget(),p=state.plan,price=Math.max(0,safeNum(p.propertyPrice)),down=fpDownPayment(price,p);
+ const loan=fpMortgageDisplayAmounts(price-down,b.rate,b.loanYears),selected=fpSelectedYearCashflow(ui.fpYear,price,b),
+   yearly=selected.recurring,housing=selected.housing,housingRoom=selected.usable,remaining=selected.remaining;
  const hasBudget=b.amount>0,hasPrice=price>0,within=hasPrice&&price<=b.amount+1e-8;
  const needsCheck=b.possibleLivingOverlap||b.missingEssentialInputs.length>0;
  const futureDeficit=b.worstSurplus-loan.monthly<0;
- const stateName=needsCheck?'入力を確認':!hasBudget?'家計を入力':!hasPrice?'物件価格を入力':!within?'予算オーバー':remaining<0?'赤字に注意':futureDeficit?'将来の家計に注意':'予算内';
- const tone=needsCheck||!hasBudget||!hasPrice||futureDeficit?'caution':!within||remaining<0?'negative':'positive';
+ const stateName=needsCheck?'入力を確認':!hasBudget?'家計を入力':!hasPrice?'物件価格を入力':!within?'予算オーバー':futureDeficit?'将来の家計に注意':'購入予算内';
+ const tone=needsCheck||!hasBudget||!hasPrice||futureDeficit?'caution':!within?'negative':'positive';
  const compact=v=>fpDashboardMoney(v);
  const signed=v=>fpDashboardMoney(v,{signed:true});
  const ratio=hasBudget?Math.min(100,Math.max(0,price/b.amount*100)):0;
- const share=b.monthlyIncome>0?Math.round((b.living+b.school+b.investing+b.cashTarget+b.buffer+housing)/b.monthlyIncome*100):0;
+ const share=yearly.monthlyIncome>0?Math.round((yearly.living+yearly.school+yearly.investing+yearly.cashTarget+yearly.buffer+housing)/yearly.monthlyIncome*100):0;
  const segments=[
-   {name:'生活・教育',amount:b.living+b.school,color:'#7388ce'},
-   {name:'貯金・積立',amount:b.investing+b.cashTarget,color:'#39a58a'},
+   {name:'生活・教育',amount:yearly.living+yearly.school,color:'#7388ce'},
+   {name:'貯金・積立',amount:yearly.investing+yearly.cashTarget,color:'#39a58a'},
    {name:'住居',amount:housing,color:'#df9a52'},
-   {name:'予備費',amount:b.buffer,color:'#a6b5c5'}
+   {name:'予備費',amount:yearly.buffer,color:'#a6b5c5'}
  ];
- const total=Math.max(b.monthlyIncome,segments.reduce((sum,x)=>sum+x.amount,0),.00001);
+ const total=Math.max(yearly.monthlyIncome,segments.reduce((sum,x)=>sum+x.amount,0),.00001);
  let cursor=0;
  const stops=segments.map(x=>{const from=cursor/total*100;cursor+=Math.max(0,x.amount);return `${x.color} ${from}% ${cursor/total*100}%`;});
  if(cursor<total)stops.push(`#ecf0ef ${cursor/total*100}% 100%`);
@@ -2382,25 +2401,26 @@ function fpMetaDashboard(){
   futureDeficit?'将来の家計にも注意':'金額をタップすると詳細を確認できます';
  return `<div class="fp-meta-dashboard grow">
  <section class="fp-meta-lead">
-  <div class="fp-meta-overline">買える家の目安 <span>${b.referenceYear}年の給与で試算</span></div>
+  <div class="fp-meta-overline">購入予算（年選択では不変）<span>基準 ${b.referenceYear}年</span></div>
   <div class="fp-meta-budget"><strong>${hasBudget?fpDashboardMoney(b.amount,{large:true}):'—'}</strong><button data-act="fp-capacity-basis" aria-label="計算の根拠を見る">ⓘ</button></div>
   <div class="fp-meta-target"><span>検討中 <b>${hasPrice?fpDashboardMoney(price,{large:true}):'未入力'}</b></span><button data-act="fp-fix-input" data-value="4:0">変更 ›</button></div>
   <div class="fp-meta-gauge" role="meter" aria-label="検討価格に対する予算比" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(ratio)}"><i class="${hasPrice&&!within?'over':''}" style="width:${ratio}%"></i></div>
   <div class="fp-meta-status ${tone}"><span>● ${stateName}</span><small>${hasBudget&&hasPrice?'差 '+signed(b.amount-price):'価格・収入を確認'}</small></div>
  </section>
  <section class="fp-meta-month">
-  <div class="fp-meta-row"><span>毎月、最後に残るお金</span><button data-act="fp-result-tab" data-value="1">内訳 ›</button></div>
+  <div class="fp-meta-row"><span>${selected.year}年の月の残額（概算）</span><button data-act="fp-result-tab" data-value="1">内訳 ›</button></div>
   <strong class="fp-meta-remain ${fpBalanceTone(remaining)}">${signed(remaining)}</strong>
-  <div class="fp-meta-pair"><div><span>住居に使える</span><b class="${housingRoom<0?'negative':''}">${housingRoom<0?'−':''}${compact(housingRoom)}</b></div><div><span>ローン＋維持費</span><b class="interest">${compact(housing)}</b></div></div>
-  <div class="fp-meta-inline"><i></i> 住宅ローン ${compact(loan.monthly)}/月・金利込み</div>
+  <div class="fp-meta-pair"><div><span>住居に使える</span><b class="${housingRoom<0?'negative':''}">${compact(housingRoom)}</b></div><div><span>住居費（月平均）</span><b class="interest">${compact(housing)}</b></div></div>
+  <div class="fp-meta-inline"><i></i> ${selected.period}（ローン参考 ${compact(loan.monthly)}/月・金利込み）</div>
  </section>
  <section class="fp-meta-spending">
-   <div class="fp-meta-ring" style="background:conic-gradient(${stops.join(',')})" role="img" aria-label="月手取りの配分"><div><small>月手取り</small><b>${compact(b.monthlyIncome)}</b></div></div>
-   <div class="fp-meta-spending-side"><div class="fp-meta-spending-title">月の配分 <b class="${share>100?'negative':''}">${share}%</b></div>
+   <div class="fp-meta-ring" style="background:conic-gradient(${stops.join(',')})" role="img" aria-label="${selected.year}年の手取りの配分"><div><small>月手取り</small><b>${compact(yearly.monthlyIncome)}</b></div></div>
+   <div class="fp-meta-spending-side"><div class="fp-meta-spending-title">${selected.year}年の配分 <b class="${share>100?'negative':''}">${share}%</b></div>
      <div class="fp-meta-legend">${segments.map(x=>`<span><i style="background:${x.color}"></i>${x.name}</span>`).join('')}</div>
      <button data-act="fp-result-tab" data-value="1">収支を見る ›</button>
    </div>
  </section>
+ <div class="fp-meta-period-note">通常の月額目安。賞与・臨時支出・購入時費用は「将来」で確認</div>
  ${needsCheck||futureDeficit?'<div class="fp-meta-warning">'+warning+' <button data-act="fp-capacity-basis">詳細 ›</button></div>':''}
  </div>`;
 }
@@ -2422,7 +2442,7 @@ function fpMetaDashboard(){
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open" aria-label="診断履歴" title="診断履歴">◷</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events" aria-label="イベント登録" title="イベント登録">＋</button>'+
       '<button class="btn compact" data-act="sim-restart" aria-label="家計の編集" title="家計の編集">✎</button>'+
-      '<a class="fp-build-stamp" title="更新状態を確認" href="./diagnose.html">r71</a></div></div>';
+      '<a class="fp-build-stamp" title="更新状態を確認" href="./diagnose.html">r72</a></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2449,7 +2469,7 @@ function fpMetaDashboard(){
         '<button data-act="fp-edit-events">＋　イベント</button>'+
         '<button data-act="sim-restart">✎　家計を編集</button>'+
         '<button data-act="fp-result-tab" data-value="7">⚙　設定</button>'+
-        '<a href="./diagnose.html">更新確認 · r71</a></div>':'')+'</div>';
+        '<a href="./diagnose.html">更新確認 · r72</a></div>':'')+'</div>';
     let content='';
     if(page===0){
       content=fpMetaDashboard();
@@ -2723,6 +2743,8 @@ function fpMetaDashboard(){
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r72',date:'2026.10.28',title:'表示年による住宅予算の変動を修正',
+        details:['購入予算と借入目安を購入計画の基準年で固定','表示年は月収入・生活教育費・住居費・積立後の余裕にだけ適用','購入前は家賃、購入年は家賃と返済、購入後はローンと維持費を計上','家計シミュレーションと予算の基準を区別']},
       {version:'r71',date:'2026.10.28',title:'金額表示とFP上部の操作を整理',
         details:['1億円以上の住宅価格を億・万円で読みやすく表示','月々の収支は円表示にして同じ金額の二重表示を削除','上部タブを1列に統合し、編集・イベント・履歴・設定は操作に集約','計算方法と保存データは変更なし']},
       {version:'r64',date:'2026.10.28',title:'余白・文字サイズ統一と更新診断',

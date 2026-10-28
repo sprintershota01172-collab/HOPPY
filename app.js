@@ -51,7 +51,7 @@
   let state;
   try { const raw = localStorage.getItem(STORE); state = raw ? normalize(JSON.parse(raw)) : defaults(); }
   catch (_) { state = defaults(); }
-  let ui = {tab:'property',propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpChartPage:0,fpBreakdownAnnual:'living',fpBreakdownMonthly:'living',fpBreakdownOpen:null,fpEditingRow:null,fpBreakdownPageKey:'',fpBreakdownPageIndex:0,fpHistoryLive:true,fpIncomePeriod:'year',fpIncomeMonth:1,fpCashMonth:1,fpMonthView:'pie',fpAssetPeriod:'year',fpAssetMonth:1,fpHistoryPage:0,fpHistoryId:null,fpHistoryOpen:false,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:new Date().getFullYear(),simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',axisEdit:false,memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
+  let ui = {tab:'property',fpMoreOpen:false,propertyId:null,propertyPage:0,photoIndex:0,noteKind:'good',noteIndex:0,questionPage:0,homePage:0,meetingIndex:0,meetingNoteIndex:0,meetingDraft:null,comparePage:0,rater:'overall',overlay:'',formStep:0,propertyFormPage:0,draft:null,simStep:0,simSubPage:0,simResultPage:0,fpChartPage:0,fpBreakdownAnnual:'living',fpBreakdownMonthly:'living',fpBreakdownOpen:null,fpEditingRow:null,fpBreakdownPageKey:'',fpBreakdownPageIndex:0,fpHistoryLive:true,fpIncomePeriod:'year',fpIncomeMonth:1,fpCashMonth:1,fpMonthView:'pie',fpAssetPeriod:'year',fpAssetMonth:1,fpHistoryPage:0,fpHistoryId:null,fpHistoryOpen:false,fpCalcPage:0,fpAdvicePage:0,fpIssuePage:0,fpLedgerPage:0,fpHomePage:0,fpYear:new Date().getFullYear(),simChoice:'custom',studyMode:'notes',studyPage:0,studySummaryPage:0,studyDraft:null,studyEditId:null,studyDigestPage:0,memoScope:'individual',memoPropertyId:'',axisEdit:false,memoPage:0,memoSwipeKey:null,listPage:0,criteriaPage:0,criterionId:null,scoreProperty:null,scoreCriterion:null,scoreRater:'husband',lock:0,toast:null};
   let photoUrl = null,photoToken = 0,toastTimer = null;
   if(state.plan.hasRun){ui.simStep=7;ui.simResultPage=0;ui.fpYear=new Date().getFullYear();}
   function normalize(s) {
@@ -199,7 +199,7 @@
       (total>1?navPager(ui.homePage,total,'home-page'):'<div class="home-page-single" aria-label="1ページ目"></div>');
   }
   function propertyScreen(){
-    return '<section class="screen home-screen"><div class="home-search-row"><label class="home-search-box"><span class="search-icon" aria-hidden="true">⌕</span><input data-home-query type="search" autocomplete="off" enterkeyhint="search" placeholder="エリア・駅・物件名で検索" aria-label="物件を検索" value="'+esc(state.filter.query||'')+'"></label><button class="home-filter-btn" data-act="search">☷ <span>絞り込み</span></button><button class="home-settings" data-act="settings" aria-label="バックアップ・設定" title="設定">⚙</button></div><button class="home-add-btn" data-act="add-property"><span aria-hidden="true">＋</span> 物件を追加</button><div class="home-results">'+homeResults()+'</div>'+(state.properties.length===0?'<button class="home-sample-link" data-act="seed">サンプル3件で試す</button>':'')+'</section>';
+    return '<section class="screen home-screen"><div class="home-search-row"><label class="home-search-box"><span class="search-icon" aria-hidden="true">⌕</span><input data-home-query type="search" autocomplete="off" enterkeyhint="search" placeholder="エリア・駅・物件名で検索" aria-label="物件を検索" value="'+esc(state.filter.query||'')+'"></label><button class="home-filter-btn" data-act="search">☷ <span>絞り込み</span></button><button class="home-settings" data-act="settings" aria-label="バックアップ・設定" title="設定">⚙</button></div><button class="home-add-btn meta-fab" data-act="add-property" aria-label="物件を追加" title="物件を追加"><span aria-hidden="true">＋</span></button><div class="home-results">'+homeResults()+'</div>'+(state.properties.length===0?'<button class="home-sample-link" data-act="seed">サンプル3件で試す</button>':'')+'</section>';
   }
   function detailScreen(){
     let p=curProp();if(!p)return '';
@@ -516,7 +516,7 @@
   function fpCompactPage(title,fields,hint='',extra=''){
     return {title,html:'<div class="fp-compact-inner"><div class="fp-compact-title">'+esc(title)+'</div>'+
       '<div class="sim-grid">'+fields.join('')+'</div>'+
-      (hint?'<p class="fp-field-hint">'+esc(hint)+'</p>':'')+extra+'</div>'};
+      (hint?'<details class="fp-hint-reveal"><summary>入力のヒント</summary><p class="fp-field-hint">'+esc(hint)+'</p></details>':'')+extra+'</div>'};
   }
   function fpExtraEditor(index){
     const expenses=state.plan.expenses||[],start=index*2,items=expenses.slice(start,start+2);
@@ -730,7 +730,7 @@
     return '<section class="screen sim-screen fp-wizard-screen"><div class="sim-intro"><span class="kicker">FP</span>'+
       (p.hasRun?'<button class="fp-recall-btn" data-act="fp-view-budget">前回の診断を見る ↗</button>':'<span class="sim-progress-text">'+(i+1)+' / 7</span>')+
       '</div><div class="sim-progress">'+Array.from({length:7},(_,x)=>'<span class="'+(x<=i?'filled':'')+'"></span>').join('')+'</div>'+
-      '<div class="sim-question"><h2>'+simQuestions[i][0]+'</h2><p>'+simQuestions[i][1]+'</p></div>'+
+      '<div class="sim-question"><h2>'+simQuestions[i][0]+'</h2></div>'+
       fpPageNav(pages.length,n,'fp-form-page',labels)+
       '<div class="panel sim-form grow fp-wizard-body">'+pages[n].html+'</div>'+
       '<div class="sim-footer"><button class="btn" data-act="sim-back" '+(i===0?'disabled':'')+'>前の質問</button>'+
@@ -2268,6 +2268,61 @@
       fpPageNav(count,ui.fpAdvicePage,'fp-advice-page')+
       '<p class="fp-r-help">公的資料を参照した計算上の助言です。安全の保証や金融機関の事前審査ではありません。</p></div>';
   }
+function fpMetaDashboard(){
+ const b=fpBudget(),p=state.plan,price=Math.max(0,safeNum(p.propertyPrice)),down=fpDownPayment(price,p);
+ const loan=fpMortgageDisplayAmounts(price-down,b.rate,b.loanYears),housing=loan.monthly+b.maintenance;
+ const housingRoom=b.monthlyIncome-b.living-b.school-b.investing-b.cashTarget-b.buffer;
+ const remaining=housingRoom-housing;
+ const hasBudget=b.amount>0,hasPrice=price>0,within=hasPrice&&price<=b.amount+1e-8;
+ const needsCheck=b.possibleLivingOverlap||b.missingEssentialInputs.length>0;
+ const futureDeficit=b.worstSurplus-loan.monthly<0;
+ const stateName=needsCheck?'入力を確認':!hasBudget?'家計を入力':!hasPrice?'物件価格を入力':!within?'予算オーバー':remaining<0?'赤字に注意':futureDeficit?'将来の家計に注意':'予算内';
+ const tone=needsCheck||!hasBudget||!hasPrice||futureDeficit?'caution':!within||remaining<0?'negative':'positive';
+ const compact=v=>yen(Math.abs(v),1)+'万円';
+ const signed=v=>(v<0?'−':v>0?'+':'')+compact(v);
+ const ratio=hasBudget?Math.min(100,Math.max(0,price/b.amount*100)):0;
+ const share=b.monthlyIncome>0?Math.round((b.living+b.school+b.investing+b.cashTarget+b.buffer+housing)/b.monthlyIncome*100):0;
+ const segments=[
+   {name:'生活・教育',amount:b.living+b.school,color:'#7388ce'},
+   {name:'貯金・積立',amount:b.investing+b.cashTarget,color:'#39a58a'},
+   {name:'住居',amount:housing,color:'#df9a52'},
+   {name:'予備費',amount:b.buffer,color:'#a6b5c5'}
+ ];
+ const total=Math.max(b.monthlyIncome,segments.reduce((sum,x)=>sum+x.amount,0),.00001);
+ let cursor=0;
+ const stops=segments.map(x=>{const from=cursor/total*100;cursor+=Math.max(0,x.amount);return `${x.color} ${from}% ${cursor/total*100}%`;});
+ if(cursor<total)stops.push(`#ecf0ef ${cursor/total*100}% 100%`);
+ const warning=needsCheck?(b.possibleLivingOverlap?'生活費の重複を確認':'食費・光熱費の未入力を確認'):
+  futureDeficit?'将来の家計にも注意':'金額をタップすると詳細を確認できます';
+ return `<div class="fp-meta-dashboard grow">
+ <section class="fp-meta-lead">
+  <div class="fp-meta-overline">買える家の目安 <span>${b.referenceYear}年の家計</span></div>
+  <div class="fp-meta-budget"><strong>${hasBudget?yen(Math.floor(b.amount),0):'—'}<small>万円</small></strong><button data-act="fp-capacity-basis" aria-label="計算の根拠を見る">ⓘ</button></div>
+  <div class="fp-meta-target"><span>検討中 <b>${hasPrice?yen(price,0)+'万円':'未入力'}</b></span><button data-act="fp-fix-input" data-value="4:0">変更 ›</button></div>
+  <div class="fp-meta-gauge" role="meter" aria-label="検討価格に対する予算比" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(ratio)}"><i class="${hasPrice&&!within?'over':''}" style="width:${ratio}%"></i></div>
+  <div class="fp-meta-status ${tone}"><span>● ${stateName}</span><small>${hasBudget&&hasPrice?'差 '+signed(b.amount-price):'価格・収入を確認'}</small></div>
+ </section>
+ <section class="fp-meta-month">
+  <div class="fp-meta-row"><span>毎月、最後に残るお金</span><button data-act="fp-result-tab" data-value="1">内訳 ›</button></div>
+  <strong class="fp-meta-remain ${fpBalanceTone(remaining)}">${signed(remaining)}<small>${fpSignedYen(remaining)}</small></strong>
+  <div class="fp-meta-pair"><div><span>住居に使える</span><b class="${housingRoom<0?'negative':''}">${compact(housingRoom)}</b></div><div><span>ローン＋維持費</span><b class="interest">${compact(housing)}</b></div></div>
+  <div class="fp-meta-inline"><i></i> 住宅ローン ${compact(loan.monthly)}/月・金利込み</div>
+ </section>
+ <section class="fp-meta-spending">
+   <div class="fp-meta-ring" style="background:conic-gradient(${stops.join(',')})" role="img" aria-label="月手取りの配分"><div><small>月手取り</small><b>${compact(b.monthlyIncome)}</b></div></div>
+   <div class="fp-meta-spending-side"><div class="fp-meta-spending-title">月の配分 <b class="${share>100?'negative':''}">${share}%</b></div>
+     <div class="fp-meta-legend">${segments.map(x=>`<span><i style="background:${x.color}"></i>${x.name}</span>`).join('')}</div>
+     <button data-act="fp-result-tab" data-value="1">収支を見る ›</button>
+   </div>
+ </section>
+ <div class="fp-meta-shortcuts"><button data-act="fp-result-tab" data-value="2">◉ 資産</button><button data-act="fp-result-tab" data-value="3">▥ 将来</button><button data-act="fp-capacity-basis">⌗ ローン</button></div>
+ <div class="fp-meta-warning">${warning} <button data-act="fp-capacity-basis">詳細 ›</button></div>
+ </div>`;
+}
+  function fpMetaIcon(page){
+ const paths={0:'<path d="M3 12 12 4l9 8v8H3z"/><path d="M9 20v-6h6v6"/>',1:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 10h3m4 0h3M7 15h3m4 0h3"/>',2:'<path d="M3 7h18v12H3zM3 11h18"/><path d="M7 15h5"/>',3:'<path d="M4 19V9m6 10V5m6 14v-7m5 7H3"/>',7:'<path d="M4 7h16M4 12h16M4 17h16"/><path d="M8 5v4m8 1v4"/>',more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'};
+ return '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(paths[page]||paths.more)+'</svg>';
+}
   function simulationResultsScreen(snapshot){
     const p=state.plan,price=safeNum(p.propertyPrice),current=modelYears(price,true),rent=modelYears(price,false),
       budget=fpBudget(),rating=fpRating(price),warnings=fpPlanWarnings(),
@@ -2278,11 +2333,11 @@
       '<path d="M7.5 15.5 16 8l8.5 7.5v9H7.5z" fill="#fff9e9" stroke="#387c6b" stroke-width="1.9" stroke-linejoin="round"/>'+
       '<circle cx="13" cy="18" r="1" fill="#387c6b"/><circle cx="19" cy="18" r="1" fill="#387c6b"/>'+
       '<path d="M13 21q3 3 6 0" fill="none" stroke="#387c6b" stroke-width="1.4" stroke-linecap="round"/></svg>'+
-      '<strong>ほっぽさん</strong><small>FP</small></span>'+
-      '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
-      '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
-      '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<a class="fp-build-stamp" title="更新を確認" href="./refresh.html">r60</a></div></div>';
+      '<strong>FP</strong><small>ほっぽさん</small></span>'+
+      '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open" aria-label="診断履歴" title="診断履歴">◷</button>'+ 
+      '<button class="btn compact" data-act="fp-edit-events" aria-label="イベント登録" title="イベント登録">＋</button>'+
+      '<button class="btn compact" data-act="sim-restart" aria-label="家計の編集" title="家計の編集">✎</button>'+
+      '<a class="fp-build-stamp" title="更新を確認" href="./refresh.html">r61</a></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2299,28 +2354,14 @@
         '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">最初から見直す</button>'+
         '<button class="btn primary" data-act="fp-fix-input" data-value="'+warnings[0].step+':'+warnings[0].page+'">該当項目を修正 →</button></div></section>';
     }
-    const tabs='<div class="fp-result-nav">'+['まとめ','月収支','資産','年収支','収入','計算','助言','設定'].map((label,i)=>
-      '<button data-act="fp-result-tab" data-value="'+i+'" class="'+(page===i?'active':'')+'">'+label+'</button>').join('')+'</div>';
+    const primaryTabs=[[0,'まとめ'],[1,'月収支'],[2,'資産'],[3,'年収支'],[7,'設定']];
+    const tabs='<div class="fp-result-nav" role="tablist" aria-label="FPの画面">'+
+      primaryTabs.map(([i,label])=>'<button role="tab" aria-label="'+label+'" title="'+label+'" aria-selected="'+(page===i)+'" data-act="fp-result-tab" data-value="'+i+'" class="'+(page===i?'active':'')+'">'+fpMetaIcon(i)+'</button>').join('')+
+      '<button aria-label="その他" title="その他" data-act="fp-more-toggle" class="'+(ui.fpMoreOpen||page>=4&&page<=6?'active':'')+'">'+fpMetaIcon('more')+'</button></div>'+
+      (ui.fpMoreOpen||page>=4&&page<=6?'<div class="fp-meta-more">'+[[4,'収入'],[5,'計算'],[6,'助言']].map(([i,label])=>'<button data-act="fp-result-tab" data-value="'+i+'" class="'+(page===i?'active':'')+'">'+label+'</button>').join('')+'</div>':'');
     let content='';
     if(page===0){
-      const min=current.points.reduce((a,b)=>a.cash<b.cash?a:b);
-      const negative=current.points.find(x=>x.cash<0);
-      const annualPoint=fpYearPoint(current),
-        chosenMonth=fpMonthlyLedger(annualPoint).months[Math.max(0,Math.min(11,ui.fpCashMonth-1))];
-      content='<div class="fp-r-summary fp-r-summary-decision grow">'+
-        fpMortgageCapacityCard()+
-        '<div class="fp-decision-secondary">'+
-          fpMetric('全て引いた後の月残額（'+chosenMonth.month+'月）',
-            fpSignedYen(chosenMonth.available),fpBalanceTone(chosenMonth.available))+
-          fpMetric('将来の年末現金の最小額',fpYen(min.cash)+'（'+min.year+'年）',fpBalanceTone(min.cash))+'</div>'+
-        '<button class="fp-pie-shortcut" data-act="fp-pie-open"><span class="fp-pie-mini" style="--pie-sweep:'+
-          Math.min(100,Math.max(0,fpIncomeAllocation(annualPoint).expensePercent||0))+'%"></span>'+
-          '<span>収入に占める支出の割合</span><b>'+
-          (fpIncomeAllocation(annualPoint).expensePercent===null?'—':
-            yen(fpIncomeAllocation(annualPoint).expensePercent,1)+'%')+' ›</b></button>'+
-        '<p class="fp-r-help">'+(negative?'注意：'+negative.year+'年に年末現金がマイナスになる試算です。':
-          '表示期間中は年末現金のマイナスがありません。')+
-          ' 購入時の諸費用や教育費の変動を「資産」「年収支」で確認できます。</p></div>';
+      content=fpMetaDashboard();
     }else if(page===1){
       content=fpMonthlyReport(current);
     }else if(page===2){
@@ -2344,8 +2385,8 @@
     }else content=fpMonthlySettingsScreen(current);
     return '<section class="screen sim-screen fp-result-screen fp-report-screen '+((page===1||page===3&&ui.fpChartPage===3)?'fp-focus':'')+'">'+intro+
       (snapshot?'<div class="fp-snapshot-label">'+esc(fpHistoryDate(snapshot))+'</div>':'')+tabs+content+
-      '<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">↶ 条件を見直す</button>'+
-      '<button class="btn primary" data-act="fp-result-next">'+(page===7?'まとめへ戻る':'次へ →')+'</button></div></section>';
+      (page===0?'':'<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">↶ 条件を見直す</button>'+
+      '<button class="btn primary" data-act="fp-result-next">'+(page===7?'まとめへ戻る':'次へ →')+'</button></div>')+'</section>';
   }
     const studyCategories=[
     ['費用・住宅ローン',/費用|万円|円|金利|ローン|予算|頭金|税|維持費|値引|価格|銀行|返済/],
@@ -2593,7 +2634,7 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
-      {version:'r60',date:'2026.10.28',title:'現在残高の二重計上を修正・訂正学費で検算',
+      {version:'r61',date:'2026.10.28',title:'現在残高の二重計上を修正・訂正学費で検算',
         details:['現在の預貯金・NISAを今月末起点として翌月から予測','過去の給与・支出・積立を再度加えない','月収支・年収支・住宅購入月・年別現金の一致を検証','小中高校の学費を2026年訂正後の公的調査額へ更新','教育・NISA・現金の目標積立月数を補正']},
       {version:'r59',date:'2026.10.28',title:'公的FP資料と検算に基づく計算モデル改訂',
         details:['頭金を借入元金と購入月現金へ反映','将来年の返済後余力と6か月の防衛資金を点検','金利＋1％の家計余力・完済時年齢・試算期限を表示','児童手当の制度額概算と任意の物価上昇を追加','既存の入力値は維持して新機能は選択式']},
@@ -2656,7 +2697,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r60</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r61</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+
@@ -2798,7 +2839,8 @@
       });
     }
     if(action==='fp-budget-edit-income')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=1;ui.simSubPage=0;});
-    if(action==='fp-result-tab')return step(()=>{ui.fpBreakdownOpen=null;ui.simResultPage=Math.min(7,Math.max(0,Number(v)||0));ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
+    if(action==='fp-more-toggle')return step(()=>{ui.fpMoreOpen=!ui.fpMoreOpen;});
+    if(action==='fp-result-tab')return step(()=>{ui.fpMoreOpen=false;ui.fpBreakdownOpen=null;ui.simResultPage=Math.min(7,Math.max(0,Number(v)||0));ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
     if(action==='fp-cash-month')return step(()=>{ui.fpBreakdownOpen=null;ui.fpCashMonth=Math.min(12,Math.max(1,Number(v)||1));});
     if(action==='fp-month-view')return step(()=>{ui.fpMonthView=v==='detail'?'detail':'pie';});
     if(action==='fp-breakdown-select'){

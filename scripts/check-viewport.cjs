@@ -10,8 +10,8 @@ const server=createServer((req,res)=>{
   const name=decodeURIComponent((req.url||'/').split('?')[0]).replace(/^\/+/, '')||'index.html';
   const target=path.resolve(root,name);
   if(!target.startsWith(root+path.sep)){res.writeHead(403).end();return;}
-  try{res.writeHead(200,{'Content-Type':types[path.extname(target)]||'application/octet-stream','Cache-Control':'no-store'});res.end(readFileSync(target));}
-  catch(e){res.writeHead(404).end();}
+  try{const bytes=readFileSync(target);res.writeHead(200,{'Content-Type':types[path.extname(target)]||'application/octet-stream','Cache-Control':'no-store'}).end(bytes);}
+  catch(e){if(!res.headersSent)res.writeHead(404);res.end();}
 });
 (async()=>{
  const ver=JSON.parse(readFileSync('release.json','utf8')).version;

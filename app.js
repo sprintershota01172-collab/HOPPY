@@ -372,6 +372,8 @@
   const fpAsOfMonth=()=>new Date().getMonth()+1;
   const fpForecastMonths=year=>year===simNowYear()?Math.max(0,12-fpAsOfMonth()):12;
   const fpForecastFraction=year=>fpForecastMonths(year)/12;
+  // Initial month view is the first forecast month, not a fabricated past month.
+  ui.fpCashMonth=Math.min(12,fpAsOfMonth()+1);
   const yen=(v,d=0)=>Number.isFinite(v)?Number(v).toLocaleString('ja-JP',{maximumFractionDigits:d,minimumFractionDigits:d}):'—';
   const safeNum=(v,fallback=0)=>Number.isFinite(Number(v))?Math.max(0,Number(v)):fallback;
   // Monthly contributions are at the end of each month; amounts are in 10,000 yen.
@@ -1377,24 +1379,28 @@
   function fpExpenseDetails(point,buy){
     const p=state.plan,year=point.year;
     const result=[
-      ...point.monthlyParts.map(x=>({label:x.label,amount:x.value*12})),
+      ...point.monthlyParts.map(x=>({label:x.label,amount:x.value*(point.activeMonths??12)})),
       ...(buy?fpPieBreakdownRows(point,null,'housing').map(x=>({label:x.label,amount:x.amount})):[
         ['rentMonthly','家賃'],['managementMonthly','管理費'],['commonFeeMonthly','共益費'],['parkingMonthly','駐車場']
       ].map(([key,label])=>({label,amount:safeNum(p[key])*12}))),
-      {label:'学校・大学の費用（教育積立充当後）',amount:Math.max(0,point.school-(point.fundedSchool||0))},
-      {label:'出産関連',amount:point.birth},
-      {label:'自動車税など年払い',amount:safeNum(p.carTaxAnnual)},
-      {label:'旅行・帰省',amount:safeNum(p.travelAnnual)},
-      {label:'その他の税金',amount:safeNum(p.annualTax)},
-      {label:'年内イベント・家電',amount:safeNum(p.annualEvents)},
-      {label:'火災保険',amount:buy&&point.ownedMonths>0?safeNum(p.homeInsuranceAnnual):0}
+      {label:'学校・大学の費用（教育積立充当後）',amount:Math.max(0,point.school-(point.fundedSchool||0))*(point.fraction??1)},
+      {label:'出産関連',amount:point.birth*(point.fraction??1)},
+      {label:'自動車税など年払い',amount:safeNum(p.carTaxAnnual)*(point.fraction??1)},
+      {label:'旅行・帰省',amount:safeNum(p.travelAnnual)*(point.fraction??1)},
+      {label:'その他の税金',amount:safeNum(p.annualTax)*(point.fraction??1)},
+      {label:'年内イベント・家電',amount:safeNum(p.annualEvents)*(point.fraction??1)},
+      {label:'火災保険',amount:buy&&point.ownedMonths>0?safeNum(p.homeInsuranceAnnual)*(point.fraction??1):0}
     ];
     for(const x of p.expenses||[]){
       if((x.start&&year<x.start)||(x.end&&year>x.end))continue;
-      result.push({label:x.name,amount:safeNum(x.amount)*(x.cycle==='year'?1:12)});
+      result.push({label:x.name,amount:safeNum(x.amount)*(x.cycle==='year'?(point.fraction??1):(point.activeMonths??12))});
     }
     result.push({label:'住宅購入諸費用',amount:point.upfront});
-    for(const event of fpEventsForYear(year))if(event.type==='expense')result.push({label:event.name,amount:safeNum(event.amount)});
+    for(const event of fpEventsForYear(year))if(event.type==='expense')result.push({
+      label:event.name,amount:event.month>=1&&event.month<=12?
+        (event.month>=(point.forecastFromMonth||1)?safeNum(event.amount):0):
+        safeNum(event.amount)*(point.fraction??1)
+    });
     return result.filter(x=>x.amount>0).sort((a,b)=>b.amount-a.amount);
   }
   function fpMetric(label,value,tone=''){
@@ -1456,17 +1462,20 @@
       growth=Math.min(.2,Math.max(-.2,Number(p.returnAnnual)||0)/100);
     // Manual plans retain legacy interpolation; goal plans accrue monthly
     // with exactly the same timing as fpTargetMonthly and modelYears.
-    const compoundMonths=(initial,deposit)=>{let balance=initial;
+    const compoundMonths=(initial,deposit,months)=>{let balance=initial;
       const factor=Math.pow(1+growth,1/12);
-      for(let i=0;i<m;i++)balance=Math.max(0,balance*factor+deposit);
+      for(let i=0;i<months;i++)balance=Math.max(0,balance*factor+deposit);
       return balance;
     };
+    const elapsed=Math.max(0,m-(asset.point.forecastFromMonth||1)+1);
     const nisa=Number(p.goalNisaEnabled)===1?
-      compoundMonths(asset.opening.nisa,fpNisaForYear(year,p)):
-      Math.max(0,(asset.opening.nisa+m*fpNisaForYear(year,p))*(1+growth*m/12));
+      compoundMonths(asset.opening.nisa,fpNisaForYear(year,p),elapsed):
+      Math.max(0,(asset.opening.nisa+elapsed*fpNisaForYear(year,p))*
+        Math.pow(1+growth,elapsed/12));
     const otherInvest=Number(p.goalOtherEnabled)===1?
-      compoundMonths(asset.opening.otherInvest,fpOtherInvestForYear(year,p)):
-      Math.max(0,(asset.opening.otherInvest+m*fpOtherInvestForYear(year,p))*(1+growth*m/12));
+      compoundMonths(asset.opening.otherInvest,fpOtherInvestForYear(year,p),elapsed):
+      Math.max(0,(asset.opening.otherInvest+elapsed*fpOtherInvestForYear(year,p))*
+        Math.pow(1+growth,elapsed/12));
     const cash=flows[m-1].endingCash;
     return {year,month:m,cash,nisa,otherInvest,total:cash+nisa+otherInvest,
       cashChange:cash-asset.opening.cash,nisaChange:nisa-asset.opening.nisa,
@@ -2032,7 +2041,8 @@
       month=Math.min(12,Math.max(1,ui.fpCashMonth||1)),selected=ledger.months[month-1],
       isPie=ui.fpMonthView!=='detail',
       remaining=selected.available;
-    const monthPicker='<label class="fp-month-select"><span>月</span>'+
+    const monthPicker='<label class="fp-month-select"><span>'+
+      (selected.historical?'過去月（実績未登録）':'月')+'</span>'+
       '<select data-fp-cash-month aria-label="収支を表示する月">'+
       ledger.months.map(x=>'<option value="'+x.month+'" '+(x.month===month?'selected':'')+'>'+
       x.month+'月</option>').join('')+'</select></label>';

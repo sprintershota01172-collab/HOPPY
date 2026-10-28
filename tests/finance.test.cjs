@@ -11,7 +11,7 @@ function loadFinance(seed=null,shortViewport=false,cardHeight=null){
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
   const marker='\n  save();render();\n  // The startup';
   assert.equal(source.split(marker).length,2,'App test anchor changed');
-  const bridge='\n  globalThis.__finance = {state,ui,defaultPlan,fpBudget,fpRating,fpMortgageCapacityCard,mortgageMonthly,modelYears,fpMonthlyLedger,fpEducationFundYears,fpSchoolBreakdown,fpCashGoalForYear,fpAdviceData,fpHouseholdCashSavings,fpSyncHouseholdCashSavings,fpLoanSummary,fpRating,fpMonthlyReport,fpMonthlyAllocation,fpIncomeAllocation,fpPieBreakdownRows,fpPieBreakdownPanel,fpBreakdownPageSize,fpWizardPages,fpOfficialChildBenefit,fpMonthlyIncome,fpAmortization,educationAnnual,fpBaseMonthly,fpForecast}; return;\n  // The startup';
+  const bridge='\n  globalThis.__finance = {state,ui,defaultPlan,fpBudget,fpRating,fpMortgageCapacityCard,mortgageMonthly,modelYears,fpMonthlyLedger,fpEducationFundYears,fpSchoolBreakdown,fpCashGoalForYear,fpAdviceData,fpHouseholdCashSavings,fpSyncHouseholdCashSavings,fpLoanSummary,fpRating,fpMonthlyReport,fpMonthlyAllocation,fpIncomeAllocation,fpPieBreakdownRows,fpPieBreakdownPanel,fpBreakdownPageSize,fpIncomeAllocation,fpExpenseDetails,fpWizardPages,fpOfficialChildBenefit,fpMonthlyIncome,fpAmortization,educationAnnual,fpBaseMonthly,fpForecast}; return;\n  // The startup';
   const grid={};
   const title={getBoundingClientRect(){return {height:39}}};
   const panel={getBoundingClientRect(){return {height:cardHeight}},
@@ -151,7 +151,7 @@ test('monthly final remainder deducts spending, investments, cash savings and em
   p.purchaseYear=now()+2;
   p.otherSavingsMonthly=3.5;p.cashBufferMonthly=2.5;p.nisaMonthly=4;
   const projection=x.modelYears(p.propertyPrice,true);
-  const month=x.fpMonthlyLedger(projection.points[0]).months[0];
+  const month=x.fpMonthlyLedger(projection.points.find(p=>p.year===now()+1)).months[0];
   const expected=month.income-month.spending-month.investing-month.cashGoal-month.buffer;
   assert.ok(Math.abs(month.available-expected)<1e-8);
   assert.equal(month.cashGoal,3.5);
@@ -168,6 +168,7 @@ test('negative balances are marked negative and mortgage interest is not confuse
   const x=loadFinance(),p=x.state.plan;
   p.husbandMonthly=0;p.wifeMonthly=0;p.wifeReduced=0;
   const projection=x.modelYears(p.propertyPrice,true);
+  x.ui.fpYear=now()+1;
   const html=x.fpMonthlyReport(projection);
   assert.match(html,/fp-month-final negative/);
   const years=35,principal=4400,payment=x.mortgageMonthly(principal,0,1.5,years);
@@ -190,7 +191,7 @@ test('cash goal deadline also updates monthly final remainder',()=>{
   p.goalCashEnabled=1;p.goalCashAmount=800;p.goalCashYears=2;
   p.simulateUntil=now()+10;
   const projection=x.modelYears(p.propertyPrice,true);
-  const before=x.fpMonthlyLedger(projection.points[0]).months[0];
+  const before=x.fpMonthlyLedger(projection.points.find(p=>p.year===now()+1)).months[0];
   const later=x.fpMonthlyLedger(projection.points.find(i=>i.year===now()+3)).months[0];
   assert.ok(before.cashGoal>0);
   assert.equal(later.cashGoal,0);
@@ -219,6 +220,11 @@ test('living and children itemization reconciles for every year and representati
       const living=allocation.items.find(i=>i.id==='living');
       const details=x.fpPieBreakdownRows(point,month,'living');
       const detailTotal=details.reduce((acc,row)=>acc+row.amount,0);
+      if(month.historical){
+        assert.equal(detailTotal,0,'past months must not be projected');
+        assert.equal(living.amount,0);
+        continue;
+      }
       assert.ok(Math.abs(detailTotal-living.amount)<1e-8,
         year+'-'+monthNumber+' living and child itemization must match allocation');
       if(year>=p.firstChildYear){
@@ -387,7 +393,7 @@ test('optional future cost escalation respects fixed premiums and education fund
   assert.ok(Math.abs(by(future,'foodMonthly')-4*Math.pow(1.02,5))<1e-8);
   assert.equal(by(future,'carMonthly'),2,'contractual loan not inflated');
   assert.equal(by(future,'childInsuranceMonthly'),.5,'insurance premium stays nominal');
-  assert.ok(Math.abs(x.educationAnnual(9,p,y+9)-34*Math.pow(1.03,9))<1e-8);
+  assert.ok(Math.abs(x.educationAnnual(9,p,y+9)-36.6599*Math.pow(1.03,9))<1e-8);
   const point=x.modelYears(p.propertyPrice,true).points.find(item=>item.year===y+5);
   const ledger=x.fpMonthlyLedger(point);
   assert.ok(Math.abs(ledger.ending-point.cash)<1e-6,'cashflow still reconciles under inflation');
@@ -453,4 +459,45 @@ test('a 50-year mortgage never claims retirement-period repayment is verified',(
   assert.ok(p.purchaseYear+p.loanYears>now()+30,'actual term exceeds limited annual graph');
   const rating=x.fpRating(p.propertyPrice);
   assert.notEqual(rating.label,'基準年では予算内','long loan cannot appear fully verified');
+});
+
+
+test('balances entered today are not credited with January-to-current-month wages again',()=>{
+  const x=loadFinance(),p=x.state.plan;
+  const year=now(),cutoff=new Date().getMonth()+1,remaining=12-cutoff;
+  Object.assign(p,{husbandCashSavings:100,wifeCashSavings:50,support:0,
+    husbandMonthly:30,wifeMonthly:20,husbandBonus:0,wifeBonus:0,
+    children:0,propertyPrice:0,purchaseYear:year+2,
+    nisaMonthly:0,otherInvestMonthly:0,cashBufferMonthly:0,
+    weddingCost:0,honeymoonCost:0,events:[],expenses:[]});
+  const point=x.modelYears(0,false).points[0],ledger=x.fpMonthlyLedger(point);
+  assert.equal(point.activeMonths,remaining);
+  assert.equal(point.forecastFromMonth,cutoff+1);
+  assert.ok(Math.abs(point.incomes-remaining*50)<1e-8);
+  assert.ok(Math.abs(ledger.opening-150)<1e-8);
+  const past=ledger.months.filter(m=>m.month<=cutoff);
+  assert.equal(past.length,cutoff);
+  assert.ok(past.every(m=>m.historical&&m.income===0&&m.spending===0&&m.investing===0));
+  assert.ok(Math.abs(point.cash-ledger.ending)<1e-7);
+  assert.ok(Math.abs(point.cash-150-point.netCash)<1e-7);
+  const annual=x.fpIncomeAllocation(point);
+  for(const category of ['living','housing','education','investing']){
+    const actual=x.fpPieBreakdownRows(point,null,category).reduce((a,r)=>a+r.amount,0);
+    const shown=annual.items.find(item=>item.id===category).amount;
+    assert.ok(Math.abs(actual-shown)<1e-6,
+      'current partial-year allocation mismatch '+category+': '+actual+' vs '+shown);
+  }
+  assert.ok(Math.abs(x.fpExpenseDetails(point,false).reduce((a,r)=>a+r.amount,0)-point.expenses)<1e-6,
+    'current-year expense table must match the forecast');
+});
+
+test('education amounts use MEXT 2026 corrected annual survey, not superseded numbers',()=>{
+  const x=loadFinance(),p=x.state.plan,year=now();
+  p.educationInflationAnnual=0;
+  const approx=(got,want)=>assert.ok(Math.abs(got-want)<1e-8,got+' != '+want);
+  approx(x.educationAnnual(8,p,year),36.6599);
+  approx(x.educationAnnual(13,p,year),54.245);
+  approx(x.educationAnnual(16,p,year),59.6954);
+  p.highSchool='private';approx(x.educationAnnual(16,p,year),117.9261);
+  p.university='public';approx(x.educationAnnual(18,p,year),125);
 });

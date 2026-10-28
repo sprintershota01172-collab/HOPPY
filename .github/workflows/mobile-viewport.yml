@@ -1,0 +1,24 @@
+name: HOPPY mobile viewport regression
+on:
+  push:
+    branches: [main]
+    paths:
+      - app.js
+      - styles.css
+      - index.html
+      - tests/mobile-viewport.cjs
+      - .github/workflows/mobile-viewport.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  viewport:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Chrome availability
+        run: |
+          command -v google-chrome
+          google-chrome --version
+      - name: Inspect 320px and 390px financial screens
+        run: node tests/mobile-viewport.cjs

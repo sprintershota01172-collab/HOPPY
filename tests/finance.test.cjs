@@ -11,7 +11,7 @@ function loadFinance(seed=null,shortViewport=false,cardHeight=null){
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
   const marker='\n  save();render();\n  // The startup';
   assert.equal(source.split(marker).length,2,'App test anchor changed');
-  const bridge='\n  globalThis.__finance = {state,ui,defaultPlan,fpBudget,fpRating,fpMortgageCapacityCard,mortgageMonthly,modelYears,fpMonthlyLedger,fpEducationFundYears,fpSchoolBreakdown,fpCashGoalForYear,fpAdviceData,fpHouseholdCashSavings,fpSyncHouseholdCashSavings,fpLoanSummary,fpRating,fpMonthlyReport,fpMonthlyAllocation,fpIncomeAllocation,fpPieBreakdownRows,fpPieBreakdownPanel,fpBreakdownPageSize,fpIncomeAllocation,fpExpenseDetails,fpWizardPages,fpOfficialChildBenefit,fpMonthlyIncome,fpAmortization,educationAnnual,fpBaseMonthly,fpForecast}; return;\n  // The startup';
+  const bridge='\n  globalThis.__finance = {state,ui,defaultPlan,fpBudget,fpRating,fpMortgageCapacityCard,mortgageMonthly,modelYears,fpMonthlyLedger,fpEducationFundYears,fpSchoolBreakdown,fpCashGoalForYear,fpAdviceData,fpHouseholdCashSavings,fpSyncHouseholdCashSavings,fpLoanSummary,fpRating,fpMonthlyReport,fpMonthlyAllocation,fpIncomeAllocation,fpPieBreakdownRows,fpPieBreakdownPanel,fpBreakdownPageSize,fpIncomeAllocation,fpExpenseDetails,fpWizardPages,fpOfficialChildBenefit,fpMonthlyIncome,fpAmortization,educationAnnual,fpBaseMonthly,fpForecast,fpCashGoalMonthly,fpEducationGoal,fpEffectiveNisaMonthly,fpMonthlyAssets}; return;\n  // The startup';
   const grid={};
   const title={getBoundingClientRect(){return {height:39}}};
   const panel={getBoundingClientRect(){return {height:cardHeight}},
@@ -500,4 +500,40 @@ test('education amounts use MEXT 2026 corrected annual survey, not superseded nu
   approx(x.educationAnnual(16,p,year),59.6954);
   p.highSchool='private';approx(x.educationAnnual(16,p,year),117.9261);
   p.university='public';approx(x.educationAnnual(18,p,year),125);
+});
+
+
+test('goal-based savings count only months remaining in the current year',()=>{
+  const x=loadFinance(),p=x.state.plan,y=now(),remaining=12-(new Date().getMonth()+1);
+  p.husbandCashSavings=100;p.wifeCashSavings=0;p.support=0;
+  p.goalCashEnabled=1;p.goalCashAmount=200;p.goalCashYears=2;
+  const expectedCashPerMonth=100/(remaining+12);
+  assert.ok(Math.abs(x.fpCashGoalMonthly(p)-Math.ceil(expectedCashPerMonth*1e4-1e-9)/1e4)<1e-8);
+  Object.assign(p,{goalNisaEnabled:1,goalNisaAmount:120,goalNisaYears:2,
+    nisaBalance:0,returnAnnual:0,nisaMonthly:0,
+    children:0,weddingCost:0,honeymoonCost:0,expenses:[],events:[]});
+  const months=remaining+12;
+  const required=x.fpEffectiveNisaMonthly(p);
+  assert.ok(Math.abs(required-Math.ceil(120/months*1e4-1e-9)/1e4)<1e-8);
+  const model=x.modelYears(0,false);
+  const target=model.points.find(point=>point.year===y+1);
+  assert.ok(target.nisa>=120&&target.nisa<=120.01,
+    'two-year target accrues only months starting next month: '+target.nisa);
+  const current=model.points.find(point=>point.year===y);
+  const asset=x.fpMonthlyAssets(model,y,new Date().getMonth()+1);
+  assert.equal(asset.nisa,0,'NISA balance entered today must not grow during elapsed months');
+  assert.ok(Math.abs(current.nisa-required*remaining)<.001);
+});
+
+test('new child education funding in current year has no phantom past-month premiums',()=>{
+  const x=loadFinance(),p=x.state.plan,y=now(),remaining=12-(new Date().getMonth()+1);
+  Object.assign(p,{children:1,firstChildYear:y,
+    goalEduEnabled1:1,goalEduAmount1:180,goalEduAge1:18,
+    childEducationInsuranceMonthly:0,educationInflationAnnual:0});
+  const goal=x.fpEducationGoal(p,1);
+  assert.equal(goal.months,18*12-(12-remaining));
+  const fund=x.fpEducationFundYears(p,y+18);
+  assert.ok(Math.abs(fund.get(y).deposits-goal.monthly*remaining)<1e-8);
+  assert.ok(Math.abs(fund.get(y+17).closing-180)<.02,
+    'education goal fully funded by year before tuition starts: '+fund.get(y+17).closing);
 });

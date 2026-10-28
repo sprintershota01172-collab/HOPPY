@@ -11,7 +11,7 @@ function loadFinance(seed=null,shortViewport=false,cardHeight=null){
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
   const marker='\n  save();render();\n  // The startup';
   assert.equal(source.split(marker).length,2,'App test anchor changed');
-  const bridge='\n  globalThis.__finance = {state,ui,defaultPlan,fpBudget,fpRating,fpMortgageCapacityCard,mortgageMonthly,modelYears,fpMonthlyLedger,fpEducationFundYears,fpSchoolBreakdown,fpCashGoalForYear,fpAdviceData,fpHouseholdCashSavings,fpSyncHouseholdCashSavings,fpLoanSummary,fpMonthlyReport,fpMonthlyAllocation,fpIncomeAllocation,fpPieBreakdownRows,fpPieBreakdownPanel,fpBreakdownPageSize,fpWizardPages}; return;\n  // The startup';
+  const bridge='\n  globalThis.__finance = {state,ui,defaultPlan,fpBudget,fpRating,fpMortgageCapacityCard,mortgageMonthly,modelYears,fpMonthlyLedger,fpEducationFundYears,fpSchoolBreakdown,fpCashGoalForYear,fpAdviceData,fpHouseholdCashSavings,fpSyncHouseholdCashSavings,fpLoanSummary,fpMonthlyReport,fpMonthlyAllocation,fpIncomeAllocation,fpPieBreakdownRows,fpPieBreakdownPanel,fpBreakdownPageSize,fpWizardPages,fpOfficialChildBenefit,fpMonthlyIncome,fpAmortization,educationAnnual,fpBaseMonthly,fpForecast}; return;\n  // The startup';
   const grid={};
   const title={getBoundingClientRect(){return {height:39}}};
   const panel={getBoundingClientRect(){return {height:cardHeight}},
@@ -336,4 +336,74 @@ test('measured card capacity fills unused space without changing four-column pit
   assert.equal((html.match(/class="fp-breakdown-row"/g)||[]).length,12);
   assert.match(html,/data-fp-cols="4" data-fp-rows="3"/);
   assert.match(html,/class="fp-breakdown-pager"/);
+});
+
+
+test('head money lowers actual loan principal and consumes cash at purchase, once',()=>{
+  const x=loadFinance(),p=x.state.plan;
+  p.propertyPrice=4000;p.downPayment=500;p.purchaseYear=now()+1;p.purchaseMonth=7;
+  p.interest=1.5;p.loanYears=35;p.children=0;
+  const loan=x.fpAmortization(4000);
+  assert.equal(loan.principal,3500);
+  const monthlyRate=0.015/12,period=420;
+  const expected=3500*monthlyRate/(1-Math.pow(1+monthlyRate,-period));
+  assert.ok(Math.abs(loan.monthly-expected)<1e-9);
+  assert.ok(Math.abs(x.fpForecast(4000).payment-expected)<1e-9);
+  const model=x.modelYears(4000,true);
+  const point=model.points.find(x=>x.year===p.purchaseYear);
+  assert.equal(point.upfront,780,'500 head + 7% transaction costs');
+  const monthly=x.fpMonthlyLedger(point).months;
+  assert.ok(Math.abs(monthly[6].purchase-780)<1e-8);
+  assert.ok(monthly.filter(row=>row.purchase>0).length===1,'purchase payment only once');
+  assert.ok(Math.abs(monthly[11].endingCash-point.cash)<1e-6,'annual vs monthly cash');
+  const budget=x.fpBudget();
+  assert.ok(Math.abs(budget.amount-(budget.loanPrincipal+500))<.001);
+  const summary=x.fpLoanSummary(4000);
+  assert.match(summary,/35,000,000円/,'borrowing excludes head money');
+  assert.match(summary,/頭金 5,000,000円/);
+});
+
+test('statutory child allowance is an optional bimonthly age-based estimate',()=>{
+  const x=loadFinance(),p=x.state.plan,y=now()+1;
+  Object.assign(p,{children:3,firstChildYear:y,birthInterval:1,childBenefitMode:'official'});
+  assert.equal(x.fpOfficialChildBenefit(y,1,p),0);
+  assert.equal(x.fpOfficialChildBenefit(y,2,p),3);
+  assert.equal(x.fpOfficialChildBenefit(y+2,2,p),12,'two preschool + third child');
+  assert.equal(x.fpOfficialChildBenefit(y+3,2,p),11,'3 years and older falls to 10,000');
+  assert.equal(x.fpOfficialChildBenefit(y+23,2,p),0);
+  const annual=Array.from({length:12},(_,i)=>x.fpMonthlyIncome(y+2,i+1).fields.childBenefits)
+    .reduce((a,b)=>a+b,0);
+  assert.equal(annual,72,'6 payments of 12 ten-thousand JPY');
+  p.childBenefitMode='manual';p.childBenefitMonthly=2;
+  assert.equal(x.fpMonthlyIncome(y+2,1).fields.childBenefits,6,'manual legacy remains');
+});
+
+test('optional future cost escalation respects fixed premiums and education funding',()=>{
+  const x=loadFinance(),p=x.state.plan,y=now();
+  Object.assign(p,{children:1,firstChildYear:y,foodMonthly:4,carMonthly:2,carLoanEndYear:y+6,
+    childInsuranceMonthly:.5,educationInflationAnnual:3,livingInflationAnnual:2});
+  const begin=x.fpBaseMonthly(y),future=x.fpBaseMonthly(y+5);
+  const by=(parts,key)=>parts.find(item=>item.key===key).value;
+  assert.ok(Math.abs(by(future,'foodMonthly')-4*Math.pow(1.02,5))<1e-8);
+  assert.equal(by(future,'carMonthly'),2,'contractual loan not inflated');
+  assert.equal(by(future,'childInsuranceMonthly'),.5,'insurance premium stays nominal');
+  assert.ok(Math.abs(x.educationAnnual(9,p,y+9)-34*Math.pow(1.03,9))<1e-8);
+  const point=x.modelYears(p.propertyPrice,true).points.find(item=>item.year===y+5);
+  const ledger=x.fpMonthlyLedger(point);
+  assert.ok(Math.abs(ledger.ending-point.cash)<1e-6,'cashflow still reconciles under inflation');
+});
+
+test('future-year repayment gap is evaluated AFTER actual loan payment',()=>{
+  const x=loadFinance(),p=x.state.plan;
+  Object.assign(p,{children:2,firstChildYear:now()+2,birthInterval:3,
+    childLivingMonthly:6,daycareMonthly:3,foodMonthly:5,electricityMonthly:1.2,
+    propertyPrice:3000,interest:1.5,loanYears:35,downPayment:0});
+  const b=x.fpBudget(),loan=x.fpAmortization(p.propertyPrice);
+  const worstActual=b.worstSurplus-loan.monthly;
+  assert.ok(worstActual<b.worstSurplus);
+  const card=x.fpMortgageCapacityCard();
+  assert.match(card,/将来の厳しい年/);
+  assert.match(card,/金利が当初から＋1％なら月返済/);
+  assert.match(card,/購入月末の現金見込/);
+  assert.match(card,/銀行審査は別/);
 });

@@ -47,8 +47,10 @@ test('PMT amount and inverse principal use 10,000-yen units',()=>{
 test('loan payment and borrowing capacity are not displayed as a positive surplus',()=>{
   const x=loadFinance();
   const html=x.fpMortgageCapacityCard();
-  assert.match(html,/金利込み・積立維持の月返済目安/);
-  assert.match(html,/借入参考額/);
+  assert.match(html,/家計から計算した、無理の少ない物件価格の目安/);
+  assert.match(html,/検討中の物件価格/);
+  assert.match(html,/支払った後の残額/);
+  assert.match(html,/ローン返済（金利込み）/);
   assert.doesNotMatch(html,/返済上限<\/span><strong>\+/);
 });
 

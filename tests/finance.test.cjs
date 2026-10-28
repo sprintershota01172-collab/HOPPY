@@ -407,3 +407,35 @@ test('future-year repayment gap is evaluated AFTER actual loan payment',()=>{
   assert.match(card,/購入月末の現金見込/);
   assert.match(card,/銀行審査は別/);
 });
+
+
+test('rent switches to mortgage in the exact month and annual cash agrees across 4 purchase dates',()=>{
+  const x=loadFinance(),p=x.state.plan,y=now()+2;
+  Object.assign(p,{children:0,propertyPrice:4000,purchaseYear:y,downPayment:400,
+    rentMonthly:8,managementMonthly:.5,commonFeeMonthly:0,parkingMonthly:.5,
+    housingOngoing:2,interest:1.5,loanYears:35,
+    weddingCost:0,honeymoonCost:0,expenses:[],events:[],simulateUntil:y+10});
+  for(const purchaseMonth of [1,5,9,12]){
+    p.purchaseMonth=purchaseMonth;
+    const loan=x.fpAmortization(4000);
+    assert.equal(loan.principal,3600);
+    assert.ok(Math.abs(loan.months.reduce((sum,e)=>sum+e.principalPaid,0)-3600)<1e-7);
+    const point=x.modelYears(4000,true).points.find(item=>item.year===y);
+    const ledger=x.fpMonthlyLedger(point);
+    assert.equal(point.ownedMonths,13-purchaseMonth);
+    assert.equal(point.rentMonths,purchaseMonth-1);
+    for(const row of ledger.months){
+      const owner=row.month>=purchaseMonth;
+      const want=owner?loan.monthly+2:9;
+      assert.ok(Math.abs(row.housing-want)<1e-8,
+        'housing month '+purchaseMonth+'/'+row.month);
+      assert.ok(Math.abs(row.purchase-(row.month===purchaseMonth?680:0))<1e-8);
+      const items=x.fpPieBreakdownRows(point,row,'housing');
+      assert.ok(Math.abs(items.reduce((sum,e)=>sum+e.amount,0)-row.housing)<1e-8);
+      assert.equal(items.some(item=>item.label==='家賃'),!owner);
+      assert.equal(items.some(item=>item.label.startsWith('住宅ローン返済')),owner);
+    }
+    assert.ok(Math.abs(ledger.months.reduce((sum,row)=>sum+row.spending,0)-point.expenses)<1e-7);
+    assert.ok(Math.abs(ledger.ending-point.cash)<1e-7);
+  }
+});

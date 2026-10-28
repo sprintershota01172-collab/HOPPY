@@ -31,7 +31,7 @@ assert.ok(refresh.includes("const BUILD = '" + version + "'"), "Recovery page ch
 assert.ok(refresh.includes(entry), "Recovery page opens an old entrypoint");
 assert.equal(manifest.start_url, "./index.html", "PWA start_url must be stable across releases");
 assert.equal(manifest.id, "./index.html", "PWA identity must not change on subsequent releases");
-const olderEntrypoints = fs.readdirSync(".").filter(x => /^(?:fp|visual)-r\\d+\\.html$/.test(x) && x !== entry);
+const olderEntrypoints = fs.readdirSync(".").filter(x => /^(?:fp|visual)-r\d+\.html$/.test(x) && x !== entry);
 assert.ok(olderEntrypoints.includes("visual-r64.html"), "Pinned r64 launcher not present");
 for (const path of olderEntrypoints) {
   const text = read(path);

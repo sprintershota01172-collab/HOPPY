@@ -413,8 +413,9 @@
   const fpAsOfMonth=()=>new Date().getMonth()+1;
   const fpForecastMonths=year=>year===simNowYear()?Math.max(0,12-fpAsOfMonth()):12;
   const fpForecastFraction=year=>fpForecastMonths(year)/12;
-  // Initial month view is the first forecast month, not a fabricated past month.
-  ui.fpCashMonth=Math.min(12,fpAsOfMonth()+1);
+  // The selected calendar month starts at the actual current month.
+  // Unrecorded actuals remain clearly marked; do not invent a past cashflow.
+  ui.fpCashMonth=fpAsOfMonth();
   const yen=(v,d=0)=>Number.isFinite(v)?Number(v).toLocaleString('ja-JP',{maximumFractionDigits:d,minimumFractionDigits:d}):'—';
   const safeNum=(v,fallback=0)=>Number.isFinite(Number(v))?Math.max(0,Number(v)):fallback;
   // Monthly contributions are at the end of each month; amounts are in 10,000 yen.

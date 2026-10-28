@@ -11,7 +11,7 @@ function loadFinance(seed=null,shortViewport=false,cardHeight=null){
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
   const marker='\n  save();render();\n  // The startup';
   assert.equal(source.split(marker).length,2,'App test anchor changed');
-  const bridge='\n  globalThis.__finance = {state,ui,defaultPlan,fpBudget,fpRating,fpMortgageCapacityCard,mortgageMonthly,modelYears,fpMonthlyLedger,fpEducationFundYears,fpSchoolBreakdown,fpCashGoalForYear,fpAdviceData,fpHouseholdCashSavings,fpSyncHouseholdCashSavings,fpLoanSummary,fpMonthlyReport,fpMonthlyAllocation,fpIncomeAllocation,fpPieBreakdownRows,fpPieBreakdownPanel,fpBreakdownPageSize,fpWizardPages,fpOfficialChildBenefit,fpMonthlyIncome,fpAmortization,educationAnnual,fpBaseMonthly,fpForecast}; return;\n  // The startup';
+  const bridge='\n  globalThis.__finance = {state,ui,defaultPlan,fpBudget,fpRating,fpMortgageCapacityCard,mortgageMonthly,modelYears,fpMonthlyLedger,fpEducationFundYears,fpSchoolBreakdown,fpCashGoalForYear,fpAdviceData,fpHouseholdCashSavings,fpSyncHouseholdCashSavings,fpLoanSummary,fpRating,fpMonthlyReport,fpMonthlyAllocation,fpIncomeAllocation,fpPieBreakdownRows,fpPieBreakdownPanel,fpBreakdownPageSize,fpWizardPages,fpOfficialChildBenefit,fpMonthlyIncome,fpAmortization,educationAnnual,fpBaseMonthly,fpForecast}; return;\n  // The startup';
   const grid={};
   const title={getBoundingClientRect(){return {height:39}}};
   const panel={getBoundingClientRect(){return {height:cardHeight}},
@@ -438,4 +438,19 @@ test('rent switches to mortgage in the exact month and annual cash agrees across
     assert.ok(Math.abs(ledger.months.reduce((sum,row)=>sum+row.spending,0)-point.expenses)<1e-7);
     assert.ok(Math.abs(ledger.ending-point.cash)<1e-7);
   }
+});
+
+
+test('a 50-year mortgage never claims retirement-period repayment is verified',()=>{
+  const x=loadFinance(),p=x.state.plan;
+  Object.assign(p,{husbandAge:27,wifeAge:29,children:0,loanYears:50,
+    purchaseYear:now()+2,propertyPrice:2400,interest:1.5,
+    foodMonthly:5,electricityMonthly:1,gasMonthly:1});
+  const card=x.fpMortgageCapacityCard();
+  assert.match(card,/完済時の年齢目安：夫79歳・妻81歳/);
+  assert.match(card,/退職後の収入は未反映/);
+  assert.match(card,/年次試算は\d{4}年まで/);
+  assert.ok(p.purchaseYear+p.loanYears>now()+30,'actual term exceeds limited annual graph');
+  const rating=x.fpRating(p.propertyPrice);
+  assert.notEqual(rating.label,'基準年では予算内','long loan cannot appear fully verified');
 });

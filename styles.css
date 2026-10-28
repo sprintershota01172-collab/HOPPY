@@ -5555,3 +5555,22 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  #app .fp-meta-ring{height:82px;width:82px;min-height:82px;min-width:82px}
  #app .fp-meta-remain small,#app .fp-meta-warning{display:none}
 }
+
+
+/* r61 | Direct-jump financial inputs */
+#app .sim-progress.fp-icon-progress{
+  display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;
+  align-items:center!important;gap:5px!important;
+  height:auto!important;min-height:40px!important;flex:none!important;
+  padding:0!important;margin:0!important;background:transparent!important}
+#app .fp-icon-progress>button{height:38px!important;min-height:38px!important;
+ width:100%!important;min-width:0!important;border:1px solid #e1e9e4!important;
+ background:#fff!important;border-radius:12px!important;padding:0!important;
+ display:grid!important;place-items:center!important;color:#81968d!important;
+ font-size:19px!important;font-weight:750!important;line-height:1!important}
+#app .fp-icon-progress>button.filled{color:#2f8a6c!important;background:#edf8f0!important;
+ border-color:#cce8da!important}
+#app .fp-icon-progress>button.current{color:#fff!important;background:#19765d!important;
+ border-color:#19765d!important;box-shadow:0 2px 10px #19765d33!important}
+@media(max-width:355px){#app .sim-progress.fp-icon-progress{gap:3px!important}
+ #app .fp-icon-progress>button{border-radius:9px!important}}

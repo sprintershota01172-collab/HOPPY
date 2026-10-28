@@ -2214,7 +2214,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<a class="fp-build-stamp" title="更新を確認" href="./refresh.html">r58</a></div></div>';
+      '<a class="fp-build-stamp" title="更新を確認" href="./refresh.html">r59</a></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2525,6 +2525,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r59',date:'2026.10.28',title:'公的FP資料と検算に基づく計算モデル改訂',
+        details:['頭金を借入元金と購入月現金へ反映','将来年の返済後余力と6か月の防衛資金を点検','金利＋1％の家計余力を比較','児童手当の制度額概算と任意の物価上昇を追加','既存の入力値は維持して新機能は選択式']},
       {version:'r58',date:'2026.10.28',title:'住宅購入の予算・検討価格・月の残額を1画面に統合',
         details:['家計から計算した物件価格の目安と検討中の物件価格を比較','予算との差額と毎月の住居費・残額を同じ判断順に表示','金利・諸費用・詳細式を折りたたんで数字の重複を解消','月収支は日常の残額を優先し住宅カードを重ねない']},
       {version:'r57',date:'2026.10.28',title:'生活・子ども費の内訳の空白を解消',
@@ -2584,7 +2586,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r58</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r59</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

@@ -2,11 +2,12 @@ import fs from "node:fs";
 import vm from "node:vm";
 import assert from "node:assert/strict";
 
-const version = "r63";
 const read = path => fs.readFileSync(path, "utf8");
 const release = JSON.parse(read("release.json"));
+const version = release.version;
 const index = read("index.html");
-const modern = read("visual-r63.html");
+const entry = "visual-" + version + ".html";
+const modern = read(entry);
 const js = read("app.js");
 const css = read("styles.css");
 const sw = read("sw.js");
@@ -14,21 +15,21 @@ const manifest = JSON.parse(read("manifest.webmanifest"));
 const refresh = read("refresh.html");
 
 assert.equal(release.version, version, "The release marker is wrong");
-assert.match(js, /const BUILD = 'r63'/, "JavaScript build marker mismatch");
+assert.ok(js.includes("const BUILD = '" + version + "'"), "JavaScript build marker mismatch");
 assert.match(js, /home-visual-header/, "Visual homepage not present");
 assert.match(js, /fp-meta-dashboard/, "Visual FP dashboard not present");
 assert.match(css, /home-visual-screen/, "Visual homepage styles not present");
 assert.match(css, /hoppo-version-banner/, "Version alert styles not present");
-for (const [path, html] of [["index.html", index], ["visual-r63.html", modern]]) {
-  assert.ok(html.includes("app.js?v=fp-20261028-r63"), path + ": JS reference not updated");
-  assert.ok(html.includes("styles.css?v=fp-20261028-r63"), path + ": CSS reference not updated");
+for (const [path, html] of [["index.html", index], [entry, modern]]) {
+  assert.ok(html.includes("app.js?v=fp-20261028-" + version), path + ": JS reference not updated");
+  assert.ok(html.includes("styles.css?v=fp-20261028-" + version), path + ": CSS reference not updated");
 }
-assert.ok(modern.includes('data-build="r63"'), "Fresh entry has no version marker");
-assert.ok(sw.includes("hopposan-static-r63"), "Service Worker is stale");
+assert.ok(modern.includes('data-build="' + version + '"'), "Fresh entry has no version marker");
+assert.ok(sw.includes("hopposan-static-" + version), "Service Worker is stale");
 assert.ok(sw.includes("release.json"), "Release check cannot bypass Service Worker cache");
-assert.ok(refresh.includes("const BUILD = 'r63'"), "Recovery page checks the wrong version");
-assert.ok(refresh.includes("visual-r63.html"), "Recovery page opens an old entrypoint");
-assert.equal(manifest.start_url, "./visual-r63.html", "PWA start_url is not current");
+assert.ok(refresh.includes("const BUILD = '" + version + "'"), "Recovery page checks the wrong version");
+assert.ok(refresh.includes(entry), "Recovery page opens an old entrypoint");
+assert.equal(manifest.start_url, "./" + entry, "PWA start_url is not current");
 new Function(js);
 new Function(sw);
 
@@ -60,7 +61,7 @@ function smoke(existing) {
   const context = { document, window, navigator, location, localStorage: storage, setTimeout: () => 0, clearTimeout: () => {} };
   vm.runInNewContext(js, context, { timeout: 5000 });
   assert.match(app.markup, /home-visual-header/, "Homepage did not render");
-  assert.match(app.markup, /r63/, "Visible version is not current");
+  assert.ok(app.markup.includes(version), "Visible version is not current");
   return { saved, app, handlers };
 }
 

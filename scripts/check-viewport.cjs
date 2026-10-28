@@ -34,6 +34,14 @@ const server=createServer((req,res)=>{
    await page.waitForTimeout(140);
    await page.locator('.fp-result-nav [data-value="1"]').click();
    await page.locator('.fp-month-four').waitFor();
+   const initial=await page.evaluate(()=>({year:document.querySelector('[data-fp-year]')?.value,month:document.querySelector('[data-fp-cash-month]')?.value,nowYear:String(new Date().getFullYear()),nowMonth:String(new Date().getMonth()+1)}));
+   assert.equal(initial.year,initial.nowYear);assert.equal(initial.month,initial.nowMonth);
+   if(await page.locator('.fp-month-unrecorded').count()){
+     assert.match(await page.locator('.fp-month-unrecorded').innerText(),/未登録/);
+     await page.waitForTimeout(150);
+     await page.locator('[data-act="fp-month-next"]').click();
+     await page.locator('.fp-month-donut').waitFor();
+   }
    const info=await page.evaluate(()=>{
     const bounds={};
     for(const s of ['.fp-month-four','.fp-month-donut','.fp-breakdown-panel']){const r=document.querySelector(s)?.getBoundingClientRect();bounds[s]=r?{left:r.left,right:r.right,width:r.width,height:r.height}:null;}
@@ -41,7 +49,7 @@ const server=createServer((req,res)=>{
    });
    const browserClock=await page.evaluate(()=>({year:String(new Date().getFullYear()),month:String(new Date().getMonth()+1)}));
    console.log('Month initialization',info.month,'browser',browserClock.month);
-   assert.equal(info.year,browserClock.year);assert.equal(info.month,browserClock.month);
+   assert.ok(Number(info.year)>=Number(browserClock.year));
    assert.ok(info.scrollWidth<=width+2,'Horizontal page overflow');
    for(const [key,r] of Object.entries(info.bounds)){assert.ok(r,key+' missing');assert.ok(r.left>=-2&&r.right<=width+2,key+' outside viewport');}
    const oldDiameter=info.bounds['.fp-month-donut'].width;

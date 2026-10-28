@@ -1,8 +1,8 @@
-// HOPPY r66: small, reliable cache. Always prefer server files when online.
-const CACHE = 'hopposan-static-r66';
-const SCRIPT = './app.js?v=fp-20261028-r66';
-const STYLE = './styles.css?v=fp-20261028-r66';
-const PRECACHE = ['./index.html','./visual-r66.html','./fp-r60.html',SCRIPT,STYLE,'./manifest.webmanifest','./icon.svg'];
+// HOPPY r67: small, reliable cache. Always prefer server files when online.
+const CACHE = 'hopposan-static-r67';
+const SCRIPT = './app.js?v=fp-20261028-r67';
+const STYLE = './styles.css?v=fp-20261028-r67';
+const PRECACHE = ['./index.html','./visual-r67.html','./fp-r60.html',SCRIPT,STYLE,'./manifest.webmanifest','./icon.svg'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -44,7 +44,7 @@ self.addEventListener('fetch', event => {
         if(response.ok && !refreshPage){
           const copy=response.clone();
           const key=navigation?
-            (url.pathname.endsWith('/visual-r66.html')?'./visual-r66.html':url.pathname.endsWith('/fp-r60.html')?'./fp-r60.html':'./index.html'):
+            (url.pathname.endsWith('/visual-r67.html')?'./visual-r67.html':url.pathname.endsWith('/fp-r60.html')?'./fp-r60.html':'./index.html'):
             request;
           event.waitUntil(caches.open(CACHE).then(c=>c.put(key,copy)).catch(()=>{}));
         }
@@ -52,7 +52,7 @@ self.addEventListener('fetch', event => {
       }catch(_){
         if(refreshPage)return Response.error();
         if(navigation){
-          return await caches.match(request) || await caches.match('./visual-r66.html') || await caches.match('./fp-r60.html') ||
+          return await caches.match(request) || await caches.match('./visual-r67.html') || await caches.match('./fp-r60.html') ||
             await caches.match('./index.html') || Response.error();
         }
         if(url.pathname.endsWith('/app.js')){

@@ -5812,7 +5812,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   #app .fp-meta-dashboard{overflow-y:auto!important}
 }
 
-/* r66: natural height, stable grid, separated loan card */
+/* r67: natural height, stable grid, separated loan card */
 :root,html,body,#app,#app button,#app input,#app select{font-family:"Meiryo UI","メイリオ","Meiryo",sans-serif!important}
 #app .fp-result-nav{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:3px!important;height:42px!important;min-height:42px!important;max-height:42px!important}
 #app .fp-result-nav>button{min-width:0!important;width:100%!important}
@@ -5857,3 +5857,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .fp-loan-proof summary{font-size:12px;font-weight:800;color:#316c50;min-height:30px}
 #app .fp-loan-proof p{font-size:11px;line-height:1.5;color:#63776a}
 #app .fp-loan-proof button{min-height:40px;background:#f3f7f3;border:1px solid #dce5de;color:#326b52;border-radius:9px}
+
+/* r67 — distinguish unrecorded periods from real zero-yen cashflow */
+#app .fp-month-unrecorded{flex:none;display:flex;align-items:center;gap:9px;justify-content:space-between;
+ padding:10px 11px;border:1px solid #e5e9e2;border-radius:12px;background:#fbfaf5}
+#app .fp-month-unrecorded span{flex:1;min-width:0;font-size:11px;line-height:1.45;color:#63766a}
+#app .fp-month-unrecorded button{flex:0 0 auto;border:1px solid #cfe3d5;min-height:42px;
+ padding:9px 10px;border-radius:10px;background:#edf6ee;color:#226b4d;font-size:11px;font-weight:800}
+#app .fp-focus-tile.neutral strong{color:#7a8c80!important}
+@media(max-width:350px){#app .fp-month-unrecorded{flex-direction:column;align-items:stretch}}

@@ -20,12 +20,12 @@ footer{margin-top:18px;color:#8b9991;font-size:11px;line-height:1.6}
 </head>
 <body>
 <main>
-<small>HOPPY · RELEASE r66</small>
+<small>HOPPY · RELEASE r67</small>
 <h1>アプリを最新版に更新</h1>
 <p>オフライン用の古い一時ファイルを入れ替えます。家計・物件・メモなどの保存データは削除しません。</p>
 <div id="status" role="status" aria-live="polite">公開されているアプリのバージョンを確認しています。</div>
 <button id="repair" type="button" disabled>更新してアプリを開く</button>
-<a href="./visual-r66.html?source=refresh">最新版を直接開く</a>
+<a href="./visual-r67.html?source=refresh">最新版を直接開く</a>
 <a href="./diagnose.html">端末と公開版の状況を確認する</a>
 <footer>更新対象はほっぽさんのキャッシュとService Workerのみです。ブラウザの履歴、写真、localStorage、IndexedDBを消去する処理はありません。</footer>
 </main>
@@ -34,20 +34,20 @@ footer{margin-top:18px;color:#8b9991;font-size:11px;line-height:1.6}
  const status=document.getElementById('status'),button=document.getElementById('repair');
  function set(t,bad=false){status.textContent=t;status.className=bad?'error':''}
  try{
-   const url=new URL('./app.js?release=r66&verify='+Date.now(),location.href);
+   const url=new URL('./app.js?release=r67&verify='+Date.now(),location.href);
    const res=await fetch(url.href,{cache:'no-store'});
    if(!res.ok)throw Error('公開ファイルへのアクセスに失敗しました（HTTP '+res.status+'）。');
    const js=await res.text();
-   if(!js.includes("const BUILD = 'r66'") || !js.includes('home-visual-header')){
+   if(!js.includes("const BUILD = 'r67'") || !js.includes('home-visual-header')){
      set('公開中のJavaScriptは旧版です。GitHub Pagesの公開反映を確認してください。',true);
      return;
    }
-   const pageResponse=await fetch('./visual-r66.html?verify='+Date.now(),{cache:'no-store'});
-   if(!pageResponse.ok || !(await pageResponse.text()).includes('data-build="r66"')){
-     set('新画面r66が公開されていません。GitHub Pagesの配信状況を確認してください。',true);
+   const pageResponse=await fetch('./visual-r67.html?verify='+Date.now(),{cache:'no-store'});
+   if(!pageResponse.ok || !(await pageResponse.text()).includes('data-build="r67"')){
+     set('新画面r67が公開されていません。GitHub Pagesの配信状況を確認してください。',true);
      return;
    }
-   set('公開コードと新画面のr66を確認しました。更新できます。');
+   set('公開コードと新画面のr67を確認しました。更新できます。');
    button.disabled=false;
  }catch(e){set('公開版を確認できません。通信状態を確認してから再度開いてください。 '+String(e.message||e),true);return}
  button.onclick=async()=>{
@@ -64,7 +64,7 @@ footer{margin-top:18px;color:#8b9991;font-size:11px;line-height:1.6}
        const keys=await caches.keys();
        for(const key of keys)if(key.startsWith('hopposan-'))await caches.delete(key);
      }
-     location.replace('./visual-r66.html?fresh='+Date.now());
+     location.replace('./visual-r67.html?fresh='+Date.now());
    }catch(e){
      set('一部のキャッシュ削除に失敗しました。下の「最新版を直接開く」を利用してください。 '+String(e.message||e),true);
      button.disabled=false;

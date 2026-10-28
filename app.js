@@ -1124,6 +1124,16 @@
       priceDifference=b.amount-price,monthlyHome=loan.monthly+b.maintenance,
       housingRoom=b.monthlyIncome-b.living-b.school-b.investing-b.cashTarget-b.buffer,
       monthlyLeft=housingRoom-monthlyHome,
+      // Worst year's capacity is BEFORE mortgage payments. Subtract the actual
+      // chosen loan payment to test the property, rather than testing only <0.
+      futureMonthlyLeft=b.worstSurplus-loan.monthly,
+      stressedPayment=fpMortgageDisplayAmounts(price-down,b.rate+1,b.loanYears).monthly,
+      stressedLeft=housingRoom-(stressedPayment+b.maintenance),
+      projected=modelYears(price,true),
+      purchasePoint=projected.points.find(x=>x.year===b.purchaseYear),
+      purchaseMonthCash=purchasePoint?fpMonthlyLedger(purchasePoint).months[fpPurchaseMonth()-1].endingCash:null,
+      minimumReserve=6*(b.living+b.school+b.maintenance+loan.monthly),
+      lowLiquidity=purchaseMonthCash!==null&&purchaseMonthCash<minimumReserve,
       essentialMissing=b.missingEssentialInputs.length>0,
       hasPrice=price>0,
       within=hasPrice&&price<=b.amount+1e-8,
@@ -1139,15 +1149,17 @@
       essentialMissing?'生活費に未入力があるため、判定保留':
       !livingSafe?'現在の生活費を守るには購入価格の見直しが必要':
       !within?'貯金・NISAの積立を維持するには予算超過':
-      b.worstSurplus<0?'購入時の目安内。ただし将来の支出増に注意':
+      futureMonthlyLeft<0?'現在は目安内でも、将来の家計で返済・積立の両立に注意':
+      lowLiquidity?'返済目安内でも購入後の生活防衛資金が不足':
       '登録済みの家計では積立を維持できる見込み';
     const warning=b.possibleLivingOverlap?
       '「その他の生活費」と個別の支出が重複していないか確認':
       essentialMissing?'未入力：'+b.missingEssentialInputs.join('・')+'。目安価格が過大になるおそれがあります':
       b.referenceYear!==b.purchaseYear?
         b.purchaseYear+'年の出産期の減収は「年収支」で別途確認':
-      b.worstSurplus<0?
-        b.worstYear+'年には月額換算'+fpYen(-b.worstSurplus)+'の支出超過リスク':
+      futureMonthlyLeft<0?
+        b.worstYear+'年はこの物件のローン返済後、月額換算'+fpYen(-futureMonthlyLeft)+'不足する試算':
+      lowLiquidity?'購入月末の予測現金が防衛資金6か月分を下回る':
         '';
     return '<section class="fp-decision-card" aria-label="住宅購入の予算・検討価格と毎月の差額">'+
       '<div class="fp-decision-heading"><strong>住宅購入の判断</strong>'+
@@ -1171,6 +1183,12 @@
         '<div class="fp-decision-remain '+monthlyTone+'"><span>支払った後の残額</span>'+
           '<strong>'+remainingText+'</strong></div></div>'+
       '<p class="fp-decision-payment-detail">この物件の住居費 ＝ <b class="fp-interest-included">ローン返済（金利込み）'+fpYen(loan.monthly)+'</b> ＋ 税・修繕等 '+fpYen(b.maintenance)+' ／月</p>'+
+      '<p class="fp-decision-stress">金利が当初から＋1％なら月返済 '+fpYen(stressedPayment)+
+        '、積立後の残額 <b class="'+fpBalanceTone(stressedLeft)+'">'+fpSignedYen(stressedLeft)+
+        '</b>。将来の厳しい年（'+b.worstYear+'年）の月余力は <b class="'+fpBalanceTone(futureMonthlyLeft)+'">'+
+        fpSignedYen(futureMonthlyLeft)+'</b>（現在の返済額で比較）。</p>'+
+      '<p class="fp-decision-stress">購入月末の現金見込：'+(purchaseMonthCash===null?'計算期間外':fpSignedYen(purchaseMonthCash))+
+        ' ／生活防衛資金の確認目安（6か月）'+fpYen(minimumReserve)+'。<small>家計の目安と銀行審査は別です。</small></p>'+
       (warning?'<p class="fp-decision-warning">'+esc(warning)+'</p>':'')+
       '<details class="fp-decision-details"><summary>計算式・金利・諸費用を見る</summary>'+
         '<div class="fp-decision-detail-body">'+
@@ -1186,6 +1204,8 @@
           '<p>購入時の現金支出は頭金 '+fpYen(down)+' ＋ 諸費用7％（'+fpYen(price*.07)+
             '）＝ '+fpYen(down+price*.07)+'。購入月の現金残高を別途確認してください。</p>'+
           '<p>価格と差額は万円単位に丸めて表示。家計の判定は丸める前の数値で行います。</p>'+
+          '<p>＋1％は借入時から高金利だった場合の比較であり、返済途中の金利見直しを再現したものではありません。家計の審査と異なる額面年収・他の借入条件が必要なため、銀行の返済負担率は算定していません。</p>'+
+          '<p>出産・育休年の給与、出生月、手当受給の開始は年単位の簡易仮定です。教育費や金利の予測に確実性はありません。</p>'+
           '<button type="button" data-act="fp-capacity-basis">詳細な計算根拠を見る ›</button>'+
         '</div></details>'+
       '<button type="button" data-act="fp-fix-input" data-value="4:0" class="fp-decision-edit">検討中の物件価格・購入時期を変更 ›</button>'+
@@ -1198,8 +1218,8 @@
       level='bad';label='生活費が不足';reason='生活費を優先した場合でも物件の月返済に届きません。';
     }else if(price>budget.amount){
       level='warn';label='積立の見直し';reason='貯金・NISAを希望どおり続けるには予算超過です。';
-    }else if(budget.worstSurplus<0){
-      level='warn';label='将来の家計注意';reason=budget.worstYear+'年は賞与を除いた月給基準で家計余力が不足します。年次現金残高も確認してください。';
+    }else if(budget.worstSurplus<info.payment){
+      level='warn';label='将来の家計注意';reason=budget.worstYear+'年は賞与を除いた月給基準で、この物件のローン返済と設定した貯蓄を両立できません。年次現金残高も確認してください。';
     }
     if(info.spendable<0&&level==='good'){
       level='warn';label='家計確認';reason='毎月の保険・子育て・積立を引くと、余裕費が不足します。';

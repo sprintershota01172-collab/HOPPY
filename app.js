@@ -154,7 +154,7 @@
     const oldFPKind=oldFP?.classList?.contains('fp-month-report')?'monthly':oldFP?'annual':null;
     const oldFPScroll=oldFP?.scrollTop||0;
     const body=ui.tab==='property'?propertyScreen():ui.tab==='compare'?compareScreen():ui.tab==='sim'?simulationScreen():ui.tab==='memo'?memoScreen():ui.tab==='updates'?updateLogScreen():pendingScreen();
-    app.innerHTML='<main class="main" aria-label="ホッポさんアプリ">'+body+'</main><nav class="bottom" aria-label="メインメニュー">'+nav.map(([key,name])=>'<button class="tab '+(ui.tab===key?'active':'')+'" data-act="tab" data-value="'+key+'" aria-current="'+(ui.tab===key?'page':'false')+'"><span class="nav-icon">'+tabIcon(key)+'</span><span class="tab-label">'+name+'</span></button>').join('')+'</nav>'+(ui.overlay?overlay(): '');
+    app.innerHTML='<main class="main" aria-label="ホッポさんアプリ">'+body+'</main><nav class="bottom" aria-label="メインメニュー">'+nav.map(([key,name])=>'<button class="tab '+(ui.tab===key?'active':'')+'" aria-label="'+name+'" data-act="tab" data-value="'+key+'" aria-current="'+(ui.tab===key?'page':'false')+'"><span class="nav-icon">'+tabIcon(key)+'</span><span class="tab-label">'+name+'</span></button>').join('')+'</nav>'+(ui.overlay?overlay(): '');
     // Changing month/year or a value must not snap a scrolled breakdown
     // back to the start of the FP report.
     if(oldFPKind){
@@ -2305,7 +2305,7 @@ function fpMetaDashboard(){
  <section class="fp-meta-month">
   <div class="fp-meta-row"><span>毎月、最後に残るお金</span><button data-act="fp-result-tab" data-value="1">内訳 ›</button></div>
   <strong class="fp-meta-remain ${fpBalanceTone(remaining)}">${signed(remaining)}<small>${fpSignedYen(remaining)}</small></strong>
-  <div class="fp-meta-pair"><div><span>住居に使える</span><b class="${housingRoom<0?'negative':''}">${compact(housingRoom)}</b></div><div><span>ローン＋維持費</span><b class="interest">${compact(housing)}</b></div></div>
+  <div class="fp-meta-pair"><div><span>住居に使える</span><b class="${housingRoom<0?'negative':''}">${housingRoom<0?'−':''}${compact(housingRoom)}</b></div><div><span>ローン＋維持費</span><b class="interest">${compact(housing)}</b></div></div>
   <div class="fp-meta-inline"><i></i> 住宅ローン ${compact(loan.monthly)}/月・金利込み</div>
  </section>
  <section class="fp-meta-spending">

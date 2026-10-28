@@ -160,6 +160,14 @@
       const nextFP=app.querySelector(oldFPKind==='monthly'?'.fp-month-report':'.fp-pie-panel');
       if(nextFP)nextFP.scrollTop=oldFPScroll;
     }
+    // First mount has no panel to measure while body HTML is being built.
+    // Refill the actual visible card before paint; avoid touching chart geometry.
+    const liveBreakdown=app.querySelector('.fp-month-report .fp-breakdown-panel')?'monthly':
+      app.querySelector('.fp-pie-panel .fp-breakdown-panel')?'annual':null;
+    if(liveBreakdown){
+      fpRefreshSelectedBreakdown(liveBreakdown,liveBreakdown==='monthly'?
+        ui.fpBreakdownMonthly:ui.fpBreakdownAnnual);
+    }
     renderToast();hydratePhotos();
   }
   function empty(icon,title,desc,action,label){return '<section class="panel grow empty"><div class="big">'+icon+'</div><h2 class="section-title">'+esc(title)+'</h2><p>'+esc(desc)+'</p>'+ (action?'<button class="btn primary" data-act="'+action+'">'+esc(label)+'</button>':'')+'</section>';}
@@ -1480,6 +1488,34 @@
     }
     return rows;
   }
+  // Fit as many complete four-column rows as the existing card can contain.
+  // The chart, card dimensions and 38px cell pitch must never change when
+  // selecting a category; additional items stay accessible through pagination.
+  function fpBreakdownPageSize(period){
+    const host=app.querySelector(period==='monthly'?'.fp-month-report':'.fp-pie-panel');
+    const panel=host?.querySelector?.('.fp-breakdown-panel');
+    const title=panel?.querySelector?.('.fp-breakdown-title');
+    const grid=panel?.querySelector?.('.fp-breakdown-list');
+    if(panel?.getBoundingClientRect && title?.getBoundingClientRect &&
+       grid && typeof window.getComputedStyle==='function'){
+      const panelHeight=panel.getBoundingClientRect().height;
+      if(panelHeight>0){
+        const panelCSS=window.getComputedStyle(panel);
+        const gridCSS=window.getComputedStyle(grid);
+        const px=(value,fallback=0)=>Number.parseFloat(value)||fallback;
+        const rowGap=px(gridCSS.rowGap,4);
+        const cellHeight=px(gridCSS.getPropertyValue('--fp-cell-height'),38);
+        const reserved=title.getBoundingClientRect().height+
+          px(panelCSS.paddingTop)+px(panelCSS.paddingBottom)+
+          px(panelCSS.rowGap,3)+5;
+        const fittingRows=Math.floor((panelHeight-reserved+rowGap)/(cellHeight+rowGap));
+        return 4*Math.min(10,Math.max(1,fittingRows));
+      }
+    }
+    // Bootstrap only: after the initial DOM mount, render() measures the real card
+    // and immediately replaces this provisional list without moving the chart.
+    return window.matchMedia('(max-height:700px)').matches?8:12;
+  }
   function fpPieBreakdownPanel(point,month,items,selectedKey){
     const item=items.find(x=>x.id===selectedKey)||items[0],annual=!month;
     if(!item)return '';
@@ -1492,9 +1528,8 @@
       sorted=item.id==='living'&&!annual?
         [...allRows.filter(isChildRow),...allRows.filter(row=>!isChildRow(row))]:allRows,
       cols=4,
-      // The card and pie keep their existing footprint and 4-column pitch.
-      // Showing more physical rows than fit previously hid costs silently.
-      pageSize=window.matchMedia('(max-height:860px)').matches?4:8,
+      // Use each complete row that fits instead of wasting all but the first.
+      pageSize=fpBreakdownPageSize(period),
       pageCount=Math.max(1,Math.ceil(sorted.length/pageSize)),
       viewKey=[period,point.year,month?.month||0,item.id].join(':');
     if(ui.fpBreakdownPageKey!==viewKey){
@@ -2098,7 +2133,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<a class="fp-build-stamp" title="更新を確認" href="./refresh.html">r56</a></div></div>';
+      '<a class="fp-build-stamp" title="更新を確認" href="./refresh.html">r57</a></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2413,6 +2448,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r57',date:'2026.10.28',title:'生活・子ども費の内訳の空白を解消',
+        details:['内訳を1段4件で区切る固定制限を撤廃','カードに実際に収まる段数を測り最大限表示','円グラフ・枠サイズ・4列ピッチを維持','はみ出す項目のみページ切替で確認']},
       {version:'r56',date:'2026.10.28',title:'生活・子ども費の明細欠けを修正',
         details:['子どもの保険・生活費・保育料・学資保険を内訳の先頭に表示','項目が多い場合も固定枠内で全件確認できるページ切替を追加','出産前の年は費用の計上開始年を表示','円グラフと内訳合計の一致を18ケース以上のテストで検証']},
       {version:'r55',date:'2026.10.28',title:'最終残額・金利込みローン・夫婦別貯金',
@@ -2468,7 +2505,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r56</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r57</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

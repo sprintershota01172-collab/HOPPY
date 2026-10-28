@@ -603,7 +603,7 @@
       f('学資保険（1人）','childEducationInsuranceMonthly'),
       sSelect('高校','highSchool',[['public','公立'],['private','私立']]),
       sSelect('大学','university',[['public','国公立'],['private','私立']])
-    ],'手入力の学資保険は出生〜17歳まで支出計上。子ども別の目標逆算は次のページで設定します。'));
+    ],'手入力の学資保険は出生〜17歳まで支出計上。小中高校の学費は文科省2026年訂正統計を基準にし、大学は独自の予算仮定です。'));
       for(let child=1;child<=Math.min(3,Math.round(safeNum(p.children)));child++)pages.push(fpEducationGoalForm(child));
     }
     if(i===4){
@@ -629,7 +629,7 @@
           (Number(p.legacySavingsNotice)===1?'<p class="fp-spouse-migration">旧「夫婦合計」を夫の欄に仮置きしています。夫婦別の金額に修正してください。合計はそのまま保持しています。</p>':'')+
         '</div>',
         f('これからの援助','support','万円')
-      ],'夫と妻の貯金を別々に登録。合計は資産推移・住宅購入時の現金へ反映します。'));
+      ],'夫と妻の現在の貯金残高を入力。今月末の残高を起点として、翌月以降の現金を予測します。過去月の給与は再加算しません。'));
       pages.push(fpCompactPage('現金の積立目標',[
         sSelect('現金貯金の決め方','goalCashEnabled',[[0,'毎月の金額を入力'],[1,'目標額から自動計算']]),
         ...(Number(p.goalCashEnabled)===1?[
@@ -958,6 +958,7 @@
         .filter(entry=>entry.month>=activeStart).reduce((sum,entry)=>sum+entry.total,0);
       const monthlyParts=fpBaseMonthly(year);
       const loan=buy&&year>=purchaseYear?loanByYear.get(year):null;
+      const activeLoanMonths=buy?amort.months.filter(m=>m.year===year&&m.month>=activeStart):[];
       const housingMonths=Array.from({length:12},(_,index)=>{
         const month=index+1;
         if(!buy||year<purchaseYear||(year===purchaseYear&&month<purchaseMonth))
@@ -968,8 +969,7 @@
         .filter(m=>m>=activeStart&&buy&&(year>purchaseYear||
           (year===purchaseYear&&m>=purchaseMonth))).length;
       const rentMonths=activeMonths-ownedMonths;
-      const housingLoan=buy?amort.months
-        .filter(m=>m.year===year&&m.month>=activeStart).reduce((sum,m)=>sum+m.payment,0):0;
+      const housingLoan=activeLoanMonths.reduce((sum,m)=>sum+m.payment,0);
       const housingMaintenance=ownedMonths*safeNum(p.housingOngoing);
       const housingRent=rentMonths*fpRentMonthly(p);
       const housing=(housingLoan+housingMaintenance+housingRent)/12;
@@ -1013,7 +1013,9 @@
         monthly,school,birth,annualFixed,upfront,events,housing,housingMonths,
         housingLoan,housingMaintenance,housingRent,ownedMonths,rentMonths,
         education:school,monthlyParts,children,contributions:investedContributions,
-        loanBalance:loan?.balance||0,loanPrincipal:loan?.principalPaid||0,loanInterest:loan?.interest||0});
+        loanBalance:loan?.balance||0,
+        loanPrincipal:activeLoanMonths.reduce((sum,m)=>sum+m.principalPaid,0),
+        loanInterest:activeLoanMonths.reduce((sum,m)=>sum+m.interest,0)});
     }
     return {points,monthly:payment,purchaseYear,purchaseMonth,ending:points.at(-1).cash,
       min:Math.min(...points.map(x=>x.cash)),nisa,otherInvest};
@@ -2280,7 +2282,7 @@
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open">履歴</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events">イベント＋</button>'+
       '<button class="btn compact" data-act="sim-restart">編集 ↗</button>'+
-      '<a class="fp-build-stamp" title="更新を確認" href="./refresh.html">r59</a></div></div>';
+      '<a class="fp-build-stamp" title="更新を確認" href="./refresh.html">r60</a></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2591,6 +2593,8 @@
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r60',date:'2026.10.28',title:'現在残高の二重計上を修正・訂正学費で検算',
+        details:['現在の預貯金・NISAを今月末起点として翌月から予測','過去の給与・支出・積立を再度加えない','月収支・年収支・住宅購入月・年別現金の一致を検証','小中高校の学費を2026年訂正後の公的調査額へ更新','教育・NISA・現金の目標積立月数を補正']},
       {version:'r59',date:'2026.10.28',title:'公的FP資料と検算に基づく計算モデル改訂',
         details:['頭金を借入元金と購入月現金へ反映','将来年の返済後余力と6か月の防衛資金を点検','金利＋1％の家計余力・完済時年齢・試算期限を表示','児童手当の制度額概算と任意の物価上昇を追加','既存の入力値は維持して新機能は選択式']},
       {version:'r58',date:'2026.10.28',title:'住宅購入の予算・検討価格・月の残額を1画面に統合',
@@ -2652,7 +2656,7 @@
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r59</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r60</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+

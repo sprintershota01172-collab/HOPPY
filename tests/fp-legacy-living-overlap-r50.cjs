@@ -42,6 +42,6 @@ assert.equal(p.electricityMonthly,1);
 b=api.fpBudget();
 assert.equal(b.possibleLivingOverlap,false);
 assert.ok(b.basicLoanPayment>oldPayment+15,'removing duplicated 200k increases safe mortgage headroom');
-assert.ok(api.fpMortgageCapacityCard().includes('借入参考額'));
+assert.ok(api.fpMortgageCapacityCard().includes('物件価格の目安'));
 assert.ok(b.basicAmount>0&&Number.isFinite(b.basicAmount));
 console.log('HOPPY r50: legacy 200k overlap flagged, user confirmation required, safe recalculation PASS');

@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const BUILD = 'r69';
+  const BUILD = 'r70';
   // A tiny non-sensitive marker helps diagnose installed PWA update issues.
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'hoppy-phase1-v1';
@@ -231,7 +231,7 @@
     const budget=state.plan.hasRun?fpBudget():null;
     const price=budget&&budget.amount>0?yen(Math.floor(budget.amount),0)+'<small>万円</small>':'設定する';
     return '<section class="screen home-screen home-visual-screen">'+
-      '<div class="home-visual-header"><span class="home-visual-title">住まい <i>HOME</i></span><button data-act="diagnostics" class="home-visual-version" title="更新状態を確認" aria-label="更新状態を確認する r69">r69</button></div>'+
+      '<div class="home-visual-header"><span class="home-visual-title">住まい <i>HOME</i></span><button data-act="diagnostics" class="home-visual-version" title="更新状態を確認" aria-label="更新状態を確認する r70">r70</button></div>'+
       '<div class="home-visual-hero">'+
         '<button data-act="home-compare" class="home-visual-stat"><span>検討中</span><strong>'+count+'<small>件</small></strong><em>物件を比較 ›</em></button>'+
         '<button data-act="tab" data-value="sim" class="home-visual-stat fp"><span>購入の目安</span><strong>'+price+'</strong><em>FPで確認 ›</em></button></div>'+
@@ -1113,7 +1113,7 @@
   // ordinary wages in the intended purchase year. Later tuition peaks are
   // a separate explicit risk, not an all-or-nothing zero-mortgage switch.
   // Unit for every monetary amount below: 10,000 JPY per month.
-  function fpBudget(){
+  function fpBudget(referenceYearOverride=null){
     const p=state.plan,start=simNowYear(),
       purchaseYear=Math.max(start,Math.round(safeNum(p.purchaseYear,start+2))),
       kids=Math.min(3,Math.max(0,Math.round(safeNum(p.children)))),
@@ -1124,8 +1124,10 @@
       years=Array.from({length:finalYear-purchaseYear+1},(_,i)=>fpHousingYearBudget(purchaseYear+i,p,eduFunding)),
       // The delivery-year temporary pay reduction is assessed as an annual risk;
       // normal recurring instalments use the first ordinary post-birth year.
-      referenceYear=kids&&purchaseYear===safeNum(p.firstChildYear)?purchaseYear+1:purchaseYear,
-      initial=years.find(row=>row.year===referenceYear)||years[0],
+      defaultReferenceYear=kids&&purchaseYear===safeNum(p.firstChildYear)?purchaseYear+1:purchaseYear,
+      referenceYear=referenceYearOverride===null?defaultReferenceYear:
+        Math.max(start,Math.min(finalYear,Math.floor(Number(referenceYearOverride)||start))),
+      initial=years.find(row=>row.year===referenceYear)||fpHousingYearBudget(referenceYear,p,eduFunding),
       itemizedLiving=fpDetailCategories.reduce((sum,[key])=>sum+
         (key==='livingMonthly'?0:key==='waterBiMonthly'?safeNum(p[key])/2:safeNum(p[key])),0),
       legacyOtherLiving=safeNum(p.livingMonthly),
@@ -1180,7 +1182,7 @@
       maintenance,cashflowHousingLimit:balanceCap,
       loanPrincipal:principalFor(loanPayment,safeNum(p.interest)),downPayment:down,
       rate:safeNum(p.interest),loanYears:safeNum(p.loanYears,35),
-      loanPayment,referenceYear,startYear:referenceYear,purchaseYear,endYear:finalYear,
+      loanPayment,referenceYear,defaultReferenceYear,startYear:referenceYear,purchaseYear,endYear:finalYear,
       worstYear:worst.year,worstSurplus:worst.annualHousingCap,worst:worst,
       futureDeficitYears:assessed.filter(row=>row.annualHousingCap<0).length,
       years:assessed};
@@ -1194,11 +1196,12 @@
   // PROPERTY PRICE -> monthly ALL-IN housing cost -> remainder. Loan interest,
   // cash transaction costs and underwriting are explicitly separated.
   function fpLoanFocusCard(){
-    const b=fpBudget(),p=state.plan,price=Math.max(0,safeNum(p.propertyPrice)),
+    const b=fpBudget(ui.fpYear),p=state.plan,price=Math.max(0,safeNum(p.propertyPrice)),
       down=fpDownPayment(price,p),principal=Math.max(0,price-down),
       pay=fpMortgageDisplayAmounts(principal,b.rate,b.loanYears),left=b.rawLoanPayment-pay.monthly;
     const row=(name,value)=>'<div class="fp-loan-row"><span>'+name+'</span><b>'+value+'</b></div>';
-    return '<div class="fp-loan-focus"><div class="fp-loan-year">購入後の家計：'+b.referenceYear+'年</div>'+
+    return '<div class="fp-loan-focus"><div class="fp-loan-year">'+
+      (b.referenceYear<b.purchaseYear?'購入前の家計で仮試算：':'購入後の家計：')+b.referenceYear+'年</div>'+
       '<section class="fp-loan-card"><strong>家計から逆算</strong>'+
       row('夫婦の月手取り',fpYen(b.monthlyIncome))+
       row('生活費・教育費・積立・予備費','−'+fpYen(b.living+b.school+b.investing+b.cashTarget+b.buffer))+
@@ -1212,8 +1215,8 @@
       '<div><span>金利込み総返済額</span><strong>'+fpYen(pay.total)+'</strong></div></div>'+
       row('金利・期間',yen(b.rate,2)+'％・'+Math.round(b.loanYears)+'年')+
       '<div class="fp-loan-feature '+fpBalanceTone(left)+'"><span>月々の最終残額</span><strong>'+fpSignedYen(left)+'</strong></div></section>'+
-      '<details class="fp-loan-proof"><summary>計算根拠を見る</summary><p>購入年'+b.purchaseYear+'年／返済基準年'+b.referenceYear+'年。'+
-      (b.referenceYear!==b.purchaseYear?'出産年の一時的な減収と翌年の通常収入を区別。':'購入年の給与を採用。')+'</p>'+
+      '<details class="fp-loan-proof"><summary>計算根拠を見る</summary><p>購入予定'+b.purchaseYear+'年／表示中'+b.referenceYear+'年。'+
+      (b.referenceYear<b.purchaseYear?'購入前の給与・生活費を用いた比較用の仮試算。住宅ローンは購入予定年から計上。':'選択年の給与・生活費・教育費を用いた家計試算。')+'</p>'+
       '<p>返済可能額＝月手取り－生活・教育費－積立－予備費－維持費。賞与は除外。</p>'+
       '<p>借入目安は元利均等で逆算。総額は月返済×'+pay.months+'回（利息 '+fpYen(pay.interest)+'）。銀行審査とは異なります。</p>'+
       '<button data-act="fp-fix-input" data-value="4:1">金利・年数・維持費を編集 ›</button></details></div>';
@@ -1448,6 +1451,25 @@
     const pts=model.points,month=ui.simResultPage===1||ui.simResultPage===7,key=month?'fpMonthYear':'fpYear';
     if(!pts.some(x=>x.year===ui[key]))ui[key]=Math.max(pts[0].year,Math.min(pts.at(-1).year,simNowYear()));
     return '<label class="fp-year-select"><span>'+(month?'家計':'将来')+'</span><select data-fp-year aria-label="表示年">'+pts.map(x=>'<option value="'+x.year+'" '+(x.year===ui[key]?'selected':'')+'>'+x.year+'年</option>').join('')+'</select></label>';
+  }
+  // A single visible year control; monthly calendar remains independent.
+  function fpYearTimebar(model){
+    const pts=model.points;if(!pts?.length)return '';
+    const monthly=ui.simResultPage===1,key=monthly?'fpMonthYear':'fpYear';
+    const first=pts[0].year,last=pts.at(-1).year;
+    ui[key]=Math.max(first,Math.min(last,Math.floor(Number(ui[key])||first)));
+    const year=ui[key],purchase=Math.round(safeNum(state.plan.purchaseYear,first+2));
+    const stage=year<purchase?'購入前':year===purchase?'購入年':'購入後';
+    const presets=[['今年',simNowYear()],['購入年',purchase],['翌年',purchase+1]]
+      .filter(([label,y],i,a)=>y>=first&&y<=last&&a.findIndex(x=>x[1]===y)===i);
+    return '<div class="fp-timebar" role="group" aria-label="家計の表示年">'+
+      '<div class="fp-time-switch"><button data-act="fp-year-shift" data-value="-1" '+(year===first?'disabled':'')+' aria-label="前年">‹</button>'+
+      '<label class="fp-time-picker"><span>表示年</span><select data-fp-year aria-label="表示年を選択">'+
+       pts.map(x=>'<option value="'+x.year+'" '+(x.year===year?'selected':'')+'>'+x.year+'年</option>').join('')+
+       '</select></label><button data-act="fp-year-shift" data-value="1" '+(year===last?'disabled':'')+' aria-label="翌年">›</button></div>'+
+      '<div class="fp-time-presets">'+presets.map(([label,y])=>
+        '<button data-act="fp-year-preset" data-value="'+y+'" class="'+(y===year?'active':'')+'">'+label+'</button>').join('')+
+      '</div><span class="fp-time-stage">'+stage+'</span></div>';
   }
   function fpExpenseDetails(point,buy){
     const p=state.plan,year=point.year;
@@ -2115,7 +2137,7 @@
     const point=fpYearPoint(model),months=fpMonthlyLedger(point).months,
       m=months[Math.max(0,Math.min(11,(ui.fpCashMonth||1)-1))],unrecorded=!!m.historical,
       tile=(label,v,tone='')=>'<div class="fp-focus-tile '+tone+'"><span>'+label+'</span><strong class="'+(label==='全て引いた残額'?'fp-month-final '+tone:'')+'">'+v+'</strong></div>';
-    return '<div class="fp-month-report fp-focus-report"><div class="fp-month-controls">'+fpYearSelect(model)+
+    return '<div class="fp-month-report fp-focus-report"><div class="fp-month-controls">'+
       '<label class="fp-month-select">月 <select data-fp-cash-month>'+months.map(x=>'<option value="'+x.month+'" '+(x.month===m.month?'selected':'')+'>'+x.month+'月</option>').join('')+'</select></label>'+
       '<small>'+(unrecorded?'実績未登録':'月次予測')+'</small></div>'+
       '<div class="fp-month-four">'+
@@ -2142,7 +2164,7 @@
       '<strong class="'+(balance<0?'fp-amount-negative':'')+'">'+fpYen(balance)+'</strong>'+
       '<small class="'+fpBalanceTone(diff)+'">'+(monthly?'年初比 ':'前年比 ')+fpSignedYen(diff)+'</small></div>';
     return '<div class="fp-assets-report grow">'+
-      '<div class="fp-assets-toolbar">'+fpYearSelect(model)+
+      '<div class="fp-assets-toolbar">'+
       '<div class="fp-income-toggle"><button data-act="fp-asset-period" data-value="year" class="'+(!monthly?'active':'')+'">年末</button>'+
       '<button data-act="fp-asset-period" data-value="month" class="'+(monthly?'active':'')+'">月末</button></div></div>'+
       (monthly?'<div class="fp-assets-months">'+Array.from({length:12},(_,i)=>'<button data-act="fp-asset-month" data-value="'+(i+1)+'" class="'+(month===i+1?'active':'')+'">'+(i+1)+'</button>').join('')+'</div>':'')+
@@ -2322,7 +2344,7 @@
       '<p class="fp-r-help">公的資料を参照した計算上の助言です。安全の保証や金融機関の事前審査ではありません。</p></div>';
   }
 function fpMetaDashboard(){
- const b=fpBudget(),p=state.plan,price=Math.max(0,safeNum(p.propertyPrice)),down=fpDownPayment(price,p);
+ const b=fpBudget(ui.fpYear),p=state.plan,price=Math.max(0,safeNum(p.propertyPrice)),down=fpDownPayment(price,p);
  const loan=fpMortgageDisplayAmounts(price-down,b.rate,b.loanYears),housing=loan.monthly+b.maintenance;
  const housingRoom=b.monthlyIncome-b.living-b.school-b.investing-b.cashTarget-b.buffer;
  const remaining=housingRoom-housing;
@@ -2349,7 +2371,7 @@ function fpMetaDashboard(){
   futureDeficit?'将来の家計にも注意':'金額をタップすると詳細を確認できます';
  return `<div class="fp-meta-dashboard grow">
  <section class="fp-meta-lead">
-  <div class="fp-meta-overline">買える家の目安 <span>購入後の家計：${b.referenceYear}年</span></div>
+  <div class="fp-meta-overline">買える家の目安 <span>${b.referenceYear}年の給与で試算</span></div>
   <div class="fp-meta-budget"><strong>${hasBudget?yen(Math.floor(b.amount),0):'—'}<small>万円</small></strong><button data-act="fp-capacity-basis" aria-label="計算の根拠を見る">ⓘ</button></div>
   <div class="fp-meta-target"><span>検討中 <b>${hasPrice?yen(price,0)+'万円':'未入力'}</b></span><button data-act="fp-fix-input" data-value="4:0">変更 ›</button></div>
   <div class="fp-meta-gauge" role="meter" aria-label="検討価格に対する予算比" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(ratio)}"><i class="${hasPrice&&!within?'over':''}" style="width:${ratio}%"></i></div>
@@ -2389,7 +2411,7 @@ function fpMetaDashboard(){
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open" aria-label="診断履歴" title="診断履歴">◷</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events" aria-label="イベント登録" title="イベント登録">＋</button>'+
       '<button class="btn compact" data-act="sim-restart" aria-label="家計の編集" title="家計の編集">✎</button>'+
-      '<a class="fp-build-stamp" title="更新状態を確認" href="./diagnose.html">r69</a></div></div>';
+      '<a class="fp-build-stamp" title="更新状態を確認" href="./diagnose.html">r70</a></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2408,7 +2430,7 @@ function fpMetaDashboard(){
     }
     const primaryTabs=[[0,'概要'],[1,'月収支'],[5,'ローン'],[3,'将来'],[2,'資産'],[7,'設定']];
     const tabs='<div class="fp-result-nav" role="tablist" aria-label="FPの画面">'+
-      primaryTabs.map(([i,label])=>'<button role="tab" title="'+label+'" aria-label="'+label+'" aria-selected="'+(page===i)+'" data-act="fp-result-tab" data-value="'+i+'" class="'+(page===i?'active':'')+'">'+fpMetaIcon(i)+'</button>').join('')+'</div>';
+      primaryTabs.map(([i,label])=>'<button role="tab" title="'+label+'" aria-label="'+label+'" aria-selected="'+(page===i)+'" data-act="fp-result-tab" data-value="'+i+'" class="'+(page===i?'active':'')+'"><span class="fp-nav-mark">'+fpMetaIcon(i)+'</span><span class="fp-nav-text">'+label+'</span></button>').join('')+'</div>';
     let content='';
     if(page===0){
       content=fpMetaDashboard();
@@ -2421,7 +2443,7 @@ function fpMetaDashboard(){
       const selectedYear=fpYearPoint(current);
       content='<div class="fp-r-chart-page grow">'+
         fpPageNav(4,chartPage,'fp-chart-page',['現金','年間収支','ローン','円グラフ'])+
-        fpYearSelect(current)+fpSurplusStrip(selectedYear.incomes,selectedYear.netCash,selectedYear.year+'年')+
+        fpSurplusStrip(selectedYear.incomes,selectedYear.netCash,selectedYear.year+'年')+
         fpChartData(price,current,rent)+'</div>';
     }else if(page===4){
       content=fpIncomeReport(current);
@@ -2431,7 +2453,8 @@ function fpMetaDashboard(){
       content=fpAdviceScreen(price,current);
     }else content=fpMonthlySettingsScreen(current);
     return '<section class="screen sim-screen fp-result-screen fp-report-screen '+((page===1||page===3&&ui.fpChartPage===3)?'fp-focus':'')+'">'+intro+
-      (snapshot?'<div class="fp-snapshot-label">'+esc(fpHistoryDate(snapshot))+'</div>':'')+tabs+content+
+      (snapshot?'<div class="fp-snapshot-label">'+esc(fpHistoryDate(snapshot))+'</div>':'')+tabs+
+      ([0,1,2,3,5].includes(page)?fpYearTimebar(current):'')+content+
       (page===0?'':'<div class="fp-bottom-actions"><button class="btn" data-act="sim-restart">↶ 条件を見直す</button>'+
       '<button class="btn primary" data-act="fp-result-next">'+(page===7?'まとめへ戻る':'次へ →')+'</button></div>')+'</section>';
   }
@@ -2892,6 +2915,14 @@ function fpMetaDashboard(){
     if(action==='fp-budget-edit-income')return step(()=>{ui.fpHistoryOpen=false;ui.simStep=1;ui.simSubPage=0;});
     if(action==='fp-more-toggle')return step(()=>{ui.fpMoreOpen=!ui.fpMoreOpen;});
     if(action==='fp-result-tab')return step(()=>{ui.fpMoreOpen=false;ui.fpBreakdownOpen=null;ui.simResultPage=Math.min(7,Math.max(0,Number(v)||0));ui.fpLedgerPage=0;ui.fpAdvicePage=0;});
+    if(action==='fp-year-shift'||action==='fp-year-preset')return step(()=>{
+      const key=ui.simResultPage===1?'fpMonthYear':'fpYear';
+      const yrs=modelYears(safeNum(state.plan.propertyPrice),true).points;
+      const first=yrs[0].year,last=yrs.at(-1).year;
+      const target=action==='fp-year-shift'?ui[key]+(Math.sign(Number(v))||0):Number(v);
+      ui[key]=Math.max(first,Math.min(last,Math.round(target)||first));
+      ui.fpBreakdownOpen=null;ui.fpLedgerPage=0;ui.fpEditingRow=null;
+    });
     if(action==='fp-cash-month')return step(()=>{ui.fpBreakdownOpen=null;ui.fpCashMonth=Math.min(12,Math.max(1,Number(v)||1));});
     if(action==='fp-month-next')return step(()=>{ui.fpBreakdownOpen=null;if(ui.fpCashMonth===12){ui.fpCashMonth=1;ui.fpMonthYear+=1;}else ui.fpCashMonth+=1;});
     if(action==='fp-month-view')return step(()=>{ui.fpMonthView=v==='detail'?'detail':'pie';});

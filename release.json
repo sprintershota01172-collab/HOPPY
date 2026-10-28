@@ -1,10 +1,10 @@
 {
-  "version": "r69",
+  "version": "r70",
   "ui": "compact-visual",
   "revised": "2026-10-28",
   "data_schema": "hoppy-phase1-v1",
-  "entrypoint": "visual-r69.html",
+  "entrypoint": "visual-r70.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Unblock recovery even when client cache is broken; preserve installed PWA data and repair from its own context"
+  "release_note": "Selectable per-year housing budget and mortgage cashflow; Meta-like quick navigation"
 }

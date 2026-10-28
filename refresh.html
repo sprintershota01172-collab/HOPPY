@@ -29,7 +29,7 @@ button:disabled{opacity:.65}#status{font-size:12px;line-height:1.6;padding:11px;
 <script>
 (()=>{
  'use strict';
- const REPAIR_RELEASE = 'r69';
+ const REPAIR_RELEASE = 'r70';
  const status=document.getElementById('status'),diag=document.getElementById('diag'),repair=document.getElementById('repair');
  const mark=(s)=>{status.textContent=s};
  const timeout=(promise,ms=3500)=>Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(Error('確認が時間切れになりました')),ms))]);

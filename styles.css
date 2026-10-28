@@ -5812,7 +5812,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   #app .fp-meta-dashboard{overflow-y:auto!important}
 }
 
-/* r69: natural height, stable grid, separated loan card */
+/* r70: natural height, stable grid, separated loan card */
 :root,html,body,#app,#app button,#app input,#app select{font-family:"Meiryo UI","メイリオ","Meiryo",sans-serif!important}
 #app .fp-result-nav{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:3px!important;height:42px!important;min-height:42px!important;max-height:42px!important}
 #app .fp-result-nav>button{min-width:0!important;width:100%!important}
@@ -5858,7 +5858,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .fp-loan-proof p{font-size:11px;line-height:1.5;color:#63776a}
 #app .fp-loan-proof button{min-height:40px;background:#f3f7f3;border:1px solid #dce5de;color:#326b52;border-radius:9px}
 
-/* r69 — distinguish unrecorded periods from real zero-yen cashflow */
+/* r70 — distinguish unrecorded periods from real zero-yen cashflow */
 #app .fp-month-unrecorded{flex:none;display:flex;align-items:center;gap:9px;justify-content:space-between;
  padding:10px 11px;border:1px solid #e5e9e2;border-radius:12px;background:#fbfaf5}
 #app .fp-month-unrecorded span{flex:1;min-width:0;font-size:11px;line-height:1.45;color:#63766a}
@@ -5866,3 +5866,28 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  padding:9px 10px;border-radius:10px;background:#edf6ee;color:#226b4d;font-size:11px;font-weight:800}
 #app .fp-focus-tile.neutral strong{color:#7a8c80!important}
 @media(max-width:350px){#app .fp-month-unrecorded{flex-direction:column;align-items:stretch}}
+
+/* r70: Meta-inspired concise navigation, selectable context everywhere */
+#app .fp-report-screen .fp-result-nav{height:54px!important;min-height:54px!important;max-height:54px!important;padding:4px!important;border-radius:15px!important;gap:2px!important}
+#app .fp-result-nav>button{height:46px!important;min-height:46px!important;max-height:46px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:1px!important;padding:3px 0!important;border-radius:10px!important;transition:background-color .16s ease,transform .16s ease}
+#app .fp-result-nav>button:active{transform:scale(.94)}
+#app .fp-result-nav>button .fp-nav-mark{height:20px;display:grid;place-items:center}
+#app .fp-result-nav>button .fp-nav-mark svg{width:18px!important;height:18px!important}
+#app .fp-result-nav>button .fp-nav-text{font-size:9px!important;line-height:1.15!important;color:inherit!important;font-weight:730!important}
+#app .fp-timebar{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:4px;min-height:41px;padding:4px 6px;background:#fff;border:1px solid #e3ebe6;border-radius:12px}
+#app .fp-time-switch{flex:0 0 auto;display:flex;align-items:center;gap:3px;min-width:0}
+#app .fp-time-switch>button{display:grid;place-items:center;width:29px;height:31px;min-width:29px;min-height:31px;border:0;border-radius:9px;color:#246e54;background:#eff5f1;font-size:24px;line-height:1}
+#app .fp-time-switch>button:disabled{color:#bac9c0;opacity:.55}
+#app .fp-time-picker{display:flex;align-items:center;gap:4px;border-radius:8px;background:#f0f6f2;min-height:31px;padding:1px 6px}
+#app .fp-time-picker>span{font-size:9px;color:#658374}
+#app .fp-time-picker>select{appearance:none;min-width:74px;max-width:93px;height:29px;border:0!important;padding:0 14px 0 0!important;background:transparent!important;outline:0;font-size:14px!important;font-weight:850;color:#205e48}
+#app .fp-time-picker:after{content:"⌄";font-size:13px;margin-left:-15px;color:#709483;pointer-events:none}
+#app .fp-time-presets{display:flex;gap:3px;justify-content:flex-end;min-width:0}
+#app .fp-time-presets>button{min-height:29px;padding:3px 6px;background:#fff;border:1px solid #e0e9e2;border-radius:9px;color:#62786b;font-size:10px!important;font-weight:760!important;white-space:nowrap}
+#app .fp-time-presets>button.active{background:#e8f5ed;border-color:#c6dfd1;color:#176d50}
+#app .fp-time-stage{display:none;font-size:9px;color:#6b8577}
+#app .fp-timebar+.fp-meta-dashboard{min-height:0!important;overflow-y:auto!important;scrollbar-width:none}
+#app .fp-timebar+.fp-meta-dashboard::-webkit-scrollbar{display:none}
+#app .fp-meta-remain.negative,#app .fp-loan-feature.negative strong{color:#bd2d42!important}
+@media(max-width:375px){#app .fp-timebar{gap:2px;padding:4px}#app .fp-time-switch{gap:2px}#app .fp-time-switch>button{width:26px;min-width:26px}#app .fp-time-picker{padding:1px 4px}#app .fp-time-picker>span{display:none}#app .fp-time-picker>select{min-width:72px}#app .fp-time-presets{gap:2px}#app .fp-time-presets>button{padding:3px 4px;font-size:9px!important}}
+@media(prefers-reduced-motion:reduce){#app .fp-result-nav>button{transition:none!important}}

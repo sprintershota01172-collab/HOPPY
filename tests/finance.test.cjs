@@ -7,15 +7,25 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function loadFinance(seed=null,shortViewport=false){
+function loadFinance(seed=null,shortViewport=false,cardHeight=null){
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
   const marker='\n  save();render();\n  // The startup';
   assert.equal(source.split(marker).length,2,'App test anchor changed');
-  const bridge='\n  globalThis.__finance = {state,ui,defaultPlan,fpBudget,fpRating,fpMortgageCapacityCard,mortgageMonthly,modelYears,fpMonthlyLedger,fpEducationFundYears,fpSchoolBreakdown,fpCashGoalForYear,fpAdviceData,fpHouseholdCashSavings,fpSyncHouseholdCashSavings,fpLoanSummary,fpMonthlyReport,fpMonthlyAllocation,fpIncomeAllocation,fpPieBreakdownRows,fpPieBreakdownPanel,fpWizardPages}; return;\n  // The startup';
-  const app={addEventListener(){},querySelector(){return null},querySelectorAll(){return []}};
+  const bridge='\n  globalThis.__finance = {state,ui,defaultPlan,fpBudget,fpRating,fpMortgageCapacityCard,mortgageMonthly,modelYears,fpMonthlyLedger,fpEducationFundYears,fpSchoolBreakdown,fpCashGoalForYear,fpAdviceData,fpHouseholdCashSavings,fpSyncHouseholdCashSavings,fpLoanSummary,fpMonthlyReport,fpMonthlyAllocation,fpIncomeAllocation,fpPieBreakdownRows,fpPieBreakdownPanel,fpBreakdownPageSize,fpWizardPages}; return;\n  // The startup';
+  const grid={};
+  const title={getBoundingClientRect(){return {height:39}}};
+  const panel={getBoundingClientRect(){return {height:cardHeight}},
+    querySelector(s){return s==='.fp-breakdown-title'?title:s==='.fp-breakdown-list'?grid:null}};
+  const host={querySelector(s){return s==='.fp-breakdown-panel'?panel:null}};
+  const app={addEventListener(){},
+    querySelector(s){return cardHeight!==null&&s==='.fp-month-report'?host:null},
+    querySelectorAll(){return []}};
   const ctx={
     document:{getElementById:()=>app,addEventListener(){},querySelectorAll(){return []}},
-    window:{matchMedia:q=>({matches:shortViewport&&q.includes('max-height:860px')}),addEventListener(){},crypto:{}},
+    window:{matchMedia:q=>({matches:shortViewport&&q.includes('max-height:860px')}),addEventListener(){},crypto:{},
+      getComputedStyle(el){return el===panel?
+        {paddingTop:'6px',paddingBottom:'7px',rowGap:'3px'}:
+        {rowGap:'4px',getPropertyValue:()=> '38px'};}},
     localStorage:{getItem:()=>seed?JSON.stringify(seed):null,setItem(){}},
     navigator:{},location:{protocol:'https:',hostname:'localhost'},
     confirm:()=>false,console
@@ -247,14 +257,16 @@ test('long living-detail lists display all child costs first and every other row
   const rows=x.fpPieBreakdownRows(point,month,'living');
   assert.ok(rows.length>24,'must exercise a genuinely overflowing detail');
   const covered=[];
-  for(let page=0;page<Math.ceil(rows.length/8);page++){
+  const perPage=x.fpBreakdownPageSize('monthly');
+  assert.equal(perPage,12,'default bootstrap shows three rows');
+  for(let page=0;page<Math.ceil(rows.length/perPage);page++){
     x.ui.fpBreakdownPageIndex=page;
     const markup=x.fpPieBreakdownPanel(point,month,allocation.items,'living');
     assert.match(markup,/--fp-cols:4/);
     assert.match(markup,/data-act="fp-breakdown-page"/);
-    assert.match(markup,new RegExp((page+1)+'/'+Math.ceil(rows.length/8)));
+    assert.match(markup,new RegExp((page+1)+'/'+Math.ceil(rows.length/perPage)));
     const itemCount=(markup.match(/class="fp-breakdown-row"/g)||[]).length;
-    assert.equal(itemCount,Math.min(8,rows.length-page*8));
+    assert.equal(itemCount,Math.min(perPage,rows.length-page*perPage));
     const labels=[...markup.matchAll(/<span class="fp-row-label">([^<]+)<\/span>/g)].map(m=>m[1]);
     covered.push(...labels);
     if(page===0){
@@ -278,7 +290,7 @@ test('before first birth, child costs do not disappear silently without explanat
 });
 
 
-test('short mobile viewport shows four fixed detail cells per page without cutting the category total',()=>{
+test('short mobile viewport initially fills two rows without cutting the total',()=>{
   const x=loadFinance(null,true),p=x.state.plan;
   p.children=2;p.firstChildYear=now();p.birthInterval=1;
   p.childLivingMonthly=2;p.daycareMonthly=2;
@@ -288,13 +300,38 @@ test('short mobile viewport shows four fixed detail cells per page without cutti
     month=x.fpMonthlyLedger(point).months[0],
     alloc=x.fpMonthlyAllocation(month),
     rows=x.fpPieBreakdownRows(point,month,'living');
-  assert.ok(rows.length>4);
+  const perPage=x.fpBreakdownPageSize('monthly');
+  assert.equal(perPage,8);
+  assert.ok(rows.length>perPage);
   const first=x.fpPieBreakdownPanel(point,month,alloc.items,'living');
-  assert.equal((first.match(/class="fp-breakdown-row"/g)||[]).length,4);
+  assert.equal((first.match(/class="fp-breakdown-row"/g)||[]).length,perPage);
   assert.match(first,/class="fp-breakdown-pager"/);
   assert.match(first,/全\d+件/);
   x.ui.fpBreakdownPageIndex=1;
   const second=x.fpPieBreakdownPanel(point,month,alloc.items,'living');
   assert.match(second,/2\/\d+/);
-  assert.equal((second.match(/class="fp-breakdown-row"/g)||[]).length,4);
+  assert.equal((second.match(/class="fp-breakdown-row"/g)||[]).length,
+    Math.min(perPage,rows.length-perPage));
+});
+
+test('measured card capacity fills unused space without changing four-column pitch',()=>{
+  const compact=loadFinance(null,false,130);
+  const medium=loadFinance(null,false,220);
+  const tall=loadFinance(null,false,300);
+  assert.equal(compact.fpBreakdownPageSize('monthly'),4);
+  assert.equal(medium.fpBreakdownPageSize('monthly'),12);
+  assert.equal(tall.fpBreakdownPageSize('monthly'),20);
+  const p=medium.state.plan;
+  p.children=2;p.firstChildYear=now();p.birthInterval=1;
+  p.childLivingMonthly=3;p.childInsuranceMonthly=.3;p.daycareMonthly=2;
+  p.expenses=Array.from({length:22},(_,i)=>({
+    id:'fit-'+i,name:'追加費'+i,amount:.2,cycle:'month',start:0,end:0
+  }));
+  const point=medium.modelYears(p.propertyPrice,true).points[1];
+  const month=medium.fpMonthlyLedger(point).months[0];
+  const allocation=medium.fpMonthlyAllocation(month);
+  const html=medium.fpPieBreakdownPanel(point,month,allocation.items,'living');
+  assert.equal((html.match(/class="fp-breakdown-row"/g)||[]).length,12);
+  assert.match(html,/data-fp-cols="4" data-fp-rows="3"/);
+  assert.match(html,/class="fp-breakdown-pager"/);
 });

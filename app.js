@@ -487,7 +487,7 @@
     const money=unit.startsWith('万円'),shown=money?fpYenNumber(state.plan[key]):state.plan[key];
     return '<label class="sim-field"><span>'+esc(label)+'</span><span class="sim-input-wrap"><input type="number" data-sim="'+key+
       '" '+(money?'data-sim-yen="true" ':'')+'value="'+esc(shown)+'" min="'+(key==='returnAnnual'?-20:0)+
-      '" '+(key==='returnAnnual'?'max="20"':'')+' step="'+(money?'1':'any')+'" inputmode="'+(money?'numeric':'decimal')+
+      '" '+(key==='returnAnnual'?'max="20"':['livingInflationAnnual','educationInflationAnnual'].includes(key)?'max="10"':'')+' step="'+(money?'1':'any')+'" inputmode="'+(money?'numeric':'decimal')+
       '" placeholder="'+esc(placeholder||'')+'"><em>'+esc(unit.replace('万円','円'))+'</em></span></label>';
   };
   const sSelect=(label,key,opts)=>'<label class="sim-field"><span>'+esc(label)+'</span><select data-sim="'+key+'">'+opts.map(([value,title])=>'<option value="'+esc(value)+'" '+(String(state.plan[key])===String(value)?'selected':'')+'>'+esc(title)+'</option>').join('')+'</select></label>';

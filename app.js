@@ -1,6 +1,8 @@
 (() => {
   'use strict';
   const BUILD = 'r63';
+  // A tiny non-sensitive marker helps diagnose installed PWA update issues.
+  try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'hoppy-phase1-v1';
   const DB_NAME = 'hoppy-photos-v1';
   const statuses = ['気になる','内見予定','内見済','本命','見送り'];

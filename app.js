@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const BUILD = 'r62';
+  const BUILD = 'r63';
   const STORE = 'hoppy-phase1-v1';
   const DB_NAME = 'hoppy-photos-v1';
   const statuses = ['気になる','内見予定','内見済','本命','見送り'];
@@ -136,6 +136,32 @@
     const paths={property:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',compare:'<path d="M12 3v18M5 7h14M7 7l-4 7h8L7 7Zm10 0-4 7h8l-4-7ZM4 18h16"/>',sim:'<rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8 11h2m4 0h2M8 15h2m4 0h2M8 19h2m4 0h2"/>',schedule:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 2v6m10-6v6M3 10h18"/>',memo:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',updates:'<path d="M3 12a9 9 0 1 0 2.6-6.4M3 4v5h5"/><path d="M12 7v5l3.5 2"/>'};
     return '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+paths[key]+'</svg>';
   }
+  const remoteRelease={latest:null,notice:''};
+  function renderReleaseBanner(){
+    const existing=app.querySelector('.hoppo-version-banner');
+    if(existing)existing.remove();
+    if(!remoteRelease.notice)return;
+    app.insertAdjacentHTML('beforeend',
+      '<div class="hoppo-version-banner" role="status"><span>'+esc(remoteRelease.notice)+'</span>'+
+      '<button type="button" data-act="hoppo-hard-refresh">更新する ↗</button>'+
+      '<button type="button" data-act="hoppo-update-dismiss" aria-label="閉じる">×</button></div>');
+  }
+  async function verifyPublishedRelease(){
+    if(typeof fetch!=='function')return;
+    try{
+      const url='./release.json?check='+Date.now();
+      const response=await fetch(url,{cache:'no-store'});
+      if(!response.ok)return;
+      const published=await response.json();
+      if(!/^r[0-9]+$/.test(String(published.version||'')))return;
+      const loaded=Number(BUILD.slice(1)),live=Number(published.version.slice(1));
+      remoteRelease.latest=published.version;
+      if(live>loaded){
+        remoteRelease.notice='新しい版 '+published.version+' を公開中';
+        renderReleaseBanner();
+      }
+    }catch(_){/* Offline is supported. Keep the existing app available. */}
+  }
   function render(){
     if(!app)return;
     const nav=[['property','物件'],['compare','比較'],['sim','FP'],['schedule','予定'],['memo','メモ'],['updates','更新']];
@@ -170,7 +196,7 @@
       fpRefreshSelectedBreakdown(liveBreakdown,liveBreakdown==='monthly'?
         ui.fpBreakdownMonthly:ui.fpBreakdownAnnual);
     }
-    renderToast();hydratePhotos();
+    renderToast();hydratePhotos();renderReleaseBanner();
   }
   function empty(icon,title,desc,action,label){return '<section class="panel grow empty"><div class="big">'+icon+'</div><h2 class="section-title">'+esc(title)+'</h2><p>'+esc(desc)+'</p>'+ (action?'<button class="btn primary" data-act="'+action+'">'+esc(label)+'</button>':'')+'</section>';}
   function navPager(index,total,act){return '<div class="pager"><button class="page-arrow" data-act="'+act+'" data-value="-1" '+(total<2?'disabled':'')+' aria-label="前へ">‹</button><div class="counter">'+(total?index+1:0)+' / '+total+'</div>'+dots(index,Math.max(total,1))+'<button class="page-arrow" data-act="'+act+'" data-value="1" '+(total<2?'disabled':'')+' aria-label="次へ">›</button></div>';}
@@ -204,7 +230,7 @@
     const budget=state.plan.hasRun?fpBudget():null;
     const price=budget&&budget.amount>0?yen(Math.floor(budget.amount),0)+'<small>万円</small>':'設定する';
     return '<section class="screen home-screen home-visual-screen">'+
-      '<div class="home-visual-header"><span class="home-visual-title">住まい <i>HOME</i></span><button data-act="tab" data-value="updates" class="home-visual-version" title="更新履歴" aria-label="現在のバージョンr62">r62</button></div>'+
+      '<div class="home-visual-header"><span class="home-visual-title">住まい <i>HOME</i></span><button data-act="tab" data-value="updates" class="home-visual-version" title="更新履歴" aria-label="現在のバージョンr63">r63</button></div>'+
       '<div class="home-visual-hero">'+
         '<button data-act="home-compare" class="home-visual-stat"><span>検討中</span><strong>'+count+'<small>件</small></strong><em>物件を比較 ›</em></button>'+
         '<button data-act="tab" data-value="sim" class="home-visual-stat fp"><span>購入の目安</span><strong>'+price+'</strong><em>FPで確認 ›</em></button></div>'+
@@ -2351,7 +2377,7 @@ function fpMetaDashboard(){
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open" aria-label="診断履歴" title="診断履歴">◷</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events" aria-label="イベント登録" title="イベント登録">＋</button>'+
       '<button class="btn compact" data-act="sim-restart" aria-label="家計の編集" title="家計の編集">✎</button>'+
-      '<a class="fp-build-stamp" title="更新を確認" href="./refresh.html">r62</a></div></div>';
+      '<a class="fp-build-stamp" title="更新を確認" href="./refresh.html">r63</a></div></div>';
     if(warnings.length){
       const size=3,count=Math.max(1,Math.ceil(warnings.length/size));
       ui.fpIssuePage=Math.min(count-1,ui.fpIssuePage||0);
@@ -2648,7 +2674,7 @@ function fpMetaDashboard(){
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
-      {version:'r62',date:'2026.10.28',title:'視覚中心のホームとFP、更新経路を改善',
+      {version:'r63',date:'2026.10.28',title:'視覚中心のホームとFP、更新経路を改善',
         details:['起動時の物件画面に大きな物件・購入予算カードを配置','写真・価格を主役としたコンパクトな物件カードとアイコン絞り込み','FPの重要な3数値・円グラフ・アイコン操作を簡潔化','新規URLと公開ファイル照合により旧版を識別','入力値と計算ロジックは維持']},
       {version:'r59',date:'2026.10.28',title:'公的FP資料と検算に基づく計算モデル改訂',
         details:['頭金を借入元金と購入月現金へ反映','将来年の返済後余力と6か月の防衛資金を点検','金利＋1％の家計余力・完済時年齢・試算期限を表示','児童手当の制度額概算と任意の物価上昇を追加','既存の入力値は維持して新機能は選択式']},
@@ -2711,7 +2737,7 @@ function fpMetaDashboard(){
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
       '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
-      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r62</strong></p></div>'+
+      '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>r63</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
           '<div class="updates-entry-head"><strong>'+esc(entry.version)+'</strong>'+
@@ -2741,6 +2767,8 @@ function fpMetaDashboard(){
   }
   function handler(action,button){
     let v=button.dataset.value, p=curProp();
+    if(action==='hoppo-update-dismiss'){remoteRelease.notice='';renderReleaseBanner();return;}
+    if(action==='hoppo-hard-refresh'){window.location.assign('./refresh.html?new='+encodeURIComponent(remoteRelease.latest||BUILD));return;}
     if(action==='tab')return chooseTab(v);
     if(action==='home-axis-toggle')return step(()=>{ui.axisEdit=!ui.axisEdit;});
     if(action==='memo-scope')return step(()=>{ui.memoScope=v;ui.memoPage=0;ui.memoSwipeKey=null;});
@@ -3163,7 +3191,12 @@ function fpMetaDashboard(){
         ui.fpHistoryLive=true;
       }
       state.plan.childEducationInsuranceMonthly=yenValue/10000;
-      save();render();return;
+      save();render();
+  // Check the deployed release, not the repository, without deleting local data.
+  Promise.resolve().then(verifyPublishedRelease);
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden)verifyPublishedRelease();
+  });return;
     }
     if(el.dataset?.fpCashGoal!==undefined){
       if(!ui.fpHistoryLive){const snap=fpLatestSnapshot();if(snap)state.plan=JSON.parse(JSON.stringify(snap.plan));ui.fpHistoryLive=true;}

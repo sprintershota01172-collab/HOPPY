@@ -1,7 +1,7 @@
 {
-  "version": "r63",
-  "ui": "visual-first",
+  "version": "r64",
+  "ui": "compact-visual",
   "revised": "2026-10-28",
   "data_schema": "hoppy-phase1-v1",
-  "entrypoint": "visual-r63.html"
+  "entrypoint": "visual-r64.html"
 }

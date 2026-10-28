@@ -43,7 +43,8 @@ jobs:
           rsync -a --exclude='.git' --exclude='.github' --exclude='_site' --exclude='scripts' ./ _site/
           node -e 'const fs=require("fs");const p="_site/release.json";const j=JSON.parse(fs.readFileSync(p,"utf8"));j.commit=process.env.GITHUB_SHA;j.publishedAt=new Date().toISOString();fs.writeFileSync(p,JSON.stringify(j,null,2)+"\n");'
           test -s _site/index.html
-          test -s _site/visual-r63.html
+          RELEASE_VERSION=$(node -p 'require("./release.json").version')
+          test -s "_site/visual-$RELEASE_VERSION.html"
           test -s _site/app.js
           test -s _site/styles.css
 
@@ -61,4 +62,5 @@ jobs:
           SITE_URL: ${{ steps.deployment.outputs.page_url }}
           GITHUB_SHA: ${{ github.sha }}
         run: |
-          node scripts/check-public.mjs "$SITE_URL" r63 "$GITHUB_SHA"
+          RELEASE_VERSION=$(node -p 'require("./release.json").version')
+          node scripts/check-public.mjs "$SITE_URL" "$RELEASE_VERSION" "$GITHUB_SHA"

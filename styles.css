@@ -5693,3 +5693,121 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  color:#fff;font-size:11px;font-weight:800;padding:8px 11px;min-height:34px;flex:none}
 #app .hoppo-version-banner button:last-child{background:transparent;color:#698a79;
  font-size:20px;padding:3px 7px}
+
+
+/* r64 | Consistent density. One spacing scale and two number tiers. */
+#app{
+  --ui-gap:6px;
+  --ui-radius:13px;
+  --ui-label:11px;
+  --ui-body:12px;
+  --ui-metric:29px;
+}
+#app .main{padding-left:10px!important;padding-right:10px!important;padding-bottom:4px!important}
+#app .screen{gap:var(--ui-gap)!important}
+#app button,#app input,#app select,#app textarea{letter-spacing:0!important}
+#app .home-visual-screen{gap:6px!important;padding-top:0!important}
+#app .home-visual-screen .home-visual-header{height:27px!important;min-height:27px!important;padding:0 1px!important}
+#app .home-visual-screen .home-visual-title{font-size:17px!important;font-weight:840!important;letter-spacing:-.035em!important}
+#app .home-visual-screen .home-visual-title i{font-size:9px!important}
+#app .home-visual-screen .home-visual-version{font-size:10px!important;min-height:26px!important}
+#app .home-visual-screen .home-visual-hero{gap:7px!important;min-height:82px!important}
+#app .home-visual-screen .home-visual-stat{
+  min-height:82px!important;
+  padding:9px 11px!important;
+  border-radius:var(--ui-radius)!important;
+  gap:3px!important;
+  box-shadow:0 1px 5px #133d3010!important;
+}
+#app .home-visual-screen .home-visual-stat>span{font-size:var(--ui-label)!important;line-height:1.15!important}
+#app .home-visual-screen .home-visual-stat>strong{font-size:28px!important;line-height:1.07!important}
+#app .home-visual-screen .home-visual-stat.fp>strong{font-size:clamp(20px,5.5vw,26px)!important}
+#app .home-visual-screen .home-visual-stat>strong small{font-size:11px!important}
+#app .home-visual-screen .home-visual-stat>em{font-size:10px!important;line-height:1.1!important}
+#app .home-visual-screen .home-search-row{min-height:40px!important;gap:6px!important}
+#app .home-visual-screen .home-search-box{min-height:40px!important;height:40px!important}
+#app .home-visual-screen .home-search-box input{font-size:16px!important}
+#app .home-visual-screen .home-filter-btn,
+#app .home-visual-screen .home-settings{height:40px!important;min-height:40px!important}
+#app .home-visual-screen .home-results{gap:6px!important}
+#app .home-visual-screen .status-chip-row{min-height:36px!important;max-height:36px!important;gap:6px!important}
+#app .home-visual-screen .status-chip.home-visual-filter{min-height:36px!important;max-height:36px!important;border-radius:11px!important}
+#app .home-visual-screen .home-visual-filter b{font-size:17px!important}
+#app .home-visual-screen .home-visual-filter span{font-size:11px!important}
+#app .home-visual-screen .property-list{gap:6px!important}
+#app .home-visual-screen .home-visual-card{
+  min-height:69px!important;max-height:69px!important;height:69px!important;
+  padding:6px 9px!important;border-radius:var(--ui-radius)!important;
+  gap:9px!important;box-shadow:0 1px 5px #173e3110!important;
+}
+#app .home-visual-screen .home-visual-card .property-thumb{
+  width:55px!important;height:55px!important;min-width:55px!important;
+  flex:0 0 55px!important;border-radius:10px!important;
+}
+#app .home-visual-screen .home-card-content{gap:3px!important}
+#app .home-visual-screen .home-card-top strong{font-size:12px!important}
+#app .home-visual-screen .home-card-state{font-size:10px!important;padding:2px 6px!important}
+#app .home-visual-screen .home-card-sub{font-size:10px!important}
+#app .home-visual-screen .home-card-bottom{font-size:11px!important;gap:9px!important}
+#app .home-visual-screen .home-card-bottom b{font-size:15px!important}
+#app .home-visual-screen .home-card-bottom b small{font-size:10px!important}
+#app .home-visual-screen .meta-fab{
+  height:46px!important;width:46px!important;min-height:46px!important;min-width:46px!important;
+  border-radius:15px!important;right:13px!important;bottom:10px!important;
+}
+#app .bottom{gap:2px!important;padding-top:3px!important;padding-bottom:calc(env(safe-area-inset-bottom) + 3px)!important}
+#app .bottom .tab{height:41px!important;min-height:41px!important;border-radius:10px!important}
+#app .bottom .tab svg{height:20px!important;width:20px!important}
+/* FP: same card radius, aligned left edges and consistent typography. */
+#app .fp-report-screen{gap:5px!important}
+#app .fp-report-screen .sim-intro{min-height:30px!important;max-height:30px!important}
+#app .fp-result-nav{min-height:40px!important;max-height:40px!important;border-radius:var(--ui-radius)!important;gap:3px!important;padding:3px!important}
+#app .fp-result-nav>button{height:32px!important;min-height:32px!important;border-radius:9px!important}
+#app .fp-result-nav>button svg{height:19px!important;width:19px!important}
+#app .fp-meta-dashboard{gap:6px!important;padding:0 1px!important}
+#app .fp-meta-lead,
+#app .fp-meta-month,
+#app .fp-meta-spending{border-radius:var(--ui-radius)!important;box-shadow:0 1px 6px #1745320c!important}
+#app .fp-meta-lead{padding:9px 11px!important;gap:4px!important}
+#app .fp-meta-overline,#app .fp-meta-row>span{font-size:11px!important;font-weight:780!important}
+#app .fp-meta-overline span{font-size:10px!important}
+#app .fp-meta-budget{min-height:33px!important}
+#app .fp-meta-budget>strong{font-size:29px!important;line-height:1.04!important}
+#app .fp-meta-budget>strong small{font-size:12px!important}
+#app .fp-meta-target{padding-top:4px!important}
+#app .fp-meta-target span,#app .fp-meta-target button{font-size:11px!important}
+#app .fp-meta-target b{font-size:12px!important}
+#app .fp-meta-status{padding:5px 8px!important;border-radius:9px!important}
+#app .fp-meta-status span,#app .fp-meta-status small{font-size:10px!important}
+#app .fp-meta-month{padding:9px 11px!important;gap:5px!important}
+#app .fp-meta-remain{font-size:29px!important;line-height:1.07!important}
+#app .fp-meta-remain small{font-size:11px!important;letter-spacing:0!important}
+#app .fp-meta-pair{gap:6px!important}
+#app .fp-meta-pair>div{padding:6px 8px!important;border-radius:10px!important;gap:3px!important}
+#app .fp-meta-pair>div span{font-size:10px!important}
+#app .fp-meta-pair>div b{font-size:16px!important;line-height:1.2!important}
+#app .fp-meta-inline{font-size:10px!important}
+#app .fp-meta-spending{padding:7px 11px!important;gap:11px!important;min-height:114px!important}
+#app .fp-meta-ring{width:98px!important;height:98px!important;min-height:98px!important;min-width:98px!important;flex:0 0 98px!important}
+#app .fp-meta-ring small{font-size:10px!important}
+#app .fp-meta-ring b{font-size:13px!important}
+#app .fp-meta-spending-title{font-size:11px!important}
+#app .fp-meta-legend{gap:5px!important}
+#app .fp-meta-legend span{font-size:10px!important}
+#app .fp-meta-warning{padding:0 2px!important;font-size:10px!important}
+#app .fp-meta-warning button{font-size:10px!important}
+#app .sim-screen .sim-question h2{font-size:16px!important;line-height:1.22!important}
+#app .sim-screen .sim-question{gap:3px!important;padding:1px 0 3px!important}
+#app .sim-screen .sim-form{padding:9px 10px!important;gap:6px!important;border-radius:var(--ui-radius)!important}
+#app .sim-screen .sim-grid{gap:6px 8px!important}
+#app .sim-screen .sim-field>span:first-child{font-size:11px!important}
+#app .sim-progress.fp-icon-progress{gap:4px!important;min-height:36px!important}
+#app .fp-icon-progress>button{height:35px!important;min-height:35px!important;border-radius:10px!important;font-size:17px!important}
+@media(max-height:710px){
+  #app .home-visual-screen .home-visual-hero{min-height:74px!important}
+  #app .home-visual-screen .home-visual-stat{min-height:74px!important;padding:6px 9px!important}
+  #app .home-visual-screen .home-visual-stat>strong{font-size:25px!important}
+  #app .home-visual-screen .home-visual-card{min-height:65px!important;max-height:65px!important;height:65px!important}
+  #app .home-visual-screen .home-visual-card .property-thumb{width:51px!important;height:51px!important;min-width:51px!important;flex-basis:51px!important}
+  #app .fp-meta-dashboard{overflow-y:auto!important}
+}

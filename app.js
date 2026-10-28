@@ -1134,6 +1134,12 @@
       purchaseMonthCash=purchasePoint?fpMonthlyLedger(purchasePoint).months[fpPurchaseMonth()-1].endingCash:null,
       minimumReserve=6*(b.living+b.school+b.maintenance+loan.monthly),
       lowLiquidity=purchaseMonthCash!==null&&purchaseMonthCash<minimumReserve,
+      yearsToPurchase=Math.max(0,b.purchaseYear-simNowYear()),
+      completionYear=b.purchaseYear+Math.round(b.loanYears),
+      completionAgeH=Math.round(safeNum(p.husbandAge)+yearsToPurchase+b.loanYears),
+      completionAgeW=Math.round(safeNum(p.wifeAge)+yearsToPurchase+b.loanYears),
+      retirementRisk=Math.max(completionAgeH,completionAgeW)>65,
+      projectionEnds=projected.points.at(-1)?.year||simNowYear(),
       essentialMissing=b.missingEssentialInputs.length>0,
       hasPrice=price>0,
       within=hasPrice&&price<=b.amount+1e-8,
@@ -1151,6 +1157,7 @@
       !within?'貯金・NISAの積立を維持するには予算超過':
       futureMonthlyLeft<0?'現在は目安内でも、将来の家計で返済・積立の両立に注意':
       lowLiquidity?'返済目安内でも購入後の生活防衛資金が不足':
+      retirementRisk?'返済額は目安内。ただし退職後の収入・返済期間は未検証':
       '登録済みの家計では積立を維持できる見込み';
     const warning=b.possibleLivingOverlap?
       '「その他の生活費」と個別の支出が重複していないか確認':
@@ -1160,6 +1167,7 @@
       futureMonthlyLeft<0?
         b.worstYear+'年はこの物件のローン返済後、月額換算'+fpYen(-futureMonthlyLeft)+'不足する試算':
       lowLiquidity?'購入月末の予測現金が防衛資金6か月分を下回る':
+      retirementRisk?'完済時の夫婦の年齢目安は'+completionAgeH+'歳・'+completionAgeW+'歳。退職後収入は未登録':
         '';
     return '<section class="fp-decision-card" aria-label="住宅購入の予算・検討価格と毎月の差額">'+
       '<div class="fp-decision-heading"><strong>住宅購入の判断</strong>'+
@@ -1189,6 +1197,10 @@
         fpSignedYen(futureMonthlyLeft)+'</b>（現在の返済額で比較）。</p>'+
       '<p class="fp-decision-stress">購入月末の現金見込：'+(purchaseMonthCash===null?'計算期間外':fpSignedYen(purchaseMonthCash))+
         ' ／生活防衛資金の確認目安（6か月）'+fpYen(minimumReserve)+'。<small>家計の目安と銀行審査は別です。</small></p>'+
+      '<p class="fp-decision-stress">完済時の年齢目安：夫'+completionAgeH+'歳・妻'+completionAgeW+
+        '歳（'+completionYear+'年）。年次試算は'+projectionEnds+
+        '年まで。<b class="'+(retirementRisk?'negative':'')+'">'+
+        (retirementRisk?'退職後の収入は未反映':'退職・年金収入は未反映')+'</b></p>'+
       (warning?'<p class="fp-decision-warning">'+esc(warning)+'</p>':'')+
       '<details class="fp-decision-details"><summary>計算式・金利・諸費用を見る</summary>'+
         '<div class="fp-decision-detail-body">'+
@@ -1220,6 +1232,9 @@
       level='warn';label='積立の見直し';reason='貯金・NISAを希望どおり続けるには予算超過です。';
     }else if(budget.worstSurplus<info.payment){
       level='warn';label='将来の家計注意';reason=budget.worstYear+'年は賞与を除いた月給基準で、この物件のローン返済と設定した貯蓄を両立できません。年次現金残高も確認してください。';
+    }else if(Math.max(safeNum(state.plan.husbandAge),safeNum(state.plan.wifeAge))+
+      Math.max(0,safeNum(state.plan.purchaseYear)-simNowYear())+safeNum(state.plan.loanYears)>65){
+      level='warn';label='完済時年齢に注意';reason='65歳は退職を確認する目安です。長期ローンでは退職後の収入・年金が未設定のため全期間の返済安全性は判定できません。';
     }
     if(info.spendable<0&&level==='good'){
       level='warn';label='家計確認';reason='毎月の保険・子育て・積立を引くと、余裕費が不足します。';

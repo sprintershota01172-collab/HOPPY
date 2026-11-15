@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r99';
+  const BUILD = 'r100';
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
@@ -50,12 +50,22 @@
   function changePage(key,total,d){ui[key]=Math.max(0,Math.min(Math.max(0,total-1),ui[key]+d));}
 
   function normalize(s){return {version:1,land:landNormalize(s&&s.land)};}
-  let state;
-  try{
-    const raw=localStorage.getItem(STORE);
-    if(raw)state=normalize(JSON.parse(raw));
-    else{const legacy=localStorage.getItem(LEGACY_STORE);state=normalize(legacy?JSON.parse(legacy):{});}
-  }catch(_){state=normalize({});}
+  // 保存データの読み込みは、すべての定義が終わったあと（起動の直前）に行う。
+  // ※以前はここで読み込んでいたため、後ろで定義する定数が未定義のままエラーになり、毎回データが初期化されていた（r99まで）。
+  let state=null;
+  const BACKUP_STORE=STORE+'-backup';
+  function loadState(){
+    let raw=null;
+    try{raw=localStorage.getItem(STORE);}catch(_){}
+    try{
+      if(raw){state=normalize(JSON.parse(raw));try{localStorage.setItem(BACKUP_STORE,raw);}catch(_){}}
+      else{const legacy=localStorage.getItem(LEGACY_STORE);state=normalize(legacy?JSON.parse(legacy):{});}
+    }catch(_){
+      // 読めなかったデータは消さずに退避しておく
+      try{if(raw)localStorage.setItem(STORE+'-broken-'+Date.now(),raw);}catch(__){}
+      state=normalize({});
+    }
+  }
   let ui={tab:'land',overlay:'',lock:0,toast:null,lpPage:0,lpCity:null,lpMakerPage:0,lpGuidePage:0,lpMaker:null,lpCommutePage:0,lpAreaPage:0,lpAreaUse:'res',lpAreaOrder:'desc',lpTown:null,lpWorkResults:null,lpWho:0,lpCmpPage:0,lpWord:'koji',map:null,lpMakerTab:'spec'};
   let toastTimer=null;
   function save(){try{localStorage.setItem(STORE,JSON.stringify(state));}catch(_){message('端末に保存できませんでした');}}
@@ -2597,6 +2607,7 @@
   },{passive:true});
 
   // 地価データ（端末保存→初期データ→公開JSONの順に読む）。描画後に非同期で実行。
+  loadState();
   Promise.resolve().then(landBoot).catch(()=>{});
   save();render();
   Promise.resolve().then(verifyPublishedRelease).catch(()=>{});

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// ほっぴーくん 地価ランキング集計スクリプト（Node 20 以上・APIキー不要）
+// 地価調べ君 地価ランキング集計スクリプト（Node 20 以上・APIキー不要）
 //
 //   node scripts/fetch-landprice.mjs
 //   REINFOLIB_API_KEY=xxxx node scripts/fetch-landprice.mjs   # 任意：取引価格（実勢・中古戸建）も集計

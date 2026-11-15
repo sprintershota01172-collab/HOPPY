@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const BUILD = 'r74';
+  const BUILD = 'r75';
   // A tiny non-sensitive marker helps diagnose installed PWA update issues.
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'hoppy-phase1-v1';
@@ -199,7 +199,7 @@
     const oldFPKind=oldFP?.classList?.contains('fp-month-report')?'monthly':oldFP?'annual':null;
     const oldFPScroll=oldFP?.scrollTop||0;
     const body=ui.tab==='property'?propertyScreen():ui.tab==='compare'?compareScreen():ui.tab==='land'?landScreen():ui.tab==='sim'?simulationScreen():ui.tab==='memo'?memoScreen():ui.tab==='updates'?updateLogScreen():pendingScreen();
-    app.innerHTML='<main class="main" aria-label="ホッポさんアプリ">'+body+'</main><nav class="bottom" aria-label="メインメニュー">'+nav.map(([key,name])=>'<button class="tab '+(ui.tab===key?'active':'')+'" aria-label="'+name+'" data-act="tab" data-value="'+key+'" aria-current="'+(ui.tab===key?'page':'false')+'"><span class="nav-icon">'+tabIcon(key)+'</span><span class="tab-label">'+name+'</span></button>').join('')+'</nav>'+(ui.overlay?overlay(): '');
+    app.innerHTML='<main class="main" aria-label="地価調べ君アプリ">'+body+'</main><nav class="bottom" aria-label="メインメニュー">'+nav.map(([key,name])=>'<button class="tab '+(ui.tab===key?'active':'')+'" aria-label="'+name+'" data-act="tab" data-value="'+key+'" aria-current="'+(ui.tab===key?'page':'false')+'"><span class="nav-icon">'+tabIcon(key)+'</span><span class="tab-label">'+name+'</span></button>').join('')+'</nav>'+(ui.overlay?overlay(): '');
     // Changing month/year or a value must not snap a scrolled breakdown
     // back to the start of the FP report.
     if(oldFPKind){
@@ -2445,13 +2445,13 @@ function fpMetaDashboard(){
     const p=state.plan,price=safeNum(p.propertyPrice),current=modelYears(price,true),rent=modelYears(price,false),
       budget=fpBudget(),rating=fpRating(price),warnings=fpPlanWarnings(),
       page=Math.min(7,Math.max(0,ui.simResultPage||0));
-    const intro='<div class="sim-intro"><span class="fp-friend-brand" aria-label="ほっぽさん FP">'+
+    const intro='<div class="sim-intro"><span class="fp-friend-brand" aria-label="地価調べ君 FP">'+
       '<svg viewBox="0 0 32 32" width="23" height="23" aria-hidden="true" focusable="false">'+
       '<rect x="1" y="1" width="30" height="30" rx="11" fill="#def0e4"/>'+
       '<path d="M7.5 15.5 16 8l8.5 7.5v9H7.5z" fill="#fff9e9" stroke="#387c6b" stroke-width="1.9" stroke-linejoin="round"/>'+
       '<circle cx="13" cy="18" r="1" fill="#387c6b"/><circle cx="19" cy="18" r="1" fill="#387c6b"/>'+
       '<path d="M13 21q3 3 6 0" fill="none" stroke="#387c6b" stroke-width="1.4" stroke-linecap="round"/></svg>'+
-      '<strong>FP</strong><small>ほっぽさん</small></span>'+
+      '<strong>FP</strong><small>地価調べ君</small></span>'+
       '<div class="fp-result-quick"><button class="btn compact" data-act="fp-history-open" aria-label="診断履歴" title="診断履歴">◷</button>'+ 
       '<button class="btn compact" data-act="fp-edit-events" aria-label="イベント登録" title="イベント登録">＋</button>'+
       '<button class="btn compact" data-act="sim-restart" aria-label="家計の編集" title="家計の編集">✎</button>'+
@@ -2756,6 +2756,8 @@ function fpMetaDashboard(){
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r75',date:'2026.11.15',title:'アプリ名を「地価調べ君」に変更',
+        details:['アプリ名・ホーム画面の名前を「地価調べ君」に変更','公開先を '+'https://sprintershota01172-collab.github.io/chika-shirabe-kun/ に移動','登録した物件・家計のデータはそのまま']},
       {version:'r74',date:'2026.11.15',title:'地価データをAPIキーなしで自動取得',
         details:['国土数値情報（国土交通省）の地価公示・地価調査を毎週自動で取り込み（登録不要）','愛知県・岐阜県の公表平均と一致することを確認','実勢・中古戸建はAPIキーを登録した場合だけ表示']},
       {version:'r73',date:'2026.11.15',title:'地価ランキングを追加（愛知県全域＋多治見周辺）',
@@ -2826,7 +2828,7 @@ function fpMetaDashboard(){
         details:['内訳のページ送りを廃止','内訳項目をコンパクトに配置']}
     ];
     return '<section class="screen updates-screen" aria-label="アプリの更新履歴">'+
-      '<div class="updates-top"><span class="updates-eyebrow">HOPPY · RELEASE NOTES</span>'+
+      '<div class="updates-top"><span class="updates-eyebrow">地価調べ君 · RELEASE NOTES</span>'+
       '<h2>更新履歴</h2><p>この端末で読み込まれているバージョン <strong>'+BUILD+'</strong></p></div>'+
       '<div class="updates-list">'+versions.map((entry,i)=>
         '<article class="updates-entry'+(i===0?' current':'')+'">'+
@@ -2979,7 +2981,7 @@ function fpMetaDashboard(){
 
   /* --- GitHub Actions をボタンから起動 --- */
   function landRepo(){
-    let owner='sprintershota01172-collab',repo='HOPPY';
+    let owner='sprintershota01172-collab',repo='chika-shirabe-kun';
     try{
       const m=location.hostname.match(/^([^.]+)\.github\.io$/i);
       if(m){owner=m[1];const seg=location.pathname.split('/').filter(Boolean)[0];if(seg&&!/\.html?$/i.test(seg))repo=seg;}
@@ -2994,7 +2996,7 @@ function fpMetaDashboard(){
   function landGhError(status){
     return status===401?'GitHubトークンの期限が切れています。⚙設定から入れ直してください':
       status===403?'トークンの権限が足りません。Actions：Read and write を付けて作り直してください':
-      status===404?'リポジトリかワークフローが見つかりません。トークンの対象がHOPPYか確認してください':
+      status===404?'リポジトリかワークフローが見つかりません。トークンの対象が chika-shirabe-kun か確認してください':
       status===422?'ワークフローを起動できませんでした。mainにワークフローがあるか確認してください':
       'GitHubに接続できませんでした（HTTP '+status+'）。少し待ってからもう一度押してください';
   }
@@ -3333,7 +3335,7 @@ function fpMetaDashboard(){
         field('割安判定のしきい値','threshold','%','min="1" max="50" step="1"')+
         '<p class="lp-note">物件比較の「土地の割安度」：相場より'+L.threshold+'%以上安い○／±'+L.threshold+'%以内△／'+L.threshold+'%以上高い×</p></div>'+
       '<div class="lp-set-group"><span class="kicker">ワンタップ更新（GitHub）</span>'+
-        '<p class="lp-note">'+(token?'✓ トークン設定済み（この端末だけに保存）':'Fine-grained トークン（対象：HOPPYのみ／Actions：Read and write／Contents：Read）を一度だけ入力します')+'</p>'+
+        '<p class="lp-note">'+(token?'✓ トークン設定済み（この端末だけに保存）':'Fine-grained トークン（対象：chika-shirabe-kun のみ／Actions：Read and write／Contents：Read）を一度だけ入力します')+'</p>'+
         '<div class="lp-token-row"><input type="password" autocomplete="off" autocapitalize="off" spellcheck="false" data-lp-token placeholder="'+(token?'新しいトークンで置き換え':'github_pat_…')+'" aria-label="GitHubトークン">'+
         '<button class="btn compact primary" data-act="lp-token-save">保存</button>'+(token?'<button class="btn compact" data-act="lp-token-clear">削除</button>':'')+'</div></div>'+
       '</div><button class="btn wide" data-act="lp-about">データの時点・出典・算出方法</button>');

@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f5f5f7">
 <meta http-equiv="Cache-Control" content="no-store, max-age=0">
-<title>ほっぽさん｜更新と復旧</title>
+<title>地価調べ君｜更新と復旧</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Meiryo UI",sans-serif;color:#23382f;background:#f5f6f4;color-scheme:light}
 *{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;padding:18px}
@@ -16,7 +16,7 @@ button:disabled{opacity:.65}#status{font-size:12px;line-height:1.6;padding:11px;
 #diag{white-space:pre-wrap;font-size:11px;line-height:1.6;color:#536b5c;background:#f6f8f6;border-radius:9px;padding:10px;overflow-wrap:anywhere}
 .note{font-size:11px;color:#708175}
 </style></head><body><main>
-<small>HOPPY · SAFE RECOVERY</small>
+<small>地価調べ君 · SAFE RECOVERY</small>
 <h1>最新版に更新</h1>
 <p>旧版を使っていても修復できます。<b>家計・物件・メモ・写真は消しません。</b> 修復するのはキャッシュとオフライン制御のみです。</p>
 <div id="status" role="status" aria-live="polite">更新ボタンはいつでも利用できます。公開状態を確認しています。</div>
@@ -24,12 +24,12 @@ button:disabled{opacity:.65}#status{font-size:12px;line-height:1.6;padding:11px;
 <a class="action" href="./index.html?direct=1">修復せずにアプリを開く</a>
 <button id="check" class="secondary" type="button">診断情報を更新</button>
 <details><summary style="font-size:12px;margin:16px 0 8px">更新できないときの診断情報</summary><div id="diag">確認中</div><button id="copy" class="secondary" type="button">診断情報をコピー</button></details>
-<p class="note">重要：ホーム画面の「ほっぽさん」とSafariは保存領域が異なる場合があります。記録を引き継ぐには、<b>使っていたホーム画面アプリの中で</b>右上または画面内のバージョン表示をタップして、この修復画面を開いてください。保存記録のバックアップ前にアプリのアイコンを削除したり、サイトデータを消去しないでください。</p>
+<p class="note">重要：ホーム画面の「地価調べ君」とSafariは保存領域が異なる場合があります。記録を引き継ぐには、<b>使っていたホーム画面アプリの中で</b>右上または画面内のバージョン表示をタップして、この修復画面を開いてください。保存記録のバックアップ前にアプリのアイコンを削除したり、サイトデータを消去しないでください。</p>
 </main>
 <script>
 (()=>{
  'use strict';
- const REPAIR_RELEASE = 'r74';
+ const REPAIR_RELEASE = 'r75';
  const status=document.getElementById('status'),diag=document.getElementById('diag'),repair=document.getElementById('repair');
  const mark=(s)=>{status.textContent=s};
  const timeout=(promise,ms=3500)=>Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(Error('確認が時間切れになりました')),ms))]);

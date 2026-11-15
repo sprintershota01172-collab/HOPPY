@@ -1,10 +1,10 @@
 {
-  "version": "r74",
+  "version": "r75",
   "ui": "compact-visual",
   "revised": "2026-11-15",
   "data_schema": "hoppy-phase1-v1",
-  "entrypoint": "visual-r74.html",
+  "entrypoint": "visual-r75.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Land price data from MLIT KSJ open data (no API key needed)"
+  "release_note": "Rename app to 地価調べ君 (repository chika-shirabe-kun)"
 }

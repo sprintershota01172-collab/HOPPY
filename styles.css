@@ -6410,3 +6410,30 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .lp-ratio-bar u::after{content:none}
 #app .lp-ratio small{margin-top:4px}
 @media(max-height:700px){#app .lp-sim-form{max-height:52vh;overflow-y:auto;overscroll-behavior:contain}}
+
+/* r85: 広さの目安 */
+#app .lp-size-hint{grid-column:1/-1;height:28px;border:0;background:#fff4e6;border-radius:9px;font-size:11px;font-weight:850;color:#b4601d;text-align:left;padding:0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-size{display:flex;flex-direction:column;gap:6px}
+#app .lp-size-form{flex:none;display:flex;flex-direction:column;gap:4px}
+#app .lp-size-row{display:grid;grid-template-columns:62px 1fr;align-items:center;gap:6px}
+#app .lp-size-row>span{font-size:10.5px;font-weight:850;color:#4d6b5c}
+#app .lp-size-row .lp-seg>button{font-size:11px;padding:0 2px}
+#app .lp-size-result{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#app .lp-size-result>div{background:linear-gradient(125deg,#1a735d,#2c9274);color:#fff;border-radius:12px;padding:7px 10px;display:flex;flex-direction:column}
+#app .lp-size-result>div:last-child{background:linear-gradient(125deg,#b4601d,#e0873f)}
+#app .lp-size-result span{font-size:9.5px;font-weight:850;opacity:.9}
+#app .lp-size-result strong{font-size:24px;font-weight:900;line-height:1.1}
+#app .lp-size-result strong small{font-size:11px;margin-left:1px}
+#app .lp-size-result em{font-style:normal;font-size:9.5px;font-weight:750;opacity:.9}
+#app .lp-scale{flex:none;display:flex;flex-direction:column;gap:3px;background:#fff;border:1px solid #e2ebe7;border-radius:12px;padding:6px 9px}
+#app .lp-scale-row{display:grid;grid-template-columns:86px 1fr 40px;align-items:center;gap:6px}
+#app .lp-scale-row span{font-size:10px;font-weight:800;color:#4d6b5c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-scale-row i{position:relative;height:9px;border-radius:5px;background:#eef3f0}
+#app .lp-scale-row i em{display:block;height:100%;border-radius:5px;background:#9fc4b3}
+#app .lp-scale-row i u{position:absolute;top:-3px;bottom:-3px;width:2px;background:#e0763a;border-radius:1px}
+#app .lp-scale-row.is-me span{color:#c2561f}
+#app .lp-scale-row.is-me i em{background:#e0763a}
+#app .lp-scale-row b{font-size:11.5px;font-weight:900;color:#173e32;text-align:right}
+#app .lp-scale-row b small{font-size:8.5px}
+#app .lp-size .lp-note{font-size:9px!important;line-height:1.45}
+@media(max-height:700px){#app .lp-size{overflow-y:auto;overscroll-behavior:contain}#app .lp-size .lp-note{display:none}}

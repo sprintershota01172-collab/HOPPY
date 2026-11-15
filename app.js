@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r84';
+  const BUILD = 'r85';
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
@@ -85,7 +85,7 @@
     return {type:'price',kind:'all',unit:'tsubo',order:'desc',filter:'all',radius:20,longSpan:5,
       budgetView:'total',pointView:'price',pinFav:1,favorites:[],favTowns:[],
       wishTsubo:50,buildingBudget:2500,manualBudget:0,
-      view:'rank',makerSort:'asc',makerType:'all',guideTab:'region',guideScope:'all',sim:landSimDefaults(),commute:landCommuteDefaults(),money:landMoneyDefaults()};
+      view:'rank',makerSort:'asc',makerType:'all',guideTab:'region',guideScope:'all',sim:landSimDefaults(),commute:landCommuteDefaults(),money:landMoneyDefaults(),size:landSizeDefaults()};
   }
   function landNormalize(raw){
     const d=landDefaults(),x=raw&&typeof raw==='object'?raw:{};
@@ -104,7 +104,7 @@
       manualBudget:clamp('manualBudget',0,100000),
       view:pick('view',['rank','map','compare','sim','maker','guide','commute','advice']),makerSort:pick('makerSort',['asc','desc','seis','ins','war']),
       makerType:pick('makerType',['all','全国','愛知','岐阜','鉄骨']),guideTab:pick('guideTab',['region','cond','words']),
-      guideScope:pick('guideScope',['all','名古屋市','尾張','知多','西三河','東三河','東濃','中濃']),sim:landSimNormalize(x.sim),commute:landCommuteNormalize(x.commute),money:landMoneyNormalize(x.money)
+      guideScope:pick('guideScope',['all','名古屋市','尾張','知多','西三河','東三河','東濃','中濃']),sim:landSimNormalize(x.sim),commute:landCommuteNormalize(x.commute),money:landMoneyNormalize(x.money),size:landSizeNormalize(x.size)
     };
   }
   function landCriterion(){return {id:'land-value',name:'土地の割安度（相場比）',weight:2,auto:{field:'landValue'}};}
@@ -560,6 +560,7 @@
     if(landV3Action(action,v)!==false)return;
     if(landV4Action(action,v)!==false)return;
     if(landV6Action(action,v)!==false)return;
+    if(landV7Action(action,v)!==false)return;
     const L=state.land;
     const set=fn=>step(()=>{fn();ui.lpPage=0;ui.lpCommutePage=0;save();});
     if(action==='lp-type')return set(()=>{if(LAND_TYPES.some(x=>x[0]===v))L.type=v;});
@@ -899,7 +900,7 @@
       '<div class="lp-sim-form">'+
         '<label class="lp-sim-field"><span>市区町村</span><select data-lp-sim="city">'+cityOpts+'</select></label>'+
         '<label class="lp-sim-field"><span>総予算（諸費用込み）</span><span class="lp-sim-num"><input type="number" inputmode="numeric" min="500" max="30000" step="100" data-lp-sim="budgetMan" value="'+esc(S.budgetMan)+'"><i>万円</i></span></label>'+
-        condBlock+
+        condBlock+landSizeHint()+
         '<label class="lp-sim-field lp-sim-wide"><span>土地と建物の割合（スライドで変更）</span><input class="lp-range-input" type="range" min="5" max="70" step="1" data-lp-sim="landPct" value="'+S.landPct+'" aria-label="土地の割合">'+landRatioBar(S.landPct)+'</label>'+
         '<label class="lp-sim-field lp-sim-wide"><span>ハウスメーカー（建物本体の坪単価）</span><select data-lp-sim="maker">'+makerOpts.map(([v,l])=>'<option value="'+esc(v)+'"'+(S.maker===v?' selected':'')+'>'+esc(l)+'</option>').join('')+'</select></label>'+
         '<div class="lp-sim-field lp-sim-wide"><span>仕様のグレード</span>'+landSeg('lp-sim-grade',S.grade,[['low','下限 '+r.maker.low+'万'],['mid','目安 '+r.maker.mid+'万'],['high','上限 '+r.maker.high+'万']],'lp-seg-fill')+'</div>'+
@@ -910,14 +911,14 @@
         bar('土地代（約'+(r.landCan!=null?Math.round(r.landCan):'—')+'坪）',r.land,'land')+
         bar('建物本体（約'+Math.round(r.floorCan)+'坪×'+r.unitMan+'万）',r.body,'body')+
         bar('付帯工事25%＋諸費用7%',r.extra+r.cost,'extra')+
-        (r.landCan!=null&&r.landCan<35?'<p class="lp-sim-warn">土地が35坪未満。車2台＋30坪台の家には40〜50坪が目安です。</p>':r.floorCan<28?'<p class="lp-sim-warn">建物が28坪未満。4人家族なら30〜36坪が目安（注文住宅の平均は約36坪）。</p>':'')+
+        (()=>{const z=landSizeCalc(),ls=landTb(z.site),fs=landTb(z.floor);return r.landCan!=null&&r.landCan<ls?'<p class="lp-sim-warn">土地が目安（'+ls+'坪）より狭い。割合を上げるか、安いエリアを検討。</p>':r.floorCan<fs-3?'<p class="lp-sim-warn">建物が目安（'+fs+'坪）より狭い。土地の割合を下げるか予算を見直し。</p>':'';})()+
         (needPct!=null&&Math.abs(needPct-S.landPct)>=2&&needPct<=70?'<button class="lp-sim-commute" data-act="lp-ratio-fit" data-value="'+needPct+'">希望の土地'+S.landTsubo+'坪なら土地の割合は'+needPct+'% → 合わせる ›</button>':'')+
       '</div>'+
       '<p class="lp-sim-note">総予算から諸費用7%を引き、残りを土地と建物（本体＋付帯工事25%）に分けて計算。</p></div>';
     return modeSeg+'<div class="lp-sim">'+
       '<div class="lp-sim-form">'+
         '<label class="lp-sim-field"><span>市区町村</span><select data-lp-sim="city">'+cityOpts+'</select></label>'+
-        num('landTsubo','土地の広さ','坪')+num('floorTsubo','建物の延床','坪')+
+        num('landTsubo','土地の広さ','坪')+num('floorTsubo','建物の延床','坪')+landSizeHint()+
         condBlock+
         '<label class="lp-sim-field lp-sim-wide"><span>ハウスメーカー（建物本体の坪単価）</span><select data-lp-sim="maker">'+makerOpts.map(([v,l])=>'<option value="'+esc(v)+'"'+(S.maker===v?' selected':'')+'>'+esc(l)+'</option>').join('')+'</select></label>'+
         '<div class="lp-sim-field lp-sim-wide"><span>仕様のグレード</span>'+landSeg('lp-sim-grade',S.grade,[['low','下限 '+r.maker.low+'万'],['mid','目安 '+r.maker.mid+'万'],['high','上限 '+r.maker.high+'万']],'lp-seg-fill')+'</div>'+
@@ -1340,6 +1341,7 @@
     {k:'corner',t:'角地',d:'2つの道路に接している土地です。日当たりと開放感がよく、建ぺい率が10％増えることもありますが、人目が気になる・塀の費用がかさむ面もあります。'},
     {k:'dir',t:'南道路・北道路',d:'道路がどの方角にあるかです。南道路は日当たりのよい庭とリビングを作りやすく人気があり、価格も少し高めです。北道路は安めで、家の南側に庭を取れます。'},
     {k:'flag',t:'旗竿地',d:'細い通路の奥に敷地がある「旗」の形の土地です。相場より2〜3割安いことが多い反面、車の出し入れや日当たり、工事費に注意が必要です。'},
+    {k:'size',t:'家と土地の広さの目安',d:'国の目安では、ゆとりある家は「25㎡×人数＋25㎡」（4人で125㎡≒38坪）。土地は2階建てなら建物の1階部分に、車1台あたり約15㎡（約4.5坪）と庭・すき間を足した広さが目安で、4人・車2台なら40坪前後から。「計算」の「広さの目安」で人数や車の台数から計算できます。'},
     {k:'extra',t:'付帯工事費・諸費用',d:'付帯工事費は地盤改良・外構・給排水などで、このアプリでは建物本体の25％で計算しています。諸費用は登記・ローン手数料・火災保険・仲介手数料などで、総額の7％で計算しています。'},
     {k:'btsubo',t:'建物の坪単価',d:'建物本体の価格÷延床面積です。会社ごとに含まれる範囲（照明・カーテン・外構など）が違うので、見積もりは総額で比べるのが安全です。'}
   ];
@@ -1611,8 +1613,69 @@
     if(action==='lp-tip-page'){const x=landMoney(),per=(window.innerHeight||800)<700?2:3;return step(()=>changePage('lpTipPage',Math.max(1,Math.ceil((x?.tips.length||1)/per)),Number(v)));}
     return false;
   }
+  /* ===== 広さの目安（r85） ===== */
+  // 国土交通省「住生活基本計画（全国計画）」の居住面積水準（4人以上・戸建ての目安）と、2025年度フラット35利用者調査の平均
+  const LAND_SIZE_STATS={orderFloor:118.4,orderSite:247.1,specFloor:100.4,specSite:131.5};
+  function landSizeDefaults(){return {people:4,cars:2,floors:2,garden:'small',bcr:60};}
+  function landSizeNormalize(x){
+    const d=landSizeDefaults();x=x&&typeof x==='object'?x:{};
+    const n=(k,lo,hi)=>{const v=Math.round(Number(x[k]));return Number.isFinite(v)?Math.min(hi,Math.max(lo,v)):d[k];};
+    return {people:n('people',1,8),cars:n('cars',0,4),floors:[1,2,3].includes(Number(x.floors))?Number(x.floors):d.floors,
+      garden:['none','small','large'].includes(x.garden)?x.garden:d.garden,bcr:[40,50,60,70,80].includes(Number(x.bcr))?Number(x.bcr):d.bcr};
+  }
+  function landSizeCalc(){
+    const Z=state.land.size,p=Z.people;
+    const min=p===1?25:10*p+10,city=p===1?40:20*p+15,general=p===1?55:25*p+25;
+    const floor=general;                                  // 郊外の戸建ては一般型を目安
+    const foot=Z.floors===1?floor:Z.floors===2?floor*0.55:floor*0.4;
+    const byBcr=foot/(Z.bcr/100);
+    const practical=foot+Z.cars*15+({none:0,small:15,large:40})[Z.garden]+foot*0.3;
+    const site=Math.max(byBcr,practical);
+    const c=landSimCity(),areas=(landData?.points||[]).filter(x=>x.cityCode===c?.code&&x.use==='住宅地'&&x.area>0).map(x=>x.area);
+    const cityLot=areas.length>=3?landMedian(areas):null;
+    return {min,city,general,floor,foot,byBcr,practical,site,cityLot,cityName:c?.name||'',n:areas.length};
+  }
+  const landTb=sqm=>Math.round(sqm/LAND_TSUBO);
+  function landSizeScale(items,mark,unit){
+    const mx=Math.max(...items.map(x=>x[1]),mark)*1.08;
+    return '<div class="lp-scale">'+items.map(([l,v,cls])=>'<div class="lp-scale-row'+(cls?' '+cls:'')+'"><span>'+l+'</span><i><em style="width:'+(v/mx*100)+'%"></em><u style="left:'+(mark/mx*100)+'%"></u></i><b>'+landTb(v)+'<small>坪</small></b></div>').join('')+'</div>';
+  }
+  function landSizeScreen(){
+    const Z=state.land.size,x=landSizeCalc(),S=state.land.sim;
+    const seg=(act,cur,opts)=>landSeg(act,String(cur),opts.map(([v,l])=>[String(v),l]),'lp-seg-fill');
+    const row=(label,html)=>'<div class="lp-size-row"><span>'+label+'</span>'+html+'</div>';
+    return modalFrame('広さの目安','<div class="panel detail grow lp-size">'+
+      '<div class="lp-size-form">'+
+        row('家族の人数',seg('lp-size-people',Z.people,[[2,'2人'],[3,'3人'],[4,'4人'],[5,'5人'],[6,'6人']]))+
+        row('車の台数',seg('lp-size-cars',Z.cars,[[0,'0台'],[1,'1台'],[2,'2台'],[3,'3台']]))+
+        row('階数',seg('lp-size-floors',Z.floors,[[2,'2階建て'],[1,'平屋'],[3,'3階建て']]))+
+        row('庭',seg('lp-size-garden',Z.garden,[['none','なし'],['small','小さめ'],['large','広め']]))+
+        row('建ぺい率',seg('lp-size-bcr',Z.bcr,[[50,'50%'],[60,'60%'],[80,'80%']]))+
+      '</div>'+
+      '<div class="lp-size-result"><div><span>建物（延床）の目安</span><strong>'+landTb(x.floor)+'<small>坪</small></strong><em>'+Math.round(x.floor)+'㎡・'+Z.people+'人で'+(Z.people>=4?'4LDK':Z.people===3?'3LDK':'2LDK')+'くらい</em></div>'+
+        '<div><span>土地の目安</span><strong>'+landTb(x.site)+'<small>坪〜</small></strong><em>'+Math.round(x.site)+'㎡・車'+Z.cars+'台'+(Z.garden!=='none'?'＋庭':'')+'</em></div></div>'+
+      '<span class="kicker">建物の広さの指標</span>'+
+      landSizeScale([['最低限',x.min],['都市の目安',x.city],['ゆとり',x.general,'is-me'],['注文住宅の平均',LAND_SIZE_STATS.orderFloor],['建売の平均',LAND_SIZE_STATS.specFloor]],x.floor)+
+      '<span class="kicker">土地の広さの指標</span>'+
+      landSizeScale([['あなた',x.site,'is-me'],['建売の平均',LAND_SIZE_STATS.specSite]].concat(x.cityLot?[[x.cityName.replace(/^名古屋市/,'')+'の標準',x.cityLot]]:[]).concat([['注文住宅の平均',LAND_SIZE_STATS.orderSite]]),x.site)+
+      '<div class="lp-detail-actions"><button class="btn primary flex1" data-act="lp-size-apply">この広さで総額を計算（土地'+landTb(x.site)+'坪・建物'+landTb(x.floor)+'坪）</button></div>'+
+      '<p class="lp-note">建物は国の「住生活基本計画」の居住面積水準（最低限＝10㎡×人数＋10㎡、都市の目安＝20㎡×人数＋15㎡、ゆとり＝25㎡×人数＋25㎡）。土地は建物の1階部分＋車1台15㎡＋庭＋すき間（1階の3割）と、建ぺい率から必要な広さの大きいほう。平均は2025年度フラット35利用者調査（全国。注文住宅の敷地は郊外を含むため広め）、標準は地価公示・地価調査の住宅地の地積の中央値。</p>'+
+      '</div>');
+  }
+  function landSizeHint(){
+    const x=landSizeCalc();
+    return '<button class="lp-size-hint lp-sim-wide" data-act="lp-size-open">📏 広さの目安：'+state.land.size.people+'人・車'+state.land.size.cars+'台なら 建物'+landTb(x.floor)+'坪・土地'+landTb(x.site)+'坪〜 ›</button>';
+  }
+  function landV7Action(action,v){
+    const L=state.land;
+    if(action==='lp-size-open')return openOverlay('land-size');
+    const map={'lp-size-people':'people','lp-size-cars':'cars','lp-size-floors':'floors','lp-size-garden':'garden','lp-size-bcr':'bcr'};
+    if(map[action])return step(()=>{L.size=landSizeNormalize({...L.size,[map[action]]:v});save();});
+    if(action==='lp-size-apply')return step(()=>{const x=landSizeCalc();L.sim=landSimNormalize({...L.sim,mode:'cond',landTsubo:landTb(x.site),floorTsubo:landTb(x.floor)});L.view='sim';ui.overlay='';save();message('土地'+landTb(x.site)+'坪・建物'+landTb(x.floor)+'坪で計算しました');});
+    return false;
+  }
   function overlay(){return ui.overlay==='land-detail'?landDetailScreen():ui.overlay==='land-settings'?landSettingsScreen():
-    ui.overlay==='land-about'?landAboutScreen():ui.overlay==='land-maker'?landMakerDetail():ui.overlay==='land-area'?landAreaScreen():ui.overlay==='land-town'?landTownScreen():ui.overlay==='land-commute'?landCommuteSettingsScreen():ui.overlay==='land-word'?landWordScreen():'';}
+    ui.overlay==='land-about'?landAboutScreen():ui.overlay==='land-maker'?landMakerDetail():ui.overlay==='land-area'?landAreaScreen():ui.overlay==='land-town'?landTownScreen():ui.overlay==='land-commute'?landCommuteSettingsScreen():ui.overlay==='land-word'?landWordScreen():ui.overlay==='land-size'?landSizeScreen():'';}
   function render(){
     if(!app)return;
     const liveMain=app.querySelector('main.main');

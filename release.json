@@ -1,10 +1,10 @@
 {
-  "version": "r84",
+  "version": "r85",
   "ui": "land-only",
   "revised": "2026-11-15",
   "data_schema": "chika-shirabe-v1",
-  "entrypoint": "visual-r84.html",
+  "entrypoint": "visual-r85.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Land/building ratio and money check with 2025 Flat35 statistics"
+  "release_note": "Size guide: typical house and land size by family and cars"
 }

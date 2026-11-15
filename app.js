@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r98';
+  const BUILD = 'r99';
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
@@ -1920,7 +1920,7 @@
   const LAND_TYPES_BUY=[['order','注文住宅','土地を買って、好きな家を建てる'],['ready','建売住宅','土地と家がセット。安くて早い'],['both','両方くらべる','どっちが合うか見比べる']];
   function landFindWizard(){
     const F=state.land.find,M=state.land.money,B=landFindBudget(),st=F.step;
-    const big=(val,unit,act)=>'<div class="lp-fs-big"><button class="lp-fs-pm" data-act="'+act+'" data-value="-1" aria-label="減らす">−</button><label><input type="number" inputmode="decimal" data-lp-fs="'+(act==='lp-fs-monthly'?'monthly':'own')+'" value="'+esc(val)+'"><i>'+unit+'</i></label><button class="lp-fs-pm" data-act="'+act+'" data-value="1" aria-label="増やす">＋</button></div>';
+    const big=(val,unit,act)=>'<div class="lp-fs-big"><button class="lp-fs-pm" data-act="'+act+'" data-value="-1" aria-label="減らす">−</button><label><input type="number" inputmode="decimal" step="'+(act==='lp-fs-monthly'?'0.5':'10')+'" data-label="'+(act==='lp-fs-monthly'?'月々払える額':'頭金')+'" data-lp-fs="'+(act==='lp-fs-monthly'?'monthly':'own')+'" value=""'+esc(val)+'"><i>'+unit+'</i></label><button class="lp-fs-pm" data-act="'+act+'" data-value="1" aria-label="増やす">＋</button></div>';
     const chips=(act,list,cur,unit)=>'<div class="lp-fs-chips">'+list.map(v=>'<button class="'+(Number(cur)===v?'active':'')+'" data-act="'+act+'" data-value="'+v+'">'+v+unit+'</button>').join('')+'</div>';
     let q,body,mood='happy';
     if(st===1){q='月々、いくらまで返せる？';body=big(F.monthly,'万円/月','lp-fs-monthly')+chips('lp-fs-monthly-set',[8,10,12,15],F.monthly,'万')+
@@ -2293,7 +2293,7 @@
       q='広さは？（広告の「土地面積」）';
       const z=landSizeCalc(),need=landTb(z.site);
       const verdict=size?(size.tsubo<need-5?['narrow','目安より狭め']:size.tsubo>need*1.6?['wide','かなり広い']:['ok','ちょうどいい']):null;
-      body='<div class="lp-fs-big lp-my-size"><label><input type="number" inputmode="decimal" data-lp-my="size" value="'+esc(d.size??'')+'" placeholder="0"><i>'+(d.unit==='tsubo'?'坪':'㎡')+'</i></label></div>'+
+      body='<div class="lp-fs-big lp-my-size"><label><input type="number" inputmode="decimal" step="0.01" data-label="土地の広さ" data-lp-my="size" value=""'+esc(d.size??'')+'" placeholder="0"><i>'+(d.unit==='tsubo'?'坪':'㎡')+'</i></label></div>'+
         '<div class="lp-my-unit">'+landSeg('lp-my-unit',d.unit==='tsubo'?'tsubo':'sqm',[['sqm','㎡（平米）で入れる'],['tsubo','坪で入れる']],'lp-seg-fill')+'</div>'+
         '<p class="lp-fs-hint">'+(size?'＝ <b>'+Math.round(size.sqm*10)/10+'㎡</b>・<b>約'+(Math.round(size.tsubo*10)/10)+'坪</b>':'広告に「165.29㎡（50.00坪）」のように書いてあります')+'</p>'+
         (verdict?'<div class="lp-my-verdict v-'+verdict[0]+'">'+landMascot(verdict[0]==='narrow'?'think':'happy',30,false)+'<p>'+state.land.size.people+'人・車'+state.land.size.cars+'台の目安は約'+need+'坪（'+Math.round(need*LAND_TSUBO)+'㎡）→ <b>'+verdict[1]+'</b></p></div>':'');
@@ -2309,7 +2309,7 @@
         const tone=ratio==null?null:ratio<0.95?['cheap','割安']:ratio<=1.25?['fair','相場なみ']:['high','高め'];
         prev='<p class="lp-fs-hint">坪 <b>'+(unit/10000).toFixed(1)+'万円</b>（1㎡あたり'+(unit/LAND_TSUBO/10000).toFixed(1)+'万円）</p>'+
           (tone?'<div class="lp-my-verdict v-'+tone[0]+'">'+landMascot(tone[0]==='high'?'think':'happy',30,false)+'<p>この辺りの目安 坪'+(ref.sqm*LAND_TSUBO/10000).toFixed(1)+'万円 → <b>'+tone[1]+'</b></p></div>':'');}
-      body='<div class="lp-fs-big"><label><input type="number" inputmode="decimal" data-lp-my="price" value="'+esc(d.price??'')+'" placeholder="0"><i>万円</i></label></div>'+(price>0?prev:guide);
+      body='<div class="lp-fs-big"><label><input type="number" inputmode="decimal" step="1" data-label="土地の価格" data-lp-my="price" value=""'+esc(d.price??'')+'" placeholder="0"><i>万円</i></label></div>'+(price>0?prev:guide);
       if(!(price>0))next=null;
     }else{
       q='わかればもっと正確に（なくてもOK）';next='save';label='保存して評価 ›';
@@ -2440,6 +2440,72 @@
     if(action==='lp-pick-set')return step(()=>{const f=ui.lpPick?.field||'town';ui.lpMyEdit={...(ui.lpMyEdit||{}),[f]:v};ui.overlay='land-my-edit';});
     return false;
   }
+  /* ===== 入力をすべて専用の入力画面で（r99）：iPhoneのキーボードで画面が動かないように ===== */
+  // 数字＝アプリ内のテンキー（キーボードを出さない）、文字＝画面の一番上に入力欄がある入力画面
+  let kp=null;
+  function landProxyInputs(){
+    app.querySelectorAll('input:not([type=range]):not([type=checkbox]):not([data-lp-pick]),textarea').forEach(el=>{
+      if(el.dataset.proxy)return;
+      el.dataset.proxy=el.type==='number'?'num':'text';
+      el.readOnly=true;el.setAttribute('inputmode','none');el.tabIndex=-1;
+    });
+  }
+  function landFieldLabel(el){
+    return (el.dataset.label||el.closest('label')?.querySelector('span')?.textContent||el.getAttribute('aria-label')||el.placeholder||'入力').replace(/[＊*]/g,'').trim();
+  }
+  function landFieldUnit(el){return el.parentElement?.querySelector('i')?.textContent||'';}
+  function kpClose(){if(kp?.node)kp.node.remove();kp=null;}
+  function kpCommit(){
+    if(!kp)return;
+    const {el,val}=kp;kpClose();
+    if(!el||!document.body.contains(el))return;
+    el.value=val;
+    el.dispatchEvent(new Event('input',{bubbles:true}));
+    el.dispatchEvent(new Event('change',{bubbles:true}));
+    if(el.dataset.lpWorkQuery!==undefined)landWorkSearch(val);
+  }
+  function kpRender(){
+    if(!kp)return;
+    const disp=kp.type==='num'?(kp.val===''?'0':kp.val):'';
+    if(kp.type==='num'){
+      kp.node.innerHTML='<div class="kp-dim" data-kp="cancel"></div><div class="kp-sheet" role="dialog" aria-label="'+esc(kp.label)+'">'+
+        '<div class="kp-head"><button data-kp="cancel">キャンセル</button><span>'+esc(kp.label)+'</span><button class="kp-ok" data-kp="ok">決定</button></div>'+
+        '<div class="kp-val"><b>'+esc(disp)+'</b><i>'+esc(kp.unit)+'</i></div>'+
+        '<div class="kp-keys">'+['1','2','3','4','5','6','7','8','9',kp.dec?'.':'','0','⌫'].map(k=>k?'<button data-kp="'+k+'">'+k+'</button>':'<span></span>').join('')+'</div>'+
+        '<button class="kp-clear" data-kp="clear">クリア</button></div>';
+    }else{
+      kp.node.innerHTML='<div class="kp-full" role="dialog" aria-label="'+esc(kp.label)+'"><div class="kp-head"><button data-kp="cancel">キャンセル</button><span>'+esc(kp.label)+'</span><button class="kp-ok" data-kp="ok">決定</button></div>'+
+        (kp.multi?'<textarea class="kp-text" rows="6" placeholder="'+esc(kp.ph)+'">'+esc(kp.val)+'</textarea>':'<input class="kp-text" type="'+(kp.url?'url':'text')+'" enterkeyhint="done" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="'+esc(kp.ph)+'" value="'+esc(kp.val)+'">')+
+        (kp.pass?'':'<p class="kp-hint">入力したら「決定」を押してね</p>')+'</div>';
+      const t=kp.node.querySelector('.kp-text');
+      if(kp.pass)t.type='password';
+      try{t.focus({preventScroll:true});}catch(_){t.focus();}
+      const len=t.value.length;try{t.setSelectionRange(len,len);}catch(_){}
+    }
+  }
+  function kpOpen(el){
+    kpClose();
+    const node=document.createElement('div');node.className='kp-root';document.body.appendChild(node);
+    const step=String(el.getAttribute('step')||'1');
+    kp={el,node,type:el.dataset.proxy,val:String(el.value||''),label:landFieldLabel(el),unit:landFieldUnit(el),
+      dec:step.includes('.')||Number(step)<1,multi:el.tagName==='TEXTAREA',url:el.type==='url',pass:el.type==='password',ph:el.placeholder||'',fresh:true};
+    node.addEventListener('click',e=>{const b=e.target.closest('[data-kp]');if(!b)return;e.preventDefault();const k=b.dataset.kp;
+      if(k==='cancel')return kpClose();
+      if(k==='ok'){if(kp.type==='text')kp.val=kp.node.querySelector('.kp-text').value;return kpCommit();}
+      if(k==='clear'){kp.val='';kp.fresh=false;return kpRender();}
+      if(k==='⌫'){kp.val=kp.fresh?'':kp.val.slice(0,-1);kp.fresh=false;return kpRender();}
+      if(kp.fresh){kp.val='';kp.fresh=false;}
+      if(k==='.'&&(kp.val.includes('.')))return;
+      if(kp.val.replace('.','').length>=9)return;
+      kp.val=(kp.val==='0'&&k!=='.')?k:(kp.val===''&&k==='.'?'0.':kp.val+k);kpRender();});
+    node.addEventListener('keydown',e=>{if(e.key==='Enter'&&kp?.type==='text'&&!kp.multi){e.preventDefault();kp.val=e.target.value;kpCommit();}});
+    kpRender();
+  }
+  // 入力欄のタップで開く（キャプチャで先に受け取る）
+  document.addEventListener('click',e=>{
+    const el=e.target.closest?.('#app [data-proxy]');if(!el)return;
+    e.preventDefault();e.stopPropagation();kpOpen(el);
+  },true);
   function overlay(){return ui.overlay==='land-detail'?landDetailScreen():ui.overlay==='land-settings'?landSettingsScreen():
     ui.overlay==='land-about'?landAboutScreen():ui.overlay==='land-maker'?landMakerDetail():ui.overlay==='land-area'?landAreaScreen():ui.overlay==='land-town'?landTownScreen():ui.overlay==='land-commute'?landCommuteSettingsScreen():ui.overlay==='land-word'?landWordScreen():ui.overlay==='land-size'?landSizeScreen():ui.overlay==='land-help'?landHelpScreen():ui.overlay==='land-find-city'?landFindCityScreen():ui.overlay==='land-find-maker'?landFindMakerScreen():ui.overlay==='land-loan'?landLoanScreen():ui.overlay==='land-ready'?landReadyScreen():ui.overlay==='land-my'?landMyDetail():ui.overlay==='land-my-edit'?landMyEditScreen():ui.overlay==='land-howto'?landHowtoScreen():ui.overlay==='land-pick'?landPickScreen():'';}
   function render(){
@@ -2448,10 +2514,10 @@
     if(ui.overlay&&liveMain){
       const current=app.querySelector('.full');
       if(current)current.outerHTML=overlay();else app.insertAdjacentHTML('beforeend',overlay());
-      renderToast();return;
+      landProxyInputs();renderToast();return;
     }
     app.innerHTML='<main class="main" aria-label="地価調べ君">'+landScreen()+'</main>'+(ui.overlay?overlay():'');
-    renderToast();renderReleaseBanner();
+    landProxyInputs();renderToast();renderReleaseBanner();
   }
   function handler(action,button){
     const v=button.dataset.value;
@@ -2515,10 +2581,7 @@
     const i=box.querySelector('i'),em=box.querySelector('em');if(i){i.style.width=p+'%';i.querySelector('b').textContent='土地 '+p+'%';}if(em)em.querySelector('b').textContent='建物 '+(100-p)+'%';});
   // iPhoneでキーボードを閉じたあと画面が上下にずれたままになるのを戻す
   document.addEventListener('focusout',()=>setTimeout(()=>{const a=document.activeElement;if(!a||!/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)){try{window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0;}catch(_){}}},80));
-  // キーボードが出たら、見えている高さにアプリを合わせる（画面全体が上に押し上げられないように）
-  (()=>{const vv=window.visualViewport;if(!vv)return;let raf=0;
-    const fit=()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{document.documentElement.style.setProperty('--vvh',Math.round(vv.height)+'px');if(window.scrollY||vv.offsetTop){try{window.scrollTo(0,0);}catch(_){}}});};
-    vv.addEventListener('resize',fit);vv.addEventListener('scroll',fit);fit();})();
+
   // （入力欄へのスクロールは行わない：画面全体が動く原因になるため）
   app.addEventListener('pointerdown',landMapDown);
   window.addEventListener('pointermove',landMapMove,{passive:false});

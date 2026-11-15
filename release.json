@@ -1,10 +1,10 @@
 {
-  "version": "r98",
+  "version": "r99",
   "ui": "land-only",
   "revised": "2026-11-15",
   "data_schema": "chika-shirabe-v1",
-  "entrypoint": "visual-r98.html",
+  "entrypoint": "visual-r99.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Town and station pickers with input at the top"
+  "release_note": "In-app number pad and text input screens"
 }

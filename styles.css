@@ -6752,3 +6752,32 @@ html,body{height:var(--vvh,100dvh)!important}
 #app .lp-pick-list button b{font-size:15px;font-weight:900;color:#173e32}
 #app .lp-pick-list button small{font-size:11px;font-weight:750;color:#6d8778}
 #app .lp-pick-list button.is-use{background:#e3f4ec;border-color:#9fd4bd}
+
+/* r99: アプリ内テンキー・文字入力画面（キーボードで画面が動かない） */
+#app [data-proxy]{caret-color:transparent;cursor:pointer;-webkit-user-select:none;user-select:none}
+#app [data-proxy]:focus{outline:none}
+.kp-root{position:fixed;inset:0;z-index:2000;font-family:inherit}
+.kp-dim{position:absolute;inset:0;background:#0f2a2033;animation:kp-fade .2s both}
+@keyframes kp-fade{from{opacity:0}}
+@keyframes kp-up{from{transform:translateY(100%)}}
+.kp-sheet{position:absolute;left:0;right:0;bottom:0;background:#f6faf8;border-radius:22px 22px 0 0;box-shadow:0 -8px 30px #0f2a2033;padding:10px 12px calc(env(safe-area-inset-bottom) + 12px);animation:kp-up .25s cubic-bezier(.22,.61,.36,1) both;max-width:700px;margin:0 auto}
+.kp-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px}
+.kp-head span{flex:1;text-align:center;font-size:14px;font-weight:900;color:#173e32;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kp-head button{border:0;background:transparent;font-size:15px;font-weight:800;color:#6d8778;padding:8px 6px}
+.kp-head .kp-ok{color:#fff;background:#1a735d;border-radius:12px;padding:8px 16px;font-weight:900}
+.kp-val{display:flex;align-items:baseline;justify-content:center;gap:6px;background:#fff;border:2px solid #9fd4bd;border-radius:16px;padding:8px 14px;margin:6px 0 10px}
+.kp-val b{font-size:38px;font-weight:900;color:#173e32;letter-spacing:.01em}
+.kp-val i{font-style:normal;font-size:15px;font-weight:850;color:#4d6b5c}
+.kp-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.kp-keys button{height:54px;border:0;border-radius:14px;background:#fff;box-shadow:0 1px 2px #12382a22;font-size:24px;font-weight:800;color:#173e32}
+.kp-keys button:active{background:#e3f4ec}
+.kp-keys span{display:block}
+.kp-clear{display:block;margin:8px auto 0;border:0;background:transparent;font-size:13px;font-weight:850;color:#b5452a}
+.kp-full{position:absolute;inset:0;background:#f6faf8;display:flex;flex-direction:column;gap:10px;padding:calc(env(safe-area-inset-top) + 10px) 14px 14px;animation:kp-fade .15s both;max-width:700px;margin:0 auto}
+.kp-text{width:100%;box-sizing:border-box;border:2px solid #1a735d;border-radius:14px;padding:12px 14px;font-size:17px;font-weight:700;color:#173e32;background:#fff;outline:none;-webkit-appearance:none;font-family:inherit;line-height:1.5}
+input.kp-text{height:52px}
+textarea.kp-text{resize:none}
+.kp-hint{margin:0;font-size:12px;font-weight:750;color:#6d8778;text-align:center}
+/* キーボードに合わせて縮める処理はやめた */
+html,body{height:100dvh!important}
+.app-shell{height:100dvh!important}

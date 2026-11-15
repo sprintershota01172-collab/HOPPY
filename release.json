@@ -1,10 +1,10 @@
 {
-  "version": "r79",
+  "version": "r80",
   "ui": "land-only",
   "revised": "2026-11-15",
   "data_schema": "chika-shirabe-v1",
-  "entrypoint": "visual-r79.html",
+  "entrypoint": "visual-r80.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Town-level land prices and commute time/cost"
+  "release_note": "Commute settings for both husband and wife"
 }

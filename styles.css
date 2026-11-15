@@ -6229,3 +6229,17 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .lp-town-val{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:1px}
 #app .lp-town-val b{font-size:13px}
 #app .lp-town-val span{font-size:10.5px;font-weight:850}
+
+/* r80: 夫・妻の2人分の通勤 */
+#app .lp-commute-chip{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;row-gap:2px;column-gap:8px;padding:5px 10px}
+#app .lp-commute-chip .lp-cc-row{grid-column:1;grid-row:auto;display:grid;grid-template-columns:auto auto 1fr;align-items:center;gap:6px;min-width:0;font-size:inherit;color:inherit;background:transparent;border-radius:0;padding:0}
+#app .lp-commute-chip .lp-cc-row i{font-style:normal;font-size:9.5px;font-weight:900;color:#fff;background:#1a735d;border-radius:6px;padding:2px 6px}
+#app .lp-commute-chip .lp-cc-row:nth-child(2) i{background:#c25b7a}
+#app .lp-commute-chip .lp-cc-row b{font-size:11.5px;max-width:52vw}
+#app .lp-commute-chip .lp-cc-row small{grid-column:auto;font-size:9px}
+#app .lp-commute-chip .lp-cc-row.is-off b{color:#9aaea4;font-weight:750}
+#app .lp-commute-chip em{grid-column:2;grid-row:1/3}
+#app .lp-who{flex:none}
+#app .lp-work-now{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;font-weight:800;color:#2d5a49;min-height:26px}
+#app .lp-work-now span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-work-now .btn{height:26px;min-height:26px;padding:0 10px;font-size:11px}

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r77';
+  const BUILD = 'r78';
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
@@ -102,7 +102,7 @@
       wishTsubo:clamp('wishTsubo',5,500),buildingBudget:clamp('buildingBudget',0,30000),
       manualBudget:clamp('manualBudget',0,100000),
       view:pick('view',['rank','sim','maker','guide']),makerSort:pick('makerSort',['asc','desc']),
-      makerType:pick('makerType',['all','木造','鉄骨']),guideTab:pick('guideTab',['region','cond']),
+      makerType:pick('makerType',['all','全国','愛知','岐阜','鉄骨']),guideTab:pick('guideTab',['region','cond']),
       guideScope:pick('guideScope',['all','名古屋市','尾張','知多','西三河','東三河','東濃','中濃']),sim:landSimNormalize(x.sim)
     };
   }
@@ -566,7 +566,7 @@
     if(action==='lp-refresh'){landRefresh();return;}
     if(action==='lp-view')return step(()=>{if(LAND_VIEWS.some(x=>x[0]===v))L.view=v;save();});
     if(action==='lp-sim-grade')return step(()=>{L.sim.grade=['low','mid','high'].includes(v)?v:'mid';save();});
-    if(action==='lp-maker-type')return step(()=>{L.makerType=['all','木造','鉄骨'].includes(v)?v:'all';ui.lpMakerPage=0;save();});
+    if(action==='lp-maker-type')return step(()=>{L.makerType=['all','全国','愛知','岐阜','鉄骨'].includes(v)?v:'all';ui.lpMakerPage=0;save();});
     if(action==='lp-maker-sort')return step(()=>{L.makerSort=v==='desc'?'desc':'asc';ui.lpMakerPage=0;save();});
     if(action==='lp-maker-page'){const total=Math.max(1,Math.ceil(landMakerList().length/landPerPage()));return step(()=>changePage('lpMakerPage',total,Number(v)));}
     if(action==='lp-maker-open')return openOverlay('land-maker',()=>{ui.lpMaker=v;});
@@ -611,7 +611,14 @@
     allaboutS:['積水ハウスの注文住宅とは？（All About）','https://allabout.co.jp/gm/gc/391783/'],
     allaboutD:['大和ハウス ジーヴォΣ（All About）','https://allabout.co.jp/gm/gc/390608/'],
     oriconY:['ヤマダホームズ（オリコン顧客満足度）','https://life.oricon.co.jp/rank-house-maker/company/sxl/'],
-    crexCost:['注文住宅の総額と内訳（本体70〜80%・付帯15〜20%・諸費用5〜10%）','https://crexgroup.com/ja/home-building/cost/custom-home-total-cost-breakdown/']
+    crexCost:['注文住宅の総額と内訳（本体70〜80%・付帯15〜20%・諸費用5〜10%）','https://crexgroup.com/ja/home-building/cost/custom-home-total-cost-breakdown/'],
+    crexAichi:['愛知の注文住宅でおすすめの工務店・ハウスメーカー30選（2025年）','https://crexgroup.com/ja/home-building/region/aichi-custom-home-builders/'],
+    crexGifu:['岐阜のおすすめ工務店ランキング20選（2025年。岐阜県の坪単価相場は50万〜90万円程度）','https://crexgroup.com/ja/home-building/region/gifu-builder-ranking-guide/'],
+    crex20:['ハウスメーカー坪単価ランキングTOP20（2025年）','https://crexgroup.com/ja/home-building/cost/house-maker-unit-price-ranking/'],
+    crex40:['主要ハウスメーカー40社の比較一覧','https://crexgroup.com/ja/home-building/builder/house-maker-list-comparison/'],
+    oriconSw:['スウェーデンハウス（オリコン顧客満足度 2026年 総合1位）','https://life.oricon.co.jp/rank-house-maker/company/swedenhouse/'],
+    yamato:['ヤマト住建 最長60年保証のお知らせ（2025年1月）','https://yamatojk.co.jp/wordpress/wp-content/uploads/2024/12/release_60years_support.pdf'],
+    iezukuri:['ハウスメーカー坪単価ランキング33社（2026年）','https://iezukuri.blog/housemaker-tsubotanka/']
   };
   // low/mid/high＝建物本体の坪単価（万円）。warranty＝構造・防水の初期保証／最長（条件・商品で変わる）
   const LAND_MAKERS=[
@@ -684,6 +691,67 @@
       cautions:['全館空調は電気代・メンテ費も確認','保証内容は要確認'],
       warranty:'要確認',fit:'全館空調を予算内で入れたい人',src:['asuka','okayama']}
   ];
+  // 全国系の追加と、愛知・岐阜の地元工務店（2026年11月15日調査）
+  const LAND_LOCAL_CAUTIONS=['施工エリアは会社ごとに限られる（要確認）','保証・アフターの内容は会社ごとに確認'];
+  LAND_MAKERS.push(
+    {id:'sweden',name:'スウェーデンハウス',band:'ハイ',type:'木造',struct:'木質パネル一体構法',low:90,mid:105,high:120,
+      points:['高気密・高断熱と木製サッシの北欧住宅','オリコンの注文住宅ランキングで2026年まで12年連続の総合1位','50年間の無料定期検診'],
+      cautions:['坪単価は高め','北欧デザインが基本で、和風・モダンは得意分野外'],warranty:'長期アフターサポート（50年間無料定期検診）',fit:'冬の暖かさと北欧デザインが好きな人',src:['asuka','crex15','okayamaW','oriconSw']},
+    {id:'mitsubishi',name:'三菱地所ホーム',band:'ハイ',type:'木造',struct:'木造2×4',low:95,mid:115,high:135,
+      points:['注文住宅の完全自由設計','全館空調の提案に強い','都市部の高級住宅に実績'],
+      cautions:['坪単価は最上位クラス','展示場が少ない地域がある'],warranty:'要確認',fit:'自由設計と全館空調の快適さを重視する人',src:['asuka','iezukuri']},
+    {id:'nihonhouse',name:'日本ハウスHD',band:'ミドル',type:'木造',struct:'木造軸組（檜の構造材）',low:70,mid:85,high:100,
+      points:['構造材に檜（ひのき）を使う木の家','制震装置が標準','グッドデザイン賞の受賞あり'],
+      cautions:['和の雰囲気が中心','保証内容は要確認'],warranty:'要確認',fit:'国産の檜で和の家を建てたい人',src:['crexAichi','iezukuri']},
+    {id:'muji',name:'無印良品の家',band:'ミドル',type:'木造',struct:'木造（SE構法）・木造軸組',low:70,mid:85,high:100,
+      points:['シンプルで機能的な無印良品のデザイン','「永く使える、変えられる」がコンセプト','大空間・大きな窓'],
+      cautions:['間取りは一室空間が基本','施工は地域の加盟会社'],warranty:'要確認',fit:'シンプルな一室空間の家が好きな人',src:['crex40']},
+    {id:'yamato',name:'ヤマト住建',band:'ミドル',type:'木造',struct:'木造',low:65,mid:78,high:90,
+      points:['高断熱・高気密と耐震性を両立（ZEH基準が標準）','断熱等級7相当の商品（LEGANTIA）がある','2025年から最長60年保証'],
+      cautions:['商品ごとに断熱仕様が違う','東海の展示場数は要確認'],warranty:'初期20年（構造・地盤は30年目まで無償延長）／最長60年',fit:'性能を予算内で高くしたい人',src:['heroes','crex12','yamato']},
+    {id:'aiful',name:'アイフルホーム',band:'ローコスト',type:'木造',struct:'木造（テクノスター金物）',low:55,mid:65,high:75,
+      points:['LIXILグループのフランチャイズ','子ども目線のキッズデザイン','LIXILの設備を採用しやすい'],
+      cautions:['施工は地域の加盟店で対応に差','標準仕様を確認'],warranty:'要確認（加盟店による）',fit:'子育てしやすい家を予算内で建てたい人',src:['crex20','okayama']},
+    {id:'universal',name:'ユニバーサルホーム',band:'ローコスト',type:'木造',struct:'木造（ハイパーフレーム構法）',low:55,mid:68,high:80,
+      points:['地熱床システム（1階全室床暖房）','ALC外壁材','フランチャイズで地域密着'],
+      cautions:['施工は地域の加盟店','初期保証は10年'],warranty:'初期10年',fit:'床暖房付きの家を手頃に建てたい人',src:['crex20','okayama','crexW']},
+    {id:'aida',name:'アイダ設計',band:'ローコスト',type:'木造',struct:'木造軸組',low:40,mid:52,high:65,
+      points:['坪単価40万円台から建てられる代表的なローコスト住宅','自社一貫の設計・施工','規格プランで価格が分かりやすい'],
+      cautions:['標準仕様の確認が必須','オプション追加で価格が上がりやすい'],warranty:'要確認',fit:'建物費用をできるだけ抑えたい人',src:['asuka','okayama']},
+    {id:'clasis',name:'クラシスホーム',band:'地元',area:'愛知',hq:'愛知県',type:'木造',struct:'木造',low:60,mid:75,high:90,
+      points:['デザインと自由設計で愛知での実績が多い','自社のプレカット工場','愛知県内に複数の展示場'],cautions:LAND_LOCAL_CAUTIONS,warranty:'要確認',fit:'愛知で地元の会社とデザインにこだわりたい人',src:['crexAichi']},
+    {id:'rgallery',name:'アールギャラリー（アールプランナー）',band:'地元',area:'愛知',hq:'愛知県',type:'木造',struct:'木造',low:60,mid:75,high:90,
+      points:['デザイン住宅を手の届く価格で','耐震等級3・高断熱が標準','自社の建築士が設計'],cautions:LAND_LOCAL_CAUTIONS,warranty:'要確認',fit:'おしゃれなデザインと性能を両方ほしい人',src:['crexAichi']},
+    {id:'zensho',name:'善匠',band:'地元',area:'愛知・岐阜',hq:'愛知県（尾張）',type:'木造',struct:'木造',low:60,mid:75,high:90,
+      points:['デザイン住宅ブランド「G-Style」','長期優良住宅が標準・耐震等級3','岐阜県でも展開'],cautions:LAND_LOCAL_CAUTIONS,warranty:'要確認（長期優良住宅仕様）',fit:'シンプルモダンなどデザイン重視の人',src:['crexAichi','crexGifu']},
+    {id:'niken',name:'ニケンハウジング',band:'地元',area:'愛知',hq:'名古屋市',type:'木造',struct:'木造',low:70,mid:85,high:100,
+      points:['建築家とつくる高性能なデザイン住宅','パッシブデザイン','断熱・気密の数値（UA値・C値）を公開'],cautions:LAND_LOCAL_CAUTIONS,warranty:'要確認',fit:'建築家の設計と数字で分かる性能を求める人',src:['crexAichi']},
+    {id:'bluehouse',name:'ブルーハウス',band:'地元',area:'愛知',hq:'豊橋市',type:'木造',struct:'木造',low:70,mid:85,high:100,
+      points:['性能とデザインの注文住宅','耐震等級3','断熱はHEAT20 G2が標準'],cautions:LAND_LOCAL_CAUTIONS,warranty:'要確認',fit:'東三河で高性能な家を建てたい人',src:['crexAichi']},
+    {id:'architecs',name:'アーキテックス',band:'地元',area:'愛知',hq:'一宮市',type:'木造',struct:'木造',low:50,mid:65,high:80,
+      points:['規格住宅から完全自由設計まで','箱型の規格住宅「ZERO-CUBE」','尾張エリアの会社'],cautions:LAND_LOCAL_CAUTIONS,warranty:'要確認',fit:'規格住宅で費用を抑えたい人',src:['crexAichi']},
+    {id:'okazaki',name:'オカザキホーム',band:'地元',area:'愛知',hq:'岡崎市',type:'木造',struct:'木造（国産ひのき）',low:50,mid:65,high:80,
+      points:['国産ひのきの家','60年以上の歴史','西三河の地元工務店'],cautions:LAND_LOCAL_CAUTIONS,warranty:'要確認',fit:'西三河で木の家を手頃に建てたい人',src:['crexAichi']},
+    {id:'gyokuzen',name:'玉善',band:'地元',area:'愛知',hq:'名古屋市',type:'木造',struct:'木造',low:60,mid:75,high:90,
+      points:['狭い土地の都市型住宅が得意','3階建て・ビルトインガレージ','名古屋市の会社'],cautions:LAND_LOCAL_CAUTIONS,warranty:'要確認',fit:'名古屋市内の狭い土地に建てたい人',src:['crexAichi']},
+    {id:'chubujuken',name:'中部住研',band:'地元',area:'愛知',hq:'豊田市',type:'木造',struct:'木造',low:60,mid:75,high:90,
+      points:['完全自由設計・フルオーダー','自然素材','三河の地元工務店'],cautions:LAND_LOCAL_CAUTIONS,warranty:'要確認',fit:'自然素材でこだわりの家を建てたい人',src:['crexAichi']},
+    {id:'nomura',name:'野村工務店',band:'地元',area:'愛知',hq:'安城市',type:'木造',struct:'木造（SE構法・重量木骨）',low:70,mid:85,high:100,
+      points:['「重量木骨の家」（SE構法）','1棟ごとに構造計算','大空間・大開口がつくりやすい'],cautions:LAND_LOCAL_CAUTIONS,warranty:'要確認',fit:'木造で大空間と耐震性を両立したい人',src:['crexAichi']},
+    {id:'fujiken',name:'フジケン',band:'地元',area:'愛知',hq:'岡崎市・安城市',type:'木造',struct:'木造',low:50,mid:65,high:80,
+      points:['注文住宅と不動産をワンストップ','「F-STYLE」「F-CUBE」','西三河の総合企業'],cautions:LAND_LOCAL_CAUTIONS,warranty:'要確認',fit:'西三河で土地探しから任せたい人',src:['crexAichi']},
+    {id:'marunana',name:'丸七ホーム',band:'地元',area:'愛知',hq:'春日井市',type:'木造',struct:'木造（外断熱）',low:70,mid:85,high:100,
+      points:['外断熱と自然素材の健康住宅','40年以上の実績','尾張の地元工務店'],cautions:LAND_LOCAL_CAUTIONS,warranty:'要確認',fit:'自然素材と外断熱の快適さを重視する人',src:['crexAichi']},
+    {id:'watanabe',name:'渡邊工務店',band:'地元',area:'愛知',hq:'弥富市',type:'木造',struct:'木造（伝統の手刻み）',low:70,mid:85,high:100,
+      points:['創業110年以上','天然木・国産材の伝統工法','自社の製材・プレカット工場'],cautions:LAND_LOCAL_CAUTIONS,warranty:'要確認',fit:'伝統的な木の家を建てたい人',src:['crexAichi']},
+    {id:'yamaka',name:'ヤマカ木材',band:'地元',area:'岐阜',hq:'岐阜県',type:'木造',struct:'木造（ストロングストラクチャー工法・W断熱）',low:50,mid:70,high:90,est:true,
+      points:['創業70年以上の木材のプロ','自社プレカット工場で県産材を活用','W断熱と耐震の独自工法'],cautions:['坪単価は記事に記載なし（岐阜県の相場を仮に表示）'].concat(LAND_LOCAL_CAUTIONS),warranty:'要確認',fit:'岐阜の木材で性能の良い家を建てたい人',src:['crexGifu']},
+    {id:'shinwa',name:'新和建設',band:'地元',area:'岐阜',hq:'東濃中心',type:'木造',struct:'木造（伝統的な木造建築）',low:50,mid:70,high:90,est:true,
+      points:['東濃ひのきなど地元の木材','自社で大工を育成','東濃エリア中心'],cautions:['坪単価は記事に記載なし（岐阜県の相場を仮に表示）'].concat(LAND_LOCAL_CAUTIONS),warranty:'要確認',fit:'多治見・東濃で地元の大工に建ててほしい人',src:['crexGifu']},
+    {id:'hidamari',name:'ひだまりほーむ',band:'地元',area:'岐阜',hq:'岐阜県',type:'木造',struct:'木造（自然素材）',low:50,mid:70,high:90,est:true,
+      points:['東濃ひのきなど県産の自然素材','高気密・高断熱に注力','岐阜の気候に合わせた家づくり'],cautions:['坪単価は記事に記載なし（岐阜県の相場を仮に表示）'].concat(LAND_LOCAL_CAUTIONS),warranty:'要確認',fit:'自然素材で暖かい家を建てたい人',src:['crexGifu']}
+  );
+  for(const m of LAND_MAKERS){m.area=m.area||'全国';}
   const LAND_REGION_NOTES={
     '名古屋市':'2026年の地価公示（住宅地）は+3.1%で、全16区で上昇。都心に近い区ほど高く、郊外の区は手が届きやすい。',
     '尾張':'2026年の地価公示（住宅地）は+1.7%。名古屋に接する東部・北部が高く、西部は比較的手頃。',
@@ -735,7 +803,7 @@
   function landMakerById(id){return LAND_MAKERS.find(m=>m.id===id)||null;}
   function landMakerAvg(){
     const avg=k=>Math.round(LAND_MAKERS.reduce((a,m)=>a+m[k],0)/LAND_MAKERS.length);
-    return {id:'avg',name:'17社の平均',low:avg('low'),mid:avg('mid'),high:avg('high')};
+    return {id:'avg',name:LAND_MAKERS.length+'社の平均',low:avg('low'),mid:avg('mid'),high:avg('high')};
   }
   function landSimCalc(){
     const S=state.land.sim,c=landSimCity();
@@ -781,7 +849,7 @@
       return cs.length?'<optgroup label="'+esc(region)+'">'+cs.map(c=>'<option value="'+esc(c.code)+'"'+(c.code===r.c.code?' selected':'')+'>'+esc(c.name)+'</option>').join('')+'</optgroup>':'';
     }).join('');
     const num=(key,label,unit)=>'<label class="lp-sim-field"><span>'+label+'</span><span class="lp-sim-num"><input type="number" inputmode="decimal" min="10" max="500" step="1" data-lp-sim="'+key+'" value="'+esc(S[key])+'"><i>'+unit+'</i></span></label>';
-    const makerOpts=[['avg','17社の平均（'+landMakerAvg().low+'〜'+landMakerAvg().high+'万）']].concat(LAND_MAKERS.slice().sort((a,b)=>a.mid-b.mid).map(m=>[m.id,m.name+'（'+m.low+'〜'+m.high+'万）']));
+    const makerOpts=[['avg',LAND_MAKERS.length+'社の平均（'+landMakerAvg().low+'〜'+landMakerAvg().high+'万）']].concat(LAND_MAKERS.slice().sort((a,b)=>a.mid-b.mid).map(m=>[m.id,(m.area!=='全国'?'［地元］':'')+m.name+'（'+m.low+'〜'+m.high+'万'+(m.est?'・仮':'')+'）']));
     const bar=(label,v,cls)=>'<div class="lp-sim-row"><span>'+label+'</span><i class="lp-sim-bar '+cls+'" style="--w:'+(r.total?Math.max(2,Math.round(v/r.total*100)):0)+'%"></i><b>'+landMan(v)+'</b></div>';
     return '<div class="lp-sim">'+
       '<div class="lp-sim-form">'+
@@ -809,7 +877,7 @@
   }
   function landMakerList(){
     const L=state.land;
-    let list=LAND_MAKERS.filter(m=>L.makerType==='all'||m.type===L.makerType);
+    let list=LAND_MAKERS.filter(m=>L.makerType==='all'||(L.makerType==='全国'?m.area==='全国':L.makerType==='愛知'?/愛知/.test(m.area):L.makerType==='岐阜'?/岐阜/.test(m.area):L.makerType==='鉄骨'?m.type==='鉄骨':m.type===L.makerType));
     list=list.slice().sort((a,b)=>(a.mid-b.mid)*(L.makerSort==='desc'?-1:1));
     return list;
   }
@@ -818,12 +886,12 @@
     ui.lpMakerPage=Math.max(0,Math.min(ui.lpMakerPage||0,total-1));
     const page=list.slice(ui.lpMakerPage*per,(ui.lpMakerPage+1)*per);
     const lo=40,hi=160,pos=v=>Math.max(0,Math.min(100,(v-lo)/(hi-lo)*100));
-    return '<div class="lp-toggles">'+landSeg('lp-maker-type',L.makerType,[['all','すべて'],['木造','木造'],['鉄骨','鉄骨']])+landSeg('lp-maker-sort',L.makerSort,[['asc','安い<span class="lp-long">順</span>'],['desc','高い<span class="lp-long">順</span>']])+'<span class="lp-maker-legend">本体の坪単価（万円）</span></div>'+
+    return '<div class="lp-toggles">'+landSeg('lp-maker-type',L.makerType,[['all','全'+LAND_MAKERS.length],['全国','全国'],['愛知','愛知'],['岐阜','岐阜'],['鉄骨','鉄骨']])+landSeg('lp-maker-sort',L.makerSort,[['asc','安い<span class="lp-long">順</span>'],['desc','高い<span class="lp-long">順</span>']])+'<span class="lp-maker-legend">本体の坪単価（万円）</span></div>'+
       '<div class="lp-list swipe-zone" data-swipe="lp-maker" style="--lp-rows:'+per+'">'+page.map((m,i)=>
         '<div class="lp-row" style="--i:'+i+'"><button class="lp-row-main" data-act="lp-maker-open" data-value="'+m.id+'">'+
-        '<span class="lp-maker-band b-'+(m.band==='ハイ'?'hi':m.band==='ミドル上'?'mu':m.band==='ミドル'?'mid':'lo')+'">'+esc(m.band)+'</span>'+
-        '<span class="lp-name"><b>'+esc(m.name)+'</b><small>'+esc(m.type+'・'+m.warranty.split('／')[0])+'</small></span>'+
-        '<span class="lp-maker-range"><b>'+m.low+'〜'+m.high+'<small>万</small></b><i class="lp-range"><em style="left:'+pos(m.low)+'%;right:'+(100-pos(m.high))+'%"></em><u style="left:'+pos(m.mid)+'%"></u></i></span></button></div>').join('')+'</div>'+
+        '<span class="lp-maker-band b-'+(m.band==='ハイ'?'hi':m.band==='ミドル上'?'mu':m.band==='ミドル'?'mid':m.band==='地元'?'local':'lo')+'">'+esc(m.band)+'</span>'+
+        '<span class="lp-name"><b>'+esc(m.name)+'</b><small>'+esc(m.hq?'工務店・'+m.hq:m.type+'・'+m.warranty.split('／')[0])+'</small></span>'+
+        '<span class="lp-maker-range"><b>'+(m.est?'<i class="lp-ref">仮</i>':'')+m.low+'〜'+m.high+'<small>万</small></b><i class="lp-range"><em style="left:'+pos(m.low)+'%;right:'+(100-pos(m.high))+'%"></em><u style="left:'+pos(m.mid)+'%"></u></i></span></button></div>').join('')+'</div>'+
       '<div class="lp-foot">'+navPager(ui.lpMakerPage,total,'lp-maker-page')+'</div>'+
       '<button class="lp-source" data-act="lp-about">坪単価は建物本体のみの目安（2026年の比較記事より） ⓘ</button>';
   }
@@ -834,10 +902,10 @@
     const lo=40,hi=160,pos=v=>Math.max(0,Math.min(100,(v-lo)/(hi-lo)*100));
     return '<div class="full lp-detail"><header class="full-header"><button class="btn compact" data-act="overlay-close">‹ 戻る</button><strong>'+esc(m.name)+'</strong><span style="width:44px"></span></header>'+
       '<section class="full-body lp-detail-body">'+
-      '<div class="lp-hero"><div class="lp-hero-main"><span>建物本体の坪単価（目安）</span><strong>'+m.low+'〜'+m.high+'<small>万円/坪</small></strong><small>中心 '+m.mid+'万円・'+esc(m.band)+'</small></div>'+
+      '<div class="lp-hero"><div class="lp-hero-main"><span>建物本体の坪単価（'+(m.est?'記載なし・岐阜の相場で仮置き':'目安')+'）</span><strong>'+m.low+'〜'+m.high+'<small>万円/坪</small></strong><small>中心 '+m.mid+'万円・'+esc(m.band)+'</small></div>'+
         '<div class="lp-hero-side"><b>'+floor+'坪なら</b><span>'+landMan(m.low*10000*floor)+'〜</span><span>'+landMan(m.high*10000*floor)+'</span></div></div>'+
       '<div class="lp-maker-scale"><i class="lp-range big"><em style="left:'+pos(m.low)+'%;right:'+(100-pos(m.high))+'%"></em><u style="left:'+pos(m.mid)+'%"></u></i><span><small>40万</small><small>100万</small><small>160万</small></span></div>'+
-      '<div class="lp-info-card"><span>構造・工法</span><p>'+esc(m.struct)+'</p></div>'+
+      '<div class="lp-info-card"><span>構造・工法'+(m.hq?'／本社・エリア':'')+'</span><p>'+esc(m.struct)+(m.hq?'／'+esc(m.hq):'')+'</p></div>'+
       '<div class="lp-info-card"><span>特徴</span><ul>'+m.points.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>'+
       '<div class="lp-info-card warn"><span>注意点</span><ul>'+m.cautions.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>'+
       '<div class="lp-cells"><div class="lp-cell"><span>保証（構造・防水）</span><small class="lp-cell-text">'+esc(m.warranty)+'</small></div><div class="lp-cell"><span>向いている人</span><small class="lp-cell-text">'+esc(m.fit)+'</small></div></div>'+

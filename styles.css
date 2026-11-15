@@ -6198,3 +6198,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 /* r77: 地価調べ君は地価の画面だけ（下のメニューなし）。ホームバーと重ならないよう下に余白。 */
 #app .main{padding-bottom:calc(env(safe-area-inset-bottom) + 6px)!important}
+#app .lp-maker-band.b-local{background:#e8eefb;color:#3c5a9a}
+#app .lp-v-maker .lp-seg>button{padding:0 6px}
+@media(max-width:374px){#app .lp-v-maker .lp-seg>button{padding:0 4px;font-size:10px}}

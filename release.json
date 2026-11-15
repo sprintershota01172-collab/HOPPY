@@ -1,10 +1,10 @@
 {
-  "version": "r77",
+  "version": "r78",
   "ui": "land-only",
   "revised": "2026-11-15",
   "data_schema": "chika-shirabe-v1",
-  "entrypoint": "visual-r77.html",
+  "entrypoint": "visual-r78.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Land price app only: removed property, compare, FP, schedule, memo and updates tabs"
+  "release_note": "Maker guide expanded to 42 companies incl. Aichi/Gifu local builders"
 }

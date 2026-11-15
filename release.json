@@ -1,10 +1,10 @@
 {
-  "version": "r76",
-  "ui": "compact-visual",
+  "version": "r77",
+  "ui": "land-only",
   "revised": "2026-11-15",
-  "data_schema": "hoppy-phase1-v1",
-  "entrypoint": "visual-r76.html",
+  "data_schema": "chika-shirabe-v1",
+  "entrypoint": "visual-r77.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Land cost simulator, house maker guide and land guide"
+  "release_note": "Land price app only: removed property, compare, FP, schedule, memo and updates tabs"
 }

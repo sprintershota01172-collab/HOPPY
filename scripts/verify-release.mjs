@@ -16,9 +16,9 @@ const refresh = read("refresh.html");
 
 assert.equal(release.version, version, "The release marker is wrong");
 assert.ok(js.includes("const BUILD = '" + version + "'"), "JavaScript build marker mismatch");
-assert.match(js, /home-visual-header/, "Visual homepage not present");
-assert.match(js, /fp-meta-dashboard/, "Visual FP dashboard not present");
-assert.match(css, /home-visual-screen/, "Visual homepage styles not present");
+assert.match(js, /lp-screen/, "Land price screen not present");
+assert.match(js, /landSimScreen/, "Cost simulator not present");
+assert.match(css, /#app \.lp-views/, "Land price styles not present");
 assert.match(css, /hoppo-version-banner/, "Version alert styles not present");
 for (const [path, html] of [["index.html", index], [entry, modern]]) {
   assert.ok(html.includes("app.js?v=fp-20261028-" + version), path + ": JS reference not updated");
@@ -44,7 +44,7 @@ for (const path of olderEntrypoints) {
 new Function(js);
 new Function(sw);
 
-function smoke(existing) {
+function smoke(existing, key = "chika-shirabe-v1") {
   const handlers = {};
   const app = {
     markup: "",
@@ -56,7 +56,7 @@ function smoke(existing) {
     insertAdjacentHTML() {},
     contains() { return true; }
   };
-  const saved = existing ? { "hoppy-phase1-v1": JSON.stringify(existing) } : {};
+  const saved = existing ? { [key]: JSON.stringify(existing) } : {};
   const storage = {
     getItem(key) { return saved[key] ?? null; },
     setItem(key, value) { saved[key] = value; }
@@ -71,20 +71,19 @@ function smoke(existing) {
   const location = { protocol: "file:", hostname: "local-fixture" };
   const context = { document, window, navigator, location, localStorage: storage, setTimeout: () => 0, clearTimeout: () => {} };
   vm.runInNewContext(js, context, { timeout: 5000 });
-  assert.match(app.markup, /home-visual-header/, "Homepage did not render");
-  assert.ok(app.markup.includes(version), "Visible version is not current");
+  assert.match(app.markup, /lp-screen/, "Land price screen did not render");
+  assert.match(app.markup, /地価調べ君/, "App name is not shown");
   return { saved, app, handlers };
 }
 
 const initial = smoke(null);
-const state = JSON.parse(initial.saved["hoppy-phase1-v1"]);
-state.plan.hasRun = 1;
-state.plan.foodMonthly = 3;
-state.plan.electricityMonthly = 1;
-state.plan.gasMonthly = 0.5;
-const populated = smoke(state);
-const button = { dataset: { act: "tab", value: "sim" } };
-populated.handlers.click({ target: { closest() { return button; } }, preventDefault() {} });
-assert.match(populated.app.markup, /fp-meta-dashboard/, "FP summary did not render");
-assert.match(populated.app.markup, /fp-result-nav/, "FP icon tabs did not render");
-console.log("PASS: build, cache, manifest, entrypoints, initial screen and FP render", version);
+assert.ok(initial.saved["chika-shirabe-v1"], "Settings were not saved");
+// 旧データ（家探しノート）からは地価の設定だけ引き継ぐ
+const legacy = smoke({ version: 2, properties: [], criteria: [], land: { view: "maker", wishTsubo: 60 } }, "hoppy-phase1-v1");
+const migrated = JSON.parse(legacy.saved["chika-shirabe-v1"]);
+assert.equal(migrated.land.view, "maker");
+assert.equal(migrated.land.wishTsubo, 60);
+assert.ok(legacy.saved["hoppy-phase1-v1"], "Legacy data must not be erased");
+const button = { dataset: { act: "lp-view", value: "sim" } };
+initial.handlers.click({ target: { closest() { return button; } }, preventDefault() {} });
+console.log("PASS: build, cache, manifest, entrypoints, land screen and settings migration", version);

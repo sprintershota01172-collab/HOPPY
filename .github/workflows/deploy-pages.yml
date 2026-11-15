@@ -1,4 +1,4 @@
-name: Verify and deploy HOPPY
+name: Verify and deploy 地価調べ君
 
 on:
   push:

@@ -1,7 +1,8 @@
-name: HOPPY regression verification
+name: 地価調べ君 check
 on:
   push:
     branches: [main]
+  pull_request:
 permissions:
   contents: read
 jobs:
@@ -9,7 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
       - run: |
           node --check app.js
           node --check sw.js
-          node --test tests/finance.test.cjs
+          node scripts/verify-release.mjs
+          node --test tests/landprice.test.cjs

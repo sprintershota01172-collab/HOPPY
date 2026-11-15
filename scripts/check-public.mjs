@@ -25,12 +25,12 @@ for (let attempt = 1; attempt <= 36; attempt++) {
     if (!jsResponse.ok) throw Error("app.js HTTP " + jsResponse.status);
     const js = await jsResponse.text();
     if (!js.includes("const BUILD = '" + expectedVersion + "'")) throw Error("JavaScript build marker mismatch");
-    if (!js.includes("home-visual-header") || !js.includes("fp-loan-focus") || !js.includes("fpYearTimebar") || !js.includes("fpSelectedYearCashflow(ui.fpYear,price,b)")) throw Error("Selectable-year FP UI missing");
+    if (!js.includes("lp-screen") || !js.includes("landSimScreen") || !js.includes("landMakerScreen")) throw Error("Land price UI missing");
     const cssResponse = await fetch(base + "/styles.css?verified=" + now, { cache: "no-store", signal: AbortSignal.timeout(16000) });
     if (!cssResponse.ok) throw Error("styles.css HTTP " + cssResponse.status);
     const css = await cssResponse.text();
     // CSS feature checks must not rely on a comment whose release number gets outdated.
-    if (!css.includes("#app .fp-report-screen .fp-result-nav") || !css.includes("#app .fp-meta-budget>strong")) throw Error("FP stylesheet missing");
+    if (!css.includes("#app .lp-views")) throw Error("Land price stylesheet missing");
     const indexResponse = await fetch(base + "/index.html?verified=" + now, {cache:"no-store", signal:AbortSignal.timeout(16000)});
     if (!indexResponse.ok) throw Error("index.html HTTP " + indexResponse.status);
     const index = await indexResponse.text();

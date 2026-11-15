@@ -6195,3 +6195,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  #app .lp-info-card ul,#app .lp-info-card p{font-size:10.5px;line-height:1.35}
 }
 @media(prefers-reduced-motion:reduce){#app .lp-sim,#app .lp-guide-card{animation:none!important}}
+
+/* r77: 地価調べ君は地価の画面だけ（下のメニューなし）。ホームバーと重ならないよう下に余白。 */
+#app .main{padding-bottom:calc(env(safe-area-inset-bottom) + 6px)!important}

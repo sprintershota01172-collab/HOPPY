@@ -6335,3 +6335,29 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .lp-settings .lp-refresh{display:flex;align-items:center;justify-content:center;gap:4px}
 #app .lp-nav>button{white-space:nowrap}
 @media(max-width:374px){#app .lp-nav>button{font-size:9.5px;letter-spacing:-.06em}}
+
+/* r83: メーカーの性能・仕様 */
+#app .lp-bds{display:flex;gap:3px;flex-wrap:nowrap;overflow:hidden}
+#app .lp-bd{flex:none;font-style:normal;font-size:8.5px;font-weight:900;border-radius:5px;padding:1px 4px;line-height:1.35;background:#eef4f1;color:#4d6b5c}
+#app .lp-bd.s{background:#fde9e2;color:#b5452a}
+#app .lp-bd.d{background:#fff1d6;color:#9a6408}
+#app .lp-bd.n7{background:#dff1ff;color:#1d5f9e}
+#app .lp-bd.n6{background:#e8f4fb;color:#2f6f9a}
+#app .lp-bd.n5{background:#f0f4f7;color:#55707f}
+#app .lp-bd.a{background:#e6f6ee;color:#0f7a53}
+#app .lp-bd.y{background:#f1ecfb;color:#6a4ba6}
+#app .lp-sort-pick{max-width:62%}
+#app .lp-score{flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+#app .lp-score-tile{display:flex;flex-direction:column;align-items:center;gap:2px;background:#fff;border:1px solid #e2ebe7;border-radius:10px;padding:5px 2px 6px}
+#app .lp-score-tile span{font-size:9.5px;font-weight:850;color:#6d8778}
+#app .lp-score-tile b{font-size:15px;font-weight:900;color:#173e32;line-height:1.1}
+#app .lp-score-tile i{width:78%;height:4px;border-radius:2px;background:#e9efec;overflow:hidden}
+#app .lp-score-tile em{display:block;height:100%;background:#2aa173;border-radius:2px}
+#app .lp-score-tile.is-good{background:#f1faf5;border-color:#bfe3d1}
+#app .lp-score-tile.is-na b{color:#a9b9b1;font-size:12px}
+#app .lp-spec{flex:1;min-height:0;display:flex;flex-direction:column;background:#fff;border:1px solid #e2ebe7;border-radius:12px;overflow:hidden}
+#app .lp-spec-row{flex:1;min-height:0;display:grid;grid-template-columns:76px 1fr;align-items:center;border-top:1px solid #eef3f0}
+#app .lp-spec-row:first-child{border-top:0}
+#app .lp-spec-row span{align-self:stretch;display:flex;align-items:center;padding:0 8px;background:#f4f8f6;font-size:10px;font-weight:850;color:#4d6b5c}
+#app .lp-spec-row b{padding:3px 8px;font-size:11px;font-weight:750;color:#173e32;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#app .lp-q{font-style:normal;color:#a3b3ab;font-weight:750}

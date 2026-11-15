@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r82';
+  const BUILD = 'r83';
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
@@ -56,7 +56,7 @@
     if(raw)state=normalize(JSON.parse(raw));
     else{const legacy=localStorage.getItem(LEGACY_STORE);state=normalize(legacy?JSON.parse(legacy):{});}
   }catch(_){state=normalize({});}
-  let ui={tab:'land',overlay:'',lock:0,toast:null,lpPage:0,lpCity:null,lpMakerPage:0,lpGuidePage:0,lpMaker:null,lpCommutePage:0,lpAreaPage:0,lpAreaUse:'res',lpAreaOrder:'desc',lpTown:null,lpWorkResults:null,lpWho:0,lpCmpPage:0,lpWord:'koji',map:null};
+  let ui={tab:'land',overlay:'',lock:0,toast:null,lpPage:0,lpCity:null,lpMakerPage:0,lpGuidePage:0,lpMaker:null,lpCommutePage:0,lpAreaPage:0,lpAreaUse:'res',lpAreaOrder:'desc',lpTown:null,lpWorkResults:null,lpWho:0,lpCmpPage:0,lpWord:'koji',map:null,lpMakerTab:'spec'};
   let toastTimer=null;
   function save(){try{localStorage.setItem(STORE,JSON.stringify(state));}catch(_){message('端末に保存できませんでした');}}
   function step(action){if(Date.now()<ui.lock)return;ui.lock=Date.now()+130;action();render();}
@@ -102,7 +102,7 @@
       favTowns:Array.isArray(x.favTowns)?x.favTowns.filter(c=>typeof c==='string'&&/^\d{5}\|.{1,40}$/.test(c)).slice(0,20):[],
       wishTsubo:clamp('wishTsubo',5,500),buildingBudget:clamp('buildingBudget',0,30000),
       manualBudget:clamp('manualBudget',0,100000),
-      view:pick('view',['rank','map','compare','sim','maker','guide','commute']),makerSort:pick('makerSort',['asc','desc']),
+      view:pick('view',['rank','map','compare','sim','maker','guide','commute']),makerSort:pick('makerSort',['asc','desc','seis','ins','war']),
       makerType:pick('makerType',['all','全国','愛知','岐阜','鉄骨']),guideTab:pick('guideTab',['region','cond','words']),
       guideScope:pick('guideScope',['all','名古屋市','尾張','知多','西三河','東三河','東濃','中濃']),sim:landSimNormalize(x.sim),commute:landCommuteNormalize(x.commute)
     };
@@ -586,8 +586,9 @@
     if(action==='lp-sim-grade')return step(()=>{L.sim.grade=['low','mid','high'].includes(v)?v:'mid';save();});
     if(action==='lp-maker-type')return step(()=>{L.makerType=['all','全国','愛知','岐阜','鉄骨'].includes(v)?v:'all';ui.lpMakerPage=0;save();});
     if(action==='lp-maker-sort')return step(()=>{L.makerSort=v==='desc'?'desc':'asc';ui.lpMakerPage=0;save();});
-    if(action==='lp-maker-page'){const total=Math.max(1,Math.ceil(landMakerList().length/landPerPage()));return step(()=>changePage('lpMakerPage',total,Number(v)));}
-    if(action==='lp-maker-open')return openOverlay('land-maker',()=>{ui.lpMaker=v;});
+    if(action==='lp-maker-tab')return step(()=>{ui.lpMakerTab=v==='about'?'about':'spec';});
+    if(action==='lp-maker-page'){const total=Math.max(1,Math.ceil(landMakerList().length/Math.max(5,landPerPage()-1)));return step(()=>changePage('lpMakerPage',total,Number(v)));}
+    if(action==='lp-maker-open')return openOverlay('land-maker',()=>{ui.lpMaker=v;ui.lpMakerTab='spec';});
     if(action==='lp-maker-sim')return step(()=>{if(landMakerById(v))L.sim.maker=v;L.view='sim';ui.overlay='';save();});
     if(action==='lp-guide-tab')return step(()=>{L.guideTab=['cond','words'].includes(v)?v:'region';ui.lpGuidePage=0;save();});
     if(action==='lp-guide-page')return step(()=>{ui.lpGuidePage=Math.max(0,(ui.lpGuidePage||0)+(Number(v)||0));});
@@ -606,7 +607,7 @@
   }
   function landSwipe(kind,d){
     if(kind==='lp-commute'){const total=Math.max(1,Math.ceil(landCommuteRows().length/Math.max(6,landPerPage()-2)));return step(()=>changePage('lpCommutePage',total,d));}
-    if(kind==='lp-maker'){const total=Math.max(1,Math.ceil(landMakerList().length/landPerPage()));return step(()=>changePage('lpMakerPage',total,d));}
+    if(kind==='lp-maker'){const total=Math.max(1,Math.ceil(landMakerList().length/Math.max(5,landPerPage()-1)));return step(()=>changePage('lpMakerPage',total,d));}
     if(kind==='lp-guide')return step(()=>{ui.lpGuidePage=Math.max(0,(ui.lpGuidePage||0)+d);});
     if(state.land.view!=='rank')return;
     if(kind==='lp-types'){
@@ -897,22 +898,115 @@
       '</div>'+
       '<p class="lp-sim-note">土地は地価公示・地価調査（鑑定評価の標準価格）。坪単価は各社の比較記事の目安で、見積もりとは異なります。</p></div>';
   }
+  /* ===== メーカーの性能・仕様（r83） ===== */
+  // s:耐震 d:制震・免震 i:断熱等級 ua:UA値 a:気密測定('all'全棟/'some'測定・公表) h:冷暖房・設備 w:外壁・耐久 k:工期 l:長期優良住宅 y:初期保証(年)
+  const LAND_SPEC={
+    sekisui:{s:3,d:'制震「シーカス」（鉄骨）',i:6,ua:0.46,w:'ダインコンクリート（鉄骨）／陶版外壁ベルバーン（木造）',l:1},
+    daiwa:{s:3,d:'エネルギー吸収型耐力壁「D-NΣQST」',i:6,ua:0.49,w:'外張り断熱通気外壁',l:1},
+    hebel:{s:3,d:'制震フレーム「ハイパワードクロス」',i:6,ua:0.46,w:'ALCコンクリート「ヘーベル」：耐火性・耐久性が非常に高い',l:1},
+    sumirin:{s:3,d:'地震エネルギー吸収パネル・きづれパネル',i:6,ua:0.41,l:1},
+    heim:{s:3,d:'制震「GAIASS（ガイアス）」',i:6,ua:0.35,a:'some',h:'全館空調「快適エアリー」',k:'短い（工場で8割をつくる）',l:1},
+    panahome:{s:3,d:'制震「パワテック」',i:6,ua:0.38,h:'全館空調「エアロハス」',w:'光触媒タイル「キラテック」（汚れが落ちやすい）',l:1},
+    toyota:{s:3,d:'パワースケルトン・T4システム',i:5,ua:0.52,k:'短い（工場生産）',y:30,l:1},
+    misawa:{s:3,d:'制震装置「MGEO（エムジオ）」',i:6,ua:0.48,l:1},
+    mitsui:{s:3,d:'制震デバイス「G-WALL」',i:6,ua:0.43,h:'全館空調「スマートブリーズ」',l:1},
+    ichijo:{s:3,d:'免震住宅も選べる',i:7,ua:0.25,a:'all',h:'全館床暖房が標準・大容量の太陽光',l:1},
+    ai:{s:3,d:'2.5倍耐力壁・剛床',i:6},
+    sumifu:{i:6},
+    yamada:{s:3,d:'制震「SxLシグマデバイス」',i:6},
+    tama:{s:3,d:'耐力面材・ベタ基礎',i:6,l:1},
+    aqura:{i:6,h:'「超断熱の家」の商品あり'},
+    clever:{s:3,d:'プレミアム・ハイブリッド構法',i:6,w:'外壁タイルが標準（塗り替えが少ない）'},
+    hinoki:{i:6,h:'全館空調「Z空調」・吹付け断熱「アクアフォーム」'},
+    sweden:{s:3,d:'制震なしで震度6以上の加振19回でも構造損傷なし（実験）',i:7,ua:0.28,a:'all',w:'木製サッシ・3層ガラス'},
+    mitsubishi:{h:'全館空調「エアロテック」'},
+    nihonhouse:{d:'制震装置が標準'},
+    muji:{d:'SE構法は1棟ごとに構造計算'},
+    yamato:{i:7,ua:0.28,h:'断熱等級7相当の商品「LEGANTIA」'},
+    universal:{i:6,h:'地熱床システム（1階全室床暖房）',w:'ALC外壁'},
+    aiful:{i:6},
+    rgallery:{s:3},
+    zensho:{s:3,l:1},
+    bluehouse:{s:3,i:6},
+    niken:{a:'some'},
+    nomura:{d:'SE構法で1棟ごとに構造計算'},
+    marunana:{h:'外断熱'},
+    yamaka:{h:'W断熱（外断熱＋内断熱）'},
+    hidamari:{h:'高気密・高断熱に注力'}
+  };
+  function landSpec(m){
+    const x=LAND_SPEC[m.id]||{};
+    const w=String(m.warranty||''),mm=w.match(/初期(\d+)年/)||w.match(/構造(\d+)年/);
+    const y=x.y??(mm?Number(mm[1]):null);
+    return {...x,y,unit:/ユニット/.test(m.struct)};
+  }
+  // 5段階の目安（不明は null）
+  function landSpecScore(m){
+    const x=landSpec(m);
+    const seis=x.s===3?(x.d&&/制震|免震|吸収|損傷なし/.test(x.d)?5:4):null;
+    const ins=x.i===7?5:x.i===6?(x.ua!=null&&x.ua<=0.40?4.5:4):x.i===5?3:null;
+    const air=x.a==='all'?5:x.a==='some'?4:null;
+    const war=x.y==null?null:x.y>=30?5:x.y>=20?4:3;
+    const price=m.mid<=55?5:m.mid<=70?4:m.mid<=85?3:m.mid<=105?2:1;
+    return {seis,ins,air,war,price};
+  }
+  const LAND_SCORE_AXES=[['seis','耐震'],['ins','断熱'],['air','気密'],['war','保証'],['price','価格']];
+  function landScoreBars(m){
+    const sc=landSpecScore(m);
+    const mark=v=>v==null?'—':v>=4.5?'◎+':v>=4?'◎':v>=3?'○':'△';
+    return '<div class="lp-score">'+LAND_SCORE_AXES.map(([k,l])=>{const v=sc[k];
+      return '<div class="lp-score-tile'+(v==null?' is-na':v>=4?' is-good':'')+'"><span>'+l+'</span><b>'+mark(v)+'</b><i><em style="width:'+(v==null?0:v/5*100)+'%"></em></i></div>';}).join('')+'</div>';
+  }
+  function landSpecRows(m){
+    const x=landSpec(m),q='<i class="lp-q">要確認</i>';
+    const rows=[
+      ['耐震',x.s===3?'耐震等級3（最高等級）'+(m.hq?'が標準':'相当が標準'):q],
+      ['制震・免震',x.d?esc(x.d):q],
+      ['断熱',x.i?'断熱等級'+x.i+'相当'+(x.ua!=null?'（UA値'+x.ua.toFixed(2)+'）':''):q],
+      ['気密',x.a==='all'?'全棟で気密を測定':x.a==='some'?'気密を測定・数値を公表':q],
+      ['構造',esc(m.struct)],
+      ['外壁・耐久',x.w?esc(x.w):'<i class="lp-q">特記なし</i>'],
+      ['冷暖房・設備',x.h?esc(x.h):'<i class="lp-q">特記なし</i>'],
+      ['工期',x.k?esc(x.k):x.unit?'短い（ユニット工法）':'普通（4〜6か月が目安）'],
+      ['長期優良住宅',x.l?'対応（税の優遇あり）':q],
+      ['保証',esc(m.warranty)]
+    ];
+    return '<div class="lp-spec">'+rows.map(([k,v])=>'<div class="lp-spec-row"><span>'+k+'</span><b>'+v+'</b></div>').join('')+'</div>';
+  }
+  function landMakerBadges(m){
+    const x=landSpec(m),b=[];
+    if(x.s===3)b.push('<i class="lp-bd s">耐震3</i>');
+    if(x.d&&/制震|免震/.test(x.d))b.push('<i class="lp-bd d">'+(/免震/.test(x.d)?'免震可':'制震')+'</i>');
+    if(x.i)b.push('<i class="lp-bd n'+x.i+'">断熱'+x.i+'</i>');
+    if(x.a==='all')b.push('<i class="lp-bd a">気密測定</i>');
+    if(x.y)b.push('<i class="lp-bd y">保証'+x.y+'年</i>');
+    return b.join('');
+  }
+  const LAND_MAKER_SORTS=[['asc','坪単価が安い順'],['desc','坪単価が高い順'],['seis','耐震が強い順'],['ins','断熱が高い順'],['war','保証が長い順']];
+  function landMakerSortFn(key){
+    if(key==='asc'||key==='desc')return (a,b)=>(a.mid-b.mid)*(key==='desc'?-1:1);
+    return (a,b)=>{const av=landSpecScore(a)[key],bv=landSpecScore(b)[key];
+      if((av==null)!==(bv==null))return av==null?1:-1;
+      if(key==='ins'){const ua=x=>landSpec(x).ua??9;return (bv-av)||(ua(a)-ua(b))||a.mid-b.mid;}
+      if(key==='war')return (landSpec(b).y||0)-(landSpec(a).y||0)||a.mid-b.mid;
+      return (bv??0)-(av??0)||a.mid-b.mid;};
+  }
   function landMakerList(){
     const L=state.land;
     let list=LAND_MAKERS.filter(m=>L.makerType==='all'||(L.makerType==='全国'?m.area==='全国':L.makerType==='愛知'?/愛知/.test(m.area):L.makerType==='岐阜'?/岐阜/.test(m.area):L.makerType==='鉄骨'?m.type==='鉄骨':m.type===L.makerType));
-    list=list.slice().sort((a,b)=>(a.mid-b.mid)*(L.makerSort==='desc'?-1:1));
+    list=list.slice().sort(landMakerSortFn(L.makerSort));
     return list;
   }
   function landMakerScreen(){
-    const L=state.land,list=landMakerList(),per=landPerPage(),total=Math.max(1,Math.ceil(list.length/per));
+    const L=state.land,list=landMakerList(),per=Math.max(5,landPerPage()-1),total=Math.max(1,Math.ceil(list.length/per));
     ui.lpMakerPage=Math.max(0,Math.min(ui.lpMakerPage||0,total-1));
     const page=list.slice(ui.lpMakerPage*per,(ui.lpMakerPage+1)*per);
     const lo=40,hi=160,pos=v=>Math.max(0,Math.min(100,(v-lo)/(hi-lo)*100));
-    return '<div class="lp-toggles">'+landSeg('lp-maker-type',L.makerType,[['all','全'+LAND_MAKERS.length],['全国','全国'],['愛知','愛知'],['岐阜','岐阜'],['鉄骨','鉄骨']])+landSeg('lp-maker-sort',L.makerSort,[['asc','安い<span class="lp-long">順</span>'],['desc','高い<span class="lp-long">順</span>']])+'<span class="lp-maker-legend">本体の坪単価（万円）</span></div>'+
+    return '<div class="lp-toggles">'+landSeg('lp-maker-type',L.makerType,[['all','全'+LAND_MAKERS.length],['全国','全国'],['愛知','愛知'],['岐阜','岐阜'],['鉄骨','鉄骨']])+'</div><div class="lp-toggles"><label class="lp-area-pick lp-sort-pick"><span aria-hidden="true">↕</span><b>'+esc((LAND_MAKER_SORTS.find(x=>x[0]===L.makerSort)||LAND_MAKER_SORTS[0])[1])+'</b><i aria-hidden="true">▾</i><select data-lp-maker-sort aria-label="並べ替え">'+LAND_MAKER_SORTS.map(([k,l])=>'<option value="'+k+'"'+(k===L.makerSort?' selected':'')+'>'+l+'</option>').join('')+'</select></label><span class="lp-maker-legend">本体の坪単価（万円）</span></div>'+
       '<div class="lp-list swipe-zone" data-swipe="lp-maker" style="--lp-rows:'+per+'">'+page.map((m,i)=>
         '<div class="lp-row" style="--i:'+i+'"><button class="lp-row-main" data-act="lp-maker-open" data-value="'+m.id+'">'+
         '<span class="lp-maker-band b-'+(m.band==='ハイ'?'hi':m.band==='ミドル上'?'mu':m.band==='ミドル'?'mid':m.band==='地元'?'local':'lo')+'">'+esc(m.band)+'</span>'+
-        '<span class="lp-name"><b>'+esc(m.name)+'</b><small>'+esc(m.hq?'工務店・'+m.hq:m.type+'・'+m.warranty.split('／')[0])+'</small></span>'+
+        '<span class="lp-name"><b>'+esc(m.name)+'</b><small class="lp-bds">'+(landMakerBadges(m)||esc(m.hq?'工務店・'+m.hq:m.type))+'</small></span>'+
         '<span class="lp-maker-range"><b>'+(m.est?'<i class="lp-ref">仮</i>':'')+m.low+'〜'+m.high+'<small>万</small></b><i class="lp-range"><em style="left:'+pos(m.low)+'%;right:'+(100-pos(m.high))+'%"></em><u style="left:'+pos(m.mid)+'%"></u></i></span></button></div>').join('')+'</div>'+
       '<div class="lp-foot">'+navPager(ui.lpMakerPage,total,'lp-maker-page')+'</div>'+
       '<button class="lp-source" data-act="lp-about">坪単価は建物本体のみの目安（2026年の比較記事より） ⓘ</button>';
@@ -926,13 +1020,16 @@
       '<section class="full-body lp-detail-body">'+
       '<div class="lp-hero"><div class="lp-hero-main"><span>建物本体の坪単価（'+(m.est?'記載なし・岐阜の相場で仮置き':'目安')+'）</span><strong>'+m.low+'〜'+m.high+'<small>万円/坪</small></strong><small>中心 '+m.mid+'万円・'+esc(m.band)+'</small></div>'+
         '<div class="lp-hero-side"><b>'+floor+'坪なら</b><span>'+landMan(m.low*10000*floor)+'〜</span><span>'+landMan(m.high*10000*floor)+'</span></div></div>'+
+      '<div class="lp-sub">'+landSeg('lp-maker-tab',ui.lpMakerTab==='about'?'about':'spec',[['spec','性能・仕様'],['about','特徴・注意点']],'lp-seg-fill')+'</div>'+
+      (ui.lpMakerTab==='about'?(
       '<div class="lp-maker-scale"><i class="lp-range big"><em style="left:'+pos(m.low)+'%;right:'+(100-pos(m.high))+'%"></em><u style="left:'+pos(m.mid)+'%"></u></i><span><small>40万</small><small>100万</small><small>160万</small></span></div>'+
       '<div class="lp-info-card"><span>構造・工法'+(m.hq?'／本社・エリア':'')+'</span><p>'+esc(m.struct)+(m.hq?'／'+esc(m.hq):'')+'</p></div>'+
       '<div class="lp-info-card"><span>特徴</span><ul>'+m.points.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>'+
       '<div class="lp-info-card warn"><span>注意点</span><ul>'+m.cautions.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>'+
-      '<div class="lp-cells"><div class="lp-cell"><span>保証（構造・防水）</span><small class="lp-cell-text">'+esc(m.warranty)+'</small></div><div class="lp-cell"><span>向いている人</span><small class="lp-cell-text">'+esc(m.fit)+'</small></div></div>'+
+      '<div class="lp-cells"><div class="lp-cell"><span>保証（構造・防水）</span><small class="lp-cell-text">'+esc(m.warranty)+'</small></div><div class="lp-cell"><span>向いている人</span><small class="lp-cell-text">'+esc(m.fit)+'</small></div></div>'):
+      landScoreBars(m)+landSpecRows(m))+
       '<div class="lp-detail-actions"><button class="btn primary flex1" data-act="lp-maker-sim" data-value="'+m.id+'">この会社で総額を計算</button></div>'+
-      '<p class="lp-disclaimer">出典（2026年11月15日確認）：'+m.src.map(k=>esc(LAND_SRC[k]?.[0]||k)).join('／')+'。坪単価・保証は商品・地域・条件で変わります。必ず各社の見積もりと保証書で確認してください。</p></section></div>';
+      '<p class="lp-disclaimer">出典（2026年11月15日確認）：'+m.src.map(k=>esc(LAND_SRC[k]?.[0]||k)).join('／')+'。性能：CREX「ハウスメーカーUA値ランキング20社」「地震に強いハウスメーカー耐震性ランキング15選」（2025年）・オリコン・各社公表資料。耐震・断熱は代表的な商品の公表値や比較記事の値で、正式な等級は住宅性能評価書で確認。坪単価・保証は商品・地域・条件で変わります。必ず各社の見積もりと保証書で確認してください。</p></section></div>';
   }
   function landGuideScreen(){
     const L=state.land,tab=L.guideTab;
@@ -1411,6 +1508,10 @@
   app.addEventListener('change',e=>{
     const el=e.target;
     if(el.dataset?.lpSim!==undefined){state.land.sim=landSimNormalize({...state.land.sim,[el.dataset.lpSim]:el.value});save();render();return;}
+    if(el.dataset?.lpMakerSort!==undefined){
+      if(LAND_MAKER_SORTS.some(x=>x[0]===el.value))state.land.makerSort=el.value;
+      ui.lpMakerPage=0;save();render();return;
+    }
     if(el.dataset?.lpArea!==undefined){
       if(LAND_FILTERS.some(x=>x[0]===el.value))state.land.filter=el.value;
       ui.lpPage=0;ui.lpCommutePage=0;if(state.land.view==='map')landMapFit();else if(ui.map)ui.map.sel=null;save();render();return;

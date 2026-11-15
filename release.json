@@ -1,10 +1,10 @@
 {
-  "version": "r82",
+  "version": "r83",
   "ui": "land-only",
   "revised": "2026-11-15",
   "data_schema": "chika-shirabe-v1",
-  "entrypoint": "visual-r82.html",
+  "entrypoint": "visual-r83.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Simpler navigation: bottom tabs, area picker"
+  "release_note": "House maker performance: seismic, insulation, airtightness, warranty"
 }

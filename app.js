@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r92';
+  const BUILD = 'r93';
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
@@ -1893,12 +1893,14 @@
   /* ===== かんたん4ステップ・建売（r90） ===== */
   // 建売：2025年度フラット35利用者調査の建売住宅（敷地131.5㎡・延床100.4㎡、購入価額 愛知3,853.5万円・岐阜3,025.2万円）から、県の標準的な地価（中央値）×敷地を引いて建物分を推計
   const LAND_READY={site:131.5,floor:100.4,price:{'愛知県':3853.5,'岐阜県':3025.2},cost:0.075};
-  function landReadyBuilding(pref){
+  function landReadyBasis(pref){
     const p=(landData?.prefs||[]).find(x=>x.name===pref)?.residential;
     const med=p&&p.koji&&p.chosa?(p.koji.medianSqm*p.koji.count+p.chosa.medianSqm*p.chosa.count)/(p.koji.count+p.chosa.count):null;
     const avg=LAND_READY.price[pref]||LAND_READY.price['愛知県'];
-    return Math.max(1800,Math.min(3000,med?avg-med*LAND_READY.site/10000:2500))*10000;
+    const raw=med?avg-med*LAND_READY.site/10000:2500,build=Math.max(1800,Math.min(3000,raw))*10000;
+    return {pref:LAND_READY.price[pref]?pref:'愛知県',avg:avg*10000,med,prefLand:med?med*LAND_READY.site:null,build,clamped:raw<1800||raw>3000};
   }
+  function landReadyBuilding(pref){return landReadyBasis(pref).build;}
   function landReadyCities(){
     const total=landFindBudget().total*10000,cent=landCentroids();
     return (landData?.cities||[]).filter(landCityIn).map(c=>{
@@ -1989,7 +1991,20 @@
     if(!x)return modalFrame('建売住宅',empty('◔','データがありません',''));
     const o=landFindCities().find(v=>v.c.code===x.c.code);
     const loan=Math.max(0,x.all-(M.own||0)*10000),pay=landPay(loan,M.rate,M.years);
-    return modalFrame(x.c.name+'の建売','<div class="panel detail grow lp-find-detail">'+
+    const tabSeg='<div class="lp-sub">'+landSeg('lp-ready-tab',ui.lpReadyTab==='basis'?'basis':'res',[['res','結果'],['basis','計算の根拠']],'lp-seg-fill')+'</div>';
+    if(ui.lpReadyTab==='basis'){
+      const b=landReadyBasis(x.c.pref),row=(no,t,f,v,note)=>'<div class="lp-basis-row" style="--i:'+no+'"><i>'+no+'</i><div><b>'+t+'</b><p>'+f+'</p>'+(note?'<small>'+note+'</small>':'')+'</div><strong>'+v+'</strong></div>';
+      const tb=v=>(v*LAND_TSUBO/10000).toFixed(1);
+      return modalFrame(x.c.name+'の建売',tabSeg.replace('lp-sub','lp-sub lp-ready-seg')+'<div class="panel detail grow lp-find-detail"><div class="lp-basis">'+
+        row(1,'土地','この市の住宅地の平均 坪'+tb(x.sqm)+'万 × 40坪（131.5㎡）',landMan(x.land),esc(x.c.name)+'の地価公示・地価調査の平均。敷地131.5㎡は建売住宅の全国平均')+
+        row(2,'建物','県の建売の平均価格 '+landMan(b.avg)+' − 県の標準的な土地代 '+(b.prefLand?landMan(b.prefLand):'—'),landMan(b.build),esc(b.pref)+'の建売の平均（2025年度フラット35利用者調査）から、県の住宅地の中央値 坪'+(b.med?tb(b.med):'—')+'万×131.5㎡を引いた残りを建物分とみなす'+(b.clamped?'（1,800〜3,000万円の範囲に調整）':''))+
+        row(3,'物件価格','土地 ＋ 建物',landMan(x.price))+
+        row(4,'諸費用','物件価格 × 7.5%',landMan(x.cost),'建売の諸費用の相場は物件価格の6〜9%。仲介手数料の有無で変わるため中間の7.5%')+
+        row(5,'合計（諸費用込み）','物件価格 ＋ 諸費用',landMan(x.all))+
+        row(6,'月々の返済','（合計 − 頭金'+(M.own||0)+'万）を '+M.rate+'%・'+M.years+'年の元利均等返済',landYenText(pay))+
+        '</div><p class="lp-note">実際の建売は広さ・駅距離・仕様で大きく変わります。同じ市の販売中の物件と比べて使ってください。</p></div>');
+    }
+    return modalFrame(x.c.name+'の建売',tabSeg+'<div class="panel detail grow lp-find-detail">'+
       '<div class="lp-size-result"><div><span>建売の目安（諸費用込み）</span><strong>'+landMan(x.all)+'</strong><em>土地40坪・建物30坪</em></div>'+
         '<div><span>月々の返済</span><strong>'+landYenText(pay)+'</strong><em>頭金'+(M.own||0)+'万・'+M.rate+'%・'+M.years+'年</em></div></div>'+
       '<div class="lp-ready-bars">'+[['土地',x.land,'land'],['建物',x.build,'body'],['諸費用',x.cost,'cost']].map(([l,v,c])=>'<div class="lp-sim-row"><span>'+l+'</span><i class="lp-sim-bar '+c+'" style="--w:'+Math.round(v/x.all*100)+'%"></i><b>'+landMan(v)+'</b></div>').join('')+'</div>'+
@@ -2011,7 +2026,8 @@
     if(action==='lp-fs-own-set')return step(()=>{L.money=landMoneyNormalize({...L.money,own:Number(v)});save();});
     if(action==='lp-fs-type')return step(()=>set({type:v,step:4}));
     if(action==='lp-fs-area')return step(()=>{if(LAND_FILTERS.some(x=>x[0]===v))L.filter=v;set({step:0});});
-    if(action==='lp-find-ready')return openOverlay('land-ready',()=>{ui.lpReadyCity=v;});
+    if(action==='lp-find-ready')return openOverlay('land-ready',()=>{ui.lpReadyCity=v;ui.lpReadyTab='res';});
+    if(action==='lp-ready-tab')return step(()=>{ui.lpReadyTab=v==='basis'?'basis':'res';});
     return false;
   }
   /* ===== 登録した土地（r91） ===== */

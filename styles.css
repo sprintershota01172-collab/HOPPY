@@ -6740,3 +6740,15 @@ html,body{height:var(--vvh,100dvh)!important}
 .app-shell{height:var(--vvh,100dvh)!important}
 #app .lp-fs-body{justify-content:flex-start;padding-top:6px}
 #app .lp-my-wiz .lp-fs-body{gap:10px}
+
+/* r98: 町名・最寄駅の入力画面 */
+#app .lp-my-fake{width:100%;height:46px;display:flex;align-items:center;justify-content:space-between;border:1.5px solid #cfe2d8;border-radius:12px;background:#fff;padding:0 12px;font-size:16px;font-weight:850;color:#173e32;text-align:left}
+#app .lp-my-fake.is-empty{color:#a3b3ab;font-weight:750}
+#app .lp-my-fake i{font-style:normal;color:#14785c;font-weight:900}
+#app .lp-pick{gap:8px}
+#app .lp-pick-input{flex:none;height:50px;border:2px solid #1a735d;border-radius:14px;padding:0 14px;font-size:17px!important;font-weight:800;background:#fff;outline:none;-webkit-appearance:none}
+#app .lp-pick-list{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:5px;padding-bottom:10px}
+#app .lp-pick-list button{flex:none;display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left;background:#fff;border:1px solid #e2ebe7;border-radius:12px;padding:9px 12px}
+#app .lp-pick-list button b{font-size:15px;font-weight:900;color:#173e32}
+#app .lp-pick-list button small{font-size:11px;font-weight:750;color:#6d8778}
+#app .lp-pick-list button.is-use{background:#e3f4ec;border-color:#9fd4bd}

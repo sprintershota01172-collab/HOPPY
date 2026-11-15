@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r97';
+  const BUILD = 'r98';
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
@@ -568,6 +568,7 @@
     if(landV6Action(action,v)!==false)return;
     if(landV7Action(action,v)!==false)return;
     if(landV14Action(action,v)!==false)return;
+    if(landV17Action(action,v)!==false)return;
     if(landV15Action(action,v)!==false)return;
     if(landV13Action(action,v)!==false)return;
     if(landV12Action(action,v)!==false)return;
@@ -2284,8 +2285,8 @@
       const cityOpts='<option value="">市区町村を選ぶ</option>'+LAND_REGION_ORDER.map(region=>{const cs=(landData?.cities||[]).filter(x=>x.region===region);return cs.length?'<optgroup label="'+esc(region)+'">'+cs.map(x=>'<option value="'+esc(x.code)+'"'+(d.city===x.code?' selected':'')+'>'+esc(x.name)+'</option>').join('')+'</optgroup>':'';}).join('');
       body=(quick.length?'<div class="lp-fs-chips lp-my-quick">'+quick.map(x=>'<button class="'+(d.city===x.code?'active':'')+'" data-act="lp-my-city" data-value="'+x.code+'">'+esc(x.name.replace(/^名古屋市/,''))+'</button>').join('')+'</div>':'')+
         '<select class="lp-my-big-select" data-lp-my="city">'+cityOpts+'</select>'+
-        '<label class="lp-my-line"><span>町名（わかれば）</span><input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" data-lp-my="town" value="'+esc(d.town||'')+'" placeholder="例：音羽町3丁目"></label>'+
-        '<label class="lp-my-line"><span>最寄駅（わかれば）</span><input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" list="lp-stations" data-lp-my="station" value="'+esc(d.station||'')+'" placeholder="例：多治見"></label>'+landStationOptions(d.city)+
+        '<div class="lp-my-line"><span>町名（わかれば）</span><button class="lp-my-fake'+(d.town?'':' is-empty')+'" data-act="lp-pick-open" data-value="town">'+(d.town?esc(d.town):'例：音羽町3丁目')+'<i>›</i></button></div>'+
+        '<div class="lp-my-line"><span>最寄駅（わかれば）</span><button class="lp-my-fake'+(d.station?'':' is-empty')+'" data-act="lp-pick-open" data-value="station">'+(d.station?esc(d.station)+'駅':'例：多治見')+'<i>›</i></button></div>'+
         (()=>{const st=landStationFind(d.station),R=landRail();return st&&R?'<p class="lp-my-line-hit">🚉 '+esc(st.name)+'駅：'+esc(R.lineOf(st).join('・'))+'</p>':(d.station?'<p class="lp-my-line-hit is-miss">駅名が見つかりません（候補から選んでね）</p>':'');})();
       if(!d.city)next=null;
     }else if(st===2){
@@ -2405,8 +2406,42 @@
     const groups=[...new Set(R.lines.map(L=>LAND_OP_ORDER.includes(L.op)?L.op:'その他'))];
     return groups.map(g=>'<div class="lp-line-group"><span>'+esc(g)+'</span><div>'+R.lines.filter(L=>(LAND_OP_ORDER.includes(L.op)?L.op:'その他')===g).map(L=>'<button class="'+(state.land.filter==='line:'+L.label?'active':'')+'" data-act="lp-fs-area" data-value="line:'+esc(L.label)+'">'+esc(L.label.replace(/^(JR|名鉄|地下鉄|近鉄|豊鉄)/,''))+'</button>').join('')+'</div></div>').join('');
   }
+  /* --- 町名・最寄駅の入力（画面の一番上に入力欄。キーボードで画面が動かない） --- */
+  function landPickItems(){
+    const P=ui.lpPick||{},d=ui.lpMyEdit||{},q=String(P.q||'').trim(),c=landCity(d.city);
+    let items=[];
+    if(P.field==='station'){
+      const R=landRail();if(!R)return '<p class="lp-note">駅のデータを読み込み中です</p>';
+      const qq=q.replace(/駅$/,'');
+      items=R.stations.filter(s=>!qq||s.name.includes(qq)).sort((a,b)=>((b.city===d.city)-(a.city===d.city))||(qq?(a.name.indexOf(qq)-b.name.indexOf(qq)):0)||a.name.localeCompare(b.name,'ja')).slice(0,40)
+        .map(s=>'<button data-act="lp-pick-set" data-value="'+esc(s.name)+'"><b>'+esc(s.name)+'駅</b><small>'+esc(R.lineOf(s).join('・'))+(s.city&&s.city!==d.city?'・'+esc(landCity(s.city)?.name||''):'')+'</small></button>');
+    }else{
+      const towns=c?[...new Set((landData?.points||[]).filter(p=>p.cityCode===c.code).map(p=>landTownOf(p,c)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ja')):[];
+      items=towns.filter(t=>!q||t.includes(q)).slice(0,40).map(t=>'<button data-act="lp-pick-set" data-value="'+esc(t)+'"><b>'+esc(t)+'</b><small>'+esc(c.name)+'</small></button>');
+      if(q)items.unshift('<button class="is-use" data-act="lp-pick-set" data-value="'+esc(q)+'"><b>「'+esc(q)+'」で決定</b><small>番地まで入れてもOK</small></button>');
+    }
+    return items.length?items.join(''):'<p class="lp-note">見つかりません。別の書き方で入れてみてね。</p>';
+  }
+  function landPickScreen(){
+    const P=ui.lpPick||{},isSt=P.field==='station';
+    return '<div class="full lp-pick"><header class="full-header"><button class="btn compact" data-act="lp-pick-back">‹ 戻る</button><strong>'+(isSt?'最寄駅を選ぶ':'町名を入れる')+'</strong>'+
+      '<button class="btn compact" data-act="lp-pick-set" data-value="">'+(isSt?'なし':'空欄')+'</button></header>'+
+      '<input class="lp-pick-input" type="search" enterkeyhint="done" autocomplete="off" autocorrect="off" autocapitalize="off" data-lp-pick value="'+esc(P.q||'')+'" placeholder="'+(isSt?'駅名（例：多治見）':'町名（例：音羽町）')+'">'+
+      '<div class="lp-pick-list">'+landPickItems()+'</div></div>';
+  }
+  function landV17Action(action,v){
+    if(action==='lp-pick-open'){
+      landMySync();const d=ui.lpMyEdit||{};
+      ui.lpPick={field:v==='station'?'station':'town',q:(v==='station'?d.station:d.town)||''};ui.overlay='land-pick';render();
+      const inp=app.querySelector('.lp-pick-input');if(inp){try{inp.focus({preventScroll:true});}catch(_){inp.focus();}}
+      return;
+    }
+    if(action==='lp-pick-back')return step(()=>{ui.overlay='land-my-edit';});
+    if(action==='lp-pick-set')return step(()=>{const f=ui.lpPick?.field||'town';ui.lpMyEdit={...(ui.lpMyEdit||{}),[f]:v};ui.overlay='land-my-edit';});
+    return false;
+  }
   function overlay(){return ui.overlay==='land-detail'?landDetailScreen():ui.overlay==='land-settings'?landSettingsScreen():
-    ui.overlay==='land-about'?landAboutScreen():ui.overlay==='land-maker'?landMakerDetail():ui.overlay==='land-area'?landAreaScreen():ui.overlay==='land-town'?landTownScreen():ui.overlay==='land-commute'?landCommuteSettingsScreen():ui.overlay==='land-word'?landWordScreen():ui.overlay==='land-size'?landSizeScreen():ui.overlay==='land-help'?landHelpScreen():ui.overlay==='land-find-city'?landFindCityScreen():ui.overlay==='land-find-maker'?landFindMakerScreen():ui.overlay==='land-loan'?landLoanScreen():ui.overlay==='land-ready'?landReadyScreen():ui.overlay==='land-my'?landMyDetail():ui.overlay==='land-my-edit'?landMyEditScreen():ui.overlay==='land-howto'?landHowtoScreen():'';}
+    ui.overlay==='land-about'?landAboutScreen():ui.overlay==='land-maker'?landMakerDetail():ui.overlay==='land-area'?landAreaScreen():ui.overlay==='land-town'?landTownScreen():ui.overlay==='land-commute'?landCommuteSettingsScreen():ui.overlay==='land-word'?landWordScreen():ui.overlay==='land-size'?landSizeScreen():ui.overlay==='land-help'?landHelpScreen():ui.overlay==='land-find-city'?landFindCityScreen():ui.overlay==='land-find-maker'?landFindMakerScreen():ui.overlay==='land-loan'?landLoanScreen():ui.overlay==='land-ready'?landReadyScreen():ui.overlay==='land-my'?landMyDetail():ui.overlay==='land-my-edit'?landMyEditScreen():ui.overlay==='land-howto'?landHowtoScreen():ui.overlay==='land-pick'?landPickScreen():'';}
   function render(){
     if(!app)return;
     const liveMain=app.querySelector('main.main');
@@ -2473,7 +2508,9 @@
       if(ui.overlay==='land-settings')render();
     }
   });
-  app.addEventListener('input',e=>{const el=e.target;if(el?.dataset?.lpSim!=='landPct')return;
+  app.addEventListener('input',e=>{const el=e.target;
+    if(el?.dataset?.lpPick!==undefined){ui.lpPick={...(ui.lpPick||{}),q:el.value};const box=app.querySelector('.lp-pick-list');if(box)box.innerHTML=landPickItems();return;}
+    if(el?.dataset?.lpSim!=='landPct')return;
     const p=Math.round(Number(el.value)),box=el.parentElement?.querySelector('.lp-ratio-bar');if(!box)return;
     const i=box.querySelector('i'),em=box.querySelector('em');if(i){i.style.width=p+'%';i.querySelector('b').textContent='土地 '+p+'%';}if(em)em.querySelector('b').textContent='建物 '+(100-p)+'%';});
   // iPhoneでキーボードを閉じたあと画面が上下にずれたままになるのを戻す
@@ -2482,13 +2519,12 @@
   (()=>{const vv=window.visualViewport;if(!vv)return;let raf=0;
     const fit=()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{document.documentElement.style.setProperty('--vvh',Math.round(vv.height)+'px');if(window.scrollY||vv.offsetTop){try{window.scrollTo(0,0);}catch(_){}}});};
     vv.addEventListener('resize',fit);vv.addEventListener('scroll',fit);fit();})();
-  document.addEventListener('focusin',e=>{const el=e.target;if(!el||!/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))return;
-    setTimeout(()=>{try{window.scrollTo(0,0);el.scrollIntoView({block:'nearest'});}catch(_){}},320);});
+  // （入力欄へのスクロールは行わない：画面全体が動く原因になるため）
   app.addEventListener('pointerdown',landMapDown);
   window.addEventListener('pointermove',landMapMove,{passive:false});
   window.addEventListener('pointerup',landMapUp);window.addEventListener('pointercancel',landMapUp);
   app.addEventListener('wheel',e=>{if(!e.target.closest?.('[data-map]'))return;e.preventDefault();landV4Action('lp-map-zoom',e.deltaY<0?'1':'-1');},{passive:false});
-  app.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target?.dataset?.lpWorkQuery!==undefined){e.preventDefault();landWorkSearch(e.target.value);}});
+  app.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target?.dataset?.lpPick!==undefined){e.preventDefault();const q=e.target.value.trim();if(q){const f=ui.lpPick?.field;const val=f==='station'?(landStationFind(q)?.name||q.replace(/駅$/,'')):q;ui.lpMyEdit={...(ui.lpMyEdit||{}),[f]:val};ui.overlay='land-my-edit';render();}return;}if(e.key==='Enter'&&e.target?.dataset?.lpWorkQuery!==undefined){e.preventDefault();landWorkSearch(e.target.value);}});
   app.addEventListener('touchstart',e=>{const zone=e.target.closest('.swipe-zone');if(!zone||e.target.closest('input,textarea,select,label')){touch=null;return;}touch={x:e.changedTouches[0].clientX,y:e.changedTouches[0].clientY,zone:zone.dataset.swipe||''};},{passive:true});
   app.addEventListener('touchend',e=>{
     if(!touch)return;const dx=e.changedTouches[0].clientX-touch.x,dy=e.changedTouches[0].clientY-touch.y,zone=touch.zone;touch=null;

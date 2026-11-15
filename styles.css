@@ -6201,3 +6201,31 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .lp-maker-band.b-local{background:#e8eefb;color:#3c5a9a}
 #app .lp-v-maker .lp-seg>button{padding:0 6px}
 @media(max-width:374px){#app .lp-v-maker .lp-seg>button{padding:0 4px;font-size:10px}}
+
+/* r79: 通勤・地区別 */
+#app .lp-views{grid-template-columns:repeat(5,minmax(0,1fr))}
+#app .lp-views>button{font-size:11.5px;padding:0 2px}
+@media(max-width:374px){#app .lp-views>button{font-size:10.5px}}
+#app .lp-commute-chip{flex:none;width:100%;display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;column-gap:8px;align-items:center;text-align:left;background:#fff;border:1px solid #e2ebe7;border-radius:12px;padding:6px 10px}
+#app .lp-commute-chip span{grid-row:1/3;font-size:9.5px;font-weight:850;color:#fff;background:#1a735d;border-radius:7px;padding:3px 6px}
+#app .lp-commute-chip b{font-size:12.5px;font-weight:900;color:#173e32;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#app .lp-commute-chip small{grid-column:2;font-size:9.5px;color:#6d8778;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#app .lp-commute-chip em{grid-row:1/3;grid-column:3;font-style:normal;font-size:10.5px;font-weight:850;color:#14785c}
+#app .lp-commute-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:0 18px;color:#4d6b5c}
+#app .lp-commute-empty strong{font-size:15px;color:#173e32;line-height:1.5}
+#app .lp-commute-empty span{font-size:11.5px;line-height:1.6}
+#app .lp-work-results{display:flex;flex-direction:column;gap:4px}
+#app .lp-work-results button{text-align:left;border:1px solid #d6e3dc;background:#f6fbf8;border-radius:9px;padding:6px 9px;font-size:11.5px;font-weight:750;color:#173e32}
+#app .lp-work-city{height:32px;border:1px solid #d6e3dc;border-radius:9px;background:#fff;font-size:12px;font-weight:750;padding:0 8px;color:#173e32}
+#app .lp-commute-note{flex:none;font-size:9.5px!important;padding:0 4px}
+#app .lp-sim-commute{margin-top:auto;border:1px dashed #b5dfca;background:#f6fbf8;border-radius:10px;padding:6px 9px;font-size:10.5px;font-weight:800;color:#14785c;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app button.lp-points-title{display:flex;justify-content:space-between;align-items:center;border:0;background:transparent;padding:0;text-align:left;font-size:9.5px;color:#6d8778;font-weight:850}
+#app button.lp-points-title em{font-style:normal;color:#14785c;font-size:10.5px;font-weight:900}
+#app .lp-town-list{flex:1;min-height:0;display:flex;flex-direction:column;gap:5px;overflow:hidden}
+#app .lp-town-pt{flex:none;display:flex;justify-content:space-between;gap:8px;background:#fff;border:1px solid #e2ebe7;border-radius:12px;padding:6px 10px}
+#app .lp-town-pt>div:first-child{min-width:0;display:flex;flex-direction:column;gap:1px}
+#app .lp-town-pt b{font-size:12px;font-weight:850;color:#173e32;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-town-pt small{font-size:9.5px;color:#6d8778;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-town-val{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+#app .lp-town-val b{font-size:13px}
+#app .lp-town-val span{font-size:10.5px;font-weight:850}

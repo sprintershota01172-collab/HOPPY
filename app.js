@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r93';
+  const BUILD = 'r94';
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
@@ -565,6 +565,7 @@
     if(landV6Action(action,v)!==false)return;
     if(landV7Action(action,v)!==false)return;
     if(landV14Action(action,v)!==false)return;
+    if(landV15Action(action,v)!==false)return;
     if(landV13Action(action,v)!==false)return;
     if(landV12Action(action,v)!==false)return;
     if(landV9Action(action,v)!==false)return;
@@ -1514,7 +1515,7 @@
       metric('坪単価',r=>r.x.sqm,v=>'<b>'+landPriceHtml(v,{unit:'tsubo'})+'</b>',1)+
       metric('前年比',r=>r.x.chg,v=>tone(v))+
       metric('5年の<br>変化',r=>r.x.chg5y,v=>tone(v))+
-      metric('土地代',r=>r.t.land||null,(v,r)=>'<b>'+landMan(v)+'</b><small>'+(r.x.kind==='my'?Math.round(r.x.my.tsubo)+'坪・広告':S.landTsubo+'坪・目安')+'</small>',1)+
+      metric('土地代',r=>r.t.land||null,(v,r)=>'<b>'+landMan(v)+'</b><small>'+(r.x.kind==='my'?Math.round(r.x.my.tsubo*LAND_TSUBO)+'㎡・広告':S.landTsubo+'坪・目安')+'</small>',1)+
       metric('総額の<br>目安',r=>r.t.total,v=>'<b>'+landMan(v)+'</b>',1)+
       (landHasWork()?
         metric('通勤'+(two?'<br>（2人計）':''),r=>r.cm?.minutes,(v,r)=>v==null?'—':'<b>'+v+'分</b>'+(two?'<small>'+esc(r.cm.parts.map(p=>p.label+p.minutes).join('・'))+'</small>':''),1)+
@@ -2085,7 +2086,7 @@
       '<div class="lp-my-list swipe-zone" data-swipe="lp-my">'+page.map((m,i)=>{const e=landMyEval(m);
         return '<button class="lp-my-card" style="--i:'+i+'" data-act="lp-my-open" data-value="'+esc(m.id)+'">'+
           '<div class="lp-my-top"><b>'+esc(m.name||((e.c?.name||'')+(m.town?' '+m.town:'')))+'</b><strong>'+landMan(e.land)+'</strong></div>'+
-          '<small>'+esc((e.c?.name||'')+(m.town&&m.name?' '+m.town:''))+'・'+Math.round(m.tsubo)+'坪'+(m.walk!=null?'・駅徒歩'+m.walk+'分':'')+'・坪'+(e.unitTsubo/10000).toFixed(1)+'万</small>'+
+          '<small>'+esc((e.c?.name||'')+(m.town&&m.name?' '+m.town:''))+'・'+landArea(m.tsubo)+(m.walk!=null?'・駅徒歩'+m.walk+'分':'')+'・坪'+(e.unitTsubo/10000).toFixed(1)+'万</small>'+
           '<div class="lp-my-tags">'+(e.tone?'<i class="t-'+e.tone[0]+'">'+e.tone[1]+'</i>':'')+'<i>総額 '+landMan(e.total)+'</i><i>月々 '+landYenText(e.pay)+'</i><i class="'+(e.ok?'t-cheap':'t-high')+'">'+(e.ok?'予算内':'予算オーバー')+'</i>'+(e.cm?'<i>通勤'+e.cm.minutes+'分</i>':'')+'</div></button>';}).join('')+'</div>'+
       '<div class="lp-foot">'+navPager(ui.lpMyPage,total,'lp-my-page')+'</div>';
   }
@@ -2097,7 +2098,7 @@
     const say=e.tone?(e.tone[0]==='cheap'?'地価の目安より<b>'+Math.round((1-e.ratio)*100)+'%安い</b>よ！掘り出し物かも。理由（形・道路・地盤）も確認してね。':e.tone[0]==='fair'?'相場なみの値段だよ。広告の値段は地価公示より1〜2割高いのがふつう。':'地価の目安の<b>'+e.ratio.toFixed(2)+'倍</b>で高め。駅近・広い道路などの理由がなければ値下げ交渉の余地あり。'):'この市区町村の地価データがないよ。';
     return '<div class="full lp-detail"><header class="full-header"><button class="btn compact" data-act="overlay-close">‹ 戻る</button><strong>'+esc(m.name||e.c?.name||'土地')+'</strong><button class="btn compact" data-act="lp-my-edit" data-value="'+esc(m.id)+'">編集</button></header>'+
       '<section class="full-body lp-detail-body lp-my-detail">'+
-      '<div class="lp-size-result"><div><span>'+esc((e.c?.name||'')+(m.town?' '+m.town:''))+'・'+Math.round(m.tsubo)+'坪</span><strong>'+landMan(e.land)+'</strong><em>坪'+(e.unitTsubo/10000).toFixed(1)+'万円</em></div>'+
+      '<div class="lp-size-result"><div><span>'+esc((e.c?.name||'')+(m.town?' '+m.town:''))+'・'+landArea(m.tsubo)+'</span><strong>'+landMan(e.land)+'</strong><em>坪'+(e.unitTsubo/10000).toFixed(1)+'万円</em></div>'+
         '<div><span>家を建てた総額</span><strong>'+landMan(e.total)+'</strong><em>月々'+landYenText(e.pay)+'・'+(e.ok?'予算内':'予算オーバー')+'</em></div></div>'+
       (pos!=null?'<div class="lp-my-gauge"><div class="lp-my-gauge-bar"><span>割安</span><span>相場なみ</span><span>高め</span><u style="left:'+pos+'%"></u></div><small>地価の目安 坪'+(e.ref.sqm*LAND_TSUBO/10000).toFixed(1)+'万（'+esc(e.ref.how)+'）の'+e.ratio.toFixed(2)+'倍</small></div>':'')+
       landSay(say,e.tone?.[0]==='high'?'think':e.tone?.[0]==='cheap'?'happy':'normal')+
@@ -2106,30 +2107,6 @@
       '<div class="lp-detail-actions"><button class="btn flex1" data-act="lp-my-map" data-value="'+esc(m.id)+'">地図で見る</button><button class="btn primary flex1" data-act="lp-cand-tab" data-value="cmp">ほかと比べる</button></div>'+
       (m.url?'<a class="lp-my-url" href="'+esc(m.url)+'" target="_blank" rel="noopener">広告ページを開く ›</a>':'')+
       '<p class="lp-disclaimer">建物は「家の総額」の設定（'+esc(e.maker.name)+'・坪'+e.unit+'万×'+S.floorTsubo+'坪）で計算。'+(m.geo==='city'?'場所は市区町村の中心で計算。':'')+'</p></section></div>';
-  }
-  function landMyEditScreen(){
-    const d=ui.lpMyEdit||{};
-    const cityOpts='<option value="">選んでください</option>'+LAND_REGION_ORDER.map(region=>{const cs=(landData?.cities||[]).filter(c=>c.region===region);return cs.length?'<optgroup label="'+esc(region)+'">'+cs.map(c=>'<option value="'+esc(c.code)+'"'+(d.city===c.code?' selected':'')+'>'+esc(c.name)+'</option>').join('')+'</optgroup>':'';}).join('');
-    const inp=(k,label,type,unit,ph,attrs='')=>'<label class="lp-sim-field"><span>'+label+'</span><span class="lp-sim-num"><input type="'+type+'" '+(type==='number'?'inputmode="decimal" ':'')+'data-lp-my="'+k+'" value="'+esc(d[k]??'')+'" placeholder="'+esc(ph||'')+'" '+attrs+'>'+(unit?'<i>'+unit+'</i>':'')+'</span></label>';
-    const req=v=>v?'':' is-need';
-    return modalFrame(d.id&&state.land.my.some(x=>x.id===d.id)?'土地を編集':'土地を登録','<div class="panel detail grow lp-my-edit">'+
-      '<span class="kicker">① 必須（3つだけ）</span>'+
-      '<div class="lp-sim-form lp-my-form">'+
-        '<label class="lp-sim-field lp-sim-wide'+req(d.city)+'"><span>市区町村</span><select data-lp-my="city">'+cityOpts+'</select></label>'+
-        '<label class="lp-sim-field'+req(d.size)+'"><span>広さ</span><span class="lp-sim-num"><input type="number" inputmode="decimal" data-lp-my="size" value="'+esc(d.size??'')+'" placeholder="50"><i>'+(d.unit==='sqm'?'㎡':'坪')+'</i></span></label>'+
-        '<div class="lp-sim-field"><span>単位</span>'+landSeg('lp-my-unit',d.unit==='sqm'?'sqm':'tsubo',[['tsubo','坪'],['sqm','㎡']],'lp-seg-fill')+'</div>'+
-        '<label class="lp-sim-field lp-sim-wide'+req(d.price)+'"><span>土地の価格</span><span class="lp-sim-num"><input type="number" inputmode="decimal" data-lp-my="price" value="'+esc(d.price??'')+'" placeholder="1500"><i>万円</i></span></label>'+
-      '</div>'+
-      '<span class="kicker">② わかれば（相場・通勤の精度が上がる）</span>'+
-      '<div class="lp-sim-form lp-my-form">'+
-        inp('town','町名・番地','text','','例：音羽町3丁目','class="lp-wide-in"')+inp('name','呼び名','text','','例：A土地')+
-        inp('walk','駅まで徒歩','number','分','10')+inp('road','前面道路の幅','number','m','4')+
-        '<div class="lp-sim-field lp-sim-wide"><span>道路の向き</span>'+landSeg('lp-my-dir',d.dir||'',LAND_MY_DIRS,'lp-seg-fill')+'</div>'+
-        '<label class="lp-sim-field lp-sim-wide"><span>用途地域</span><select data-lp-my="zone">'+LAND_MY_ZONES.map(z=>'<option value="'+esc(z)+'"'+(d.zone===z?' selected':'')+'>'+(z||'わからない')+'</option>').join('')+'</select></label>'+
-        '<div class="lp-sim-field lp-sim-wide"><span>建築条件</span>'+landSeg('lp-my-cond',d.cond?'1':'0',[['0','なし'],['1','あり（建てる会社が決まっている）']],'lp-seg-fill')+'</div>'+
-        inp('url','広告のURL','url','','https://')+inp('memo','メモ','text','','日当たり良い など')+
-      '</div>'+
-      '<div class="lp-detail-actions">'+(state.land.my.some(x=>x.id===d.id)?'<button class="btn flex1 lp-danger" data-act="lp-my-del" data-value="'+esc(d.id)+'">削除</button>':'')+'<button class="btn primary flex1" data-act="lp-my-save">保存して評価する</button></div></div>');
   }
   async function landMyGeocode(id){
     const m=state.land.my.find(x=>x.id===id),c=m&&landCity(m.city);
@@ -2165,11 +2142,11 @@
   function landV13Action(action,v){
     const L=state.land;
     if(action==='lp-cand-tab')return step(()=>{ui.lpCandTab=v==='cmp'?'cmp':'my';L.view='compare';ui.overlay='';});
-    if(action==='lp-my-new')return openOverlay('land-my-edit',()=>{ui.lpMyEdit={unit:'tsubo',city:L.sim.city||L.favorites[0]||''};});
-    if(action==='lp-my-edit')return openOverlay('land-my-edit',()=>{const m=L.my.find(x=>x.id===v);ui.lpMyEdit=m?{...m,size:Math.round(m.tsubo*10)/10,unit:'tsubo',walk:m.walk??'',road:m.road??''}:{unit:'tsubo'};});
+    if(action==='lp-my-new')return openOverlay('land-my-edit',()=>{ui.lpMyEdit={unit:'sqm',step:0};});
+    if(action==='lp-my-edit')return openOverlay('land-my-edit',()=>{const m=L.my.find(x=>x.id===v);ui.lpMyEdit=m?{...m,size:Math.round(m.tsubo*LAND_TSUBO*100)/100,unit:'sqm',walk:m.walk??'',road:m.road??'',step:1}:{unit:'sqm',step:0};});
     if(action==='lp-my-open')return openOverlay('land-my',()=>{ui.lpMy=v;});
     if(action==='lp-my-save'){landMySave();return;}
-    if(action==='lp-my-unit')return step(()=>{const d=ui.lpMyEdit||{};const s=Number(d.size);if(s>0&&d.unit!==v)d.size=Math.round((v==='sqm'?s*LAND_TSUBO:s/LAND_TSUBO)*10)/10;d.unit=v;ui.lpMyEdit=d;});
+    if(action==='lp-my-unit')return step(()=>{const d=landMySync();const s=Number(d.size);if(s>0&&d.unit!==v)d.size=Math.round((v==='sqm'?s*LAND_TSUBO:s/LAND_TSUBO)*10)/10;d.unit=v;ui.lpMyEdit=d;});
     if(action==='lp-my-dir')return step(()=>{ui.lpMyEdit={...ui.lpMyEdit,dir:v};});
     if(action==='lp-my-cond')return step(()=>{ui.lpMyEdit={...ui.lpMyEdit,cond:v==='1'?1:0};});
     if(action==='lp-my-del'){if(!confirm('この土地を削除しますか？'))return;return step(()=>{L.my=L.my.filter(x=>x.id!==v);ui.overlay='';ui.lpMyEdit=null;save();message('削除しました');});}
@@ -2252,6 +2229,118 @@
       ui.overlay='';L.seenGuide=1;save();});
     return false;
   }
+  /* ===== 土地の登録をかんたんに（r94） ===== */
+  const landZen=t=>String(t||'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[．]/g,'.').replace(/[，]/g,',').replace(/[ｍＭ]/g,'m').replace(/㎡|m²|ｍ２|m2|平米|平方メートル/g,'㎡');
+  // 広告（SUUMO・アットホームなど）の文章から読み取る
+  function landParseAd(raw){
+    const t=landZen(raw),out={},num=s=>Number(String(s).replace(/,/g,''));
+    const area=t.match(/土地面積[^\d]{0,12}([\d.,]+)\s*㎡/)||t.match(/([\d.,]+)\s*㎡/);
+    if(area)out.size=Math.round(num(area[1])*100)/100,out.unit='sqm';
+    else{const tb=t.match(/([\d.,]+)\s*坪/);if(tb)out.size=num(tb[1]),out.unit='tsubo';}
+    const pr=t.match(/(?:価格|販売価格)[^\d億]{0,10}(?:(\d+)\s*億)?\s*([\d,]+)\s*万円/)||t.match(/(?:(\d+)\s*億)?\s*([\d,]+)\s*万円/);
+    if(pr)out.price=(pr[1]?num(pr[1])*10000:0)+num(pr[2]);
+    const w=t.match(/徒歩\s*(\d+)\s*分/);if(w)out.walk=num(w[1]);
+    const road=t.match(/(?:前面道路|接道|道路幅員|幅員)[^\d]{0,14}([\d.]+)\s*m/);if(road)out.road=num(road[1]);
+    const dir=t.match(/(南|北|東|西)(?:東|西)?側?(?:道路|公道|私道|接道)/);if(dir)out.dir=dir[1];
+    const z=LAND_MY_ZONES.filter(Boolean).find(zn=>t.includes(zn)||t.includes(zn.replace('専用地域','').replace('地域','')));if(z)out.zone=z;
+    if(/建築条件\s*(付|あり|有)/.test(t))out.cond=1;else if(/建築条件\s*(なし|無)/.test(t))out.cond=0;
+    const u=t.match(/https?:\/\/[^\s"'<>]+/);if(u)out.url=u[0];
+    const cs=(landData?.cities||[]).slice().sort((a,b)=>b.name.length-a.name.length);
+    for(const c of cs){const k=t.indexOf(c.name);if(k<0)continue;out.city=c.code;
+      const rest=t.slice(k+c.name.length).replace(/^\s+/,'');const m=rest.match(/^([^\s、,（(「\/|]{1,16})/);
+      if(m&&!/^(駅|線|徒歩)/.test(m[1]))out.town=m[1].replace(/[-‐−ー].*$/,'');break;}
+    return out;
+  }
+  function landMySize(d){const s=Number(d.size);if(!(s>0))return null;return d.unit==='tsubo'?{tsubo:s,sqm:s*LAND_TSUBO}:{tsubo:s/LAND_TSUBO,sqm:s};}
+  const landArea=(tsubo)=>Math.round(tsubo*LAND_TSUBO)+'㎡（約'+Math.round(tsubo)+'坪）';
+  function landMyEditScreen(){
+    const d=ui.lpMyEdit||{},st=d.step??0,isEdit=state.land.my.some(x=>x.id===d.id);
+    const title=isEdit?'土地を編集':'土地を登録';
+    const prog='<div class="lp-fs-prog">'+[1,2,3,4].map(n=>'<button class="'+(n===st?'is-cur':n<st?'is-done':'')+'" data-act="lp-my-step" data-value="'+n+'">'+(n<st?'✓':n)+'</button>').join('<i></i>')+'</div>';
+    const navb=(back,next,label)=>'<div class="lp-fs-nav">'+(back!=null?'<button class="btn" data-act="lp-my-step" data-value="'+back+'">‹ 戻る</button>':'<span></span>')+'<button class="btn primary" data-act="'+(next==='save'?'lp-my-save':'lp-my-step')+'" data-value="'+next+'">'+label+'</button></div>';
+    if(st===0){
+      return modalFrame(title,'<div class="panel detail grow lp-fs lp-my-wiz">'+
+        landSay('<b class="lp-fs-q">どうやって入れる？</b>','happy','lp-fs-say')+
+        '<div class="lp-fs-types">'+
+          '<button data-act="lp-my-mode" data-value="paste"><span class="lp-fs-ic">📋</span><b>広告の文章を貼り付ける</b><small>SUUMOなどの物件ページをコピー → 自動で読み取り</small></button>'+
+          '<button data-act="lp-my-step" data-value="1"><span class="lp-fs-ic">✏️</span><b>自分で入れる</b><small>場所・広さ・値段の3つだけ</small></button></div>'+
+        (d.mode==='paste'?'<div class="lp-my-paste"><textarea data-lp-my="ad" rows="5" placeholder="例）多治見市音羽町3丁目 土地面積165.29㎡（50.00坪） 価格1,480万円 JR中央線「多治見」駅 徒歩12分 南側公道5m">'+esc(d.ad||'')+'</textarea><button class="btn primary wide" data-act="lp-my-parse">読み取る</button></div>':'')+
+        '</div>');
+    }
+    const c=landCity(d.city),size=landMySize(d),price=Number(d.price);
+    let q,body,next=st+1,label='次へ ›';
+    if(st===1){
+      q='どこの土地？';
+      const quick=[...new Set([state.land.sim.city,...state.land.favorites,...state.land.my.map(m=>m.city)].filter(Boolean))].slice(0,6).map(landCity).filter(Boolean);
+      const cityOpts='<option value="">市区町村を選ぶ</option>'+LAND_REGION_ORDER.map(region=>{const cs=(landData?.cities||[]).filter(x=>x.region===region);return cs.length?'<optgroup label="'+esc(region)+'">'+cs.map(x=>'<option value="'+esc(x.code)+'"'+(d.city===x.code?' selected':'')+'>'+esc(x.name)+'</option>').join('')+'</optgroup>':'';}).join('');
+      body=(quick.length?'<div class="lp-fs-chips lp-my-quick">'+quick.map(x=>'<button class="'+(d.city===x.code?'active':'')+'" data-act="lp-my-city" data-value="'+x.code+'">'+esc(x.name.replace(/^名古屋市/,''))+'</button>').join('')+'</div>':'')+
+        '<select class="lp-my-big-select" data-lp-my="city">'+cityOpts+'</select>'+
+        '<label class="lp-my-line"><span>町名（わかれば）</span><input type="text" data-lp-my="town" value="'+esc(d.town||'')+'" placeholder="例：音羽町3丁目"></label>';
+      if(!d.city)next=null;
+    }else if(st===2){
+      q='広さは？（広告の「土地面積」）';
+      const z=landSizeCalc(),need=landTb(z.site);
+      const verdict=size?(size.tsubo<need-5?['narrow','目安より狭め']:size.tsubo>need*1.6?['wide','かなり広い']:['ok','ちょうどいい']):null;
+      body='<div class="lp-fs-big lp-my-size"><label><input type="number" inputmode="decimal" data-lp-my="size" value="'+esc(d.size??'')+'" placeholder="0"><i>'+(d.unit==='tsubo'?'坪':'㎡')+'</i></label></div>'+
+        '<div class="lp-my-unit">'+landSeg('lp-my-unit',d.unit==='tsubo'?'tsubo':'sqm',[['sqm','㎡（平米）で入れる'],['tsubo','坪で入れる']],'lp-seg-fill')+'</div>'+
+        '<p class="lp-fs-hint">'+(size?'＝ <b>'+Math.round(size.sqm*10)/10+'㎡</b>・<b>約'+(Math.round(size.tsubo*10)/10)+'坪</b>':'広告に「165.29㎡（50.00坪）」のように書いてあります')+'</p>'+
+        (verdict?'<div class="lp-my-verdict v-'+verdict[0]+'">'+landMascot(verdict[0]==='narrow'?'think':'happy',30,false)+'<p>'+state.land.size.people+'人・車'+state.land.size.cars+'台の目安は約'+need+'坪（'+Math.round(need*LAND_TSUBO)+'㎡）→ <b>'+verdict[1]+'</b></p></div>':'');
+      if(!size)next=null;
+    }else if(st===3){
+      q='土地の値段は？';
+      let prev='';
+      if(c&&size&&price>0){const ref=landMyRef({city:d.city,town:d.town}),unit=price*10000/size.tsubo,ratio=ref?unit/(ref.sqm*LAND_TSUBO):null;
+        const tone=ratio==null?null:ratio<0.95?['cheap','割安']:ratio<=1.25?['fair','相場なみ']:['high','高め'];
+        prev='<p class="lp-fs-hint">坪 <b>'+(unit/10000).toFixed(1)+'万円</b>（1㎡あたり'+(unit/LAND_TSUBO/10000).toFixed(1)+'万円）</p>'+
+          (tone?'<div class="lp-my-verdict v-'+tone[0]+'">'+landMascot(tone[0]==='high'?'think':'happy',30,false)+'<p>この辺りの目安 坪'+(ref.sqm*LAND_TSUBO/10000).toFixed(1)+'万円 → <b>'+tone[1]+'</b></p></div>':'');}
+      body='<div class="lp-fs-big"><label><input type="number" inputmode="decimal" data-lp-my="price" value="'+esc(d.price??'')+'" placeholder="0"><i>万円</i></label></div>'+prev;
+      if(!(price>0))next=null;
+    }else{
+      q='わかればもっと正確に（なくてもOK）';next='save';label='保存して評価 ›';
+      const inp=(k,l,type,unit,ph)=>'<label class="lp-sim-field"><span>'+l+'</span><span class="lp-sim-num"><input type="'+type+'" '+(type==='number'?'inputmode="decimal" ':'')+'data-lp-my="'+k+'" value="'+esc(d[k]??'')+'" placeholder="'+esc(ph)+'">'+(unit?'<i>'+unit+'</i>':'')+'</span></label>';
+      body='<div class="lp-sim-form lp-my-form">'+inp('walk','駅まで徒歩','number','分','10')+inp('road','前の道路の幅','number','m','4')+
+        '<div class="lp-sim-field lp-sim-wide"><span>道路はどっち側？</span>'+landSeg('lp-my-dir',d.dir||'',LAND_MY_DIRS,'lp-seg-fill')+'</div>'+
+        '<div class="lp-sim-field lp-sim-wide"><span>建築条件</span>'+landSeg('lp-my-cond',d.cond?'1':'0',[['0','なし'],['1','あり']],'lp-seg-fill')+'</div>'+
+        inp('name','呼び名','text','','A土地')+inp('memo','メモ','text','','日当たり良い')+
+        '<label class="lp-sim-field lp-sim-wide"><span>用途地域</span><select data-lp-my="zone">'+LAND_MY_ZONES.map(z=>'<option value="'+esc(z)+'"'+(d.zone===z?' selected':'')+'>'+(z||'わからない')+'</option>').join('')+'</select></label>'+
+        '</div>'+(isEdit?'<button class="lp-howto-all lp-danger" data-act="lp-my-del" data-value="'+esc(d.id)+'">この土地を削除</button>':'');
+    }
+    const summary=st>1?'<div class="lp-my-sum">'+[c?c.name+(d.town?' '+d.town:''):'',size?landArea(size.tsubo):'',price>0?landMan(price*10000):''].filter(Boolean).map(t=>'<span>'+esc(t)+'</span>').join('')+'</div>':'';
+    return modalFrame(title,'<div class="panel detail grow lp-fs lp-my-wiz">'+prog+summary+landSay('<b class="lp-fs-q">'+q+'</b>',st===4?'normal':'happy','lp-fs-say')+
+      '<div class="lp-fs-body" style="--k:'+st+'">'+body+'</div>'+
+      (st===3&&next?'<div class="lp-fs-nav"><button class="btn" data-act="lp-my-save">ここで保存</button><button class="btn primary" data-act="lp-my-step" data-value="4">詳しく入れる ›</button></div>':
+        navb(st>1?st-1:0,next||st+1,label))+'</div>');
+  }
+  function landMySync(){
+    const d={...(ui.lpMyEdit||{})};
+    app.querySelectorAll('.lp-my-wiz [data-lp-my]').forEach(el=>{d[el.dataset.lpMy]=el.value;});
+    ui.lpMyEdit=d;return d;
+  }
+  function landV15Action(action,v){
+    const L=state.land;
+    if(action==='lp-my-save'){landMySync();return false;}
+    const d=action.startsWith('lp-my-')?landMySync():(ui.lpMyEdit||{});
+    if(action==='lp-my-step'){
+      const to=Number(v),cur=d.step??0;
+      if(v==='null'||to>cur){
+        if(cur===1&&!d.city)return message('市区町村を選んでください');
+        if(cur===2&&!landMySize(d))return message('広さを入れてください');
+        if(cur===3&&!(Number(d.price)>0))return message('値段を入れてください');
+      }
+      if(v==='null')return;
+      return step(()=>{ui.lpMyEdit={...d,step:to};});}
+    if(action==='lp-my-mode')return step(()=>{ui.lpMyEdit={...d,mode:v};});
+    if(action==='lp-my-city')return step(()=>{ui.lpMyEdit={...d,city:v};});
+    if(action==='lp-my-parse'){
+      const ta=app.querySelector('[data-lp-my="ad"]'),txt=ta?ta.value:d.ad,got=landParseAd(txt||'');
+      const keys=Object.keys(got);
+      if(!keys.length)return message('読み取れませんでした。自分で入れてください');
+      ui.lpMyEdit={...d,...got,ad:txt,step:!got.city?1:!got.size?2:!got.price?3:4};
+      message('読み取り：'+[got.city&&'場所',got.size&&'広さ',got.price&&'値段',got.walk!=null&&'駅徒歩',got.road&&'道路幅',got.dir&&'道路の向き',got.zone&&'用途地域'].filter(Boolean).join('・'));
+      return render();
+    }
+    return false;
+  }
   function overlay(){return ui.overlay==='land-detail'?landDetailScreen():ui.overlay==='land-settings'?landSettingsScreen():
     ui.overlay==='land-about'?landAboutScreen():ui.overlay==='land-maker'?landMakerDetail():ui.overlay==='land-area'?landAreaScreen():ui.overlay==='land-town'?landTownScreen():ui.overlay==='land-commute'?landCommuteSettingsScreen():ui.overlay==='land-word'?landWordScreen():ui.overlay==='land-size'?landSizeScreen():ui.overlay==='land-help'?landHelpScreen():ui.overlay==='land-find-city'?landFindCityScreen():ui.overlay==='land-find-maker'?landFindMakerScreen():ui.overlay==='land-loan'?landLoanScreen():ui.overlay==='land-ready'?landReadyScreen():ui.overlay==='land-my'?landMyDetail():ui.overlay==='land-my-edit'?landMyEditScreen():ui.overlay==='land-howto'?landHowtoScreen():'';}
   function render(){
@@ -2279,7 +2368,7 @@
     if(el.dataset?.lpSim!==undefined){state.land.sim=landSimNormalize({...state.land.sim,[el.dataset.lpSim]:el.value});save();render();return;}
     if(el.dataset?.lpMy!==undefined){
       ui.lpMyEdit={...(ui.lpMyEdit||{}),[el.dataset.lpMy]:el.value};
-      if(el.dataset.lpMy==='city')render();
+      if(['city','size','price'].includes(el.dataset.lpMy))render();
       return;
     }
     if(el.dataset?.lpFs!==undefined){

@@ -1,10 +1,10 @@
 {
-  "version": "r93",
+  "version": "r94",
   "ui": "land-only",
   "revised": "2026-11-15",
   "data_schema": "chika-shirabe-v1",
-  "entrypoint": "visual-r93.html",
+  "entrypoint": "visual-r94.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Basis of ready-built price estimate"
+  "release_note": "Easier land registration: paste ad text, m2 first, step by step"
 }

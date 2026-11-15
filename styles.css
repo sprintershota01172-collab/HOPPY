@@ -6688,3 +6688,23 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .lp-basis-row strong{font-size:14px;font-weight:900;color:#c2561f;white-space:nowrap}
 #app .lp-start-flow{flex-wrap:wrap;row-gap:4px}
 #app .lp-start-flow span{font-size:10px;padding:4px 6px}
+
+/* r94: 土地の登録をかんたんに */
+#app .lp-my-wiz{padding-top:6px;overflow-y:auto;overscroll-behavior:contain}
+#app .lp-my-paste{flex:none;display:flex;flex-direction:column;gap:8px;animation:lp-row-in .3s both}
+#app .lp-my-paste textarea{width:100%;box-sizing:border-box;border:2px solid #9fd4bd;border-radius:14px;padding:10px;font-size:14px;line-height:1.5;font-family:inherit;resize:none;background:#fff}
+#app .lp-my-big-select{height:50px;border:2px solid #9fd4bd;border-radius:14px;background:#fff;font-size:17px;font-weight:900;color:#173e32;padding:0 12px}
+#app .lp-my-line{display:flex;flex-direction:column;gap:4px}
+#app .lp-my-line span{font-size:11px;font-weight:850;color:#4d6b5c}
+#app .lp-my-line input{height:44px;border:1.5px solid #cfe2d8;border-radius:12px;padding:0 12px;font-size:16px;font-weight:800;background:#fff}
+#app .lp-my-quick{flex-wrap:wrap}
+#app .lp-my-quick button{max-width:none;flex:0 0 auto;padding:0 12px}
+#app .lp-my-size input{width:140px}
+#app .lp-my-unit .lp-seg>button{font-size:12px}
+#app .lp-my-verdict{display:flex;align-items:center;gap:8px;border-radius:12px;padding:8px 10px;background:#eef6fd}
+#app .lp-my-verdict p{margin:0;font-size:12px;font-weight:800;color:#173e32;line-height:1.45}
+#app .lp-my-verdict.v-ok,#app .lp-my-verdict.v-cheap{background:#e6f6ee}#app .lp-my-verdict.v-ok b,#app .lp-my-verdict.v-cheap b{color:#0f7a53}
+#app .lp-my-verdict.v-narrow,#app .lp-my-verdict.v-high{background:#fff3e6}#app .lp-my-verdict.v-narrow b,#app .lp-my-verdict.v-high b{color:#c2561f}
+#app .lp-my-verdict.v-fair b,#app .lp-my-verdict.v-wide b{color:#2f6fb5}
+#app .lp-my-sum{flex:none;display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+#app .lp-my-sum span{font-size:11px;font-weight:850;background:#e3f4ec;color:#14785c;border-radius:9px;padding:3px 8px}

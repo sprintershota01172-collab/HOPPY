@@ -6563,3 +6563,55 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .lp-size-say p{font-size:11px;padding:4px 8px}
 #app .lp-loan-type li{font-size:10px;line-height:1.4}
 #app .lp-loan-type{padding:6px 10px}
+
+/* r90: かんたん4ステップ・建売 */
+#app .lp-fs{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;padding-top:4px}
+#app .lp-fs-prog{flex:none;display:flex;align-items:center;justify-content:center;gap:0}
+#app .lp-fs-prog button{width:30px;height:30px;border-radius:50%;border:2px solid #cfe2d8;background:#fff;color:#7d9a8c;font-size:13px;font-weight:900;padding:0;transition:all .25s}
+#app .lp-fs-prog button.is-cur{background:#1a735d;border-color:#1a735d;color:#fff;transform:scale(1.12)}
+#app .lp-fs-prog button.is-done{background:#e3f4ec;border-color:#9fd4bd;color:#14785c}
+#app .lp-fs-prog i{width:28px;height:2px;background:#cfe2d8}
+#app .lp-fs-say{align-items:center}
+#app .lp-fs-say .lp-mascot{width:56px;height:56px}
+#app .lp-fs-say p{font-size:15px;padding:10px 12px}
+#app .lp-fs-q{color:#173e32!important;font-size:16px;font-weight:900}
+#app .lp-fs-body{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;justify-content:center;animation:lp-row-in .35s both}
+#app .lp-fs-big{display:flex;align-items:center;justify-content:center;gap:12px}
+#app .lp-fs-big label{display:flex;align-items:baseline;gap:4px;background:#fff;border:2px solid #9fd4bd;border-radius:16px;padding:8px 14px}
+#app .lp-fs-big input{width:110px;border:0;background:transparent;font-size:36px;font-weight:900;color:#173e32;text-align:right;outline:none;padding:0}
+#app .lp-fs-big i{font-style:normal;font-size:13px;font-weight:850;color:#4d6b5c}
+#app .lp-fs-pm{width:46px;height:46px;border-radius:50%;border:0;background:#e3f4ec;color:#14785c;font-size:24px;font-weight:900}
+#app .lp-fs-chips{display:flex;gap:6px;justify-content:center}
+#app .lp-fs-chips button{flex:1;max-width:80px;height:36px;border-radius:18px;border:1.5px solid #cfe2d8;background:#fff;font-size:13px;font-weight:850;color:#2d5a49}
+#app .lp-fs-chips button.active{background:#1a735d;border-color:#1a735d;color:#fff}
+#app .lp-fs-sub{align-self:center;border:0;background:transparent;font-size:12px;font-weight:800;color:#6d8778}
+#app .lp-fs-sub b{color:#14785c}
+#app .lp-fs-hint{margin:0;text-align:center;font-size:12.5px;font-weight:800;color:#4d6b5c}
+#app .lp-fs-hint b{color:#c2561f;font-size:15px}
+#app .lp-fs-types{display:flex;flex-direction:column;gap:8px}
+#app .lp-fs-types button{display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center;text-align:left;background:#fff;border:2px solid #e2ebe7;border-radius:16px;padding:10px 12px;transition:all .2s}
+#app .lp-fs-types button.active{border-color:#1a735d;background:#f1faf5;box-shadow:0 4px 14px #1a735d22}
+#app .lp-fs-ic{grid-row:1/3;font-size:30px;text-align:center}
+#app .lp-fs-types b{font-size:15px;font-weight:900;color:#173e32}
+#app .lp-fs-types small{font-size:11.5px;font-weight:750;color:#6d8778}
+#app .lp-fs-areas{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#app .lp-fs-areas button{height:40px;border-radius:12px;border:1.5px solid #cfe2d8;background:#fff;font-size:12.5px;font-weight:850;color:#2d5a49;padding:0 6px}
+#app .lp-fs-areas button:first-child{grid-column:1/-1}
+#app .lp-fs-areas button.active{background:#1a735d;border-color:#1a735d;color:#fff}
+#app .lp-fs-nav{flex:none;display:grid;grid-template-columns:1fr 2fr;gap:8px}
+#app .lp-fs-nav .btn{height:46px;font-size:15px}
+#app .lp-fs-sum{flex:none;display:flex;gap:4px;overflow:hidden}
+#app .lp-fs-sum button{flex:1;min-width:0;height:28px;border-radius:14px;border:1.5px solid #cfe2d8;background:#fff;font-size:11px;font-weight:850;color:#2d5a49;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px}
+#app .lp-fs-sum button::after{content:" ✎";color:#9ab3a7;font-size:9px}
+#app .lp-v-find>.lp-find-total{flex:none}
+#app .lp-two{flex:none;display:flex;flex-direction:column;gap:3px;align-items:flex-end}
+#app .lp-two em{font-style:normal;font-size:10.5px;font-weight:900;border-radius:7px;padding:2px 7px;white-space:nowrap}
+#app .lp-two em.ok{background:#e6f6ee;color:#0f7a53}
+#app .lp-two em.ng{background:#f4f4f4;color:#a3a3a3}
+#app .lp-ready-bars{flex:none;display:flex;flex-direction:column;gap:4px;background:#fff;border:1px solid #e2ebe7;border-radius:12px;padding:8px 10px}
+#app .lp-ready-vs{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#app .lp-ready-vs>div{background:#fff;border:1px solid #e2ebe7;border-radius:12px;padding:7px 9px;display:flex;flex-direction:column;gap:1px}
+#app .lp-ready-vs span{font-size:9.5px;font-weight:850;color:#6d8778}
+#app .lp-ready-vs b{font-size:14px;font-weight:900;color:#173e32}
+#app .lp-ready-vs small{font-size:10.5px;font-weight:750;color:#4d6b5c;line-height:1.4}
+@media(max-height:700px){#app .lp-fs{gap:8px}#app .lp-fs-big input{font-size:30px;width:96px}#app .lp-fs-types button{padding:7px 10px}#app .lp-fs-say .lp-mascot{width:46px;height:46px}}

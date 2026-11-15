@@ -1,10 +1,10 @@
 {
-  "version": "r89",
+  "version": "r90",
   "ui": "land-only",
   "revised": "2026-11-15",
   "data_schema": "chika-shirabe-v1",
-  "entrypoint": "visual-r89.html",
+  "entrypoint": "visual-r90.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Loan and interest details, mascot character and illustrations"
+  "release_note": "4-step budget finder with ready-built homes"
 }

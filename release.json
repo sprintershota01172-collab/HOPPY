@@ -1,10 +1,10 @@
 {
-  "version": "r83",
+  "version": "r84",
   "ui": "land-only",
   "revised": "2026-11-15",
   "data_schema": "chika-shirabe-v1",
-  "entrypoint": "visual-r83.html",
+  "entrypoint": "visual-r84.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "House maker performance: seismic, insulation, airtightness, warranty"
+  "release_note": "Land/building ratio and money check with 2025 Flat35 statistics"
 }

@@ -6361,3 +6361,52 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .lp-spec-row span{align-self:stretch;display:flex;align-items:center;padding:0 8px;background:#f4f8f6;font-size:10px;font-weight:850;color:#4d6b5c}
 #app .lp-spec-row b{padding:3px 8px;font-size:11px;font-weight:750;color:#173e32;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 #app .lp-q{font-style:normal;color:#a3b3ab;font-weight:750}
+
+/* r84: 土地と建物の比率・お金の診断 */
+#app .lp-ratio{display:flex;flex-direction:column;gap:2px;flex:none}
+#app .lp-ratio-bar{position:relative;display:flex;height:20px;border-radius:7px;overflow:visible;background:#cfe0f3}
+#app .lp-ratio-bar i{display:flex;align-items:center;background:#e0a35a;border-radius:7px 0 0 7px;min-width:0;overflow:hidden;transition:width .2s}
+#app .lp-ratio-bar em{flex:1;display:flex;align-items:center;justify-content:flex-end;background:#5b8fd0;border-radius:0 7px 7px 0;min-width:0;overflow:hidden}
+#app .lp-ratio-bar b{font-size:10px;font-weight:900;color:#fff;white-space:nowrap;padding:0 6px}
+#app .lp-ratio-bar u{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:#173e32;border-radius:1px}
+#app .lp-ratio-bar u::after{content:"▲";position:absolute;top:100%;left:50%;transform:translate(-50%,-2px);font-size:8px;color:#173e32;text-decoration:none}
+#app .lp-ratio small{font-size:9px;color:#6d8778;font-weight:750;margin-top:3px}
+#app .lp-ratio.is-small .lp-ratio-bar{height:16px}
+#app .lp-range-input{width:100%;height:24px;margin:0;accent-color:#e0763a}
+#app .lp-sim-warn{margin:0;font-size:10.5px;font-weight:800;color:#b5452a;background:#fdf0ea;border-radius:8px;padding:4px 8px;line-height:1.4}
+#app .lp-mo-tiles{flex:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+#app .lp-mo-tile{background:#fff;border:1px solid #e2ebe7;border-radius:11px;padding:6px 6px;display:flex;flex-direction:column;gap:1px;min-width:0}
+#app .lp-mo-tile span{font-size:9px;font-weight:850;color:#6d8778;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-mo-tile b{font-size:13.5px;font-weight:900;color:#173e32;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-mo-tile.is-good{background:#eaf7f0;border-color:#b9e0cb}#app .lp-mo-tile.is-good b{color:#0f7a53}
+#app .lp-mo-tile.is-warn{background:#fff6e5;border-color:#f1d49a}#app .lp-mo-tile.is-warn b{color:#9a6408}
+#app .lp-mo-tile.is-bad{background:#fdecea;border-color:#f2c0b8}#app .lp-mo-tile.is-bad b{color:#b5452a}
+#app .lp-tips{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+#app .lp-tip{flex:none;display:flex;gap:9px;align-items:flex-start;background:#fff;border:1px solid #e2ebe7;border-left-width:4px;border-radius:12px;padding:8px 10px;animation:lp-row-in .35s calc(var(--i)*50ms) both}
+#app .lp-tip i{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:11px;font-weight:900;color:#fff;background:#7d9a8c}
+#app .lp-tip p{margin:0;font-size:12px;line-height:1.55;font-weight:700;color:#173e32}
+#app .lp-tip.good{border-left-color:#2aa173}#app .lp-tip.good i{background:#2aa173}
+#app .lp-tip.warn{border-left-color:#e0a32f}#app .lp-tip.warn i{background:#e0a32f}
+#app .lp-tip.bad{border-left-color:#d0503c}#app .lp-tip.bad i{background:#d0503c}
+#app .lp-tip.info{border-left-color:#5b8fd0}#app .lp-tip.info i{background:#5b8fd0}
+#app .lp-stats{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+#app .lp-st-card{flex:none;background:#fff;border:1px solid #e2ebe7;border-radius:14px;padding:8px 10px;display:flex;flex-direction:column;gap:5px}
+#app .lp-st-row{display:grid;grid-template-columns:52px 1fr 58px;align-items:center;gap:6px;position:relative}
+#app .lp-st-row>span{font-size:10.5px;font-weight:850;color:#4d6b5c}
+#app .lp-st-row>i{height:12px;border-radius:6px;background:#eef3f0;overflow:hidden}
+#app .lp-st-row>i em{display:block;height:100%;background:#8fb9a6;border-radius:6px}
+#app .lp-st-row.is-me>i em{background:#e0763a}
+#app .lp-st-row.is-me>span{color:#c2561f}
+#app .lp-st-row>b{font-size:12px;font-weight:900;color:#173e32;text-align:right}
+#app .lp-st-sub{grid-column:2/4;font-size:8.5px;color:#7d9a8c;font-weight:750;margin-top:-4px}
+#app .lp-st-grid{flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+#app .lp-st-grid>div{background:#fff;border:1px solid #e2ebe7;border-radius:11px;padding:6px 8px;display:flex;flex-direction:column}
+#app .lp-st-grid span{font-size:9.5px;font-weight:850;color:#6d8778}
+#app .lp-st-grid b{font-size:14px;font-weight:900;color:#173e32}
+#app .lp-sim-pct{display:block;font-style:normal;font-size:9.5px;font-weight:800;color:#d8efe4;margin-top:1px}
+#app .lp-v-sim .lp-sim-result{gap:3px}
+#app .lp-cond-toggle{grid-column:1/-1;height:28px;border:1px dashed #c6dbd0;background:#f6fbf8;border-radius:9px;font-size:11px;font-weight:850;color:#14785c;text-align:left;padding:0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-cond-toggle.is-on{border-style:solid;background:#e3f4ec}
+#app .lp-ratio-bar u::after{content:none}
+#app .lp-ratio small{margin-top:4px}
+@media(max-height:700px){#app .lp-sim-form{max-height:52vh;overflow-y:auto;overscroll-behavior:contain}}

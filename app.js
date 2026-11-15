@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r85';
+  const BUILD = 'r86';
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
@@ -991,30 +991,30 @@
     const sc=landSpecScore(m);
     const mark=v=>v==null?'—':v>=4.5?'◎+':v>=4?'◎':v>=3?'○':'△';
     return '<div class="lp-score">'+LAND_SCORE_AXES.map(([k,l])=>{const v=sc[k];
-      return '<div class="lp-score-tile'+(v==null?' is-na':v>=4?' is-good':'')+'"><span>'+l+'</span><b>'+mark(v)+'</b><i><em style="width:'+(v==null?0:v/5*100)+'%"></em></i></div>';}).join('')+'</div>';
+      return '<button class="lp-score-tile'+(v==null?' is-na':v>=4?' is-good':'')+'"'+(k==='price'?' data-act="lp-maker-tab" data-value="about"':' data-act="lp-help" data-value="'+(k==='seis'?'seis':k)+'"')+'><span>'+l+(k==='price'?'':' ⓘ')+'</span><b>'+mark(v)+'</b><i><em style="width:'+(v==null?0:v/5*100)+'%"></em></i></button>';}).join('')+'</div>';
   }
   function landSpecRows(m){
     const x=landSpec(m),q='<i class="lp-q">要確認</i>';
     const rows=[
-      ['耐震',x.s===3?'耐震等級3（最高等級）'+(m.hq?'が標準':'相当が標準'):q],
-      ['制震・免震',x.d?esc(x.d):q],
-      ['断熱',x.i?'断熱等級'+x.i+'相当'+(x.ua!=null?'（UA値'+x.ua.toFixed(2)+'）':''):q],
-      ['気密',x.a==='all'?'全棟で気密を測定':x.a==='some'?'気密を測定・数値を公表':q],
+      ['耐震',x.s===3?'等級3＝3段階でいちばん強い（消防署なみ）':q,'seis'],
+      ['制震・免震',x.d?esc(x.d):q,'damp'],
+      ['断熱',x.i?'等級'+x.i+'＝7段階で'+({7:'いちばん上',6:'上から2番目',5:'上から3番目',4:'最低ライン'})[x.i]+(x.ua!=null?'（UA値'+x.ua.toFixed(2)+'）':''):q,'ins'],
+      ['気密',x.a==='all'?'すべての家ですき間を測定':x.a==='some'?'すき間を測定・数値を公表':q,'air'],
       ['構造',esc(m.struct)],
       ['外壁・耐久',x.w?esc(x.w):'<i class="lp-q">特記なし</i>'],
       ['冷暖房・設備',x.h?esc(x.h):'<i class="lp-q">特記なし</i>'],
       ['工期',x.k?esc(x.k):x.unit?'短い（ユニット工法）':'普通（4〜6か月が目安）'],
       ['長期優良住宅',x.l?'対応（税の優遇あり）':q],
-      ['保証',esc(m.warranty)]
+      ['保証',esc(m.warranty),'war']
     ];
-    return '<div class="lp-spec">'+rows.map(([k,v])=>'<div class="lp-spec-row"><span>'+k+'</span><b>'+v+'</b></div>').join('')+'</div>';
+    return '<div class="lp-spec">'+rows.map(([k,v,h])=>h?'<button class="lp-spec-row" data-act="lp-help" data-value="'+h+'"><span>'+k+' <em>ⓘ</em></span><b>'+v+'</b></button>':'<div class="lp-spec-row"><span>'+k+'</span><b>'+v+'</b></div>').join('')+'</div>';
   }
   function landMakerBadges(m){
     const x=landSpec(m),b=[];
-    if(x.s===3)b.push('<i class="lp-bd s">耐震3</i>');
-    if(x.d&&/制震|免震/.test(x.d))b.push('<i class="lp-bd d">'+(/免震/.test(x.d)?'免震可':'制震')+'</i>');
-    if(x.i)b.push('<i class="lp-bd n'+x.i+'">断熱'+x.i+'</i>');
-    if(x.a==='all')b.push('<i class="lp-bd a">気密測定</i>');
+    if(x.s===3)b.push('<i class="lp-bd s">耐震 最高</i>');
+    if(x.d&&/制震|免震/.test(x.d))b.push('<i class="lp-bd d">'+(/免震/.test(x.d)?'免震も可':'揺れ吸収')+'</i>');
+    if(x.i)b.push('<i class="lp-bd n'+x.i+'">断熱 '+x.i+'/7</i>');
+    if(x.a==='all')b.push('<i class="lp-bd a">すき間測定</i>');
     if(x.y)b.push('<i class="lp-bd y">保証'+x.y+'年</i>');
     return b.join('');
   }
@@ -1038,14 +1038,14 @@
     ui.lpMakerPage=Math.max(0,Math.min(ui.lpMakerPage||0,total-1));
     const page=list.slice(ui.lpMakerPage*per,(ui.lpMakerPage+1)*per);
     const lo=40,hi=160,pos=v=>Math.max(0,Math.min(100,(v-lo)/(hi-lo)*100));
-    return '<div class="lp-toggles">'+landSeg('lp-maker-type',L.makerType,[['all','全'+LAND_MAKERS.length],['全国','全国'],['愛知','愛知'],['岐阜','岐阜'],['鉄骨','鉄骨']])+'</div><div class="lp-toggles"><label class="lp-area-pick lp-sort-pick"><span aria-hidden="true">↕</span><b>'+esc((LAND_MAKER_SORTS.find(x=>x[0]===L.makerSort)||LAND_MAKER_SORTS[0])[1])+'</b><i aria-hidden="true">▾</i><select data-lp-maker-sort aria-label="並べ替え">'+LAND_MAKER_SORTS.map(([k,l])=>'<option value="'+k+'"'+(k===L.makerSort?' selected':'')+'>'+l+'</option>').join('')+'</select></label><span class="lp-maker-legend">本体の坪単価（万円）</span></div>'+
+    return '<div class="lp-toggles">'+landSeg('lp-maker-type',L.makerType,[['all','全'+LAND_MAKERS.length],['全国','全国'],['愛知','愛知'],['岐阜','岐阜'],['鉄骨','鉄骨']])+'</div><div class="lp-toggles"><label class="lp-area-pick lp-sort-pick"><span aria-hidden="true">↕</span><b>'+esc((LAND_MAKER_SORTS.find(x=>x[0]===L.makerSort)||LAND_MAKER_SORTS[0])[1])+'</b><i aria-hidden="true">▾</i><select data-lp-maker-sort aria-label="並べ替え">'+LAND_MAKER_SORTS.map(([k,l])=>'<option value="'+k+'"'+(k===L.makerSort?' selected':'')+'>'+l+'</option>').join('')+'</select></label><button class="lp-help-btn" data-act="lp-help" data-value="seis">目印の見方 ⓘ</button></div>'+
       '<div class="lp-list swipe-zone" data-swipe="lp-maker" style="--lp-rows:'+per+'">'+page.map((m,i)=>
         '<div class="lp-row" style="--i:'+i+'"><button class="lp-row-main" data-act="lp-maker-open" data-value="'+m.id+'">'+
         '<span class="lp-maker-band b-'+(m.band==='ハイ'?'hi':m.band==='ミドル上'?'mu':m.band==='ミドル'?'mid':m.band==='地元'?'local':'lo')+'">'+esc(m.band)+'</span>'+
         '<span class="lp-name"><b>'+esc(m.name)+'</b><small class="lp-bds">'+(landMakerBadges(m)||esc(m.hq?'工務店・'+m.hq:m.type))+'</small></span>'+
         '<span class="lp-maker-range"><b>'+(m.est?'<i class="lp-ref">仮</i>':'')+m.low+'〜'+m.high+'<small>万</small></b><i class="lp-range"><em style="left:'+pos(m.low)+'%;right:'+(100-pos(m.high))+'%"></em><u style="left:'+pos(m.mid)+'%"></u></i></span></button></div>').join('')+'</div>'+
       '<div class="lp-foot">'+navPager(ui.lpMakerPage,total,'lp-maker-page')+'</div>'+
-      '<button class="lp-source" data-act="lp-about">坪単価は建物本体のみの目安（2026年の比較記事より） ⓘ</button>';
+      '<button class="lp-source" data-act="lp-help" data-value="ins">右の数字は建物本体の坪単価（万円）。耐震・断熱などの意味は「目印の見方」 ⓘ</button>';
   }
   function landMakerDetail(){
     const m=landMakerById(ui.lpMaker);
@@ -1341,6 +1341,9 @@
     {k:'corner',t:'角地',d:'2つの道路に接している土地です。日当たりと開放感がよく、建ぺい率が10％増えることもありますが、人目が気になる・塀の費用がかさむ面もあります。'},
     {k:'dir',t:'南道路・北道路',d:'道路がどの方角にあるかです。南道路は日当たりのよい庭とリビングを作りやすく人気があり、価格も少し高めです。北道路は安めで、家の南側に庭を取れます。'},
     {k:'flag',t:'旗竿地',d:'細い通路の奥に敷地がある「旗」の形の土地です。相場より2〜3割安いことが多い反面、車の出し入れや日当たり、工事費に注意が必要です。'},
+    {k:'w-seis',t:'耐震等級',d:'地震への強さを3段階で表したもの。等級1が法律の最低限、等級3がその1.5倍でいちばん強い。メーカー詳細の「耐震 ⓘ」で表を見られます。'},
+    {k:'w-ins',t:'断熱等級・UA値',d:'熱の逃げにくさを7段階で表したもの。等級4が2025年からの最低ライン、等級7がいちばん上。UA値は小さいほど高性能。メーカー詳細の「断熱 ⓘ」で表を見られます。'},
+    {k:'w-air',t:'気密・C値',d:'家のすき間の量。C値が小さいほどすき間が少なく、1.0以下が高気密の目安。家ごとに測らないとわからないので、全棟で測定しているかがポイント。'},
     {k:'size',t:'家と土地の広さの目安',d:'国の目安では、ゆとりある家は「25㎡×人数＋25㎡」（4人で125㎡≒38坪）。土地は2階建てなら建物の1階部分に、車1台あたり約15㎡（約4.5坪）と庭・すき間を足した広さが目安で、4人・車2台なら40坪前後から。「計算」の「広さの目安」で人数や車の台数から計算できます。'},
     {k:'extra',t:'付帯工事費・諸費用',d:'付帯工事費は地盤改良・外構・給排水などで、このアプリでは建物本体の25％で計算しています。諸費用は登記・ローン手数料・火災保険・仲介手数料などで、総額の7％で計算しています。'},
     {k:'btsubo',t:'建物の坪単価',d:'建物本体の価格÷延床面積です。会社ごとに含まれる範囲（照明・カーテン・外構など）が違うので、見積もりは総額で比べるのが安全です。'}
@@ -1669,13 +1672,42 @@
   function landV7Action(action,v){
     const L=state.land;
     if(action==='lp-size-open')return openOverlay('land-size');
+    if(action==='lp-help'){if(ui.overlay==='land-help')return step(()=>{ui.lpHelp=v;});const back=ui.overlay==='land-maker'?'land-maker':null;return openOverlay('land-help',()=>{ui.lpHelp=v||'seis';ui.lpHelpBack=back;});}
     const map={'lp-size-people':'people','lp-size-cars':'cars','lp-size-floors':'floors','lp-size-garden':'garden','lp-size-bcr':'bcr'};
     if(map[action])return step(()=>{L.size=landSizeNormalize({...L.size,[map[action]]:v});save();});
     if(action==='lp-size-apply')return step(()=>{const x=landSizeCalc();L.sim=landSimNormalize({...L.sim,mode:'cond',landTsubo:landTb(x.site),floorTsubo:landTb(x.floor)});L.view='sim';ui.overlay='';save();message('土地'+landTb(x.site)+'坪・建物'+landTb(x.floor)+'坪で計算しました');});
     return false;
   }
+  /* ===== 性能の見方（r86） ===== */
+  const LAND_HELP=[
+    {k:'seis',t:'耐震（耐震等級）',d:'地震に対する家の強さを、国の基準で3段階にしたもの。数字が大きいほど強い。',
+      lv:[['等級1','建築基準法の最低限。震度6強〜7でもすぐには倒れない'],['等級2','等級1の1.25倍の強さ（学校・病院なみ）'],['等級3','等級1の1.5倍。消防署・警察署なみで、いちばん上']],
+      foot:'このアプリの「耐震 等級3」は、その会社が標準としている等級（相当を含む）。正式な等級は契約前に「住宅性能評価書」で確認。'},
+    {k:'damp',t:'制震・免震',d:'耐震（家を強くする）に加えて、揺れそのものを小さくする仕組み。',
+      lv:[['耐震','柱や壁を強くして揺れに耐える。すべての家の基本'],['制震','壁の中の装置（ダンパー）が揺れを吸収。くり返しの地震で傷みにくい'],['免震','建物と地面の間に装置を入れ、揺れを伝えにくくする。費用は高め']],
+      foot:'「制震あり」は、その会社が制震の仕組みを標準またはおすすめとして用意していることを示します。'},
+    {k:'ins',t:'断熱（断熱等級）',d:'家から熱が逃げにくいかを、国の基準で7段階にしたもの。数字が大きいほど冬は暖かく夏は涼しく、冷暖房費が安くなる。',
+      lv:[['等級4','最低ライン。2025年4月からすべての新築で義務（UA値0.87）'],['等級5','省エネ住宅（ZEH）の水準。2030年に最低ラインになる予定（0.60）'],['等級6','等級4より冷暖房のエネルギーを約3割減らせる水準（0.46）'],['等級7','いちばん上。約4割減らせる水準（0.26）']],
+      foot:'UA値は家全体から逃げる熱の量で、小さいほど高性能。（ ）内は愛知県の多くの地域（6地域）の基準値。'},
+    {k:'air',t:'気密（すき間の少なさ）',d:'家のすき間の量。C値（床1㎡あたりのすき間の面積）で表し、小さいほどすき間が少なく、断熱や換気がきちんと働く。家ごとに測らないとわからない。',
+      lv:[['C値2.0前後','一般的な家の目安'],['C値1.0以下','「高気密」と言える目安'],['C値0.5以下','かなり高い気密']],
+      foot:'「気密測定」は、すべての家で引き渡し前にすき間を測っている会社。測定していれば数値を出してもらえます。'},
+    {k:'war',t:'保証（初期保証）',d:'引き渡しのあと、柱・基礎などの構造と雨漏りを無料で直してもらえる期間。',
+      lv:[['10年','法律で義務。どの会社でも最低10年'],['20年','中堅のメーカーに多い'],['30年以上','大手のメーカーに多い']],
+      foot:'「最長60年」などは、有料の点検や補修を受けて延長した場合の最長期間。初期保証の年数で比べるのが公平です。'}
+  ];
+  const LAND_HELP_MARKS='◎＝とても良い　○＝良い　△＝ふつう　—＝公表なし';
+  function landHelpScreen(){
+    const h=LAND_HELP.find(x=>x.k===ui.lpHelp)||LAND_HELP[0];
+    return modalFrame('性能の見方','<div class="panel detail grow lp-help">'+
+      '<div class="lp-sub">'+landSeg('lp-help',h.k,LAND_HELP.map(x=>[x.k,x.t.replace(/（.*$/,'')]),'lp-seg-fill')+'</div>'+
+      '<div class="lp-help-card"><b>'+esc(h.t)+'</b><p>'+esc(h.d)+'</p>'+
+        '<div class="lp-help-lv">'+h.lv.map(([a,b],i)=>'<div style="--i:'+i+'"><span>'+esc(a)+'</span><p>'+esc(b)+'</p></div>').join('')+'</div>'+
+        '<p class="lp-help-foot">'+esc(h.foot)+'</p></div>'+
+      '<p class="lp-note">'+LAND_HELP_MARKS+'（メーカー詳細の5つの評価）</p></div>');
+  }
   function overlay(){return ui.overlay==='land-detail'?landDetailScreen():ui.overlay==='land-settings'?landSettingsScreen():
-    ui.overlay==='land-about'?landAboutScreen():ui.overlay==='land-maker'?landMakerDetail():ui.overlay==='land-area'?landAreaScreen():ui.overlay==='land-town'?landTownScreen():ui.overlay==='land-commute'?landCommuteSettingsScreen():ui.overlay==='land-word'?landWordScreen():ui.overlay==='land-size'?landSizeScreen():'';}
+    ui.overlay==='land-about'?landAboutScreen():ui.overlay==='land-maker'?landMakerDetail():ui.overlay==='land-area'?landAreaScreen():ui.overlay==='land-town'?landTownScreen():ui.overlay==='land-commute'?landCommuteSettingsScreen():ui.overlay==='land-word'?landWordScreen():ui.overlay==='land-size'?landSizeScreen():ui.overlay==='land-help'?landHelpScreen():'';}
   function render(){
     if(!app)return;
     const liveMain=app.querySelector('main.main');
@@ -1691,7 +1723,7 @@
     const v=button.dataset.value;
     if(action==='hoppo-update-dismiss'){remoteRelease.notice='';renderReleaseBanner();return;}
     if(action==='hoppo-hard-refresh'){window.location.assign('./refresh.html?new='+encodeURIComponent(remoteRelease.latest||BUILD));return;}
-    if(action==='overlay-close')return closeOverlay();
+    if(action==='overlay-close'){if(ui.overlay==='land-help'&&ui.lpHelpBack){const b=ui.lpHelpBack;ui.lpHelpBack=null;return step(()=>{ui.overlay=b;});}return closeOverlay();}
     if(action.startsWith('lp-'))return landAction(action,v);
   }
   let touch=null,lastSwipeAt=0;

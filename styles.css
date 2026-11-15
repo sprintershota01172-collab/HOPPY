@@ -6437,3 +6437,21 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .lp-scale-row b small{font-size:8.5px}
 #app .lp-size .lp-note{font-size:9px!important;line-height:1.45}
 @media(max-height:700px){#app .lp-size{overflow-y:auto;overscroll-behavior:contain}#app .lp-size .lp-note{display:none}}
+
+/* r86: 性能の見方 */
+#app button.lp-score-tile{font:inherit;cursor:pointer}
+#app button.lp-spec-row{width:100%;border:0;border-top:1px solid #eef3f0;background:#fff;padding:0;text-align:left;font:inherit;cursor:pointer}
+#app button.lp-spec-row:first-child{border-top:0}
+#app .lp-spec-row span em{font-style:normal;color:#14785c;font-size:10px}
+#app .lp-help-btn{flex:none;margin-left:auto;height:28px;border:0;border-radius:14px;background:#e3f4ec;color:#14785c;font-size:11px;font-weight:900;padding:0 11px}
+#app .lp-help{display:flex;flex-direction:column;gap:7px}
+#app .lp-help .lp-seg>button{font-size:11px;padding:0 2px}
+#app .lp-help-card{flex:1;min-height:0;background:#fff;border:1px solid #e2ebe7;border-radius:14px;padding:11px 12px;display:flex;flex-direction:column;gap:8px;overflow:hidden;animation:lp-row-in .3s both}
+#app .lp-help-card>b{font-size:16px;font-weight:900;color:#173e32}
+#app .lp-help-card>p{margin:0;font-size:12.5px;line-height:1.6;color:#2d5a49;font-weight:700}
+#app .lp-help-lv{display:flex;flex-direction:column;gap:5px}
+#app .lp-help-lv>div{display:grid;grid-template-columns:78px 1fr;gap:8px;align-items:center;background:#f4f8f6;border-radius:10px;padding:7px 9px;animation:lp-row-in .3s calc(var(--i)*60ms) both}
+#app .lp-help-lv>div:last-child{background:#e6f6ee}
+#app .lp-help-lv span{font-size:12.5px;font-weight:900;color:#14785c}
+#app .lp-help-lv p{margin:0;font-size:11.5px;line-height:1.5;font-weight:700;color:#173e32}
+#app .lp-help-foot{font-size:11px!important;color:#6d8778!important;line-height:1.55!important}

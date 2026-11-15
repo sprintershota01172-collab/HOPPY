@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r80';
+  const BUILD = 'r81';
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
@@ -56,7 +56,7 @@
     if(raw)state=normalize(JSON.parse(raw));
     else{const legacy=localStorage.getItem(LEGACY_STORE);state=normalize(legacy?JSON.parse(legacy):{});}
   }catch(_){state=normalize({});}
-  let ui={tab:'land',overlay:'',lock:0,toast:null,lpPage:0,lpCity:null,lpMakerPage:0,lpGuidePage:0,lpMaker:null,lpCommutePage:0,lpAreaPage:0,lpAreaUse:'res',lpAreaOrder:'desc',lpTown:null,lpWorkResults:null,lpWho:0};
+  let ui={tab:'land',overlay:'',lock:0,toast:null,lpPage:0,lpCity:null,lpMakerPage:0,lpGuidePage:0,lpMaker:null,lpCommutePage:0,lpAreaPage:0,lpAreaUse:'res',lpAreaOrder:'desc',lpTown:null,lpWorkResults:null,lpWho:0,lpCmpPage:0,lpWord:'koji',map:null};
   let toastTimer=null;
   function save(){try{localStorage.setItem(STORE,JSON.stringify(state));}catch(_){message('端末に保存できませんでした');}}
   function step(action){if(Date.now()<ui.lock)return;ui.lock=Date.now()+130;action();render();}
@@ -83,7 +83,7 @@
   // state.land の初期値（defaults() から先に呼ばれるため定数を参照しない）
   function landDefaults(){
     return {type:'price',kind:'all',unit:'tsubo',order:'desc',filter:'all',radius:20,longSpan:5,
-      budgetView:'total',pointView:'price',pinFav:1,favorites:[],
+      budgetView:'total',pointView:'price',pinFav:1,favorites:[],favTowns:[],
       wishTsubo:50,buildingBudget:2500,manualBudget:0,
       view:'rank',makerSort:'asc',makerType:'all',guideTab:'region',guideScope:'all',sim:landSimDefaults(),commute:landCommuteDefaults()};
   }
@@ -99,10 +99,11 @@
       longSpan:Number(x.longSpan)===10?10:5,budgetView:pick('budgetView',['total','tsubo']),
       pointView:pick('pointView',['price','chg']),pinFav:x.pinFav===0?0:1,
       favorites:Array.isArray(x.favorites)?x.favorites.filter(c=>typeof c==='string'&&/^\d{5}$/.test(c)).slice(0,40):[],
+      favTowns:Array.isArray(x.favTowns)?x.favTowns.filter(c=>typeof c==='string'&&/^\d{5}\|.{1,40}$/.test(c)).slice(0,20):[],
       wishTsubo:clamp('wishTsubo',5,500),buildingBudget:clamp('buildingBudget',0,30000),
       manualBudget:clamp('manualBudget',0,100000),
-      view:pick('view',['rank','sim','maker','guide','commute']),makerSort:pick('makerSort',['asc','desc']),
-      makerType:pick('makerType',['all','全国','愛知','岐阜','鉄骨']),guideTab:pick('guideTab',['region','cond']),
+      view:pick('view',['rank','map','compare','sim','maker','guide','commute']),makerSort:pick('makerSort',['asc','desc']),
+      makerType:pick('makerType',['all','全国','愛知','岐阜','鉄骨']),guideTab:pick('guideTab',['region','cond','words']),
       guideScope:pick('guideScope',['all','名古屋市','尾張','知多','西三河','東三河','東濃','中濃']),sim:landSimNormalize(x.sim),commute:landCommuteNormalize(x.commute)
     };
   }
@@ -413,7 +414,7 @@
   }
   function landHeaderHtml(){
     const glow=!landBusy()&&landStale().stale;
-    return '<div class="lp-head"><span class="home-visual-title">地価調べ君 <i class="lp-head-sub">'+({rank:'RANKING',sim:'SIMULATOR',commute:'COMMUTE',maker:'MAKERS',guide:'GUIDE'})[state.land.view]+'</i></span><div class="lp-head-actions">'+
+    return '<div class="lp-head"><span class="home-visual-title">地価調べ君 <i class="lp-head-sub">'+({rank:'RANKING',map:'MAP',compare:'COMPARE',sim:'SIMULATOR',commute:'COMMUTE',maker:'MAKERS',guide:'GUIDE'})[state.land.view]+'</i></span><div class="lp-head-actions">'+
       '<button class="lp-icon" data-act="lp-settings" aria-label="地価ランキングの設定" title="設定">⚙</button>'+
       '<button class="lp-refresh'+(glow?' lp-glow':'')+(landBusy()?' is-busy':'')+'" data-act="lp-refresh" aria-label="地価データを最新にする"><span class="lp-refresh-icon" aria-hidden="true">🔄</span>最新にする</button></div></div>';
   }
@@ -456,6 +457,8 @@
     if(L.view==='sim')return '<section class="screen lp-screen lp-v-sim">'+landHeaderHtml()+views+landSimScreen()+'</section>';
     if(L.view==='maker')return '<section class="screen lp-screen lp-v-maker">'+landHeaderHtml()+views+landMakerScreen()+'</section>';
     if(L.view==='guide')return '<section class="screen lp-screen lp-v-guide">'+landHeaderHtml()+views+landGuideScreen()+'</section>';
+    if(L.view==='map')return '<section class="screen lp-screen lp-v-map">'+landHeaderHtml()+views+landMapScreen()+'</section>';
+    if(L.view==='compare')return '<section class="screen lp-screen lp-v-compare">'+landHeaderHtml()+views+landCompareScreen()+'</section>';
     if(L.view==='commute')return '<section class="screen lp-screen lp-v-commute">'+landHeaderHtml()+views+landCommuteScreen()+'</section>';
     return '<section class="screen lp-screen">'+landHeaderHtml()+views+landStampHtml()+
       '<div class="lp-types swipe-zone" data-swipe="lp-types" role="tablist" aria-label="ランキングの種類">'+LAND_TYPES.map(([k,l])=>
@@ -512,7 +515,7 @@
         '<div class="lp-points-empty">地点データは「🔄 最新にする」で取得されます</div>')+'</div>'+
       (j?'<button class="lp-budget-line" data-act="lp-settings"><span>'+L.wishTsubo+'坪の土地総額</span><b>'+landMan(j.total)+'</b>'+
         (j.grade===null?'<small>予算を設定 ›</small>':'<span class="rating-face '+faceClass(j.grade)+'">'+mark(j.grade)+'</span><small>土地予算 '+digits.format(Math.round(j.land/10000))+'万円・買える'+Math.floor(j.can)+'坪</small>')+'</button>':'')+
-      '<div class="lp-detail-actions"><button class="btn primary flex1" data-act="lp-sim-city" data-value="'+esc(c.code)+'">この市区町村で総額を計算</button><button class="btn flex1" data-act="lp-about">データについて</button></div>'+
+      '<div class="lp-detail-actions"><button class="btn primary flex1" data-act="lp-sim-city" data-value="'+esc(c.code)+'">総額を計算</button><button class="btn flex1" data-act="lp-map-city" data-value="'+esc(c.code)+'">地図で見る</button><button class="btn flex1" data-act="lp-word" data-value="koji">公示と調査</button></div>'+
       '<p class="lp-disclaimer">'+esc(landCreditText())+'</p></section></div>';
   }
   function landSettingsScreen(){
@@ -544,6 +547,7 @@
   }
   function landAction(action,v){
     if(landV3Action(action,v)!==false)return;
+    if(landV4Action(action,v)!==false)return;
     const L=state.land;
     const set=fn=>step(()=>{fn();ui.lpPage=0;ui.lpCommutePage=0;save();});
     if(action==='lp-type')return set(()=>{if(LAND_TYPES.some(x=>x[0]===v))L.type=v;});
@@ -559,7 +563,7 @@
     if(action==='lp-fav')return step(()=>{
       const on=L.favorites.includes(v);
       L.favorites=on?L.favorites.filter(x=>x!==v):[...L.favorites,v].slice(-40);save();
-      message(on?'お気に入りから外しました':'★お気に入りに追加しました（先頭に固定表示）');
+      message(on?'お気に入りから外しました':'★候補に追加しました（比較タブで比べられます）');
     });
     if(action==='lp-open')return openOverlay('land-detail',()=>{ui.lpCity=v;});
     if(action==='lp-sim-city')return step(()=>{if(landCity(v))L.sim.city=v;L.view='sim';ui.overlay='';save();});
@@ -573,7 +577,7 @@
     if(action==='lp-maker-page'){const total=Math.max(1,Math.ceil(landMakerList().length/landPerPage()));return step(()=>changePage('lpMakerPage',total,Number(v)));}
     if(action==='lp-maker-open')return openOverlay('land-maker',()=>{ui.lpMaker=v;});
     if(action==='lp-maker-sim')return step(()=>{if(landMakerById(v))L.sim.maker=v;L.view='sim';ui.overlay='';save();});
-    if(action==='lp-guide-tab')return step(()=>{L.guideTab=v==='cond'?'cond':'region';ui.lpGuidePage=0;save();});
+    if(action==='lp-guide-tab')return step(()=>{L.guideTab=['cond','words'].includes(v)?v:'region';ui.lpGuidePage=0;save();});
     if(action==='lp-guide-page')return step(()=>{ui.lpGuidePage=Math.max(0,(ui.lpGuidePage||0)+(Number(v)||0));});
     if(action==='lp-guide-region')return step(()=>{L.filter=LAND_REGION_FILTER[v]||'all';L.view='rank';ui.lpPage=0;save();});
     if(action==='lp-token-save'){
@@ -774,7 +778,7 @@
     flag:'旗竿地（細い通路の奥に敷地がある土地）は、近隣の相場より安く買えることが多い。日当たり・車の出し入れ・工事車両の入りやすさを確認。'
   };
   /* ===== 地価調べ君：相場シミュレーター・メーカー図鑑・土地ガイド（r76） ===== */
-  const LAND_VIEWS=[['rank','ランキング'],['sim','相場'],['commute','通勤'],['maker','メーカー'],['guide','土地']];
+  const LAND_VIEWS=[['rank','順位'],['map','地図'],['compare','比較'],['sim','相場'],['commute','通勤'],['maker','メーカー'],['guide','土地']];
   const LAND_EXTRA_RATE=0.25,LAND_COST_RATE=0.07;
   const LAND_REGION_FILTER={'名古屋市':'nagoya','尾張':'owari','知多':'chita','西三河':'nishi','東三河':'higashi','東濃':'gifu','中濃':'gifu'};
   const landDirGroup=d=>!d?null:/南/.test(d)?'南':/北/.test(d)?'北':d==='東'?'東':d==='西'?'西':null;
@@ -918,11 +922,12 @@
   }
   function landGuideScreen(){
     const L=state.land,tab=L.guideTab;
-    const head='<div class="lp-toggles">'+landSeg('lp-guide-tab',tab,[['region','地域の特徴'],['cond','土地の条件']],'lp-seg-fill')+
+    const head='<div class="lp-toggles">'+landSeg('lp-guide-tab',tab,[['region','地域の特徴'],['cond','土地の条件'],['words','用語']],'lp-seg-fill')+
       (tab==='cond'?'<label class="lp-guide-scope"><select data-lp-guide-scope aria-label="対象の地域"><option value="all">全域</option>'+LAND_REGION_ORDER.map(r=>'<option value="'+esc(r)+'"'+(L.guideScope===r?' selected':'')+'>'+esc(r)+'</option>').join('')+'</select></label>':'')+'</div>';
-    const per=(window.innerHeight||800)<700?(tab==='cond'?2:3):(tab==='cond'?3:4);
+    const per=(window.innerHeight||800)<700?(tab==='region'?3:2):(tab==='region'?4:3);
     let cards=[];
-    if(tab==='region'){
+    if(tab==='words')cards=LAND_WORDS.map(w=>landWordCard(w,false));
+    else if(tab==='region'){
       cards=LAND_REGION_ORDER.map(region=>{
         const rg=(landData?.regions||[]).find(r=>r.name===region),cs=(landData?.cities||[]).filter(c=>c.region===region&&c.residential?.all?.avgSqm);
         const sorted=cs.slice().sort((a,b)=>b.residential.all.avgSqm-a.residential.all.avgSqm);
@@ -948,7 +953,7 @@
     ui.lpGuidePage=Math.max(0,Math.min(ui.lpGuidePage||0,total-1));
     return head+'<div class="lp-guide-list swipe-zone" data-swipe="lp-guide" style="--lp-cards:'+per+'">'+cards.slice(ui.lpGuidePage*per,(ui.lpGuidePage+1)*per).join('')+'</div>'+
       '<div class="lp-foot">'+navPager(ui.lpGuidePage,total,'lp-guide-page')+'</div>'+
-      '<button class="lp-source" data-act="lp-about">'+(tab==='cond'?'標準地（典型的な土地）の比較。個別の土地の価格とは異なります ⓘ':'数値は国土数値情報の集計、文章は県・国の2026年地価公示の発表より ⓘ')+'</button>';
+      '<button class="lp-source" data-act="lp-about">'+(tab==='words'?'用語は国土交通省・国税庁・建築基準法の説明をもとに要約 ⓘ':tab==='cond'?'標準地（典型的な土地）の比較。個別の土地の価格とは異なります ⓘ':'数値は国土数値情報の集計、文章は県・国の2026年地価公示の発表より ⓘ')+'</button>';
   }
 
   /* ===== 地区別の地価・通勤コスト（r79） ===== */
@@ -1144,7 +1149,7 @@
     if(!t)return modalFrame('地区',empty('◔','データがありません',''));
     const rows=t.points.slice().sort((a,b)=>b.priceSqm-a.priceSqm).slice(0,(window.innerHeight||800)<700?4:6);
     const roadTxt=p=>[p.dir?p.dir+'道路':'',p.road?p.road+'m':'',p.side?'角地等':''].filter(Boolean).join(' ');
-    return '<div class="full lp-detail"><header class="full-header"><button class="btn compact" data-act="lp-back" data-value="land-area">‹ 戻る</button><strong>'+esc(c.name.replace(/^名古屋市/,'')+' '+t.name)+'</strong><span style="width:44px"></span></header>'+
+    return '<div class="full lp-detail"><header class="full-header"><button class="btn compact" data-act="lp-back" data-value="land-area">‹ 戻る</button><strong>'+esc(c.name.replace(/^名古屋市/,'')+' '+t.name)+'</strong>'+(()=>{const on=state.land.favTowns.includes(landTownKey(c.code,t.name));return '<button class="btn compact lp-star'+(on?' on':'')+'" data-act="lp-town-fav" aria-label="候補地に'+(on?'入っています':'追加')+'">'+(on?'★':'☆')+'</button>';})()+'</header>'+
       '<section class="full-body lp-detail-body">'+
       '<div class="lp-hero"><div class="lp-hero-main"><span>'+(ui.lpAreaUse==='com'?'商業地':'住宅地')+'の平均（'+t.points.length+'地点）</span><strong>'+landPriceHtml(t.avg)+'</strong><small>'+landPriceHtml(t.avg,{unit:state.land.unit==='tsubo'?'sqm':'tsubo',small:false})+'</small></div>'+
         '<div class="lp-hero-side"><b class="'+landTone(t.chg)+'">前年比 '+landPct(t.chg,1)+'</b>'+(t.commute?'<span>通勤 '+esc(landCommuteText(t.commute))+'</span><span>'+landYenText(t.commute.net)+'/月</span>':'<span>'+esc(c.name)+'</span>')+'</div></div>'+
@@ -1152,7 +1157,7 @@
         '<div class="lp-town-pt"><div><b>'+esc(landShortAddress(p.address,c))+'</b><small>'+(p.kind==='koji'?'地価公示':'地価調査')+(p.lot?' '+esc(p.lot):'')+(p.station?'・'+esc(p.station)+'駅'+(p.dist!=null?' '+(p.dist>=1000?(p.dist/1000).toFixed(1)+'km':p.dist+'m'):''):'')+'</small>'+
         '<small>'+esc([p.zone,roadTxt(p),p.area?Math.round(p.area/LAND_TSUBO)+'坪':''].filter(Boolean).join('・'))+'</small></div>'+
         '<div class="lp-town-val"><b>'+landPriceHtml(p.priceSqm)+'</b><span class="'+landTone(p.chg)+'">'+landPct(p.chg,1)+'</span>'+(p.chg5y!=null?'<small>5年 '+landPct(p.chg5y,1)+'</small>':'')+'</div></div>').join('')+'</div>'+
-      '<div class="lp-detail-actions"><button class="btn primary flex1" data-act="lp-sim-city" data-value="'+esc(c.code)+'">この市区町村で総額を計算</button></div>'+
+      '<div class="lp-detail-actions"><button class="btn primary flex1" data-act="lp-sim-city" data-value="'+esc(c.code)+'">総額を計算</button><button class="btn flex1" data-act="lp-map-here">地図で見る</button></div>'+
       '<p class="lp-disclaimer">'+esc(LAND_NOTE)+'。</p></section></div>';
   }
   function landV3Action(action,v){
@@ -1173,8 +1178,194 @@
     if(action==='lp-work-pick'){const r=ui.lpWorkResults?.[Number(v)];if(r)step(()=>landSetWork(r.title,r.lat,r.lon));return;}
     return false;
   }
+  /* ===== 用語ガイド・地図・候補地の比較（r81） ===== */
+  const LAND_WORDS=[
+    {k:'koji',t:'地価公示と地価調査の違い',tag:'いちばん大事',
+      d:'どちらも「更地として普通に売買したときの1㎡あたりの価格」を専門家が評価して公表するもので、評価の考え方は同じです。違いは「誰が・いつの時点で・どこを」調べるかです。',
+      rows:[['調べる人','国（国土交通省の土地鑑定委員会）','都道府県'],['時点','毎年1月1日','毎年7月1日'],['公表','3月下旬','9月下旬'],['地点','都市計画区域が中心（全国約2.6万地点）','区域外の郊外・山間部も含む（全国約2.1万地点）'],['評価','不動産鑑定士2人以上','不動産鑑定士1人以上']],
+      foot:'時点が半年ずれているので、2つを合わせると1年に2回の地価の動きがわかります。このアプリの「両方」は2つの地点をまとめて平均したものです。'},
+    {k:'std',t:'標準地・基準地',d:'地価公示で調べる地点を「標準地」、地価調査の地点を「基準地」と呼びます。その地域で形や広さ、道路の付き方がふつうの土地が選ばれます。同じ土地が両方に選ばれていることもあります。'},
+    {k:'tsubo',t:'坪単価と㎡単価',d:'1坪＝約3.3㎡（正確には3.305785㎡）。坪単価＝㎡単価×3.3。例えば1㎡あたり3万円なら1坪あたり約9.9万円で、50坪なら約496万円です。'},
+    {k:'chg',t:'前年比（変動率）',d:'前の年も調べた同じ地点どうしで、価格が何％変わったかの平均です。新しく選ばれた地点は含みません。プラスは値上がり、マイナスは値下がりです。'},
+    {k:'real',t:'実勢価格（実際の取引価格）',d:'実際に売買された価格です。売り手と買い手の事情で上下するので、地価公示より1〜2割高い・安いこともよくあります。国の「不動産情報ライブラリ」で調べられます。'},
+    {k:'rosen',t:'路線価（相続税路線価）',d:'相続税・贈与税の計算に使う、道路ごとの1㎡あたりの価格です。国税庁が毎年7月に公表し、地価公示のおよそ8割の水準が目安です。'},
+    {k:'kotei',t:'固定資産税評価額',d:'固定資産税を計算するための価格で、市町村が3年ごとに見直します。地価公示のおよそ7割の水準が目安です。'},
+    {k:'zone',t:'用途地域',d:'建てられる建物の種類を決めるルールです。「低層住居」は2〜3階建ての家が中心で静か、「中高層住居」はマンションも建つ、「住居」はお店も混ざる、「商業・工業」は住むには騒がしいこともあります。'},
+    {k:'ratio',t:'建ぺい率・容積率',d:'建ぺい率は「土地の何％まで建物で覆えるか」、容積率は「土地に対して延べ床面積を何％まで取れるか」です。例：50坪で建ぺい率60％なら1階は30坪まで、容積率100％なら延べ50坪までです。'},
+    {k:'road',t:'前面道路と接道義務',d:'家を建てるには、幅4m以上の道路に2m以上接している必要があります。道路が4m未満の場合は、道の中心から2m下がった所までしか使えません（セットバック）。'},
+    {k:'corner',t:'角地',d:'2つの道路に接している土地です。日当たりと開放感がよく、建ぺい率が10％増えることもありますが、人目が気になる・塀の費用がかさむ面もあります。'},
+    {k:'dir',t:'南道路・北道路',d:'道路がどの方角にあるかです。南道路は日当たりのよい庭とリビングを作りやすく人気があり、価格も少し高めです。北道路は安めで、家の南側に庭を取れます。'},
+    {k:'flag',t:'旗竿地',d:'細い通路の奥に敷地がある「旗」の形の土地です。相場より2〜3割安いことが多い反面、車の出し入れや日当たり、工事費に注意が必要です。'},
+    {k:'extra',t:'付帯工事費・諸費用',d:'付帯工事費は地盤改良・外構・給排水などで、このアプリでは建物本体の25％で計算しています。諸費用は登記・ローン手数料・火災保険・仲介手数料などで、総額の7％で計算しています。'},
+    {k:'btsubo',t:'建物の坪単価',d:'建物本体の価格÷延床面積です。会社ごとに含まれる範囲（照明・カーテン・外構など）が違うので、見積もりは総額で比べるのが安全です。'}
+  ];
+  function landWordCard(w,full){
+    return '<div class="lp-guide-card lp-word'+(w.k==='koji'?' is-key':'')+'"><div class="lp-guide-top"><b>'+esc(w.t)+'</b>'+(w.tag?'<span class="lp-word-tag">'+esc(w.tag)+'</span>':'')+'</div>'+
+      '<p>'+esc(w.d)+'</p>'+
+      (w.rows&&full?'<div class="lp-word-table"><span></span><b>地価公示</b><b>地価調査</b>'+w.rows.map(r=>'<span>'+esc(r[0])+'</span><i>'+esc(r[1])+'</i><i>'+esc(r[2])+'</i>').join('')+'</div>'+(w.foot?'<p>'+esc(w.foot)+'</p>':''):'')+
+      (w.rows&&!full?'<button class="lp-word-more" data-act="lp-word" data-value="'+w.k+'">表で比べる ›</button>':'')+'</div>';
+  }
+  function landWordScreen(){
+    const w=LAND_WORDS.find(x=>x.k===ui.lpWord)||LAND_WORDS[0];
+    return modalFrame('用語ガイド','<div class="panel detail grow lp-word-full">'+landWordCard(w,true)+'</div>');
+  }
+
+  /* --- 地図（地理院タイル） --- */
+  const LAND_MAP_TILE='https://cyberjapandata.gsi.go.jp/xyz/pale/';
+  const landMapDefault=()=>({lat:35.15,lon:137.05,z:9,use:'res',sel:null});
+  const landProj=(lat,lon,z)=>{const s=256*2**z,r=lat*Math.PI/180;return [(lon+180)/360*s,(1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*s];};
+  const landUnproj=(x,y,z)=>{const s=256*2**z,n=Math.PI-2*Math.PI*y/s;return [180/Math.PI*Math.atan(Math.sinh(n)),x/s*360-180];};
+  const LAND_MAP_BANDS=[[10,'〜10万'],[20,'〜20万'],[40,'〜40万'],[80,'〜80万'],[Infinity,'80万〜']];
+  const landBand=sqm=>{const t=sqm*LAND_TSUBO/10000;return LAND_MAP_BANDS.findIndex(b=>t<b[0]);};
+  function landMapScreen(){
+    const M=ui.map||(ui.map=landMapDefault());
+    const W=window.innerWidth||390,H=window.innerHeight||800,[cx,cy]=landProj(M.lat,M.lon,M.z),n=2**M.z;
+    let tiles='';
+    for(let tx=Math.floor((cx-W/2)/256);tx<=Math.floor((cx+W/2)/256);tx++)
+      for(let ty=Math.floor((cy-H/2)/256);ty<=Math.floor((cy+H/2)/256);ty++){
+        if(ty<0||ty>=n)continue;
+        tiles+='<img class="lp-tile" alt="" draggable="false" loading="lazy" onerror="this.remove()" src="'+LAND_MAP_TILE+M.z+'/'+((tx%n)+n)%n+'/'+ty+'.png" style="left:'+Math.round(tx*256-cx)+'px;top:'+Math.round(ty*256-cy)+'px">';
+      }
+    const use=M.use==='com'?'商業地':'住宅地';
+    const ok=new Set((landData?.cities||[]).filter(landCityIn).map(c=>c.code)),pts=(landData?.points||[]).filter(p=>p.use===use&&Number.isFinite(p.lat)&&ok.has(p.cityCode));
+    let marks='',count=0;
+    for(const p of pts){
+      const [x,y]=landProj(p.lat,p.lon,M.z),dx=x-cx,dy=y-cy;
+      if(Math.abs(dx)>W/2+20||Math.abs(dy)>H/2+20)continue;
+      count++;
+      const sel=M.sel===p.id;
+      marks+='<button class="lp-mk b'+landBand(p.priceSqm)+(sel?' is-sel':'')+(M.z>=13?' is-big':'')+'" style="left:'+Math.round(dx)+'px;top:'+Math.round(dy)+'px" data-act="lp-map-pt" data-value="'+esc(p.id)+'" aria-label="'+esc(p.address)+'">'+(M.z>=13?(p.priceSqm*LAND_TSUBO/10000).toFixed(p.priceSqm*LAND_TSUBO<1e6?1:0):'')+'</button>';
+    }
+    for(const P of landActivePeople()){
+      const [x,y]=landProj(P.lat,P.lon,M.z);
+      marks+='<span class="lp-mk-work'+(P.label==='妻'?' is-wife':'')+'" style="left:'+Math.round(x-cx)+'px;top:'+Math.round(y-cy)+'px">'+P.label+'</span>';
+    }
+    const p=M.sel&&(landData?.points||[]).find(x=>x.id===M.sel),c=p&&landCity(p.cityCode);
+    const card=p?'<div class="lp-map-card"><button class="lp-map-x" data-act="lp-map-close" aria-label="閉じる">×</button>'+
+      '<b>'+esc(c?c.name+' '+landShortAddress(p.address,c):p.address)+'</b>'+
+      '<small>'+(p.kind==='koji'?'地価公示':'地価調査')+(p.lot?' '+esc(p.lot):'')+(p.station?'・'+esc(p.station)+'駅'+(p.dist!=null?' '+(p.dist>=1000?(p.dist/1000).toFixed(1)+'km':p.dist+'m'):''):'')+(p.zone?'・'+esc(p.zone):'')+'</small>'+
+      '<div class="lp-map-card-row"><strong>'+landPriceHtml(p.priceSqm)+'</strong><span class="'+landTone(p.chg)+'">前年比 '+landPct(p.chg,1)+'</span>'+(p.chg5y!=null?'<span class="'+landTone(p.chg5y)+'">5年 '+landPct(p.chg5y,1)+'</span>':'')+'</div>'+
+      (c?'<div class="lp-map-card-btns"><button class="btn compact primary" data-act="lp-open" data-value="'+esc(c.code)+'">'+esc(c.name)+'を見る</button><button class="btn compact" data-act="lp-map-town" data-value="'+esc(p.id)+'">この地区</button></div>':'')+'</div>':'';
+    return '<div class="lp-map-tools">'+landSeg('lp-map-use',M.use,[['res','住宅地'],['com','商業地']])+'<div class="lp-map-legend">'+LAND_MAP_BANDS.map((b,i)=>'<span class="b'+i+'">'+b[1]+'</span>').join('')+'<em>万円/坪</em></div></div>'+
+      '<div class="lp-chips" role="group" aria-label="エリア">'+LAND_FILTERS.map(([k,l])=>'<button class="'+(state.land.filter===k?'active':'')+'" data-act="lp-filter" data-value="'+k+'">'+(k==='tajimi'?l+state.land.radius+'km':l)+'</button>').join('')+'</div>'+
+      '<div class="lp-map" data-map><div class="lp-map-layer" data-map-layer>'+tiles+marks+'</div>'+
+        '<div class="lp-map-zoom"><button data-act="lp-map-zoom" data-value="1" aria-label="拡大">＋</button><button data-act="lp-map-zoom" data-value="-1" aria-label="縮小">−</button><button data-act="lp-map-home" aria-label="全体を表示">⌂</button></div>'+
+        '<span class="lp-map-count">'+count+'地点</span>'+card+
+        '<a class="lp-map-attr" href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">地理院タイル</a></div>';
+  }
+  function landMapFocus(lat,lon,z){
+    ui.map={...(ui.map||landMapDefault()),lat,lon,z,sel:null};
+    state.land.view='map';ui.overlay='';save();
+  }
+  // 地図のドラッグ・ピンチ（指を離したら描き直す）
+  const landDrag={pts:new Map(),sx:0,sy:0,d0:0,dx:0,dy:0,s:1,moved:false,at:0};
+  function landMapDown(e){
+    const map=e.target.closest?.('[data-map]');if(!map)return;
+    landDrag.pts.set(e.pointerId,[e.clientX,e.clientY]);
+    if(landDrag.pts.size===1){landDrag.sx=e.clientX;landDrag.sy=e.clientY;landDrag.dx=0;landDrag.dy=0;landDrag.s=1;landDrag.moved=false;}
+    if(landDrag.pts.size===2){const [a,b]=[...landDrag.pts.values()];landDrag.d0=Math.hypot(a[0]-b[0],a[1]-b[1])/landDrag.s;}
+  }
+  function landMapMove(e){
+    if(!landDrag.pts.has(e.pointerId))return;
+    landDrag.pts.set(e.pointerId,[e.clientX,e.clientY]);
+    const layer=app.querySelector('[data-map-layer]');if(!layer)return;
+    if(landDrag.pts.size===1){landDrag.dx=e.clientX-landDrag.sx;landDrag.dy=e.clientY-landDrag.sy;}
+    else if(landDrag.pts.size===2&&landDrag.d0){const [a,b]=[...landDrag.pts.values()];landDrag.s=Math.max(.25,Math.min(8,Math.hypot(a[0]-b[0],a[1]-b[1])/landDrag.d0));}
+    if(!landDrag.moved&&(Math.hypot(landDrag.dx,landDrag.dy)>6||landDrag.s!==1)){landDrag.moved=true;try{app.querySelector('[data-map]').setPointerCapture(e.pointerId);}catch(_){}}
+    if(landDrag.moved){e.preventDefault?.();layer.style.transform='translate('+landDrag.dx+'px,'+landDrag.dy+'px) scale('+landDrag.s+')';}
+  }
+  function landMapUp(e){
+    if(!landDrag.pts.has(e.pointerId))return;
+    landDrag.pts.delete(e.pointerId);
+    if(landDrag.pts.size)return;
+    if(!landDrag.moved)return;
+    landDrag.at=Date.now();
+    const M=ui.map,[cx,cy]=landProj(M.lat,M.lon,M.z),[lat,lon]=landUnproj(cx-landDrag.dx/landDrag.s,cy-landDrag.dy/landDrag.s,M.z);
+    const z=Math.max(6,Math.min(17,M.z+Math.round(Math.log2(landDrag.s))));
+    ui.map={...M,lat:Math.max(20,Math.min(46,lat)),lon:Math.max(122,Math.min(154,lon)),z};
+    render();
+  }
+
+  /* --- 候補地の比較 --- */
+  const landTownKey=(code,name)=>code+'|'+name;
+  function landTownStat(c,name){
+    const ps=(landData?.points||[]).filter(p=>p.cityCode===c.code&&p.use==='住宅地'&&landTownOf(p,c)===name);
+    if(!ps.length)return null;
+    const avg=a=>{a=a.filter(landFinite);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null;};
+    const geo=ps.filter(p=>Number.isFinite(p.lat));
+    return {sqm:avg(ps.map(p=>p.priceSqm)),chg:avg(ps.map(p=>p.chg)),chg5y:avg(ps.map(p=>p.chg5y)),n:ps.length,
+      center:geo.length?{lat:avg(geo.map(p=>p.lat)),lon:avg(geo.map(p=>p.lon))}:null,
+      station:ps.map(p=>p.station).find(Boolean)||''};
+  }
+  function landCandidates(){
+    const L=state.land,out=[];
+    for(const code of L.favorites){
+      const c=landCity(code);if(!c)continue;
+      const r=c.residential||{},all=r.all||{};
+      out.push({id:code,kind:'city',c,name:c.name,sub:c.region,sqm:all.avgSqm||r.koji?.avgSqm||r.chosa?.avgSqm||null,chg:all.chg,chg5y:r.chg5y,n:all.count||0,center:landCentroids().get(code)});
+    }
+    for(const key of L.favTowns){
+      const [code,name]=key.split('|'),c=landCity(code),s=c&&landTownStat(c,name);
+      if(!s)continue;
+      out.push({id:key,kind:'town',c,name:name,sub:c.name,sqm:s.sqm,chg:s.chg,chg5y:s.chg5y,n:s.n,center:s.center,station:s.station});
+    }
+    return out;
+  }
+  function landTotalFor(sqm){
+    const S=state.land.sim,maker=S.maker==='avg'?landMakerAvg():(landMakerById(S.maker)||landMakerAvg());
+    const land=landFinite(sqm)?sqm*LAND_TSUBO*S.landTsubo:0,body=(maker[S.grade]||maker.mid)*10000*S.floorTsubo,extra=body*LAND_EXTRA_RATE;
+    return {land,total:(land+body+extra)*(1+LAND_COST_RATE)};
+  }
+  function landCompareScreen(){
+    const cands=landCandidates(),C=state.land.commute,S=state.land.sim;
+    if(!cands.length)return '<div class="lp-commute-empty"><strong>候補地を比べられます</strong><span>ランキングや市区町村の詳細で☆、地区の画面で☆を押すと、ここに並びます。地価・総額・通勤を横に並べて比べられます。</span><button class="btn primary wide" data-act="lp-view" data-value="rank">ランキングから選ぶ</button></div>';
+    const per=(window.innerWidth||390)<360?2:3,total=Math.max(1,Math.ceil(cands.length/per));
+    ui.lpCmpPage=Math.max(0,Math.min(ui.lpCmpPage||0,total-1));
+    const page=cands.slice(ui.lpCmpPage*per,(ui.lpCmpPage+1)*per);
+    const rows=cands.map(x=>{const t=landTotalFor(x.sqm),cm=landCommute(x.center);return {x,t,cm,lt:cm?t.land+cm.total:null};});
+    const byId=new Map(rows.map(r=>[r.x.id,r]));
+    const best=(f,dir=1)=>{const v=rows.map(f).filter(landFinite);return v.length>1?(dir>0?Math.min(...v):Math.max(...v)):null;};
+    const metric=(label,f,fmt,dir)=>{const b=dir?best(f,dir):null;return '<span class="lp-cmp-label">'+label+'</span>'+page.map(x=>{const v=f(byId.get(x.id));return '<span class="lp-cmp-cell'+(b!=null&&v===b?' is-best':'')+'">'+fmt(v,byId.get(x.id))+'</span>';}).join('')+(page.length<per?'<span></span>'.repeat(per-page.length):'');};
+    const tone=v=>'<b class="'+landTone(v)+'">'+landPct(v,1)+'</b>';
+    const two=landActivePeople().length>1;
+    return '<div class="lp-cmp" style="--cols:'+per+'">'+
+      '<span class="lp-cmp-label lp-cmp-corner">'+cands.length+'件</span>'+page.map(x=>'<div class="lp-cmp-head"><button class="lp-cmp-name" data-act="'+(x.kind==='city'?'lp-open':'lp-cmp-town')+'" data-value="'+esc(x.id)+'"><b>'+esc(x.name.replace(/^名古屋市/,''))+'</b><small>'+esc(x.kind==='town'?x.sub.replace(/^名古屋市/,'名古屋 '):x.sub)+(x.kind==='town'?'・地区':'')+'</small></button><button class="lp-cmp-x" data-act="lp-cmp-remove" data-value="'+esc(x.id)+'" aria-label="'+esc(x.name)+'を候補から外す">×</button></div>').join('')+(page.length<per?'<span></span>'.repeat(per-page.length):'')+
+      metric('住宅地の<br>平均',r=>r.x.sqm,v=>'<b>'+landPriceHtml(v,{unit:'tsubo'})+'</b>',1)+
+      metric('前年比',r=>r.x.chg,v=>tone(v))+
+      metric('5年の<br>変化',r=>r.x.chg5y,v=>tone(v))+
+      metric('土地'+S.landTsubo+'坪',r=>r.t.land||null,v=>'<b>'+landMan(v)+'</b>',1)+
+      metric('総額の<br>目安',r=>r.t.total,v=>'<b>'+landMan(v)+'</b>',1)+
+      (landHasWork()?
+        metric('通勤'+(two?'<br>（2人計）':''),r=>r.cm?.minutes,(v,r)=>v==null?'—':'<b>'+v+'分</b>'+(two?'<small>'+esc(r.cm.parts.map(p=>p.label+p.minutes).join('・'))+'</small>':''),1)+
+        metric('通勤費<br>（月）',r=>r.cm?.net,v=>v==null?'—':'<b>'+landYenText(v)+'</b>',1)+
+        metric('土地＋<br>通勤'+C.years+'年',r=>r.lt,v=>'<b>'+landMan(v)+'</b>',1):
+        '<button class="lp-cmp-commute" data-act="lp-commute-settings">勤務先を入れると通勤時間・費用も比べられます ›</button>')+
+      metric('地点数',r=>r.x.n,(v,r)=>v+'地点'+(v<3?'<small class="lp-ref">参考</small>':''))+
+      '</div>'+
+      '<div class="lp-foot">'+navPager(ui.lpCmpPage,total,'lp-cmp-page')+'</div>'+
+      '<button class="lp-source" data-act="lp-view" data-value="sim">総額は「相場」の設定（建物'+S.floorTsubo+'坪・メーカー・グレード）で計算。緑はいちばん有利 ⓘ</button>';
+  }
+  function landV4Action(action,v){
+    const L=state.land;
+    if(action==='lp-word')return openOverlay('land-word',()=>{ui.lpWord=v;});
+    if(action==='lp-map-zoom')return step(()=>{const M=ui.map||landMapDefault();ui.map={...M,z:Math.max(6,Math.min(17,M.z+(Number(v)||0)))};});
+    if(action==='lp-map-home')return step(()=>{ui.map={...landMapDefault(),use:ui.map?.use||'res'};});
+    if(action==='lp-map-use')return step(()=>{ui.map={...(ui.map||landMapDefault()),use:v==='com'?'com':'res',sel:null};});
+    if(action==='lp-map-close')return step(()=>{ui.map={...ui.map,sel:null};});
+    if(action==='lp-map-pt'){if(Date.now()-landDrag.at<400)return;return step(()=>{ui.map={...ui.map,sel:ui.map?.sel===v?null:v};});}
+    if(action==='lp-map-town'){const p=(landData?.points||[]).find(x=>x.id===v),c=p&&landCity(p.cityCode);if(!c)return;
+      return openOverlay('land-town',()=>{ui.lpCity=c.code;ui.lpAreaUse=p.use==='商業地'?'com':'res';ui.lpTown=landTownOf(p,c);});}
+    if(action==='lp-map-city'){const c=landCity(v),pt=c&&landCentroids().get(c.code);if(pt)return step(()=>landMapFocus(pt.lat,pt.lon,13));return;}
+    if(action==='lp-map-here'){const c=landCity(ui.lpCity),t=c&&landTownStat(c,ui.lpTown);if(t?.center)return step(()=>landMapFocus(t.center.lat,t.center.lon,15));return;}
+    if(action==='lp-town-fav')return step(()=>{const k=landTownKey(ui.lpCity,ui.lpTown),on=L.favTowns.includes(k);
+      L.favTowns=on?L.favTowns.filter(x=>x!==k):[...L.favTowns,k].slice(-20);save();message(on?'候補から外しました':'候補に追加しました（比較タブ）');});
+    if(action==='lp-cmp-remove')return step(()=>{if(v.includes('|'))L.favTowns=L.favTowns.filter(x=>x!==v);else L.favorites=L.favorites.filter(x=>x!==v);save();});
+    if(action==='lp-cmp-town'){const [code,name]=String(v).split('|');return openOverlay('land-town',()=>{ui.lpCity=code;ui.lpAreaUse='res';ui.lpTown=name;});}
+    if(action==='lp-cmp-page'){const total=Math.max(1,Math.ceil(landCandidates().length/((window.innerWidth||390)<360?2:3)));return step(()=>changePage('lpCmpPage',total,Number(v)));}
+    return false;
+  }
   function overlay(){return ui.overlay==='land-detail'?landDetailScreen():ui.overlay==='land-settings'?landSettingsScreen():
-    ui.overlay==='land-about'?landAboutScreen():ui.overlay==='land-maker'?landMakerDetail():ui.overlay==='land-area'?landAreaScreen():ui.overlay==='land-town'?landTownScreen():ui.overlay==='land-commute'?landCommuteSettingsScreen():'';}
+    ui.overlay==='land-about'?landAboutScreen():ui.overlay==='land-maker'?landMakerDetail():ui.overlay==='land-area'?landAreaScreen():ui.overlay==='land-town'?landTownScreen():ui.overlay==='land-commute'?landCommuteSettingsScreen():ui.overlay==='land-word'?landWordScreen():'';}
   function render(){
     if(!app)return;
     const liveMain=app.querySelector('main.main');
@@ -1217,6 +1408,10 @@
       if(ui.overlay==='land-settings')render();
     }
   });
+  app.addEventListener('pointerdown',landMapDown);
+  window.addEventListener('pointermove',landMapMove,{passive:false});
+  window.addEventListener('pointerup',landMapUp);window.addEventListener('pointercancel',landMapUp);
+  app.addEventListener('wheel',e=>{if(!e.target.closest?.('[data-map]'))return;e.preventDefault();landV4Action('lp-map-zoom',e.deltaY<0?'1':'-1');},{passive:false});
   app.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target?.dataset?.lpWorkQuery!==undefined){e.preventDefault();landWorkSearch(e.target.value);}});
   app.addEventListener('touchstart',e=>{const zone=e.target.closest('.swipe-zone');if(!zone||e.target.closest('input,textarea,select,label')){touch=null;return;}touch={x:e.changedTouches[0].clientX,y:e.changedTouches[0].clientY,zone:zone.dataset.swipe||''};},{passive:true});
   app.addEventListener('touchend',e=>{

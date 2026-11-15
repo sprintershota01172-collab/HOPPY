@@ -6243,3 +6243,68 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .lp-work-now{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;font-weight:800;color:#2d5a49;min-height:26px}
 #app .lp-work-now span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #app .lp-work-now .btn{height:26px;min-height:26px;padding:0 10px;font-size:11px}
+
+/* r81: 地図・比較・用語 */
+#app .lp-views{grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+#app .lp-views>button{font-size:11px;padding:0 1px;letter-spacing:-.02em}
+@media(max-width:374px){#app .lp-views>button{font-size:10px;letter-spacing:-.05em}}
+/* 用語 */
+#app .lp-word.is-key{border-color:#9fd4bd;background:#f3fbf7}
+#app .lp-word-tag{font-size:9.5px;font-weight:900;color:#fff;background:#e0763a;border-radius:7px;padding:2px 6px}
+#app .lp-word-more{align-self:flex-start;border:0;background:#e3f4ec;color:#14785c;font-size:11px;font-weight:900;border-radius:8px;padding:4px 9px}
+#app .lp-word-full{display:flex;flex-direction:column}
+#app .lp-word-full .lp-guide-card{flex:1;overflow:hidden;animation:none}
+#app .lp-word-full p{font-size:12px;line-height:1.65}
+#app .lp-word-table{display:grid;grid-template-columns:64px 1fr 1fr;gap:1px;background:#d7e6de;border:1px solid #d7e6de;border-radius:10px;overflow:hidden;margin:4px 0}
+#app .lp-word-table>*{background:#fff;padding:6px 7px;font-size:11px;line-height:1.45;font-style:normal}
+#app .lp-word-table>b{background:#1a735d;color:#fff;font-weight:900;text-align:center}
+#app .lp-word-table>b:nth-of-type(2){background:#2f6fb5}
+#app .lp-word-table>span{background:#f2f7f4;font-weight:850;color:#4d6b5c}
+#app .lp-word-table>i{color:#173e32;font-weight:700}
+/* 地図 */
+#app .lp-map-tools{flex:none;display:flex;align-items:center;gap:6px}
+#app .lp-map-legend{flex:1;display:flex;align-items:center;gap:2px;min-width:0;overflow:hidden}
+#app .lp-map-legend span{flex:1;text-align:center;font-size:8.5px;font-weight:850;color:#fff;border-radius:5px;padding:3px 0;white-space:nowrap}
+#app .lp-map-legend em{font-style:normal;font-size:8.5px;color:#6d8778;font-weight:800;white-space:nowrap}
+#app .b0{--mk:#3d9b6e}#app .b1{--mk:#8fb43a}#app .b2{--mk:#e3a72f}#app .b3{--mk:#e0763a}#app .b4{--mk:#c8414b}
+#app .lp-map-legend span{background:var(--mk)}
+#app .lp-map{position:relative;flex:1;min-height:0;overflow:hidden;border-radius:14px;background:#e9efe9;border:1px solid #dbe6e0;touch-action:none;user-select:none;-webkit-user-select:none}
+#app .lp-map-layer{position:absolute;left:50%;top:50%;width:0;height:0;transform-origin:0 0;will-change:transform}
+#app .lp-tile{position:absolute;width:256px;height:256px;max-width:none;pointer-events:none;-webkit-user-drag:none}
+#app .lp-mk{position:absolute;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;border:1.5px solid #fff;background:var(--mk);box-shadow:0 1px 3px #0005;padding:0;font-size:0}
+#app .lp-mk::before{content:"";position:absolute;inset:-9px}
+#app .lp-mk.is-big{width:auto;height:18px;min-width:30px;margin:-9px 0 0 -15px;border-radius:9px;font-size:10px;font-weight:900;color:#fff;padding:0 4px;line-height:15px}
+#app .lp-mk.is-sel{z-index:3;outline:3px solid #173e32;outline-offset:1px;transform:scale(1.25)}
+#app .lp-mk-work{position:absolute;z-index:2;margin:-13px 0 0 -13px;width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#1a735d;color:#fff;font-size:11px;font-weight:900;display:grid;place-items:center;box-shadow:0 2px 5px #0006;pointer-events:none}
+#app .lp-mk-work.is-wife{background:#c25b7a}
+#app .lp-map-zoom{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:4px;z-index:4}
+#app .lp-map-zoom button{width:36px;height:36px;border-radius:10px;border:1px solid #d6e3dc;background:#fffffff0;font-size:18px;font-weight:900;color:#173e32;box-shadow:0 2px 6px #12382a22}
+#app .lp-map-count{position:absolute;left:8px;top:8px;z-index:4;font-size:10px;font-weight:850;background:#fffffff0;color:#4d6b5c;border-radius:8px;padding:3px 7px}
+#app .lp-map-attr{position:absolute;right:4px;bottom:2px;z-index:4;font-size:8.5px;color:#4d6b5c;background:#ffffffc0;padding:0 3px;border-radius:3px;text-decoration:none}
+#app .lp-map-card{position:absolute;left:8px;right:8px;bottom:14px;z-index:5;background:#fff;border-radius:14px;padding:9px 11px;box-shadow:0 6px 20px #12382a40;display:flex;flex-direction:column;gap:3px;animation:lp-row-in .3s both}
+#app .lp-map-card>b{font-size:13px;font-weight:900;color:#173e32;padding-right:26px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-map-card>small{font-size:10px;color:#6d8778;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-map-card-row{display:flex;align-items:baseline;gap:9px}
+#app .lp-map-card-row strong{font-size:17px;font-weight:900;color:#173e32}
+#app .lp-map-card-row span{font-size:11px;font-weight:850}
+#app .lp-map-card-btns{display:flex;gap:6px;margin-top:2px}
+#app .lp-map-card-btns .btn{flex:1}
+#app .lp-map-x{position:absolute;right:6px;top:6px;width:28px;height:28px;border:0;border-radius:50%;background:#eef4f1;font-size:15px;font-weight:900;color:#4d6b5c}
+/* 比較 */
+#app .lp-cmp{flex:1;min-height:0;display:grid;grid-template-columns:62px repeat(var(--cols),minmax(0,1fr));grid-auto-rows:minmax(0,auto);align-content:start;gap:1px;background:#e2ebe7;border:1px solid #e2ebe7;border-radius:14px;overflow:hidden}
+#app .lp-cmp>*{background:#fff;min-width:0}
+#app .lp-cmp-label{display:flex;align-items:center;padding:6px 6px;font-size:9.5px;font-weight:850;color:#4d6b5c;background:#f4f8f6;line-height:1.25}
+#app .lp-cmp-corner{font-size:10px;color:#14785c;justify-content:center}
+#app .lp-cmp-head{position:relative;background:#173e32}
+#app .lp-cmp-name{width:100%;border:0;background:transparent;text-align:left;padding:6px 20px 6px 7px;display:flex;flex-direction:column;gap:1px;color:#fff}
+#app .lp-cmp-name b{font-size:12px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-cmp-name small{font-size:9px;color:#b9d9cb;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-cmp-x{position:absolute;right:2px;top:2px;width:20px;height:20px;border:0;border-radius:50%;background:#ffffff26;color:#fff;font-size:12px;font-weight:900;padding:0}
+#app .lp-cmp-cell{display:flex;flex-direction:column;justify-content:center;padding:6px 7px;gap:1px;min-height:38px}
+#app .lp-cmp-cell b{font-size:12.5px;font-weight:900;color:#173e32;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-cmp-cell b small{font-size:9px}
+#app .lp-cmp-cell small{font-size:9px;color:#6d8778;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-cmp-cell.is-best{background:#e6f6ee}
+#app .lp-cmp-cell.is-best b{color:#0f7a53}
+#app .lp-cmp-commute{grid-column:1/-1;border:0;background:#f6fbf8;color:#14785c;font-size:11px;font-weight:850;padding:9px;text-align:center}
+@media(max-height:700px){#app .lp-cmp-cell{min-height:32px;padding:4px 6px}#app .lp-cmp-label{padding:4px 5px}}

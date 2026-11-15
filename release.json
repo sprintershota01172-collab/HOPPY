@@ -1,10 +1,10 @@
 {
-  "version": "r95",
+  "version": "r96",
   "ui": "land-only",
   "revised": "2026-11-15",
   "data_schema": "chika-shirabe-v1",
-  "entrypoint": "visual-r95.html",
+  "entrypoint": "visual-r96.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Beginner-friendly price guide and budget split presets"
+  "release_note": "Stations and railway lines, input shift fix"
 }

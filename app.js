@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r95';
+  const BUILD = 'r96';
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
@@ -94,10 +94,10 @@
     return {
       type:pick('type',['price','yoy','long','trade','house','budget','point','station']),
       kind:pick('kind',['koji','chosa','all']),unit:pick('unit',['sqm','tsubo']),order:pick('order',['desc','asc']),
-      filter:pick('filter',['all','fav','nagoya','owari','chita','nishi','higashi','gifu']),
+      filter:(v=>typeof v==='string'&&(LAND_FILTERS.some(x=>x[0]===v)||(v.startsWith('line:')&&v.length<40)))(x.filter)?x.filter:'all',
       radius:[10,20,30].includes(Number(x.radius))?Number(x.radius):d.radius,
       longSpan:Number(x.longSpan)===10?10:5,budgetView:pick('budgetView',['total','tsubo']),
-      pointView:pick('pointView',['price','chg']),pinFav:x.pinFav===0?0:1,
+      pointView:pick('pointView',['price','chg']),pinFav:x.pinV===2?(x.pinFav===0?0:1):0,pinV:2,
       favorites:Array.isArray(x.favorites)?x.favorites.filter(c=>typeof c==='string'&&/^\d{5}$/.test(c)).slice(0,40):[],
       favTowns:Array.isArray(x.favTowns)?x.favTowns.filter(c=>typeof c==='string'&&/^\d{5}\|.{1,40}$/.test(c)).slice(0,20):[],
       wishTsubo:clamp('wishTsubo',5,500),buildingBudget:clamp('buildingBudget',0,30000),
@@ -158,6 +158,7 @@
     }
     if(!state.land.seenGuide&&!ui.overlay){state.land.seenGuide=1;save();ui.overlay='land-howto';ui.lpHowto='';}
     landRepaint();
+    landLoadStations();
     landCheckPublished();
   }
   // 公開中の data/landprice.json を確認（起動時・画面復帰時・トークン未設定時の「最新にする」）
@@ -267,6 +268,7 @@
   function landCityIn(c){
     if(!c)return false;
     const f=state.land.filter;
+    if(f.startsWith('line:')){const R=landRail(),L=R?.lines.find(l=>'line:'+l.label===f);return L?L.cities.has(c.code):true;}
     if(f==='fav')return state.land.favorites.includes(c.code)||state.land.favTowns.some(k=>k.startsWith(c.code+'|'));
     const regions=LAND_FILTER_REGIONS[f];
     return !regions||regions.includes(c.region);
@@ -420,9 +422,10 @@
       '<button class="lp-icon'+(glow?' has-dot':'')+(landBusy()?' is-busy':'')+'" data-act="lp-settings" aria-label="設定・データ更新" title="設定・データ更新">⚙</button></div></div>';
   }
   function landAreaSelect(){
-    const f=state.land.filter,label=(LAND_FILTERS.find(x=>x[0]===f)||LAND_FILTERS[0])[1];
+    const f=state.land.filter,label=landLineFilterLabel(f)||(LAND_FILTERS.find(x=>x[0]===f)||LAND_FILTERS[0])[1],R=landRail();
     return '<label class="lp-area-pick'+(f!=='all'?' is-on':'')+'"><span aria-hidden="true">📍</span><b>'+esc(f==='all'?'全域':label)+'</b><i aria-hidden="true">▾</i>'+
-      '<select data-lp-area aria-label="エリアを選ぶ">'+LAND_FILTERS.map(([k,l])=>'<option value="'+k+'"'+(k===f?' selected':'')+'>'+esc(l)+'</option>').join('')+'</select></label>';
+      '<select data-lp-area aria-label="エリアを選ぶ"><optgroup label="地域">'+LAND_FILTERS.map(([k,l])=>'<option value="'+k+'"'+(k===f?' selected':'')+'>'+esc(l)+'</option>').join('')+'</optgroup>'+
+      (R?'<optgroup label="沿線">'+R.lines.map(L=>'<option value="line:'+esc(L.label)+'"'+('line:'+L.label===f?' selected':'')+'>'+esc(L.label)+'沿線</option>').join('')+'</optgroup>':'')+'</select></label>';
   }
   function landSeg(act,current,opts,cls=''){
     return '<div class="lp-seg '+cls+'" role="group">'+opts.map(([v,l])=>'<button class="'+(String(current)===String(v)?'active':'')+'" data-act="'+act+'" data-value="'+v+'" aria-pressed="'+(String(current)===String(v))+'">'+l+'</button>').join('')+'</div>';
@@ -1925,7 +1928,7 @@
       '<p class="lp-fs-hint">借りられる額 <b>'+landMan(B.loan*10000)+'</b> ＋ 頭金 → 総額 <b>'+landMan(B.total*10000)+'</b></p>';}
     else if(st===3){q='どんな家にする？';mood='think';body='<div class="lp-fs-types">'+LAND_TYPES_BUY.map(([k,t,d])=>'<button class="'+(F.type===k?'active':'')+'" data-act="lp-fs-type" data-value="'+k+'">'+
       (k==='order'?'<span class="lp-fs-ic">🏗️</span>':k==='ready'?'<span class="lp-fs-ic">🏠</span>':'<span class="lp-fs-ic">⚖️</span>')+'<b>'+t+'</b><small>'+d+'</small></button>').join('')+'</div>';}
-    else{q='どのあたりに住みたい？';body='<div class="lp-fs-areas">'+LAND_FILTERS.map(([k,l])=>'<button class="'+(state.land.filter===k?'active':'')+'" data-act="lp-fs-area" data-value="'+k+'">'+esc(k==='all'?'全部（愛知＋岐阜東濃・中濃）':l)+'</button>').join('')+'</div>';}
+    else{q='どのあたりに住みたい？';body='<div class="lp-sub">'+landSeg('lp-fs-areamode',ui.lpAreaMode==='line'?'line':'area',[['area','地域で選ぶ'],['line','沿線で選ぶ']],'lp-seg-fill')+'</div>'+(ui.lpAreaMode==='line'?'<div class="lp-line-chips">'+landLineChips()+'</div>':'<div class="lp-fs-areas">'+LAND_FILTERS.map(([k,l])=>'<button class="'+(state.land.filter===k?'active':'')+'" data-act="lp-fs-area" data-value="'+k+'">'+esc(k==='all'?'全部（愛知＋岐阜東濃・中濃）':l)+'</button>').join('')+'</div>')+'';}
     return '<div class="lp-fs">'+
       '<div class="lp-fs-prog">'+[1,2,3,4].map(n=>'<button class="'+(n===st?'is-cur':n<st?'is-done':'')+'" data-act="lp-fs-step" data-value="'+n+'">'+(n<st?'✓':n)+'</button>').join('<i></i>')+'</div>'+
       landSay('<b class="lp-fs-q">'+q+'</b>',mood,'lp-fs-say')+
@@ -1935,7 +1938,7 @@
   }
   function landFindSummary(){
     const F=state.land.find,M=state.land.money,B=landFindBudget();
-    const area=(LAND_FILTERS.find(x=>x[0]===state.land.filter)||LAND_FILTERS[0])[1].replace(/（.*$/,'');
+    const area=landLineFilterLabel(state.land.filter)||(LAND_FILTERS.find(x=>x[0]===state.land.filter)||LAND_FILTERS[0])[1].replace(/（.*$/,'');
     return '<div class="lp-fs-sum">'+[[1,'月'+F.monthly+'万'],[2,'頭金'+(M.own||0)+'万'],[3,({order:'注文',ready:'建売',both:'注文・建売'})[F.type]],[4,area]].map(([n,t])=>'<button data-act="lp-fs-step" data-value="'+n+'">'+esc(t)+'</button>').join('')+'</div>'+
       '<button class="lp-find-total" data-act="lp-loan-open" data-value="find"><span>借入'+landMan(B.loan*10000)+'＋頭金'+(B.own?landMan(B.own*10000):'0円')+'</span><b>総額 '+landMan(B.total*10000)+' <i>金利 ›</i></b></button>';
   }
@@ -2028,7 +2031,8 @@
     if(action==='lp-fs-own')return step(()=>{L.money=landMoneyNormalize({...L.money,own:Math.max(0,(L.money.own||0)+Number(v)*50)});save();});
     if(action==='lp-fs-own-set')return step(()=>{L.money=landMoneyNormalize({...L.money,own:Number(v)});save();});
     if(action==='lp-fs-type')return step(()=>set({type:v,step:4}));
-    if(action==='lp-fs-area')return step(()=>{if(LAND_FILTERS.some(x=>x[0]===v))L.filter=v;set({step:0});});
+    if(action==='lp-fs-area')return step(()=>{if((v=>typeof v==='string'&&(LAND_FILTERS.some(x=>x[0]===v)||(v.startsWith('line:')&&v.length<40)))(v))L.filter=v;set({step:0});});
+    if(action==='lp-fs-areamode')return step(()=>{ui.lpAreaMode=v==='line'?'line':'area';});
     if(action==='lp-find-ready')return openOverlay('land-ready',()=>{ui.lpReadyCity=v;ui.lpReadyTab='res';});
     if(action==='lp-ready-tab')return step(()=>{ui.lpReadyTab=v==='basis'?'basis':'res';});
     return false;
@@ -2044,9 +2048,9 @@
       const tsubo=n(x.tsubo,1,5000),price=n(x.price,1,100000);
       if(!city||!tsubo||!price)return null;
       const s=(v,max)=>typeof v==='string'?v.slice(0,max):'';
-      return {id:s(x.id,20)||Date.now().toString(36),name:s(x.name,40),city,town:s(x.town,60),tsubo,price,walk:n(x.walk,0,300),
+      return {id:s(x.id,20)||Date.now().toString(36),name:s(x.name,40),city,town:s(x.town,60),station:s(x.station,20).replace(/駅$/,''),tsubo,price,walk:n(x.walk,0,300),
         dir:['南','東','西','北'].includes(x.dir)?x.dir:'',road:n(x.road,0,50),zone:LAND_MY_ZONES.includes(x.zone)?x.zone:'',cond:x.cond?1:0,
-        memo:s(x.memo,300),url:/^https?:\/\//.test(x.url||'')?s(x.url,400):'',lat:n(x.lat,20,50),lon:n(x.lon,120,155),geo:['gsi','town','city'].includes(x.geo)?x.geo:'city'};
+        memo:s(x.memo,300),url:/^https?:\/\//.test(x.url||'')?s(x.url,400):'',lat:n(x.lat,20,50),lon:n(x.lon,120,155),geo:['gsi','town','station','city'].includes(x.geo)?x.geo:'city'};
     }).filter(Boolean).slice(0,30);
   }
   function landMyRef(m){
@@ -2088,7 +2092,7 @@
       '<div class="lp-my-list swipe-zone" data-swipe="lp-my">'+page.map((m,i)=>{const e=landMyEval(m);
         return '<button class="lp-my-card" style="--i:'+i+'" data-act="lp-my-open" data-value="'+esc(m.id)+'">'+
           '<div class="lp-my-top"><b>'+esc(m.name||((e.c?.name||'')+(m.town?' '+m.town:'')))+'</b><strong>'+landMan(e.land)+'</strong></div>'+
-          '<small>'+esc((e.c?.name||'')+(m.town&&m.name?' '+m.town:''))+'・'+landArea(m.tsubo)+(m.walk!=null?'・駅徒歩'+m.walk+'分':'')+'・坪'+(e.unitTsubo/10000).toFixed(1)+'万</small>'+
+          '<small>'+esc((e.c?.name||'')+(m.town&&m.name?' '+m.town:''))+'・'+landArea(m.tsubo)+(m.station?'・'+m.station+'駅'+(m.walk!=null?'徒歩'+m.walk+'分':''):m.walk!=null?'・駅徒歩'+m.walk+'分':'')+'・坪'+(e.unitTsubo/10000).toFixed(1)+'万</small>'+
           '<div class="lp-my-tags">'+(e.tone?'<i class="t-'+e.tone[0]+'">'+e.tone[1]+'</i>':'')+'<i>総額 '+landMan(e.total)+'</i><i>月々 '+landYenText(e.pay)+'</i><i class="'+(e.ok?'t-cheap':'t-high')+'">'+(e.ok?'予算内':'予算オーバー')+'</i>'+(e.cm?'<i>通勤'+e.cm.minutes+'分</i>':'')+'</div></button>';}).join('')+'</div>'+
       '<div class="lp-foot">'+navPager(ui.lpMyPage,total,'lp-my-page')+'</div>';
   }
@@ -2103,12 +2107,13 @@
       '<div class="lp-size-result"><div><span>'+esc((e.c?.name||'')+(m.town?' '+m.town:''))+'・'+landArea(m.tsubo)+'</span><strong>'+landMan(e.land)+'</strong><em>坪'+(e.unitTsubo/10000).toFixed(1)+'万円</em></div>'+
         '<div><span>家を建てた総額</span><strong>'+landMan(e.total)+'</strong><em>月々'+landYenText(e.pay)+'・'+(e.ok?'予算内':'予算オーバー')+'</em></div></div>'+
       (pos!=null?'<div class="lp-my-gauge"><div class="lp-my-gauge-bar"><span>割安</span><span>相場なみ</span><span>高め</span><u style="left:'+pos+'%"></u></div><small>地価の目安 坪'+(e.ref.sqm*LAND_TSUBO/10000).toFixed(1)+'万（'+esc(e.ref.how)+'）の'+e.ratio.toFixed(2)+'倍</small></div>':'')+
+      (m.station?(()=>{const st=landStationFind(m.station),R=landRail();return '<p class="lp-my-line-hit">🚉 '+esc(m.station)+'駅'+(st&&R?'（'+esc(R.lineOf(st).join('・'))+'）':'')+(m.walk!=null?'　徒歩'+m.walk+'分':'')+'</p>';})():'')+
       landSay(say,e.tone?.[0]==='high'?'think':e.tone?.[0]==='cheap'?'happy':'normal')+
       '<div class="lp-ready-bars">'+[['土地',e.land,'land'],['建物'+S.floorTsubo+'坪',e.body,'body'],['付帯＋諸費用',e.extra+e.cost,'extra']].map(([l,v,c])=>'<div class="lp-sim-row"><span>'+l+'</span><i class="lp-sim-bar '+c+'" style="--w:'+Math.round(v/e.total*100)+'%"></i><b>'+landMan(v)+'</b></div>').join('')+'</div>'+
       (e.notes.length?'<div class="lp-tips lp-my-notes">'+e.notes.slice(0,3).map(([lv,t],i)=>'<div class="lp-tip '+lv+'" style="--i:'+i+'">'+landMascot(({good:'happy',warn:'think',bad:'worry',info:'normal'})[lv],26,false)+'<p>'+esc(t)+'</p></div>').join('')+'</div>':'')+
       '<div class="lp-detail-actions"><button class="btn flex1" data-act="lp-my-map" data-value="'+esc(m.id)+'">地図で見る</button><button class="btn primary flex1" data-act="lp-cand-tab" data-value="cmp">ほかと比べる</button></div>'+
       (m.url?'<a class="lp-my-url" href="'+esc(m.url)+'" target="_blank" rel="noopener">広告ページを開く ›</a>':'')+
-      '<p class="lp-disclaimer">建物は「家の総額」の設定（'+esc(e.maker.name)+'・坪'+e.unit+'万×'+S.floorTsubo+'坪）で計算。'+(m.geo==='city'?'場所は市区町村の中心で計算。':'')+'</p></section></div>';
+      '<p class="lp-disclaimer">建物は「家の総額」の設定（'+esc(e.maker.name)+'・坪'+e.unit+'万×'+S.floorTsubo+'坪）で計算。'+(m.geo==='city'?'場所は市区町村の中心で計算。':m.geo==='station'?'場所は最寄駅の位置で計算。':'')+'</p></section></div>';
   }
   async function landMyGeocode(id){
     const m=state.land.my.find(x=>x.id===id),c=m&&landCity(m.city);
@@ -2133,6 +2138,7 @@
     let lat=null,lon=null,geo='city';
     if(d.town&&c){const pts=(landData?.points||[]).filter(p=>p.cityCode===c.code&&Number.isFinite(p.lat)&&d.town.replace(/\s/g,'').startsWith(landTownOf(p,c)));
       if(pts.length){lat=pts.reduce((a,p)=>a+p.lat,0)/pts.length;lon=pts.reduce((a,p)=>a+p.lon,0)/pts.length;geo='town';}}
+    if(geo==='city'&&d.station){const st=landStationFind(d.station);if(st){lat=st.lat;lon=st.lon;geo='station';}}
     const item=landMyNormalize([{...d,tsubo,price,walk:d.walk===''?null:d.walk,road:d.road===''?null:d.road,lat,lon,geo,id:d.id||Date.now().toString(36)}])[0];
     if(!item)return message('入力を確認してください');
     const L=state.land,i=L.my.findIndex(x=>x.id===item.id);
@@ -2242,6 +2248,7 @@
     const pr=t.match(/(?:価格|販売価格)[^\d億]{0,10}(?:(\d+)\s*億)?\s*([\d,]+)\s*万円/)||t.match(/(?:(\d+)\s*億)?\s*([\d,]+)\s*万円/);
     if(pr)out.price=(pr[1]?num(pr[1])*10000:0)+num(pr[2]);
     const w=t.match(/徒歩\s*(\d+)\s*分/);if(w)out.walk=num(w[1]);
+    const st=t.match(/「([^」]{1,12})」\s*駅/)||t.match(/([^\s「」、,（()・]{1,10})駅\s*(?:まで)?\s*徒歩/);if(st)out.station=st[1].replace(/駅$/,'');
     const road=t.match(/(?:前面道路|接道|道路幅員|幅員)[^\d]{0,14}([\d.]+)\s*m/);if(road)out.road=num(road[1]);
     const dir=t.match(/(南|北|東|西)(?:東|西)?側?(?:道路|公道|私道|接道)/);if(dir)out.dir=dir[1];
     const z=LAND_MY_ZONES.filter(Boolean).find(zn=>t.includes(zn)||t.includes(zn.replace('専用地域','').replace('地域','')));if(z)out.zone=z;
@@ -2277,7 +2284,9 @@
       const cityOpts='<option value="">市区町村を選ぶ</option>'+LAND_REGION_ORDER.map(region=>{const cs=(landData?.cities||[]).filter(x=>x.region===region);return cs.length?'<optgroup label="'+esc(region)+'">'+cs.map(x=>'<option value="'+esc(x.code)+'"'+(d.city===x.code?' selected':'')+'>'+esc(x.name)+'</option>').join('')+'</optgroup>':'';}).join('');
       body=(quick.length?'<div class="lp-fs-chips lp-my-quick">'+quick.map(x=>'<button class="'+(d.city===x.code?'active':'')+'" data-act="lp-my-city" data-value="'+x.code+'">'+esc(x.name.replace(/^名古屋市/,''))+'</button>').join('')+'</div>':'')+
         '<select class="lp-my-big-select" data-lp-my="city">'+cityOpts+'</select>'+
-        '<label class="lp-my-line"><span>町名（わかれば）</span><input type="text" data-lp-my="town" value="'+esc(d.town||'')+'" placeholder="例：音羽町3丁目"></label>';
+        '<label class="lp-my-line"><span>町名（わかれば）</span><input type="text" data-lp-my="town" value="'+esc(d.town||'')+'" placeholder="例：音羽町3丁目"></label>'+
+        '<label class="lp-my-line"><span>最寄駅（わかれば）</span><input type="text" list="lp-stations" data-lp-my="station" value="'+esc(d.station||'')+'" placeholder="例：多治見"></label>'+landStationOptions(d.city)+
+        (()=>{const st=landStationFind(d.station),R=landRail();return st&&R?'<p class="lp-my-line-hit">🚉 '+esc(st.name)+'駅：'+esc(R.lineOf(st).join('・'))+'</p>':(d.station?'<p class="lp-my-line-hit is-miss">駅名が見つかりません（候補から選んでね）</p>':'');})();
       if(!d.city)next=null;
     }else if(st===2){
       q='広さは？（広告の「土地面積」）';
@@ -2343,10 +2352,58 @@
       const keys=Object.keys(got);
       if(!keys.length)return message('読み取れませんでした。自分で入れてください');
       ui.lpMyEdit={...d,...got,ad:txt,step:!got.city?1:!got.size?2:!got.price?3:4};
-      message('読み取り：'+[got.city&&'場所',got.size&&'広さ',got.price&&'値段',got.walk!=null&&'駅徒歩',got.road&&'道路幅',got.dir&&'道路の向き',got.zone&&'用途地域'].filter(Boolean).join('・'));
+      message('読み取り：'+[got.city&&'場所',got.station&&'最寄駅',got.size&&'広さ',got.price&&'値段',got.walk!=null&&'駅徒歩',got.road&&'道路幅',got.dir&&'道路の向き',got.zone&&'用途地域'].filter(Boolean).join('・'));
       return render();
     }
     return false;
+  }
+  /* ===== 駅・沿線（r96）：国土数値情報 鉄道データ N02 ===== */
+  let landStations=null,landRailCache={st:null,data:null,v:null};
+  async function landLoadStations(){
+    try{const r=await fetch('./data/stations.json',{cache:'no-cache'});if(r.ok){const j=await r.json();if(Array.isArray(j?.stations)&&Array.isArray(j?.lines)){landStations=j;landRailCache.v=null;render();}}}catch(_){}
+  }
+  const LAND_OP={'東海旅客鉄道':'JR','JR東海交通事業':'JR','西日本旅客鉄道':'JR','名古屋鉄道':'名鉄','名古屋市':'地下鉄','近畿日本鉄道':'近鉄','名古屋臨海高速鉄道':'あおなみ線','愛知高速交通':'リニモ','愛知環状鉄道':'愛環','豊橋鉄道':'豊鉄','名古屋ガイドウェイバス':'ゆとりーとライン','明知鉄道':'明知鉄道','長良川鉄道':'長良川鉄道','樽見鉄道':'樽見鉄道','養老鉄道':'養老鉄道','三岐鉄道':'三岐鉄道'};
+  const LAND_OP_ORDER=['JR','名鉄','地下鉄','近鉄','あおなみ線','リニモ','愛環','豊鉄'];
+  function landLineLabel(l){
+    const op=LAND_OP[l.op]||l.op;let n=l.name.replace(/^\d号線/,'').replace(/線$/,'')+'線';
+    if(op==='あおなみ線'||op==='リニモ')return op;
+    if(op==='愛環')return '愛知環状鉄道';
+    if(op==='ゆとりーとライン')return 'ゆとりーとライン';
+    if(/新幹線/.test(n))return null;
+    return op+(op==='地下鉄'||op==='JR'||op==='名鉄'||op==='近鉄'||op==='豊鉄'?'':'・')+n;
+  }
+  function landRail(){
+    if(!landStations||!landData)return null;
+    if(landRailCache.v===landData&&landRailCache.st===landStations)return landRailCache.data;
+    const pts=(landData.points||[]).filter(p=>Number.isFinite(p.lat));
+    const stations=landStations.stations.map(s=>{
+      let best=null,bd=4;for(const p of pts){const dl=Math.abs(p.lat-s.lat);if(dl>0.04)continue;const d=landKm(s.lat,s.lon,p.lat,p.lon);if(d<bd){bd=d;best=p;}}
+      return {...s,city:best?.cityCode||null};
+    });
+    const byLabel=new Map();
+    landStations.lines.forEach((l,i)=>{const label=landLineLabel(l);if(!label)return;if(!byLabel.has(label))byLabel.set(label,{label,op:LAND_OP[l.op]||l.op,idx:[]});byLabel.get(label).idx.push(i);});
+    const lines=[...byLabel.values()].map(L=>{const st=stations.filter(s=>s.lines.some(i=>L.idx.includes(i)));return {...L,stations:st,cities:new Set(st.map(s=>s.city).filter(Boolean))};})
+      .filter(L=>L.cities.size).sort((a,b)=>{const oa=LAND_OP_ORDER.indexOf(a.op),ob=LAND_OP_ORDER.indexOf(b.op);return ((oa<0?99:oa)-(ob<0?99:ob))||b.stations.length-a.stations.length;});
+    const lineOf=s=>lines.filter(L=>L.stations.includes(s)).map(L=>L.label);
+    const data={stations,lines,lineOf};
+    landRailCache={st:landStations,v:landData,data};
+    return data;
+  }
+  function landLineFilterLabel(f){return f&&f.startsWith('line:')?f.slice(5)+'沿線':null;}
+  function landStationFind(name){
+    const R=landRail();if(!R||!name)return null;
+    const n=String(name).replace(/駅$/,'').trim();
+    return R.stations.find(s=>s.name===n)||null;
+  }
+  function landStationOptions(city){
+    const R=landRail();if(!R)return '';
+    const list=R.stations.slice().sort((a,b)=>((b.city===city)-(a.city===city))||a.name.localeCompare(b.name,'ja'));
+    return '<datalist id="lp-stations">'+list.map(s=>'<option value="'+esc(s.name)+'">'+esc(R.lineOf(s).slice(0,2).join('・'))+'</option>').join('')+'</datalist>';
+  }
+  function landLineChips(){
+    const R=landRail();if(!R)return '<p class="lp-note">駅・路線データを読み込み中です</p>';
+    const groups=[...new Set(R.lines.map(L=>LAND_OP_ORDER.includes(L.op)?L.op:'その他'))];
+    return groups.map(g=>'<div class="lp-line-group"><span>'+esc(g)+'</span><div>'+R.lines.filter(L=>(LAND_OP_ORDER.includes(L.op)?L.op:'その他')===g).map(L=>'<button class="'+(state.land.filter==='line:'+L.label?'active':'')+'" data-act="lp-fs-area" data-value="line:'+esc(L.label)+'">'+esc(L.label.replace(/^(JR|名鉄|地下鉄|近鉄|豊鉄)/,''))+'</button>').join('')+'</div></div>').join('');
   }
   function overlay(){return ui.overlay==='land-detail'?landDetailScreen():ui.overlay==='land-settings'?landSettingsScreen():
     ui.overlay==='land-about'?landAboutScreen():ui.overlay==='land-maker'?landMakerDetail():ui.overlay==='land-area'?landAreaScreen():ui.overlay==='land-town'?landTownScreen():ui.overlay==='land-commute'?landCommuteSettingsScreen():ui.overlay==='land-word'?landWordScreen():ui.overlay==='land-size'?landSizeScreen():ui.overlay==='land-help'?landHelpScreen():ui.overlay==='land-find-city'?landFindCityScreen():ui.overlay==='land-find-maker'?landFindMakerScreen():ui.overlay==='land-loan'?landLoanScreen():ui.overlay==='land-ready'?landReadyScreen():ui.overlay==='land-my'?landMyDetail():ui.overlay==='land-my-edit'?landMyEditScreen():ui.overlay==='land-howto'?landHowtoScreen():'';}
@@ -2375,7 +2432,7 @@
     if(el.dataset?.lpSim!==undefined){state.land.sim=landSimNormalize({...state.land.sim,[el.dataset.lpSim]:el.value});save();render();return;}
     if(el.dataset?.lpMy!==undefined){
       ui.lpMyEdit={...(ui.lpMyEdit||{}),[el.dataset.lpMy]:el.value};
-      if(['city','size','price'].includes(el.dataset.lpMy))render();
+      if(['city','size','price','station'].includes(el.dataset.lpMy))render();
       return;
     }
     if(el.dataset?.lpFs!==undefined){
@@ -2394,7 +2451,7 @@
       ui.lpMakerPage=0;save();render();return;
     }
     if(el.dataset?.lpArea!==undefined){
-      if(LAND_FILTERS.some(x=>x[0]===el.value))state.land.filter=el.value;
+      if((v=>typeof v==='string'&&(LAND_FILTERS.some(x=>x[0]===v)||(v.startsWith('line:')&&v.length<40)))(el.value))state.land.filter=el.value;
       ui.lpPage=0;ui.lpCommutePage=0;if(state.land.view==='map')landMapFit();else if(ui.map)ui.map.sel=null;save();render();return;
     }
     if(el.dataset?.lpCommute!==undefined){
@@ -2419,6 +2476,8 @@
   app.addEventListener('input',e=>{const el=e.target;if(el?.dataset?.lpSim!=='landPct')return;
     const p=Math.round(Number(el.value)),box=el.parentElement?.querySelector('.lp-ratio-bar');if(!box)return;
     const i=box.querySelector('i'),em=box.querySelector('em');if(i){i.style.width=p+'%';i.querySelector('b').textContent='土地 '+p+'%';}if(em)em.querySelector('b').textContent='建物 '+(100-p)+'%';});
+  // iPhoneでキーボードを閉じたあと画面が上下にずれたままになるのを戻す
+  document.addEventListener('focusout',()=>setTimeout(()=>{const a=document.activeElement;if(!a||!/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)){try{window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0;}catch(_){}}},80));
   app.addEventListener('pointerdown',landMapDown);
   window.addEventListener('pointermove',landMapMove,{passive:false});
   window.addEventListener('pointerup',landMapUp);window.addEventListener('pointercancel',landMapUp);

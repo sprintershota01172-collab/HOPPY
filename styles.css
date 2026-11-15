@@ -6723,3 +6723,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .lp-pct-fine .lp-ratio small{display:none}
 #app .lp-pct-fine .lp-range-input{height:18px}
 #app .lp-pct-fine .lp-ratio-bar{height:16px}
+
+/* r96: 入力のズレ防止・駅と沿線 */
+#app input:not([type=range]):not([type=checkbox]),#app select,#app textarea{font-size:16px!important}
+#app .lp-sim-num input{min-width:0}
+#app .lp-my-line-hit{margin:0;font-size:12px;font-weight:800;color:#14785c;background:#e3f4ec;border-radius:9px;padding:5px 9px}
+#app .lp-my-line-hit.is-miss{color:#b5452a;background:#fdecea}
+#app .lp-line-chips{display:flex;flex-direction:column;gap:6px;overflow-y:auto;max-height:46vh;overscroll-behavior:contain}
+#app .lp-line-group>span{display:block;font-size:10.5px;font-weight:900;color:#6d8778;margin-bottom:3px}
+#app .lp-line-group>div{display:flex;flex-wrap:wrap;gap:5px}
+#app .lp-line-group button{height:34px;border-radius:17px;border:1.5px solid #cfe2d8;background:#fff;font-size:12.5px;font-weight:850;color:#2d5a49;padding:0 11px}
+#app .lp-line-group button.active{background:#1a735d;border-color:#1a735d;color:#fff}

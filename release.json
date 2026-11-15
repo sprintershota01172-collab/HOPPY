@@ -1,10 +1,10 @@
 {
-  "version": "r91",
+  "version": "r92",
   "ui": "land-only",
   "revised": "2026-11-15",
   "data_schema": "chika-shirabe-v1",
-  "entrypoint": "visual-r91.html",
+  "entrypoint": "visual-r92.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Register candidate lands and evaluate them"
+  "release_note": "How-to guide for every feature and calculation basis"
 }

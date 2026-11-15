@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r91';
+  const BUILD = 'r92';
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
@@ -85,7 +85,7 @@
     return {type:'price',kind:'all',unit:'tsubo',order:'desc',filter:'all',radius:20,longSpan:5,
       budgetView:'total',pointView:'price',pinFav:1,favorites:[],favTowns:[],
       wishTsubo:50,buildingBudget:2500,manualBudget:0,
-      view:'rank',makerSort:'asc',makerType:'all',guideTab:'region',guideScope:'all',sim:landSimDefaults(),commute:landCommuteDefaults(),money:landMoneyDefaults(),size:landSizeDefaults(),find:landFindDefaults(),my:[]};
+      view:'rank',makerSort:'asc',makerType:'all',guideTab:'region',guideScope:'all',sim:landSimDefaults(),commute:landCommuteDefaults(),money:landMoneyDefaults(),size:landSizeDefaults(),find:landFindDefaults(),my:[],seenGuide:0};
   }
   function landNormalize(raw){
     const d=landDefaults(),x=raw&&typeof raw==='object'?raw:{};
@@ -104,7 +104,7 @@
       manualBudget:clamp('manualBudget',0,100000),
       view:pick('view',['rank','map','compare','sim','maker','guide','commute','advice','find']),makerSort:pick('makerSort',['asc','desc','seis','ins','war']),
       makerType:pick('makerType',['all','全国','愛知','岐阜','鉄骨']),guideTab:pick('guideTab',['region','cond','words']),
-      guideScope:pick('guideScope',['all','名古屋市','尾張','知多','西三河','東三河','東濃','中濃']),sim:landSimNormalize(x.sim),commute:landCommuteNormalize(x.commute),money:landMoneyNormalize(x.money),size:landSizeNormalize(x.size),find:landFindNormalize(x.find),my:landMyNormalize(x.my)
+      guideScope:pick('guideScope',['all','名古屋市','尾張','知多','西三河','東三河','東濃','中濃']),sim:landSimNormalize(x.sim),commute:landCommuteNormalize(x.commute),money:landMoneyNormalize(x.money),size:landSizeNormalize(x.size),find:landFindNormalize(x.find),my:landMyNormalize(x.my),seenGuide:x.seenGuide?1:0
     };
   }
   function landCriterion(){return {id:'land-value',name:'土地の割安度（相場比）',weight:2,auto:{field:'landValue'}};}
@@ -156,6 +156,7 @@
     if(!landData){
       try{const r=await fetch('./data/landprice-seed.json',{cache:'no-cache'});if(r.ok){const j=await r.json();if(landValid(j))landData=j;}}catch(_){}
     }
+    if(!state.land.seenGuide&&!ui.overlay){state.land.seenGuide=1;save();ui.overlay='land-howto';ui.lpHowto='';}
     landRepaint();
     landCheckPublished();
   }
@@ -415,6 +416,7 @@
   function landHeaderHtml(){
     const glow=!landBusy()&&landStale().stale;
     return '<div class="lp-head"><span class="home-visual-title">'+landMascot(landBusy()?'think':'happy',30)+'地価調べ君 <i class="lp-head-sub">'+({rank:'RANKING',map:'MAP',compare:'COMPARE',sim:'SIMULATOR',commute:'COMMUTE',advice:'MONEY',find:'FIND',maker:'MAKERS',guide:'GUIDE'})[state.land.view]+'</i></span><div class="lp-head-actions">'+
+      '<button class="lp-icon lp-help-icon" data-act="lp-start" aria-label="使い方" title="使い方">？</button>'+
       '<button class="lp-icon'+(glow?' has-dot':'')+(landBusy()?' is-busy':'')+'" data-act="lp-settings" aria-label="設定・データ更新" title="設定・データ更新">⚙</button></div></div>';
   }
   function landAreaSelect(){
@@ -457,17 +459,17 @@
       landData.seed?'初期データは一部の市区町村だけです。「🔄 最新にする」で全市区町村を取得します':'絞り込みを変えてください';
     const group=landGroup(L.view);
     const nav='<nav class="lp-nav" aria-label="画面の切り替え">'+LAND_NAV.map(([k,l,ic])=>'<button class="'+(group===k?'active':'')+'" data-act="lp-nav" data-value="'+k+'" aria-current="'+(group===k?'page':'false')+'"><span aria-hidden="true">'+ic+'</span>'+l+'</button>').join('')+'</nav>';
-    const views=group==='calc'?'<div class="lp-sub">'+landSeg('lp-view',L.view,[['find','予算から探す'],['sim','家の総額'],['commute','通勤'],['advice','お金']],'lp-seg-fill')+'</div>':
+    const views=group==='calc'?'<div class="lp-sub">'+landSeg('lp-view',L.view,[['find','予算から探す'],['sim','総額を計算'],['commute','通勤'],['advice','返済チェック']],'lp-seg-fill')+'</div>':
       group==='learn'?'<div class="lp-sub">'+landSeg('lp-learn',L.view==='maker'?'maker':L.guideTab,[['maker','メーカー'],['region','地域'],['cond','土地の条件'],['words','用語']],'lp-seg-fill')+'</div>':'';
-    if(L.view==='sim')return '<section class="screen lp-screen lp-v-sim">'+landHeaderHtml()+views+landSimScreen()+nav+'</section>';
-    if(L.view==='maker')return '<section class="screen lp-screen lp-v-maker">'+landHeaderHtml()+views+landMakerScreen()+nav+'</section>';
-    if(L.view==='guide')return '<section class="screen lp-screen lp-v-guide">'+landHeaderHtml()+views+landGuideScreen()+nav+'</section>';
-    if(L.view==='map')return '<section class="screen lp-screen lp-v-map">'+landHeaderHtml()+views+landMapScreen()+nav+'</section>';
-    if(L.view==='compare')return '<section class="screen lp-screen lp-v-compare">'+landHeaderHtml()+views+landCompareScreen()+nav+'</section>';
-    if(L.view==='find')return '<section class="screen lp-screen lp-v-find">'+landHeaderHtml()+views+landFindScreen()+nav+'</section>';
-    if(L.view==='advice')return '<section class="screen lp-screen lp-v-advice">'+landHeaderHtml()+views+landMoneyScreen()+nav+'</section>';
-    if(L.view==='commute')return '<section class="screen lp-screen lp-v-commute">'+landHeaderHtml()+views+landCommuteScreen()+nav+'</section>';
-    return '<section class="screen lp-screen">'+landHeaderHtml()+views+landStampHtml()+
+    if(L.view==='sim')return '<section class="screen lp-screen lp-v-sim">'+landHeaderHtml()+views+landPurpose(L.view)+landSimScreen()+nav+'</section>';
+    if(L.view==='maker')return '<section class="screen lp-screen lp-v-maker">'+landHeaderHtml()+views+landPurpose(L.view)+landMakerScreen()+nav+'</section>';
+    if(L.view==='guide')return '<section class="screen lp-screen lp-v-guide">'+landHeaderHtml()+views+landPurpose(L.view)+landGuideScreen()+nav+'</section>';
+    if(L.view==='map')return '<section class="screen lp-screen lp-v-map">'+landHeaderHtml()+views+landPurpose(L.view)+landMapScreen()+nav+'</section>';
+    if(L.view==='compare')return '<section class="screen lp-screen lp-v-compare">'+landHeaderHtml()+views+landPurpose(L.view)+landCompareScreen()+nav+'</section>';
+    if(L.view==='find')return '<section class="screen lp-screen lp-v-find">'+landHeaderHtml()+views+landPurpose(L.view)+landFindScreen()+nav+'</section>';
+    if(L.view==='advice')return '<section class="screen lp-screen lp-v-advice">'+landHeaderHtml()+views+landPurpose(L.view)+landMoneyScreen()+nav+'</section>';
+    if(L.view==='commute')return '<section class="screen lp-screen lp-v-commute">'+landHeaderHtml()+views+landPurpose(L.view)+landCommuteScreen()+nav+'</section>';
+    return '<section class="screen lp-screen">'+landHeaderHtml()+views+landPurpose('rank')+landStampHtml()+
       '<div class="lp-types swipe-zone" data-swipe="lp-types" role="tablist" aria-label="ランキングの種類">'+LAND_TYPES.map(([k,l])=>
         '<button role="tab" aria-selected="'+(L.type===k)+'" class="'+(L.type===k?'active':'')+'" data-act="lp-type" data-value="'+k+'">'+(k==='price'&&L.unit==='sqm'?'㎡単価':l)+'</button>').join('')+'</div>'+
       landTogglesHtml()+
@@ -562,6 +564,7 @@
     if(landV4Action(action,v)!==false)return;
     if(landV6Action(action,v)!==false)return;
     if(landV7Action(action,v)!==false)return;
+    if(landV14Action(action,v)!==false)return;
     if(landV13Action(action,v)!==false)return;
     if(landV12Action(action,v)!==false)return;
     if(landV9Action(action,v)!==false)return;
@@ -1555,7 +1558,7 @@
   function landMoneyNormalize(x){
     const d=landMoneyDefaults();x=x&&typeof x==='object'?x:{};
     const n=(k,lo,hi)=>{const v=Number(x[k]);return Number.isFinite(v)?Math.min(hi,Math.max(lo,Math.round(v*1000)/1000)):d[k];};
-    return {income:n('income',0,10000),own:n('own',0,50000),rate:n('rate',0,10),years:n('years',5,50),tab:x.tab==='stats'?'stats':'me'};
+    return {income:n('income',0,10000),own:n('own',0,50000),rate:n('rate',0,10),years:n('years',5,50),tab:['stats','calc'].includes(x.tab)?x.tab:'me'};
   }
   const landPay=(loan,rate,years)=>{const r=rate/1200,n=years*12;return loan<=0?0:r?loan*r/(1-Math.pow(1+r,-n)):loan/n;};
   const landPV=(pay,rate,years)=>{const r=rate/1200,n=years*12;return r?pay*(1-Math.pow(1+r,-n))/r:pay*n;};
@@ -1597,7 +1600,8 @@
     const M=state.land.money,x=landMoney();
     if(!x)return '<div class="lp-empty"><strong>データを読み込み中です</strong></div>';
     const tab=M.tab;
-    const head='<div class="lp-sub">'+landSeg('lp-money-tab',tab,[['me','わが家の診断'],['stats','みんなの平均']],'lp-seg-fill')+'</div>';
+    const head='<div class="lp-sub">'+landSeg('lp-money-tab',tab,[['me','わが家の診断'],['calc','計算の根拠'],['stats','みんなの平均']],'lp-seg-fill')+'</div>';
+    if(tab==='calc')return head+landMoneyBasis(x);
     if(tab==='stats'){
       const mx=Math.max(...LAND_STATS.areas.map(a=>a[1]),...Object.values(LAND_STATS.pref),x.total/10000);
       const bar=(label,v,cls,sub)=>'<div class="lp-st-row'+(cls?' '+cls:'')+'"><span>'+label+'</span><i><em style="width:'+(v/mx*100)+'%"></em></i><b>'+digits.format(Math.round(v))+'<small>万</small></b>'+(sub?'<small class="lp-st-sub">'+sub+'</small>':'')+'</div>';
@@ -1616,6 +1620,7 @@
     const tile=(k,v,cls)=>'<div class="lp-mo-tile'+(cls?' '+cls:'')+'"><span>'+k+'</span><b>'+v+'</b></div>';
     const bcls=x.burden==null?'':x.burden<=25?'is-good':x.burden<=30?'is-warn':'is-bad';
     return head+
+      '<button class="lp-money-src" data-act="lp-go" data-value="sim">総額 <b>'+landMan(x.total)+'</b> は「総額を計算」の結果（'+esc(x.r.c.name)+'） <em>変える ›</em></button>'+
       '<div class="lp-sim-form">'+f('世帯年収（税込）','income','万円','min="0" max="10000" step="10"')+f('自己資金（頭金）','own','万円','min="0" max="50000" step="10"')+
         f('金利','rate','%','min="0" max="10" step="0.05"')+f('返済年数','years','年','min="5" max="50" step="1"')+
         '<div class="lp-sim-field lp-sim-wide">'+landSeg('lp-money-rate',M.rate===1.2?'v':M.rate===3.5?'t':M.rate===3.81?'f':'',[['v','変動 1.2%'],['t','10年固定 3.5%'],['f','全期間 3.81%']],'lp-seg-fill')+'</div></div>'+
@@ -1624,7 +1629,7 @@
       '<button class="lp-loan-link" data-act="lp-loan-open" data-value="money">利息の合計 '+landMan(landLoanStats(x.loan,M.rate,M.years).interest)+'・金利の種類と比較を見る ›</button>'+
       '<div class="lp-tips">'+tips.slice(ui.lpTipPage*per,(ui.lpTipPage+1)*per).map(([lv,t],i)=>'<div class="lp-tip '+lv+'" style="--i:'+i+'">'+landMascot(({good:'happy',warn:'think',bad:'worry',info:'normal'})[lv],30,false)+'<p>'+esc(t)+'</p></div>').join('')+'</div>'+
       '<div class="lp-foot">'+navPager(ui.lpTipPage,total,'lp-tip-page')+'</div>'+
-      '<button class="lp-source" data-act="lp-view" data-value="sim">総額は「家の総額」の結果を使用。金利は2026年11月の目安（変動の低い水準・フラット35） ⓘ</button>';
+      '';
   }
   function landV6Action(action,v){
     const L=state.land;
@@ -2157,8 +2162,82 @@
     if(action==='lp-my-map'){const m=L.my.find(x=>x.id===v),pt=m&&(Number.isFinite(m.lat)?m:landCentroids().get(m.city));if(pt)return step(()=>{landMapFocus(pt.lat,pt.lon,15);});return;}
     return false;
   }
+  /* ===== 使い方ガイド・計算の根拠（r92） ===== */
+  // 画面ごとの「何のため・いつ使う・使い方・次は」
+  const LAND_HOWTO={
+    find:{icon:'💰',t:'予算から探す',what:'月々の返済から、買える家と場所を探す',when:'「いくらの家なら買える？」「どこなら建てられる？」を最初に知りたいとき',
+      steps:['月々いくらまで返せるか選ぶ','頭金（すぐ出せる貯金）を選ぶ','注文住宅か建売かを選ぶ','住みたいエリアを選ぶ → 場所とメーカーが並ぶ'],next:[['sim','気になる場所の総額を詳しく出す'],['compare','気になる土地を登録する']]},
+    sim:{icon:'🧮',t:'総額を計算',what:'場所・広さ・会社を決めて、家の総額を出す',when:'「この市で、この会社で建てたら全部でいくら？」を知りたいとき',
+      steps:['市区町村を選ぶ（土地の値段が決まる）','土地と建物の広さを入れる（わからなければ「広さの目安」）','ハウスメーカーと仕様のグレードを選ぶ','下に「土地＋建物＋付帯工事＋諸費用＝総額」が出る'],
+      tip:'ここで出た総額が「返済チェック」の計算にそのまま使われます。予算が先に決まっているなら上の「予算を土地と建物に分ける」に切り替え。',next:[['advice','この総額で返済できるか確認'],['commute','この場所からの通勤を見る']]},
+    commute:{icon:'🚗',t:'通勤',what:'夫・妻の通勤時間と通勤費を市区町村ごとに比べる',when:'住む場所を決めるときに、通勤の負担も考えたいとき',
+      steps:['「勤務先と通勤方法を設定」を押す','夫・妻それぞれ勤務先（住所や駅名）と、車・電車・自転車を選ぶ','一覧に通勤時間・月の費用・土地＋通勤の合計が並ぶ'],next:[['find','通勤が近い順で予算内の場所を探す']]},
+    advice:{icon:'🩺',t:'返済チェック',what:'その総額を、年収で無理なく返せるかを判定する',when:'買う前に「返済が重すぎないか」を確かめたいとき',
+      steps:['世帯年収と頭金を入れる','金利（変動・固定）と年数を選ぶ','月々の返済と返済負担率が出て、アドバイスが並ぶ','「計算の根拠」で式と数字を確認できる'],
+      tip:'総額は「総額を計算」の結果を使います。総額を変えたいときはそちらで場所・広さ・会社を変えてください。',next:[['sim','総額を変える'],['find','予算から探しなおす']]},
+    rank:{icon:'🏆',t:'ランキング',what:'市区町村の地価を高い順・安い順・上昇率などで比べる',when:'「どこが安い？」「どこが値上がりしている？」をざっと見たいとき',
+      steps:['上の種類（坪単価・前年比など）を選ぶ','📍でエリアを絞る','市区町村をタップ → 詳しい地価・地区ごとの地価','☆で候補に追加'],next:[['map','地図で見る'],['compare','☆を付けた所を比べる']]},
+    map:{icon:'🗺️',t:'地図',what:'地価の地点を地図で見る',when:'場所の位置関係や、駅の近くの値段を見たいとき',steps:['指で動かす・2本指で拡大','色の点をタップ → その地点の価格','「この地区」でまわりの地価一覧'],next:[['rank','ランキングで比べる']]},
+    compare:{icon:'⭐',t:'候補',what:'気になる土地を登録して評価・比較する',when:'広告やチラシで気になる土地を見つけたとき',
+      steps:['「＋登録」で市区町村・広さ・価格を入れる','相場より安いか、総額・月々・予算内かがすぐ出る','「くらべる」で候補どうしを並べる'],next:[['advice','返済できるか確認']]},
+    maker:{icon:'🏠',t:'メーカー',what:'ハウスメーカーの価格・性能・特徴を調べる',when:'どの会社に相談するか決めたいとき',steps:['並べ替えで「耐震が強い順」などを選ぶ','会社をタップ → 性能・特徴・注意点','「この会社で総額を計算」で費用がわかる'],next:[['sim','この会社で総額を計算']]},
+    guide:{icon:'📖',t:'土地の知識・用語',what:'地域の特徴、土地の条件、用語を調べる',when:'わからない言葉が出てきたとき、地域の雰囲気を知りたいとき',steps:['上で「地域」「土地の条件」「用語」を切り替え','カードを左右にめくる'],next:[['rank','地価を見る']]}
+  };
+  const LAND_START=[
+    ['💰','いくらの家が買える？','find'],['🧮','この場所・この会社でいくら？','sim'],['🩺','返済は大丈夫？','advice'],['🚗','通勤はどれくらい？','commute'],
+    ['⭐','気になる土地を評価したい','compare'],['🏆','地価の安い所・高い所は？','rank'],['🏠','ハウスメーカーを知りたい','maker'],['📖','言葉の意味がわからない','guide']
+  ];
+  function landPurpose(view){
+    const h=LAND_HOWTO[view];if(!h)return '';
+    return '<button class="lp-purpose" data-act="lp-howto" data-value="'+view+'"><span>'+h.icon+'</span><em>'+esc(h.what)+'</em><b>使い方</b></button>';
+  }
+  function landHowtoScreen(){
+    const v=ui.lpHowto,h=LAND_HOWTO[v];
+    if(!h)return landStartScreen();
+    return modalFrame(h.icon+' '+h.t+'の使い方','<div class="panel detail grow lp-howto">'+
+      landSay('<b>'+esc(h.what)+'</b>','happy')+
+      '<div class="lp-howto-when"><span>こんなときに</span><p>'+esc(h.when)+'</p></div>'+
+      '<ol class="lp-howto-steps">'+h.steps.map((s,i)=>'<li style="--i:'+i+'"><i>'+(i+1)+'</i><p>'+esc(s)+'</p></li>').join('')+'</ol>'+
+      (h.tip?'<p class="lp-howto-tip">💡 '+esc(h.tip)+'</p>':'')+
+      '<div class="lp-howto-next"><span>次はこれ</span>'+h.next.map(([k,l])=>'<button data-act="lp-go" data-value="'+k+'">'+(LAND_HOWTO[k]?.icon||'')+' '+esc(l)+' ›</button>').join('')+'</div>'+
+      '<button class="lp-howto-all" data-act="lp-start">すべての機能を見る</button></div>');
+  }
+  function landStartScreen(){
+    return modalFrame('地価調べ君の使い方','<div class="panel detail grow lp-start">'+
+      landSay('やりたいことを選んでね。<b>迷ったら上から順に</b>使うのがおすすめ！','happy')+
+      '<div class="lp-start-flow">'+['💰 予算から探す','⭐ 候補を登録','🧮 総額を計算','🩺 返済チェック'].map((t,i)=>'<span style="--i:'+i+'">'+t+'</span>').join('<i>›</i>')+'</div>'+
+      '<div class="lp-start-list">'+LAND_START.map(([ic,t,k],i)=>'<button style="--i:'+i+'" data-act="lp-go" data-value="'+k+'"><span>'+ic+'</span><b>'+esc(t)+'</b><small>'+esc(LAND_HOWTO[k].t)+' ›</small></button>').join('')+'</div>'+
+      '<p class="lp-note">各画面の上の「使い方」からも、いつでも見られます。</p></div>');
+  }
+  // 返済チェックの計算の根拠
+  function landMoneyBasis(x){
+    const M=state.land.money,r=x.r,inc=M.income*10000,mr=M.rate/1200,n=M.years*12;
+    const row=(no,t,f,v,note)=>'<div class="lp-basis-row" style="--i:'+no+'"><i>'+no+'</i><div><b>'+t+'</b><p>'+f+'</p>'+(note?'<small>'+note+'</small>':'')+'</div><strong>'+v+'</strong></div>';
+    return '<div class="lp-basis">'+
+      row(1,'家の総額','土地 '+landMan(r.land||0)+' ＋ 建物 '+landMan(r.body)+' ＋ 付帯工事 '+landMan(r.extra)+' ＋ 諸費用 '+landMan(r.cost),landMan(x.total),'「総額を計算」の結果（'+esc(r.c.name)+'）。付帯工事＝建物本体の25%、諸費用＝10%')+
+      row(2,'借りる額','総額 '+landMan(x.total)+' − 頭金 '+(M.own?landMan(M.own*10000):'0円'),landMan(x.loan))+
+      row(3,'月々の返済','借りる額 × 月の金利 ÷ {1 − (1＋月の金利)^−'+n+'回}',landYenText(x.pay),'元利均等返済。月の金利＝年'+M.rate+'%÷12＝'+(mr*100).toFixed(4)+'%、'+M.years+'年＝'+n+'回')+
+      row(4,'返済負担率',inc>0?'月々 '+landYenText(x.pay)+' × 12 ÷ 年収 '+landMan(inc):'年収を入れると計算',x.burden==null?'—':x.burden.toFixed(1)+'%','目安は25%以下。フラット35の審査の上限は年収400万円未満30%・400万円以上35%')+
+      row(5,'年収倍率',inc>0?'総額 '+landMan(x.total)+' ÷ 年収 '+landMan(inc):'年収を入れると計算',x.mult==null?'—':x.mult.toFixed(1)+'倍','土地を買って注文住宅を建てた人の平均は'+LAND_STATS.ratio+'倍（2025年度フラット35利用者調査）')+
+      row(6,'25%に収まる借入額',inc>0?'年収 × 25% ÷ 12 ＝ 月'+landYenText(inc*0.25/12)+' を返せる額に逆算':'年収を入れると計算',x.max25==null?'—':landMan(x.max25))+
+      '</div>'+
+      '<div class="lp-detail-actions"><button class="btn flex1" data-act="lp-go" data-value="sim">総額を変える ›</button><button class="btn primary flex1" data-act="lp-loan-open" data-value="money">利息の内訳 ›</button></div>';
+  }
+  function landV14Action(action,v){
+    const L=state.land;
+    if(action==='lp-howto')return openOverlay('land-howto',()=>{ui.lpHowto=v;});
+    if(action==='lp-start')return openOverlay('land-howto',()=>{ui.lpHowto='';});
+    if(action==='lp-go')return step(()=>{
+      if(v==='region'||v==='cond'||v==='words'){L.view='guide';L.guideTab=v;}
+      else if(LAND_VIEWS.some(x=>x[0]===v))L.view=v;
+      if(v==='compare')ui.lpCandTab='my';
+      if(v==='find')L.find=landFindNormalize({...L.find,step:L.find.step||0});
+      if(landGroup(L.view)==='calc')ui.lastCalc=L.view;if(landGroup(L.view)==='learn')ui.lastLearn=L.view;
+      ui.overlay='';L.seenGuide=1;save();});
+    return false;
+  }
   function overlay(){return ui.overlay==='land-detail'?landDetailScreen():ui.overlay==='land-settings'?landSettingsScreen():
-    ui.overlay==='land-about'?landAboutScreen():ui.overlay==='land-maker'?landMakerDetail():ui.overlay==='land-area'?landAreaScreen():ui.overlay==='land-town'?landTownScreen():ui.overlay==='land-commute'?landCommuteSettingsScreen():ui.overlay==='land-word'?landWordScreen():ui.overlay==='land-size'?landSizeScreen():ui.overlay==='land-help'?landHelpScreen():ui.overlay==='land-find-city'?landFindCityScreen():ui.overlay==='land-find-maker'?landFindMakerScreen():ui.overlay==='land-loan'?landLoanScreen():ui.overlay==='land-ready'?landReadyScreen():ui.overlay==='land-my'?landMyDetail():ui.overlay==='land-my-edit'?landMyEditScreen():'';}
+    ui.overlay==='land-about'?landAboutScreen():ui.overlay==='land-maker'?landMakerDetail():ui.overlay==='land-area'?landAreaScreen():ui.overlay==='land-town'?landTownScreen():ui.overlay==='land-commute'?landCommuteSettingsScreen():ui.overlay==='land-word'?landWordScreen():ui.overlay==='land-size'?landSizeScreen():ui.overlay==='land-help'?landHelpScreen():ui.overlay==='land-find-city'?landFindCityScreen():ui.overlay==='land-find-maker'?landFindMakerScreen():ui.overlay==='land-loan'?landLoanScreen():ui.overlay==='land-ready'?landReadyScreen():ui.overlay==='land-my'?landMyDetail():ui.overlay==='land-my-edit'?landMyEditScreen():ui.overlay==='land-howto'?landHowtoScreen():'';}
   function render(){
     if(!app)return;
     const liveMain=app.querySelector('main.main');

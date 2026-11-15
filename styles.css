@@ -6096,3 +6096,102 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  #app .lp-cell>b{font-size:13.5px}
 }
 @media(prefers-reduced-motion:reduce){#app .lp-row,#app .lp-refresh,#app .lp-progress span.now{animation:none!important}}
+
+/* r76: 地価調べ君 — 相場シミュレーター・メーカー図鑑・土地ガイド */
+#app .lp-views{flex:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;background:#e9efec;border-radius:12px;padding:3px}
+#app .lp-views>button{height:28px;border:0;border-radius:9px;background:transparent;color:#4d6b5c;font-size:12px;font-weight:850;white-space:nowrap;transition:background .3s,color .3s}
+#app .lp-views>button.active{background:#fff;color:#14785c;box-shadow:0 1px 5px #12382a24}
+#app .lp-chips>button{height:24px}
+#app .lp-types>button{height:26px}
+#app .lp-seg-fill{flex:1}
+#app .lp-seg-fill>button{flex:1}
+#app .lp-sim{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;animation:lp-row-in .45s cubic-bezier(.22,.61,.36,1) both}
+#app .lp-sim-form{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:5px 7px;background:#fff;border:1px solid #e2ebe7;border-radius:14px;padding:7px 9px}
+#app .lp-sim-field{display:flex;flex-direction:column;gap:2px;min-width:0}
+#app .lp-sim-field>span{font-size:9.5px;font-weight:800;color:#6d8778;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-sim-field select,#app .lp-sim-num input{width:100%;min-width:0;height:30px;border:1px solid #d6e3dc;border-radius:9px;background:#f9fbfa;padding:0 6px;font-size:13px;font-weight:800;color:#173e32}
+#app .lp-sim-num{display:flex;align-items:center;gap:4px}
+#app .lp-sim-num input{text-align:right}
+#app .lp-sim-num i{font-style:normal;font-size:11px;color:#6d8778;flex:none}
+#app .lp-sim-wide{grid-column:1/-1}
+#app .lp-sim-wide .lp-seg{width:100%}
+#app .lp-sim-wide .lp-seg>button{height:26px;font-size:11px;padding:0 4px}
+#app .lp-sim-result{flex:1;min-height:0;display:flex;flex-direction:column;gap:4px;background:#fff;border:1px solid #e2ebe7;border-radius:14px;padding:8px 10px;overflow:hidden}
+#app .lp-sim-total{display:flex;align-items:center;justify-content:space-between;gap:8px;background:linear-gradient(125deg,#1a735d,#2c9274);color:#fff;border-radius:12px;padding:7px 11px}
+#app .lp-sim-total span{font-size:10px;font-weight:800;color:#d8f0e4}
+#app .lp-sim-total strong{display:block;font-size:24px;font-weight:900;letter-spacing:-.03em;line-height:1.1}
+#app .lp-sim-total .lp-mini{margin:0;background:#ffffff26;border-color:#ffffff66;color:#fff}
+#app .lp-sim-judge{display:flex;flex-direction:column;align-items:center;background:#fff;border-radius:10px;padding:2px 8px}
+#app .lp-sim-judge .rating-face{font-size:20px}
+#app .lp-sim-judge small{font-size:8.5px;color:#4d6b5c;font-weight:800;white-space:nowrap}
+#app .lp-sim-unit{margin:0;font-size:10px;color:#4d6b5c;font-weight:700;line-height:1.35}
+#app .lp-sim-unit b{color:#173e32;font-size:11.5px}
+#app .lp-sim-row{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) auto;align-items:center;gap:6px;font-size:10.5px;font-weight:750;color:#3f5d50;min-height:20px}
+#app .lp-sim-row span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-sim-row b{font-size:12px;color:#173e32;font-variant-numeric:tabular-nums;white-space:nowrap}
+#app .lp-sim-bar{display:block;height:8px;border-radius:4px;background:#eef3f0;position:relative;overflow:hidden}
+#app .lp-sim-bar::after{content:'';position:absolute;inset:0 auto 0 0;width:var(--w);border-radius:4px;background:#1a735d;transition:width .5s}
+#app .lp-sim-bar.body::after{background:#2f8fb3}
+#app .lp-sim-bar.extra::after{background:#8fb7cf}
+#app .lp-sim-bar.cost::after{background:#c9b48a}
+#app .lp-sim-note{flex:none;margin:0;font-size:8.5px;line-height:1.35;color:#8a9c92}
+#app .lp-maker-legend{margin-left:auto;font-size:9px;color:#7b9286;font-weight:800;white-space:nowrap}
+#app .lp-maker-band{flex:0 0 40px;height:20px;border-radius:7px;display:grid;place-items:center;font-size:9px;font-weight:900;white-space:nowrap}
+#app .lp-maker-band.b-hi{background:#1a735d;color:#fff}
+#app .lp-maker-band.b-mu{background:#cfe9de;color:#14785c}
+#app .lp-maker-band.b-mid{background:#eef3f0;color:#4d6b5c}
+#app .lp-maker-band.b-lo{background:#fdf0dd;color:#9a6a12}
+#app .lp-maker-range{flex:0 0 38%;display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:0}
+#app .lp-maker-range b{font-size:13.5px;font-weight:900;color:#173e32;white-space:nowrap}
+#app .lp-maker-range b small{font-size:9px;color:#7b9286}
+#app .lp-range{position:relative;display:block;width:100%;height:6px;border-radius:3px;background:#eef3f0}
+#app .lp-range em{position:absolute;top:0;bottom:0;border-radius:3px;background:#8cc7ae}
+#app .lp-range u{position:absolute;top:-2px;width:3px;height:10px;margin-left:-1px;border-radius:2px;background:#1a735d}
+#app .lp-range.big{height:10px;border-radius:5px}
+#app .lp-range.big u{top:-3px;height:16px;width:4px}
+#app .lp-maker-scale{flex:none;padding:2px 4px}
+#app .lp-maker-scale span{display:flex;justify-content:space-between;margin-top:3px;font-size:8.5px;color:#8a9c92}
+#app .lp-info-card{flex:none;background:#fff;border:1px solid #e2ebe7;border-radius:12px;padding:6px 10px}
+#app .lp-info-card.warn{background:#fffaf2;border-color:#f1e2c6}
+#app .lp-info-card>span{font-size:9.5px;color:#6d8778;font-weight:850}
+#app .lp-info-card p{margin:2px 0 0;font-size:11px;color:#26483b;line-height:1.4;font-weight:700}
+#app .lp-info-card ul{margin:2px 0 0;padding-left:15px;font-size:11px;color:#26483b;line-height:1.42;font-weight:700}
+#app .lp-cell-text{white-space:normal!important;font-size:10.5px!important;line-height:1.35;color:#26483b!important}
+#app .lp-guide-scope select{height:28px;border:1px solid #d6e3dc;border-radius:9px;background:#fff;font-size:11px;font-weight:800;padding:0 6px;color:#173e32}
+#app .lp-guide-list{flex:1;min-height:0;display:grid;grid-template-rows:repeat(var(--lp-cards),minmax(0,1fr));gap:6px;overflow:hidden}
+#app .lp-guide-card{display:flex;flex-direction:column;gap:4px;min-height:0;overflow:hidden;background:#fff;border:1px solid #e2ebe7;border-radius:14px;padding:8px 11px;text-align:left;color:#26483b;animation:lp-row-in .5s cubic-bezier(.22,.61,.36,1) both}
+#app .lp-guide-card:nth-child(2){animation-delay:60ms}#app .lp-guide-card:nth-child(3){animation-delay:120ms}#app .lp-guide-card:nth-child(4){animation-delay:180ms}
+#app .lp-guide-top{display:flex;align-items:baseline;gap:7px;min-width:0}
+#app .lp-guide-top b{font-size:14px;font-weight:900;color:#173e32;white-space:nowrap}
+#app .lp-guide-top span{font-size:12px;font-weight:850;color:#173e32;white-space:nowrap}
+#app .lp-guide-top .lp-guide-sub{font-size:9.5px;color:#7b9286;font-weight:750}
+#app .lp-guide-top em{font-style:normal;font-size:11px;font-weight:850;margin-left:auto}
+#app .lp-guide-card p{margin:0;font-size:10.5px;line-height:1.45;color:#3f5d50;font-weight:650}
+#app .lp-guide-card small{font-size:9.5px;color:#6d8778;font-weight:750;line-height:1.35}
+#app .lp-cond-bars{display:flex;flex-direction:column;gap:2px}
+#app .lp-cond-bars>div{display:grid;grid-template-columns:72px minmax(0,1fr) 46px 26px;align-items:center;gap:5px;font-size:10px;font-weight:750;min-height:15px}
+#app .lp-cond-bars span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-cond-bars b{text-align:right;font-size:10.5px;font-variant-numeric:tabular-nums}
+#app .lp-cond-bars small{text-align:right;color:#9aaba1;font-size:8.5px}
+#app .lp-cond-bar{position:relative;display:block;height:7px;background:#f1f4f2;border-radius:4px}
+#app .lp-cond-bar::before{content:'';position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:#c7d3cc}
+#app .lp-cond-bar em{position:absolute;top:0;bottom:0;border-radius:4px;width:var(--w)}
+#app .lp-cond-bar em.pos{left:50%;background:#e2a07f}
+#app .lp-cond-bar em.neg{right:50%;background:#8db4d3}
+#app .lp-cond-empty{font-size:10px;color:#8a9c92}
+@media(max-width:374px){
+ #app .lp-views>button{font-size:11px}
+ #app .lp-head-sub{display:none}
+ #app .lp-sim-total strong{font-size:21px}
+ #app .lp-maker-legend{display:none}
+}
+@media(max-height:700px){
+ #app .lp-sim-form{gap:3px 6px;padding:5px 8px}
+ #app .lp-sim-field select,#app .lp-sim-num input{height:27px;font-size:12px}
+ #app .lp-sim-total{padding:5px 10px}
+ #app .lp-sim-total strong{font-size:20px}
+ #app .lp-sim-row{min-height:17px}
+ #app .lp-info-card{padding:5px 9px}
+ #app .lp-info-card ul,#app .lp-info-card p{font-size:10.5px;line-height:1.35}
+}
+@media(prefers-reduced-motion:reduce){#app .lp-sim,#app .lp-guide-card{animation:none!important}}

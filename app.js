@@ -1751,10 +1751,10 @@
       numIn('頭金（自己資金）','data-lp-money="own" min="0" max="50000"',M.own||0,'万円','10')+
       (F.open?'<div class="lp-find-more">'+landSeg('lp-money-rate',M.rate===1.2?'v':M.rate===3.81?'f':'',[['v','変動 1.2%'],['f','固定 3.81%']],'lp-seg-fill')+
         numIn('金利','data-lp-money="rate" min="0" max="10"',M.rate,'%','0.05')+numIn('返済年数','data-lp-money="years" min="5" max="50"',M.years,'年','1')+'</div>':'')+
-      '<div class="lp-find-chips"><button class="lp-find-chip" data-act="lp-find-open">'+(F.mode==='monthly'?'金利'+M.rate+'%・'+M.years+'年':'')+(F.open?' ▴':' ▾')+'</button>'+
+      '<div class="lp-find-chips"><button class="lp-find-chip" data-act="lp-find-open">'+'金利'+M.rate+'%・'+M.years+'年'+(F.open?' ▴':' ▾')+'</button>'+
         '<button class="lp-find-chip" data-act="lp-size-open">土地'+sz.land+'坪・建物'+sz.floor+'坪'+(sz.auto?'（目安）':'')+' ›</button>'+
         '<button class="lp-find-chip lp-find-mode" data-act="lp-find-mode">'+(F.mode==='monthly'?'総額で入れる':'月々で入れる')+'</button></div>'+
-      '<div class="lp-find-total"><span>'+(F.mode==='monthly'?'借りられる額 '+landMan(B.loan*10000)+' ＋ 頭金 '+landMan(B.own*10000):'借入 '+landMan(B.loan*10000)+' → 月々 '+landYenText(landPay(B.loan*10000,M.rate,M.years)))+'</span><b>総額 '+landMan(B.total*10000)+'</b></div>'+
+      '<div class="lp-find-total"><span>'+(F.mode==='monthly'?'借りられる額 '+landMan(B.loan*10000)+' ＋ 頭金 '+(B.own?landMan(B.own*10000):'0円'):'借入 '+landMan(B.loan*10000)+' → 月々 '+landYenText(landPay(B.loan*10000,M.rate,M.years)))+'</span><b>総額 '+landMan(B.total*10000)+'</b></div>'+
       '<div class="lp-find-row">'+landAreaSelect()+landSeg('lp-find-tab',F.tab,[['place','おすすめの場所'],['maker','おすすめのメーカー']],'lp-seg-fill')+'</div></div>';
     if(F.tab==='maker'){
       const makers=LAND_MAKERS.map(m=>{const cs=ok.filter(x=>x.makers.includes(m));return {m,cs,perf:landPerfSum(m)};}).filter(x=>x.cs.length)

@@ -6781,3 +6781,10 @@ textarea.kp-text{resize:none}
 /* キーボードに合わせて縮める処理はやめた */
 html,body{height:100dvh!important}
 .app-shell{height:100dvh!important}
+
+/* r101: 総額を計算に月々の返済 */
+#app .lp-sim-monthly{flex:none;display:grid;grid-template-columns:auto auto 1fr auto;align-items:baseline;column-gap:7px;border:1.5px solid #f0c79c;background:#fff8ee;border-radius:12px;padding:6px 10px;text-align:left}
+#app .lp-sim-monthly span{font-size:10.5px;font-weight:850;color:#7a4a1f}
+#app .lp-sim-monthly b{font-size:17px;font-weight:900;color:#c2561f}
+#app .lp-sim-monthly small{font-size:9.5px;font-weight:750;color:#8a6a4a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#app .lp-sim-monthly em{font-style:normal;font-size:10.5px;font-weight:900;color:#14785c}

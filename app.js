@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r100';
+  const BUILD = 'r101';
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
@@ -932,7 +932,7 @@
         '<div class="lp-sim-field lp-sim-wide"><span>仕様のグレード</span>'+landSeg('lp-sim-grade',S.grade,[['low','下限 '+r.maker.low+'万'],['mid','目安 '+r.maker.mid+'万'],['high','上限 '+r.maker.high+'万']],'lp-seg-fill')+'</div>'+
       '</div>'+
       '<div class="lp-sim-result">'+
-        '<div class="lp-sim-total"><div><span>この予算で買える・建てられる広さ</span><strong>土地 '+(r.landCan!=null?Math.round(r.landCan):'—')+'<small>坪</small>・建物 '+Math.round(r.floorCan)+'<small>坪</small></strong></div></div>'+
+        '<div class="lp-sim-total"><div><span>この予算で買える・建てられる広さ</span><strong>土地 '+(r.landCan!=null?Math.round(r.landCan):'—')+'<small>坪</small>・建物 '+Math.round(r.floorCan)+'<small>坪</small></strong></div></div>'+landSimMonthly(r.total)+
         '<p class="lp-sim-unit">土地 <b>'+landPriceHtml(r.sqm,{unit:'tsubo',small:false})+'</b>（'+esc(r.how)+(r.estimated?'<i class="lp-ref">推計</i>':'')+'）</p>'+
         bar('土地代（約'+(r.landCan!=null?Math.round(r.landCan):'—')+'坪）',r.land,'land')+
         bar('建物本体（約'+Math.round(r.floorCan)+'坪×'+r.unitMan+'万）',r.body,'body')+
@@ -951,7 +951,7 @@
       '</div>'+
       '<div class="lp-sim-result">'+
         '<div class="lp-sim-total"><div><span>総額の目安</span><strong>'+landMan(r.total)+'</strong>'+(r.pct!=null?'<em class="lp-sim-pct">このうち土地は'+Math.round(r.pct)+'%（東海の平均は約'+LAND_TOKAI_PCT+'%）</em>':'')+'</div>'+
-          (r.grade===null?'<button class="lp-mini" data-act="lp-settings">予算を設定</button>':'<div class="lp-sim-judge"><span class="rating-face '+faceClass(r.grade)+'">'+mark(r.grade)+'</span><small>'+'予算'+' '+landMan(r.budget)+'</small></div>')+'</div>'+
+          (r.grade===null?'<button class="lp-mini" data-act="lp-settings">予算を設定</button>':'<div class="lp-sim-judge"><span class="rating-face '+faceClass(r.grade)+'">'+mark(r.grade)+'</span><small>'+'予算'+' '+landMan(r.budget)+'</small></div>')+'</div>'+landSimMonthly(r.total)+
         '<p class="lp-sim-unit">土地 <b>'+landPriceHtml(r.sqm,{unit:'tsubo',small:false})+'</b>（'+esc(r.how)+(r.estimated?'<i class="lp-ref">推計</i>':'')+'）</p>'+
         bar('土地代（'+S.landTsubo+'坪）',r.land,'land')+
         bar('建物本体（'+S.floorTsubo+'坪×'+r.unitMan+'万）',r.body,'body')+
@@ -2516,6 +2516,12 @@
     const el=e.target.closest?.('#app [data-proxy]');if(!el)return;
     e.preventDefault();e.stopPropagation();kpOpen(el);
   },true);
+  function landSimMonthly(total){
+    const M=state.land.money,loan=Math.max(0,total-(M.own||0)*10000),pay=landPay(loan,M.rate,M.years);
+    const inc=M.income*10000,burden=inc>0?pay*12/inc*100:null;
+    return '<button class="lp-sim-monthly" data-act="lp-loan-open" data-value="money"><span>月々の返済</span><b>'+landYenFull(pay)+'</b>'+
+      '<small>頭金'+(M.own||0)+'万・'+(M.rate===3.81?'全期間固定':M.rate===3.5?'10年固定':'変動')+M.rate+'%・'+M.years+'年'+(burden!=null?'・年収の'+burden.toFixed(0)+'%':'')+'</small><em>詳しく ›</em></button>';
+  }
   function overlay(){return ui.overlay==='land-detail'?landDetailScreen():ui.overlay==='land-settings'?landSettingsScreen():
     ui.overlay==='land-about'?landAboutScreen():ui.overlay==='land-maker'?landMakerDetail():ui.overlay==='land-area'?landAreaScreen():ui.overlay==='land-town'?landTownScreen():ui.overlay==='land-commute'?landCommuteSettingsScreen():ui.overlay==='land-word'?landWordScreen():ui.overlay==='land-size'?landSizeScreen():ui.overlay==='land-help'?landHelpScreen():ui.overlay==='land-find-city'?landFindCityScreen():ui.overlay==='land-find-maker'?landFindMakerScreen():ui.overlay==='land-loan'?landLoanScreen():ui.overlay==='land-ready'?landReadyScreen():ui.overlay==='land-my'?landMyDetail():ui.overlay==='land-my-edit'?landMyEditScreen():ui.overlay==='land-howto'?landHowtoScreen():ui.overlay==='land-pick'?landPickScreen():'';}
   function render(){

@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const BUILD = 'r73';
+  const BUILD = 'r74';
   // A tiny non-sensitive marker helps diagnose installed PWA update issues.
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'hoppy-phase1-v1';
@@ -2756,6 +2756,8 @@ function fpMetaDashboard(){
   // and identifies the actual code version loaded on this device.
   function updateLogScreen(){
     const versions=[
+      {version:'r74',date:'2026.11.15',title:'地価データをAPIキーなしで自動取得',
+        details:['国土数値情報（国土交通省）の地価公示・地価調査を毎週自動で取り込み（登録不要）','愛知県・岐阜県の公表平均と一致することを確認','実勢・中古戸建はAPIキーを登録した場合だけ表示']},
       {version:'r73',date:'2026.11.15',title:'地価ランキングを追加（愛知県全域＋多治見周辺）',
         details:['国土交通省 不動産情報ライブラリの地価公示・地価調査・取引価格を自動集計','坪単価・前年比・5/10年・実勢・中古戸建・予算・地点・駅の8種類','「🔄 最新にする」でGitHub Actionsを起動し、公表時期にはボタンでお知らせ','物件比較に「土地の割安度（相場比）」を追加']},
       {version:'r72',date:'2026.10.28',title:'表示年による住宅予算の変動を修正',
@@ -2866,6 +2868,9 @@ function fpMetaDashboard(){
   const LAND_REGION_ORDER=['名古屋市','尾張','知多','西三河','東三河','東濃','中濃'];
   const LAND_PHASES=[['prep','準備中'],['fetch','取得中'],['apply','反映中'],['done','完了']];
   const LAND_DISCLAIMER='このサービスは、国土交通省不動産情報ライブラリのAPI機能を使用していますが、提供情報の最新性、正確性、完全性等が保証されたものではありません。';
+  const LAND_CREDIT='出典：「国土数値情報（地価公示データ・都道府県地価調査データ）」（国土交通省）を加工して作成';
+  const landHasTrade=()=>!!(landData&&landData.tradeAvailable!==false&&landData.sources?.trade);
+  const landCreditText=()=>LAND_CREDIT+(landHasTrade()?'。取引価格：'+LAND_DISCLAIMER:'');
   const LAND_NOTE='地価公示・地価調査は鑑定評価による標準的な更地価格で、実際の売り出し価格とは異なります';
   let landData=null;
   const landSync={phase:'',startedAt:0,error:'',timer:null};
@@ -2968,7 +2973,7 @@ function fpMetaDashboard(){
     if(landData.seed)reasons.push('初期データ');
     if((s.koji?.year||0)<e.koji)reasons.push('地価公示');
     if((s.chosa?.year||0)<e.chosa)reasons.push('地価調査');
-    if(!s.trade||String(s.trade.latestPeriod||'')<e.trade)reasons.push('取引価格');
+    if(landData.tradeAvailable!==false&&!landData.seed&&(!s.trade||String(s.trade.latestPeriod||'')<e.trade))reasons.push('取引価格');
     return {stale:reasons.length>0,reasons};
   }
 
@@ -3214,7 +3219,7 @@ function fpMetaDashboard(){
     const when=landData?.seed?'初期データ':gen&&Number.isFinite(gen.getTime())?'最終更新 '+(gen.getMonth()+1)+'/'+gen.getDate():'';
     return '<button class="lp-stamp" data-act="lp-about" aria-label="データ時点と出典">'+
       (st.stale?'<b class="lp-badge">'+(landData?.seed?'初期データ表示中':'新しい地価が公表されたかも')+'</b>':'')+
-      '<span>公示 '+(s.koji?.year||'—')+'.1.1・調査 '+(s.chosa?.year||'—')+'.7.1・取引 '+esc(s.trade?.latestPeriod||'—')+'</span>'+
+      '<span>公示 '+(s.koji?.year||'—')+'.1.1・調査 '+(s.chosa?.year||'—')+'.7.1'+(landHasTrade()?'・取引 '+esc(s.trade.latestPeriod):'')+'</span>'+
       '<span class="lp-when">'+esc(when)+'</span></button>';
   }
   function landHeaderHtml(){
@@ -3252,10 +3257,12 @@ function fpMetaDashboard(){
     const L=state.land;
     if(!landData)return '<section class="screen lp-screen">'+landHeaderHtml()+
       empty('◔','地価データを読み込み中','初回は通信が必要です。通信できる場所で開いてください。')+'</section>';
-    const rows=landRows(),per=landPerPage(),total=Math.max(1,Math.ceil(rows.length/per));
+    const noTrade=['trade','house'].includes(L.type)&&!landHasTrade()&&!landData.seed;
+    const rows=noTrade?[]:landRows(),per=landPerPage(),total=Math.max(1,Math.ceil(rows.length/per));
     ui.lpPage=Math.max(0,Math.min(ui.lpPage||0,total-1));
     const page=rows.slice(ui.lpPage*per,(ui.lpPage+1)*per);
-    const hint=landData.seed?'初期データは一部の市区町村だけです。「🔄 最新にする」で全市区町村を取得します':'絞り込みを変えてください';
+    const hint=noTrade?'実勢・中古戸建は実際の取引価格（不動産情報ライブラリのAPIキーを登録した場合だけ取得）で表示します。地価公示・地価調査のランキングはキーなしで使えます':
+      landData.seed?'初期データは一部の市区町村だけです。「🔄 最新にする」で全市区町村を取得します':'絞り込みを変えてください';
     return '<section class="screen lp-screen">'+landHeaderHtml()+landStampHtml()+
       '<div class="lp-types swipe-zone" data-swipe="lp-types" role="tablist" aria-label="ランキングの種類">'+LAND_TYPES.map(([k,l])=>
         '<button role="tab" aria-selected="'+(L.type===k)+'" class="'+(L.type===k?'active':'')+'" data-act="lp-type" data-value="'+k+'">'+(k==='price'&&L.unit==='sqm'?'㎡単価':l)+'</button>').join('')+'</div>'+
@@ -3263,9 +3270,9 @@ function fpMetaDashboard(){
         '<button class="'+(L.filter===k?'active':'')+'" data-act="lp-filter" data-value="'+k+'"'+(k==='all'?' title="愛知県全域＋多治見周辺7市町"':'')+'>'+(k==='tajimi'?l+L.radius+'km':l)+'</button>').join('')+'</div>'+
       landTogglesHtml()+
       '<div class="lp-list swipe-zone" data-swipe="lp-list" style="--lp-rows:'+per+'">'+
-        (page.length?page.map((r,i)=>landRowHtml(r,i)).join(''):'<div class="lp-empty"><strong>該当するデータがありません</strong><span>'+esc(hint)+'</span></div>')+'</div>'+
+        (page.length&&!noTrade?page.map((r,i)=>landRowHtml(r,i)).join(''):'<div class="lp-empty"><strong>'+(noTrade?'取引価格のデータはありません':'該当するデータがありません')+'</strong><span>'+esc(hint)+'</span></div>')+'</div>'+
       '<div class="lp-foot">'+navPager(ui.lpPage,total,'lp-page')+'</div>'+
-      '<button class="lp-source" data-act="lp-about">出典：国土交通省 不動産情報ライブラリ ⓘ</button></section>';
+      '<button class="lp-source" data-act="lp-about">出典：国土数値情報（国土交通省）ⓘ</button></section>';
   }
   function landSpark(hist){
     const h=hist.filter(x=>landFinite(x.avgSqm));
@@ -3301,17 +3308,18 @@ function fpMetaDashboard(){
       '<div class="lp-cells">'+
         cell('地価公示',landPriceHtml(r.koji?.avgSqm),(r.koji?.count||0)+'地点・<span class="'+landTone(r.koji?.chg)+'">'+landPct(r.koji?.chg)+'</span>',r.koji?.count>0&&r.koji.count<3)+
         cell('地価調査'+yearNote(r.chosa),landPriceHtml(r.chosa?.avgSqm),(r.chosa?.count||0)+'地点・<span class="'+landTone(r.chosa?.chg)+'">'+landPct(r.chosa?.chg)+'</span>',r.chosa?.count>0&&r.chosa.count<3)+
-        cell('実勢の土地取引',landPriceHtml(tl.v?tl.v/LAND_TSUBO:null),tl.n+'件'+tl.label+'・中央値',tl.ref||tl.n>0&&tl.n<5)+
+        (landHasTrade()?cell('実勢の土地取引',landPriceHtml(tl.v?tl.v/LAND_TSUBO:null),tl.n+'件'+tl.label+'・中央値',tl.ref||tl.n>0&&tl.n<5):
+          cell('住宅地の中央値',landPriceHtml(all.medianSqm),'公示・調査 '+(allCount||0)+'地点',false))+
         cell('商業地（参考）',landPriceHtml(c.commercial?.avgSqm),(c.commercial?.count||0)+'地点・<span class="'+landTone(c.commercial?.chg)+'">'+landPct(c.commercial?.chg)+'</span>',false)+
       '</div>'+
-      '<div class="lp-rates"><span>上昇率</span><b class="'+landTone(all.chg)+'">1年 '+landPct(all.chg,1)+'</b><b class="'+landTone(r.chg5y)+'">5年 '+landPct(r.chg5y,1)+'</b><b class="'+landTone(r.chg10y)+'">10年 '+landPct(r.chg10y,1)+'</b><em>中古戸建 '+landMan(th.v)+'</em></div>'+
+      '<div class="lp-rates"><span>上昇率</span><b class="'+landTone(all.chg)+'">1年 '+landPct(all.chg,1)+'</b><b class="'+landTone(r.chg5y)+'">5年 '+landPct(r.chg5y,1)+'</b><b class="'+landTone(r.chg10y)+'">10年 '+landPct(r.chg10y,1)+'</b>'+(landHasTrade()?'<em>中古戸建 '+landMan(th.v)+'</em>':'')+'</div>'+
       '<div class="lp-points"><span class="lp-points-title">地点トップ'+limit+'（住宅地）</span>'+(pts.length?pts.map(p=>
         '<div><span>'+esc(landShortAddress(p.address,c))+'<small>'+(p.kind==='koji'?'公示':'調査')+(p.station?'・'+esc(p.station)+'駅':'')+'</small></span><b>'+landPriceHtml(p.priceSqm,{small:false})+'</b><em class="'+landTone(p.chg)+'">'+landPct(p.chg,1)+'</em></div>').join(''):
         '<div class="lp-points-empty">地点データは「🔄 最新にする」で取得されます</div>')+'</div>'+
       (j?'<button class="lp-budget-line" data-act="lp-settings"><span>'+L.wishTsubo+'坪の土地総額</span><b>'+landMan(j.total)+'</b>'+
         (j.grade===null?'<small>予算を設定 ›</small>':'<span class="rating-face '+faceClass(j.grade)+'">'+mark(j.grade)+'</span><small>土地予算 '+digits.format(Math.round(j.land/10000))+'万円・買える'+Math.floor(j.can)+'坪</small>')+'</button>':'')+
       '<div class="lp-detail-actions"><button class="btn primary flex1" data-act="lp-compare" data-value="'+esc(c.code)+'">物件と比べる</button><button class="btn flex1" data-act="lp-about">データについて</button></div>'+
-      '<p class="lp-disclaimer">'+esc(LAND_DISCLAIMER)+'</p></section></div>';
+      '<p class="lp-disclaimer">'+esc(landCreditText())+'</p></section></div>';
   }
   function landSettingsScreen(){
     const L=state.land,b=landBudget(),token=landToken();
@@ -3332,15 +3340,15 @@ function fpMetaDashboard(){
   }
   function landAboutScreen(){
     const s=landData?.sources||{},gen=landData?.generatedAt?new Date(landData.generatedAt):null,checks=(landData?.validation||[]).filter(v=>v.actual!=null);
-    const period=s.trade?.latestPeriod?String(s.trade.latestPeriod).replace(/(\d{4})Q(\d)/,'$1年第$2四半期'):'未取得';
+    const period=s.trade?.latestPeriod?String(s.trade.latestPeriod).replace(/(\d{4})Q(\d)/,'$1年第$2四半期'):'未取得（APIキー登録時のみ）';
     const st=landStale();
     return modalFrame('データについて','<div class="panel detail grow lp-about">'+
       '<div class="lp-about-block"><span class="kicker">データ時点</span><p>地価公示 '+(s.koji?.year?s.koji.year+'年1月1日':'—')+'／地価調査 '+(s.chosa?.year?s.chosa.year+'年7月1日':'—')+'／取引 '+esc(period)+'</p>'+
         '<p>最終更新：'+(landData?.seed?'初期データ（公表資料の平均値のみ）':gen?(gen.getMonth()+1)+'月'+gen.getDate()+'日':'—')+(st.stale?'　<b class="lp-badge">'+esc(st.reasons.join('・'))+'が新しくなっている可能性</b>':'')+'</p></div>'+
-      '<div class="lp-about-block"><span class="kicker">公表の目安</span><p>地価公示：毎年3月下旬（1月1日時点）／地価調査：9月中旬〜下旬（7月1日時点）／取引価格：1・4・7・10月の下旬に四半期分を追加</p></div>'+
-      '<div class="lp-about-block"><span class="kicker">算出方法</span><p>住宅地の平均＝各地点価格の単純平均。前年比＝継続地点の変動率の平均（公式と同じ）。5年・10年＝同じ地点の価格を比較（入れ替わった地点は除外）。実勢＝「宅地(土地)」直近4四半期の坪単価の中央値（上下5%除外、5件未満は参考）。坪単価＝㎡単価×3.305785。地点数3未満は「参考」。</p></div>'+
+      '<div class="lp-about-block"><span class="kicker">公表の目安</span><p>地価公示：毎年3月下旬（1月1日時点）／地価調査：9月中旬〜下旬（7月1日時点）。国土数値情報にも同じ時期に掲載され、毎週月曜の朝に自動で取り込みます。</p></div>'+
+      '<div class="lp-about-block"><span class="kicker">算出方法</span><p>住宅地の平均＝各地点価格の単純平均。前年比＝継続地点の変動率の平均（公式と同じ）。5年・10年＝同じ地点の過去の価格と比較（当時選定されていない地点は除外）。実勢（APIキー登録時）＝「宅地(土地)」直近4四半期の坪単価の中央値（上下5%除外、5件未満は参考）。坪単価＝㎡単価×3.305785。地点数3未満は「参考」。</p></div>'+
       (checks.length?'<div class="lp-about-block"><span class="kicker">検算（公表値との差）</span><div class="lp-checks">'+checks.slice(0,10).map(v=>'<span>'+esc(v.label.replace(/ \d{4}年 /,' '))+'</span><b class="'+(v.ok?'ok':v.partial?'':'ng')+'">'+(v.diffPct>0?'+':'')+v.diffPct+'%</b>').join('')+'</div></div>':'')+
-      '<p class="lp-disclaimer">'+esc(LAND_NOTE)+'。'+esc(LAND_DISCLAIMER)+'</p></div>');
+      '<p class="lp-disclaimer">'+esc(LAND_NOTE)+'。'+esc(landCreditText())+'</p></div>');
   }
   function landCityOptions(selected){
     const list=landData?.cities||[];

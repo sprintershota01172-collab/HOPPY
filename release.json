@@ -1,10 +1,10 @@
 {
-  "version": "r73",
+  "version": "r74",
   "ui": "compact-visual",
   "revised": "2026-11-15",
   "data_schema": "hoppy-phase1-v1",
-  "entrypoint": "visual-r73.html",
+  "entrypoint": "visual-r74.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Add land price ranking (Aichi + Tajimi area) with one-tap GitHub Actions refresh"
+  "release_note": "Land price data from MLIT KSJ open data (no API key needed)"
 }

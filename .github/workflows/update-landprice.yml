@@ -1,14 +1,9 @@
 name: 地価データ更新
 
 # アプリの「🔄 最新にする」ボタン（workflow_dispatch）と、毎週月曜の朝（JST 6:17）に実行。
-# 公表されていない期間は過去分をキャッシュから使うため、数分で終わります。
+# 国土数値情報（登録不要）から地価公示・地価調査をダウンロードして集計。1〜2分で終わります。
 on:
   workflow_dispatch:
-    inputs:
-      full:
-        description: '全タイルを再走査する'
-        type: boolean
-        default: false
   schedule:
     - cron: '17 21 * * 0'   # UTC 日曜 21:17 = JST 月曜 6:17
 
@@ -23,7 +18,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,25 +29,12 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Check API key
-        env:
-          REINFOLIB_API_KEY: ${{ secrets.REINFOLIB_API_KEY }}
-        run: |
-          if [ -z "$REINFOLIB_API_KEY" ]; then
-            echo "::error::REINFOLIB_API_KEY が未登録です。Settings → Secrets and variables → Actions に登録してください。"
-            exit 1
-          fi
-
       - name: Fetch and aggregate land prices
         id: fetch
         env:
           REINFOLIB_API_KEY: ${{ secrets.REINFOLIB_API_KEY }}
-        run: |
-          if [ "${{ inputs.full }}" = "true" ]; then
-            node scripts/fetch-landprice.mjs --full
-          else
-            node scripts/fetch-landprice.mjs
-          fi
+        # APIキーは任意（登録すると取引価格＝実勢・中古戸建も集計）。地価公示・地価調査はキー不要。
+        run: node scripts/fetch-landprice.mjs
 
       - name: Commit when the data changed
         id: commit

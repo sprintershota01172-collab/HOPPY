@@ -1,32 +1,31 @@
 #!/usr/bin/env node
-// ほっぴーくん 地価ランキング集計スクリプト（Node 20 以上）
+// ほっぴーくん 地価ランキング集計スクリプト（Node 20 以上・APIキー不要）
 //
-//   REINFOLIB_API_KEY=xxxx node scripts/fetch-landprice.mjs          # 通常（差分だけ取得）
-//   REINFOLIB_API_KEY=xxxx node scripts/fetch-landprice.mjs --full   # 全タイル再走査
+//   node scripts/fetch-landprice.mjs
+//   REINFOLIB_API_KEY=xxxx node scripts/fetch-landprice.mjs   # 任意：取引価格（実勢・中古戸建）も集計
 //
-// データ: 国土交通省「不動産情報ライブラリ」API
-//   XIT002 市区町村一覧 / XPT002 地価公示・地価調査ポイント / XIT001 取引価格
-// 出力:   data/landprice.json（アプリが読む集計結果）
-// キャッシュ（Pagesには配信しない）:
-//   data/tile-cache.json          … 対象地点が無いタイル（海・山林・対象外）の一覧
-//   data/archive/xpt002-YYYY.json … 年ごとの地点（過去年の公表値は変わらないため再取得しない）
-//
-// APIキーは環境変数からのみ読み、ファイル・ログ・出力JSONには書き出さない。
+// 地価公示・地価調査：国土数値情報（国土交通省）のダウンロードデータ（登録不要・無料）
+//   https://nlftp.mlit.go.jp/ksj/gml/data/L01/L01-26/L01-26_23_GML.zip （地価公示・愛知）など
+//   1ファイルに各地点の過去の価格も入っているため、10年の推移も同じファイルから計算できる。
+// 取引価格（任意）：不動産情報ライブラリAPI XIT001（APIキーがある場合だけ）
+// 出力：data/landprice.json（中身が前回と同じなら書き換えない）
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
+export const KSJ_BASE = 'https://nlftp.mlit.go.jp/ksj/gml/data/';
 export const API_BASE = 'https://www.reinfolib.mlit.go.jp/ex-api/external/';
 export const TSUBO = 3.305785;
 export const TAJIMI = { lat: 35.334, lon: 137.121 };
-export const BBOX = { south: 34.55, north: 35.60, west: 136.65, east: 137.85 };
-export const ZOOM = 13;
 export const RESIDENTIAL = '住宅地';
 export const COMMERCIAL = '商業地';
-// 00=住宅地, 05=商業地, 10=市街化調整区域内の現況宅地（検算用に取得。平均には含めない）
-export const USE_CODES = '00,05,10';
-
+export const USE_NAMES = { '000': '住宅地', '003': '宅地見込地', '005': '商業地', '007': '準工業地', '009': '工業地', '010': '調整区域内宅地', '013': '林地', '020': '林地' };
+export const PREFS = { '23': '愛知県', '21': '岐阜県' };
+export const REGION_ORDER = ['名古屋市', '尾張', '知多', '西三河', '東三河', '東濃', '中濃'];
+export const REGION_IDS = { 名古屋市: 'nagoya', 尾張: 'owari', 知多: 'chita', 西三河: 'nishimikawa', 東三河: 'higashimikawa', 東濃: 'tono', 中濃: 'chuno' };
 export const AICHI_REGIONS = {
   尾張: ['一宮市', '瀬戸市', '春日井市', '津島市', '犬山市', '江南市', '小牧市', '稲沢市', '尾張旭市', '岩倉市',
     '豊明市', '日進市', '愛西市', '清須市', '北名古屋市', '弥富市', 'あま市', '長久手市',
@@ -35,20 +34,34 @@ export const AICHI_REGIONS = {
   西三河: ['岡崎市', '碧南市', '刈谷市', '豊田市', '安城市', '西尾市', '知立市', '高浜市', 'みよし市', '幸田町'],
   東三河: ['豊橋市', '豊川市', '蒲郡市', '新城市', '田原市', '設楽町', '東栄町', '豊根村']
 };
-export const GIFU_TARGETS = {
-  東濃: ['多治見市', '土岐市', '瑞浪市', '恵那市'],
-  中濃: ['可児市', '御嵩町', '美濃加茂市']
-};
-export const REGION_ORDER = ['名古屋市', '尾張', '知多', '西三河', '東三河', '東濃', '中濃'];
-export const REGION_IDS = { 名古屋市: 'nagoya', 尾張: 'owari', 知多: 'chita', 西三河: 'nishimikawa', 東三河: 'higashimikawa', 東濃: 'tono', 中濃: 'chuno' };
-export const PREFS = { '23': '愛知県', '21': '岐阜県' };
+export const GIFU_TARGETS = { 東濃: ['多治見市', '土岐市', '瑞浪市', '恵那市'], 中濃: ['可児市', '御嵩町', '美濃加茂市'] };
 
-// 7章の検算値（住宅地の平均 円/㎡）。集計結果と±5%以上ずれたらログに警告を出す。
+// 市区町村コード（全国地方公共団体コード）。APIキーなしで対象を確定するために使う。
+// APIキーがあれば XIT002 の一覧と名前を照合し、ずれていればログに警告を出す。
+export const CITY_CODES = {
+  '23101': '名古屋市千種区', '23102': '名古屋市東区', '23103': '名古屋市北区', '23104': '名古屋市西区',
+  '23105': '名古屋市中村区', '23106': '名古屋市中区', '23107': '名古屋市昭和区', '23108': '名古屋市瑞穂区',
+  '23109': '名古屋市熱田区', '23110': '名古屋市中川区', '23111': '名古屋市港区', '23112': '名古屋市南区',
+  '23113': '名古屋市守山区', '23114': '名古屋市緑区', '23115': '名古屋市名東区', '23116': '名古屋市天白区',
+  '23201': '豊橋市', '23202': '岡崎市', '23203': '一宮市', '23204': '瀬戸市', '23205': '半田市', '23206': '春日井市',
+  '23207': '豊川市', '23208': '津島市', '23209': '碧南市', '23210': '刈谷市', '23211': '豊田市', '23212': '安城市',
+  '23213': '西尾市', '23214': '蒲郡市', '23215': '犬山市', '23216': '常滑市', '23217': '江南市', '23219': '小牧市',
+  '23220': '稲沢市', '23221': '新城市', '23222': '東海市', '23223': '大府市', '23224': '知多市', '23225': '知立市',
+  '23226': '尾張旭市', '23227': '高浜市', '23228': '岩倉市', '23229': '豊明市', '23230': '日進市', '23231': '田原市',
+  '23232': '愛西市', '23233': '清須市', '23234': '北名古屋市', '23235': '弥富市', '23236': 'みよし市', '23237': 'あま市',
+  '23238': '長久手市', '23302': '東郷町', '23342': '豊山町', '23361': '大口町', '23362': '扶桑町', '23424': '大治町',
+  '23425': '蟹江町', '23427': '飛島村', '23441': '阿久比町', '23442': '東浦町', '23445': '南知多町', '23446': '美浜町',
+  '23447': '武豊町', '23501': '幸田町', '23561': '設楽町', '23562': '東栄町', '23563': '豊根村',
+  '21204': '多治見市', '21208': '瑞浪市', '21210': '恵那市', '21211': '美濃加茂市', '21212': '土岐市', '21214': '可児市',
+  '21521': '御嵩町'
+};
+
+// 7章の検算値（住宅地の平均 円/㎡）
 export const EXPECTED = [
   { scope: 'pref', code: '23', kind: 'koji', year: 2026, avgSqm: 132130, chg: 1.79, label: '愛知県 2026年 地価公示' },
   { scope: 'pref', code: '23', kind: 'chosa', year: 2026, avgSqm: 122706, chg: 1.32, label: '愛知県 2026年 地価調査' },
-  { scope: 'pref', code: '21', kind: 'koji', year: 2026, avgSqm: 46640, chg: -0.22, label: '岐阜県 2026年 地価公示', partial: true },
-  { scope: 'pref', code: '21', kind: 'chosa', year: 2026, avgSqm: 33337, chg: -0.73, label: '岐阜県 2026年 地価調査', partial: true },
+  { scope: 'pref', code: '21', kind: 'koji', year: 2026, avgSqm: 46640, chg: -0.22, label: '岐阜県 2026年 地価公示' },
+  { scope: 'pref', code: '21', kind: 'chosa', year: 2026, avgSqm: 33337, chg: -0.73, label: '岐阜県 2026年 地価調査' },
   { scope: 'city', name: '多治見市', kind: 'koji', year: 2026, avgSqm: 38937, chg: 0.32, label: '多治見市 2026年 地価公示' },
   { scope: 'city', name: '多治見市', kind: 'chosa', year: 2026, avgSqm: 36461, chg: -0.09, label: '多治見市 2026年 地価調査' },
   { scope: 'city', name: '可児市', kind: 'koji', year: 2026, avgSqm: 31600, chg: -0.27, label: '可児市 2026年 地価公示' },
@@ -59,14 +72,12 @@ export const EXPECTED = [
 
 /* ---------- 小さな純関数（tests/landprice.test.cjs で検証） ---------- */
 
-// 「97,800(円/㎡)」「97800」「97,800円」→ 97800。数字が無ければ null。
 export function parseYen(value) {
   if (value == null || value === '') return null;
   if (typeof value === 'number') return Number.isFinite(value) ? value : null;
   const m = String(value).replace(/[,，\s]/g, '').match(/-?\d+(?:\.\d+)?/);
   return m ? Number(m[0]) : null;
 }
-// 「3.9」「-1.1」「△1.1」「▲0.3%」→ 数値（%）。空なら null。
 export function parseRate(value) {
   if (value == null || value === '') return null;
   if (typeof value === 'number') return Number.isFinite(value) ? value : null;
@@ -88,7 +99,6 @@ export function median(xs) {
   const m = Math.floor(v.length / 2);
   return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
 }
-// 上下 trim（既定5%）を除いた中央値
 export function trimmedMedian(xs, trim = 0.05) {
   const v = xs.filter(Number.isFinite).sort((a, b) => a - b);
   const cut = Math.floor(v.length * trim);
@@ -103,112 +113,156 @@ export function haversineKm(a, b) {
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
 }
-export const lon2x = (lon, z) => Math.floor((lon + 180) / 360 * 2 ** z);
-export function lat2y(lat, z) {
-  const r = lat * Math.PI / 180;
-  return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** z);
+export function regionOfName(code, name) {
+  if (/^231\d\d$/.test(code)) return '名古屋市';
+  for (const [region, list] of Object.entries({ ...AICHI_REGIONS, ...GIFU_TARGETS })) if (list.includes(name)) return region;
+  return null;
 }
-export function tilesFor(b = BBOX, z = ZOOM) {
-  const out = [];
-  for (let x = lon2x(b.west, z); x <= lon2x(b.east, z); x++)
-    for (let y = lat2y(b.north, z); y <= lat2y(b.south, z); y++) out.push(x + '/' + y);
+export function targetList() {
+  return Object.entries(CITY_CODES).map(([code, name]) => ({
+    code, name, prefCode: code.slice(0, 2), pref: PREFS[code.slice(0, 2)], region: regionOfName(code, name)
+  }));
+}
+export const ksjUrl = (dataset, year, pref) => {
+  const yy = String(year % 100).padStart(2, '0');
+  return KSJ_BASE + dataset + '/' + dataset + '-' + yy + '/' + dataset + '-' + yy + '_' + pref + '_GML.zip';
+};
+
+/* ---------- 国土数値情報の読み取り ---------- */
+
+// 属性の番号（L01_008 など）は年度ごとに変わるため、中身から列を判定する
+const keyOrder = k => { const m = String(k).match(/(\d+)\s*$/); return m ? Number(m[1]) : 1e9; };
+const isNum = v => v !== null && v !== '' && v !== undefined && Number.isFinite(Number(v));
+export function detectSchema(features, { pref, year }) {
+  const sample = features.slice(0, 600).map(f => f.properties || {});
+  if (!sample.length) throw new Error('地点データが空です');
+  const keys = [...new Set(sample.flatMap(p => Object.keys(p)))].sort((a, b) => keyOrder(a) - keyOrder(b) || String(a).localeCompare(b));
+  const frac = (key, pred) => key == null ? 0 : sample.filter(p => pred(p[key], p)).length / sample.length;
+  const after = (key, n = 1) => keys[keys.indexOf(key) + n];
+  const find = (pred, min = 0.9, from = 0) => keys.slice(Math.max(0, from)).find(k => frac(k, pred) >= min);
+  const cityKey = find(v => /^\d{5}$/.test(String(v ?? '').trim()) && String(v).trim().startsWith(pref));
+  const useKey = find(v => /^\d{1,3}$/.test(String(v ?? '').trim()) && Object.prototype.hasOwnProperty.call(USE_NAMES, String(v).trim().padStart(3, '0')));
+  const yearKey = find(v => Number(v) === year, 0.9);
+  if (!cityKey || !useKey || !yearKey) throw new Error('列を判定できません（市区町村コード=' + cityKey + ' 用途=' + useKey + ' 年度=' + yearKey + '）');
+  const priceKey = after(yearKey);
+  if (frac(priceKey, v => isNum(v) && Number(v) >= 100 && Number(v) < 1e8) < 0.9) throw new Error('価格の列を判定できません（年度の次の列 ' + priceKey + '）');
+  const chgKey = after(priceKey);
+  const chgOk = frac(chgKey, v => v === null || v === '' || v === undefined || (isNum(v) && Math.abs(Number(v)) < 100)) >= 0.9;
+  const seqKey = after(useKey);
+  const seqOk = frac(seqKey, v => /^\d{1,3}$/.test(String(v ?? '').trim())) >= 0.9;
+  // 住所（所在並びに地番）と、その直前の標準地名（「多治見」など）
+  const addressKey = find(v => typeof v === 'string' && /[0-9０-９]/.test(v) && /(番|丁目|字|地先)/.test(v), 0.6, keys.indexOf(chgKey));
+  const nameKey = addressKey ? after(addressKey, -1) : null;
+  const nameOk = !!nameKey && frac(nameKey, v => typeof v === 'string' && v.length >= 1 && v.length <= 8 && !/\d/.test(v)) >= 0.8;
+  // 最寄り駅：住所より後ろで、数字を含まない短い文字列のうち、値の種類が最も多い列
+  let stationKey = null, best = 0;
+  if (addressKey) for (const k of keys.slice(keys.indexOf(addressKey) + 2)) {
+    const vals = sample.map(p => p[k]).filter(v => typeof v === 'string' && v.trim() && v !== '_');
+    if (vals.length < sample.length * 0.8 || vals.some(v => /\d/.test(v))) continue;
+    const avg = vals.reduce((a, v) => a + v.length, 0) / vals.length;
+    if (avg < 1.5 || avg > 7) continue;
+    const distinct = new Set(vals).size / vals.length;
+    if (distinct > best) { best = distinct; stationKey = k; }
+  }
+  if (best < 0.15) stationKey = null;
+  // 価格の推移列：当年価格と同じ値が入っている列（価格列より後ろ）を当年とし、その前を過去年とみなす
+  let histIndex = -1;
+  for (let i = keys.indexOf(priceKey) + 2; i < keys.length; i++) {
+    if (frac(keys[i], (v, p) => isNum(v) && Number(v) === Number(p[priceKey])) >= 0.85 &&
+        frac(keys[i - 1], isNum) >= 0.9 && frac(keys[i - 2], isNum) >= 0.9) { histIndex = i; break; }
+  }
+  const history = [];
+  if (histIndex > 0) for (let i = histIndex, y = year; i >= 0 && y >= year - 12; i--, y--) {
+    if (frac(keys[i], isNum) < 0.9) break;
+    history.push([y, keys[i]]);
+  }
+  return { cityKey, useKey, seqKey: seqOk ? seqKey : null, yearKey, priceKey, chgKey: chgOk ? chgKey : null,
+    addressKey: addressKey || null, nameKey: nameOk ? nameKey : null, stationKey, history };
+}
+export function pointsFromFeatures(features, schema, { kind, year }) {
+  const s = schema, out = [];
+  for (const f of features) {
+    const p = f.properties || {};
+    const c = f.geometry?.coordinates || [];
+    const price = Number(p[s.priceKey]);
+    if (!Number.isFinite(price) || price <= 0) continue;
+    const city = String(p[s.cityKey] ?? '').trim();
+    const useCode = String(p[s.useKey] ?? '').trim().padStart(3, '0');
+    const seq = s.seqKey ? String(p[s.seqKey] ?? '').trim() : '';
+    const name = s.nameKey ? String(p[s.nameKey] ?? '').trim() : '';
+    const lot = name && seq ? name + (useCode === '000' ? '' : String(Number(useCode))) + '-' + Number(seq) : '';
+    const hist = {};
+    for (const [y, k] of s.history) { const v = Number(p[k]); if (Number.isFinite(v) && v > 0) hist[y] = v; }
+    hist[year] = price;
+    const station = s.stationKey ? String(p[s.stationKey] ?? '').trim() : '';
+    out.push({
+      key: kind + '|' + city + '|' + useCode + '|' + (seq || (s.addressKey ? p[s.addressKey] : '') || out.length),
+      kind, year, cityCode: city, pref: city.slice(0, 2), use: USE_NAMES[useCode] || useCode, useCode, lot,
+      address: s.addressKey ? String(p[s.addressKey] ?? '').trim() : '',
+      station: station === '_' ? '' : station.replace(/駅$/, ''), priceSqm: price,
+      chg: s.chgKey ? parseRate(p[s.chgKey]) : null,
+      lat: Number.isFinite(+c[1]) ? Math.round(c[1] * 1e5) / 1e5 : null,
+      lon: Number.isFinite(+c[0]) ? Math.round(c[0] * 1e5) / 1e5 : null,
+      hist
+    });
+  }
   return out;
 }
-export function cleanName(name) {
-  // 「可児郡御嵩町」→「御嵩町」。政令市の区は「名古屋市中区」の形にそろえる。
-  return String(name || '').replace(/^.+?郡(?=.+[町村]$)/, '').trim();
-}
-export function regionOf(prefCode, code, name) {
-  const n = cleanName(name);
-  if (prefCode === '23') {
-    if (/^231\d\d$/.test(code) && code !== '23100') return '名古屋市';
-    for (const [region, list] of Object.entries(AICHI_REGIONS)) if (list.includes(n)) return region;
-    return null;
+
+// シェープファイル（.dbf/.shp）の最小限の読み取り。zip に GeoJSON が無い場合に使う。
+export function parseDbf(buf, encoding = 'utf-8') {
+  const count = buf.readUInt32LE(4), headerLen = buf.readUInt16LE(8), recLen = buf.readUInt16LE(10);
+  const fields = [];
+  for (let off = 32; off < headerLen - 1 && buf[off] !== 0x0d; off += 32) {
+    const name = buf.subarray(off, off + 11).toString('latin1').replace(/\0.*$/, '').trim();
+    fields.push({ name, type: String.fromCharCode(buf[off + 11]), len: buf[off + 16] });
   }
-  if (prefCode === '21') {
-    for (const [region, list] of Object.entries(GIFU_TARGETS)) if (list.includes(n)) return region;
+  let dec;
+  try { dec = new TextDecoder(encoding); } catch (_) { dec = new TextDecoder('utf-8'); }
+  const rows = [];
+  for (let i = 0; i < count; i++) {
+    const base = headerLen + i * recLen;
+    if (buf[base] === 0x2a) continue;
+    let pos = base + 1;
+    const row = {};
+    for (const f of fields) {
+      const raw = dec.decode(buf.subarray(pos, pos + f.len)).replace(/\0/g, '').trim();
+      pos += f.len;
+      row[f.name] = (f.type === 'N' || f.type === 'F') ? (raw === '' ? null : Number(raw)) : raw;
+    }
+    rows.push(row);
   }
-  return null;
+  return rows;
 }
-// XIT002 の一覧から対象市区町村を確定（コードはハードコードせず名前で照合）
-export function pickTargets(prefCode, list) {
-  const rows = (list || []).map(x => ({ code: String(x.id ?? x.code ?? ''), name: String(x.name ?? '') }));
-  const hasWards = rows.some(r => /^231\d\d$/.test(r.code) && r.code !== '23100');
-  return rows.map(r => {
-    if (prefCode === '23' && r.code === '23100' && hasWards) return null; // 名古屋市全体は区で扱う
-    const region = regionOf(prefCode, r.code, r.name);
-    if (!region) return null;
-    let name = cleanName(r.name);
-    if (region === '名古屋市' && !name.startsWith('名古屋市')) name = '名古屋市' + name;
-    return { code: r.code, name, pref: PREFS[prefCode], prefCode, region };
-  }).filter(Boolean);
-}
-// 地価区分（地価公示=koji / 地価調査=chosa）
-export function kindFromType(value, mapping) {
-  const s = String(value ?? '').trim();
-  if (mapping && mapping[s]) return mapping[s];
-  if (/公示/.test(s)) return 'koji';
-  if (/調査|基準/.test(s)) return 'chosa';
-  return null;
-}
-export function useOf(name) {
-  const s = String(name || '');
-  if (/商業/.test(s)) return COMMERCIAL;
-  if (/調整/.test(s)) return '調整区域内宅地';
-  if (/見込/.test(s)) return '宅地見込地';
-  if (/住宅/.test(s)) return RESIDENTIAL;
-  return s || 'その他';
-}
-export function normalizePoint(feature, kind, year) {
-  const p = feature?.properties || {};
-  const c = feature?.geometry?.coordinates || [];
-  const price = parseYen(p.u_current_years_price_ja);
-  if (!price || !kind) return null;
-  const lot = String(p.standard_lot_number_ja || '').trim();
-  const address = String(p.location || p.residence_display_name_ja || p.place_name_ja || '').trim();
-  const pref = String(p.prefecture_code || '').padStart(2, '0');
-  return {
-    key: kind + '|' + pref + '|' + (lot || address),
-    kind, year, lot, pref,
-    cityCode: String(p.city_code || ''),
-    use: useOf(p.use_category_name_ja),
-    address,
-    station: String(p.nearest_station_name_ja || '').trim(),
-    priceSqm: price,
-    chg: parseRate(p.year_on_year_change_rate),
-    lat: Number.isFinite(+c[1]) ? Math.round(c[1] * 1e5) / 1e5 : null,
-    lon: Number.isFinite(+c[0]) ? Math.round(c[0] * 1e5) / 1e5 : null
-  };
-}
-// 同じ地点の重複を地点番号（無ければ所在地＋区分＋年）で除去
-export function dedupe(points) {
-  const map = new Map();
-  for (const p of points) if (p && !map.has(p.key + '|' + p.year)) map.set(p.key + '|' + p.year, p);
-  return [...map.values()];
-}
-// 価格の統計（平均・中央値・件数・継続地点の変動率平均＝公式と同じ算出）
-export function priceStats(points) {
-  const prices = points.map(p => p.priceSqm);
-  const rates = points.map(p => p.chg).filter(Number.isFinite);
-  return {
-    avgSqm: roundInt(mean(prices)),
-    medianSqm: roundInt(median(prices)),
-    count: prices.length,
-    chg: rates.length ? round2(mean(rates)) : null
-  };
-}
-// 過去年の同じ地点と比べた上昇率（地点番号が同じでも300m以上動いたら入れ替わりとみなす）
-export function continuingChange(nowPoints, pastIndex) {
-  const rates = [];
-  for (const p of nowPoints) {
-    const q = pastIndex.get(p.key);
-    if (!q || !q.priceSqm) continue;
-    if (p.lat != null && q.lat != null && haversineKm(p, q) > 0.3) continue;
-    rates.push((p.priceSqm / q.priceSqm - 1) * 100);
+export function parseShpPoints(buf) {
+  const out = [];
+  let off = 100;
+  while (off + 12 <= buf.length) {
+    const len = buf.readInt32BE(off + 4) * 2, type = buf.readInt32LE(off + 8);
+    out.push(type === 1 ? [buf.readDoubleLE(off + 12), buf.readDoubleLE(off + 20)] : null);
+    off += 8 + len;
   }
-  return { chg: rates.length ? round2(mean(rates)) : null, count: rates.length };
+  return out;
 }
-// XIT001 1件 → 土地の坪単価（円/坪）
+function walk(dir) {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap(d => d.isDirectory() ? walk(path.join(dir, d.name)) : [path.join(dir, d.name)]);
+}
+export function readFeaturesFromDir(dir) {
+  const files = walk(dir);
+  const geojson = files.find(f => /\.geojson$/i.test(f));
+  if (geojson) return JSON.parse(fs.readFileSync(geojson, 'utf8').replace(/^﻿/, '')).features || [];
+  const shp = files.find(f => /\.shp$/i.test(f));
+  const dbf = shp && files.find(f => f.toLowerCase() === shp.toLowerCase().replace(/\.shp$/, '.dbf'));
+  if (!shp || !dbf) throw new Error('zip の中に GeoJSON もシェープファイルもありません');
+  const cpg = files.find(f => /\.cpg$/i.test(f));
+  let enc = cpg ? fs.readFileSync(cpg, 'utf8').trim().toLowerCase() : 'utf-8';
+  if (/932|sjis|shift/.test(enc)) enc = 'shift_jis';
+  const rows = parseDbf(fs.readFileSync(dbf), enc), pts = parseShpPoints(fs.readFileSync(shp));
+  return rows.map((properties, i) => ({ type: 'Feature', properties, geometry: pts[i] ? { type: 'Point', coordinates: pts[i] } : null }));
+}
+
+/* ---------- 取引価格（APIキーがある場合だけ） ---------- */
+
 export function tradeTsubo(row) {
   const unit = parseYen(row.UnitPrice);
   if (unit) return unit * TSUBO;
@@ -219,142 +273,34 @@ export function tradeTsubo(row) {
 }
 export function quarterKey(y, q) { return y + 'Q' + q; }
 export function prevQuarter(y, q, n = 1) {
-  let idx = y * 4 + (q - 1) - n;
+  const idx = y * 4 + (q - 1) - n;
   return [Math.floor(idx / 4), (idx % 4) + 1];
 }
-export function stripVolatile(obj) {
-  const { generatedAt, stats, ...rest } = obj || {};
-  return JSON.stringify(rest);
-}
-
-/* ---------- API クライアント ---------- */
-
-export function createClient({ key, gapMs = 250, retries = 3, fetchImpl = globalThis.fetch, log = () => {} }) {
+export function createClient({ key, gapMs = 250, retries = 3, fetchImpl = globalThis.fetch }) {
   let last = 0;
-  const stats = { requests: 0, retries: 0 };
+  const stats = { requests: 0 };
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   async function get(api, params) {
     const url = new URL(API_BASE + api);
     for (const [k, v] of Object.entries(params || {})) if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
     for (let attempt = 0; ; attempt++) {
-      const wait = last + gapMs + Math.floor(Math.random() * 50) - Date.now();
+      const wait = last + gapMs - Date.now();
       if (wait > 0) await sleep(wait);
       last = Date.now();
       let res;
-      try {
-        stats.requests++;
-        res = await fetchImpl(url, { headers: { 'Ocp-Apim-Subscription-Key': key, 'Accept-Encoding': 'gzip' } });
-      } catch (err) {
-        if (attempt >= retries) throw new Error(api + ' 通信エラー: ' + err.message);
-        stats.retries++; await sleep(1000 * 2 ** attempt); continue;
-      }
-      if (res.status === 401 || res.status === 403) throw new Error('APIキーが無効です（HTTP ' + res.status + '）。REINFOLIB_API_KEY を確認してください');
-      if (res.status === 404 || res.status === 204) return null;
-      if (res.status === 400) { log('  ' + api + ' 400: ' + url.search.replace(/&?x=\d+|&?y=\d+/g, '')); return null; }
-      if (res.status === 429 || res.status >= 500) {
-        if (attempt >= retries) throw new Error(api + ' HTTP ' + res.status + '（再試行' + retries + '回で失敗）');
-        stats.retries++; await sleep(1000 * 2 ** attempt); continue;
-      }
+      try { stats.requests++; res = await fetchImpl(url, { headers: { 'Ocp-Apim-Subscription-Key': key } }); }
+      catch (err) { if (attempt >= retries) throw new Error(api + ' 通信エラー: ' + err.message); await sleep(1000 * 2 ** attempt); continue; }
+      if (res.status === 401 || res.status === 403) throw new Error('APIキーが無効です（HTTP ' + res.status + '）');
+      if (res.status === 404 || res.status === 204 || res.status === 400) return null;
+      if (res.status === 429 || res.status >= 500) { if (attempt >= retries) throw new Error(api + ' HTTP ' + res.status); await sleep(1000 * 2 ** attempt); continue; }
       const text = await res.text();
-      if (!text.trim()) return null;
-      try { return JSON.parse(text); } catch (_) { throw new Error(api + ' のレスポンスがJSONではありません'); }
+      return text.trim() ? JSON.parse(text) : null;
     }
   }
   return { get, stats };
 }
-
-/* ---------- 取得処理 ---------- */
-
-const here = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(here, '..');
-let DATA = path.join(ROOT, 'data');
-let ARCHIVE = path.join(DATA, 'archive');
-const readJson = (file, fallback) => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) { return fallback; } };
-const writeJson = (file, value, pretty = false) => {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify(value, null, pretty ? 1 : 0) + '\n');
-};
-let log = (...a) => console.log(...a);
-
-async function loadTargets(client) {
-  const out = [];
-  for (const pref of ['23', '21']) {
-    const res = await client.get('XIT002', { area: pref });
-    const list = res?.data || [];
-    if (!list.length) throw new Error('XIT002 で ' + PREFS[pref] + ' の市区町村一覧が取得できませんでした');
-    out.push(...pickTargets(pref, list));
-  }
-  const want = 16 + 53 + 7; // 名古屋16区＋愛知53市町村＋岐阜7市町
-  log('対象市区町村: ' + out.length + '件（想定 ' + want + '件）');
-  const missing = [...Object.values(AICHI_REGIONS).flat(), ...Object.values(GIFU_TARGETS).flat()]
-    .filter(n => !out.some(c => c.name === n));
-  if (missing.length) log('  ⚠ 一覧で見つからなかった名前: ' + missing.join('、'));
-  return out;
-}
-
-function tileOf(lat, lon) { return lon2x(lon, ZOOM) + '/' + lat2y(lat, ZOOM); }
-const PROBE = tileOf(35.17, 136.905); // 名古屋市中区（公示・調査とも必ず地点がある）
-
-async function fetchTile(client, tile, year, classification) {
-  const [x, y] = tile.split('/');
-  const res = await client.get('XPT002', {
-    response_format: 'geojson', z: ZOOM, x, y, year,
-    priceClassification: classification, useCategoryCode: USE_CODES
-  });
-  return Array.isArray(res?.features) ? res.features : [];
-}
-
-// 最新年の判定と、land_price_type の値 → 公示/調査 の対応を学習
-async function probe(client, thisYear) {
-  const latest = {}, mapping = {};
-  for (const [kind, cls] of [['koji', 0], ['chosa', 1]]) {
-    for (let y = thisYear; y >= thisYear - 3; y--) {
-      const features = await fetchTile(client, PROBE, y, cls);
-      if (features.length) {
-        latest[kind] = y;
-        for (const f of features) mapping[String(f.properties?.land_price_type ?? '').trim()] = kind;
-        break;
-      }
-    }
-    if (!latest[kind]) throw new Error((kind === 'koji' ? '地価公示' : '地価調査') + 'の最新年を判定できませんでした');
-  }
-  // 値が公示・調査で重なっていれば区分を判別できない → 区分ごとに別々に取得
-  const values = Object.keys(mapping);
-  const kojiVals = new Set(), chosaVals = new Set();
-  for (const v of values) (mapping[v] === 'koji' ? kojiVals : chosaVals).add(v);
-  const separable = kojiVals.size > 0 && chosaVals.size > 0 && [...kojiVals].every(v => !chosaVals.has(v));
-  return { latest, mapping: separable ? mapping : null };
-}
-
-async function fetchYear(client, { year, kinds, tiles, mapping, targetSet, onTile }) {
-  const points = [];
-  const jobs = mapping && kinds.length === 2 ? [[null, kinds]] : kinds.map(k => [k === 'koji' ? 0 : 1, [k]]);
-  let n = 0;
-  for (const tile of tiles) {
-    let targetHits = 0;
-    for (const [cls, ks] of jobs) {
-      const features = await fetchTile(client, tile, year, cls);
-      for (const f of features) {
-        const kind = cls === 0 ? 'koji' : cls === 1 ? 'chosa' : kindFromType(f.properties?.land_price_type, mapping);
-        if (!ks.includes(kind)) continue;
-        const p = normalizePoint(f, kind, year);
-        if (!p || !targetSet.has(p.cityCode)) continue;
-        targetHits++; points.push(p);
-      }
-    }
-    onTile?.(tile, targetHits);
-    if (++n % 100 === 0) log('    ' + year + '年: ' + n + '/' + tiles.length + 'タイル（' + points.length + '地点）');
-  }
-  return dedupe(points);
-}
-
-const ROW_KEYS = ['key', 'kind', 'cityCode', 'use', 'priceSqm', 'chg', 'lat', 'lon', 'lot', 'address', 'station', 'pref'];
-const packRows = points => points.map(p => ROW_KEYS.map(k => p[k] ?? null));
-const unpackRows = (rows, year) => (rows || []).map(r => Object.fromEntries([...ROW_KEYS.map((k, i) => [k, r[i]]), ['year', year]]));
-
-async function fetchTrade(client, targetSet, now) {
-  // 取引価格は四半期ごとに約4か月後に追加される。新しい順に探して最初にデータがある期を最新とする。
-  let [y, q] = [now.getUTCFullYear(), Math.floor(now.getUTCMonth() / 3) + 1];
+async function fetchTrade(client, targetSet, nowJst, log) {
+  const [y, q] = [nowJst.getUTCFullYear(), Math.floor(nowJst.getUTCMonth() / 3) + 1];
   let latest = null;
   for (let i = 1; i <= 6 && !latest; i++) {
     const [yy, qq] = prevQuarter(y, q, i);
@@ -364,77 +310,52 @@ async function fetchTrade(client, targetSet, now) {
   if (!latest) { log('  ⚠ 取引価格の最新四半期が見つかりませんでした'); return null; }
   const quarters = Array.from({ length: 8 }, (_, i) => prevQuarter(latest[0], latest[1], i));
   const rows = [];
-  for (const [yy, qq] of quarters) {
-    for (const area of ['23', '21']) {
-      const res = await client.get('XIT001', { year: yy, quarter: qq, area, priceClassification: '01' });
-      for (const r of res?.data || []) {
-        const code = String(r.MunicipalityCode || '');
-        if (!targetSet.has(code)) continue;
-        if (r.PriceCategory && !/取引/.test(r.PriceCategory)) continue;
-        rows.push({ code, type: String(r.Type || ''), period: quarterKey(yy, qq), recent: quarters.slice(0, 4).some(([a, b]) => a === yy && b === qq), tsubo: tradeTsubo(r), price: parseYen(r.TradePrice) });
-      }
+  for (const [yy, qq] of quarters) for (const area of ['23', '21']) {
+    const res = await client.get('XIT001', { year: yy, quarter: qq, area, priceClassification: '01' });
+    for (const r of res?.data || []) {
+      const code = String(r.MunicipalityCode || '');
+      if (!targetSet.has(code)) continue;
+      rows.push({ code, type: String(r.Type || ''), recent: quarters.slice(0, 4).some(([a, b]) => a === yy && b === qq), tsubo: tradeTsubo(r), price: parseYen(r.TradePrice) });
     }
   }
-  log('  取引価格: ' + rows.length + '件（' + quarterKey(...quarters[7]) + '〜' + quarterKey(...latest) + '）');
-  return {
-    rows,
-    latestPeriod: quarterKey(...latest),
-    period4: quarterKey(...quarters[3]) + '-' + quarterKey(...latest),
-    period8: quarterKey(...quarters[7]) + '-' + quarterKey(...latest)
-  };
+  log('  取引価格: ' + rows.length + '件');
+  return { rows, latestPeriod: quarterKey(...latest), period4: quarterKey(...quarters[3]) + '-' + quarterKey(...latest), period8: quarterKey(...quarters[7]) + '-' + quarterKey(...latest) };
 }
-
 export function tradeSummary(rows, code, periods) {
   const mine = rows.filter(r => r.code === code);
-  const land = mine.filter(r => r.type === '宅地(土地)' && r.tsubo);
-  const house = mine.filter(r => r.type === '宅地(土地と建物)' && r.price);
+  const land = mine.filter(r => r.type === '宅地(土地)' && r.tsubo), house = mine.filter(r => r.type === '宅地(土地と建物)' && r.price);
   const pick = (xs, field, recent) => (recent ? xs.filter(r => r.recent) : xs).map(r => r[field]);
-  const l4 = pick(land, 'tsubo', true), h4 = pick(house, 'price', true);
-  const l8 = pick(land, 'tsubo', false), h8 = pick(house, 'price', false);
+  const l4 = pick(land, 'tsubo', true), h4 = pick(house, 'price', true), l8 = pick(land, 'tsubo', false), h8 = pick(house, 'price', false);
   return {
-    landTsuboMedian: roundInt(trimmedMedian(l4)), landCount: l4.length,
-    houseMedian: roundInt(trimmedMedian(h4)), houseCount: h4.length,
-    period: periods.period4,
-    land8: { median: roundInt(trimmedMedian(l8)), count: l8.length },
-    house8: { median: roundInt(trimmedMedian(h8)), count: h8.length },
-    period8: periods.period8
+    landTsuboMedian: roundInt(trimmedMedian(l4)), landCount: l4.length, houseMedian: roundInt(trimmedMedian(h4)), houseCount: h4.length,
+    period: periods.period4, land8: { median: roundInt(trimmedMedian(l8)), count: l8.length },
+    house8: { median: roundInt(trimmedMedian(h8)), count: h8.length }, period8: periods.period8
   };
 }
 
 /* ---------- 集計 ---------- */
 
-export function aggregate({ targets, years, latest, trade, now }) {
-  const res = p => p.use === RESIDENTIAL;
-  const com = p => p.use === COMMERCIAL;
-  const latestOf = kind => (years[latest[kind]] || []).filter(p => p.kind === kind);
-  const now_ = { koji: latestOf('koji'), chosa: latestOf('chosa') };
-  const index = (year, kind) => new Map((years[year] || []).filter(p => p.kind === kind).map(p => [p.key, p]));
-  const pastIdx = {};
-  for (const kind of ['koji', 'chosa']) for (const back of [5, 10]) pastIdx[kind + back] = index(latest[kind] - back, kind);
+export function priceStats(points) {
+  const prices = points.map(p => p.priceSqm), rates = points.map(p => p.chg).filter(Number.isFinite);
+  return { avgSqm: roundInt(mean(prices)), medianSqm: roundInt(median(prices)), count: prices.length, chg: rates.length ? round2(mean(rates)) : null };
+}
+// 5年・10年の上昇率：同じ地点の過去の価格と比べる（過去に選定されていない地点は除外）
+export function longChange(points, latest, back) {
+  const rates = [];
+  for (const p of points) {
+    const past = p.hist?.[latest[p.kind] - back];
+    if (past > 0) rates.push((p.priceSqm / past - 1) * 100);
+  }
+  return rates.length ? round2(mean(rates)) : null;
+}
+export function aggregate({ targets, points, latest, trade, now }) {
+  const res = p => p.use === RESIDENTIAL, com = p => p.use === COMMERCIAL;
   const maxYear = Math.max(latest.koji, latest.chosa);
   const historyYears = Array.from({ length: 11 }, (_, i) => maxYear - 10 + i);
-
-  const longChange = (pts, back) => {
-    let rates = [];
-    for (const kind of ['koji', 'chosa']) {
-      const idx = pastIdx[kind + back];
-      for (const p of pts.filter(x => x.kind === kind)) {
-        const q = idx.get(p.key);
-        if (!q || !q.priceSqm) continue;
-        if (p.lat != null && q.lat != null && haversineKm(p, q) > 0.3) continue;
-        rates.push((p.priceSqm / q.priceSqm - 1) * 100);
-      }
-    }
-    return rates.length ? round2(mean(rates)) : null;
-  };
-  const resLatest = [...now_.koji, ...now_.chosa].filter(res);
-  const comLatest = [...now_.koji, ...now_.chosa].filter(com);
-
   const cities = targets.map(t => {
-    const kojiPts = now_.koji.filter(p => p.cityCode === t.code && res(p));
-    const chosaPts = now_.chosa.filter(p => p.cityCode === t.code && res(p));
-    const allPts = [...kojiPts, ...chosaPts];
-    const comPts = comLatest.filter(p => p.cityCode === t.code);
+    const mine = points.filter(p => p.cityCode === t.code);
+    const kojiPts = mine.filter(p => p.kind === 'koji' && res(p)), chosaPts = mine.filter(p => p.kind === 'chosa' && res(p));
+    const allPts = [...kojiPts, ...chosaPts], comPts = mine.filter(com);
     const geo = [...allPts, ...comPts].filter(p => p.lat != null && p.lon != null);
     const centroid = geo.length ? { lat: mean(geo.map(p => p.lat)), lon: mean(geo.map(p => p.lon)) } : null;
     const all = priceStats(allPts);
@@ -442,193 +363,169 @@ export function aggregate({ targets, years, latest, trade, now }) {
       code: t.code, name: t.name, pref: t.pref, region: t.region,
       distFromTajimiKm: centroid ? round1(haversineKm(centroid, TAJIMI)) : null,
       residential: {
-        koji: priceStats(kojiPts),
-        chosa: priceStats(chosaPts),
+        koji: priceStats(kojiPts), chosa: priceStats(chosaPts),
         all: { avgSqm: all.avgSqm, medianSqm: all.medianSqm, count: all.count, chg: all.chg },
-        chg5y: longChange(allPts, 5),
-        chg10y: longChange(allPts, 10),
+        chg5y: longChange(allPts, latest, 5), chg10y: longChange(allPts, latest, 10),
         history: historyYears.map(y => {
-          const pts = (years[y] || []).filter(p => p.cityCode === t.code && res(p));
-          return {
-            year: y,
-            avgSqm: roundInt(mean(pts.map(p => p.priceSqm))),
-            koji: roundInt(mean(pts.filter(p => p.kind === 'koji').map(p => p.priceSqm))),
-            chosa: roundInt(mean(pts.filter(p => p.kind === 'chosa').map(p => p.priceSqm)))
-          };
+          const at = kind => allPts.filter(p => p.kind === kind && y <= latest[kind]).map(p => p.hist?.[y]).filter(v => v > 0);
+          const k = at('koji'), c = at('chosa');
+          return { year: y, avgSqm: roundInt(mean([...k, ...c])), koji: roundInt(mean(k)), chosa: roundInt(mean(c)) };
         }).filter(h => h.avgSqm != null)
       },
       commercial: (({ avgSqm, count, chg }) => ({ avgSqm, count, chg }))(priceStats(comPts)),
       trade: trade ? tradeSummary(trade.rows, t.code, trade) : null
     };
   });
-
   const areaStats = filter => {
-    const pts = resLatest.filter(filter);
-    const k = pts.filter(p => p.kind === 'koji'), c = pts.filter(p => p.kind === 'chosa');
+    const pts = points.filter(p => res(p) && filter(p));
     const all = priceStats(pts);
-    return { avgSqm: all.avgSqm, chg: all.chg, count: all.count, koji: priceStats(k), chosa: priceStats(c) };
+    return { avgSqm: all.avgSqm, chg: all.chg, count: all.count, koji: priceStats(pts.filter(p => p.kind === 'koji')), chosa: priceStats(pts.filter(p => p.kind === 'chosa')) };
   };
-  const codeSet = list => new Set(list.map(t => t.code));
-  const prefs = Object.entries(PREFS).map(([code, name]) => {
-    const set = codeSet(targets.filter(t => t.prefCode === code));
-    return { code, name: code === '21' ? '岐阜県（対象7市町）' : name, residential: areaStats(p => set.has(p.cityCode)) };
-  });
+  const prefs = Object.entries(PREFS).map(([code, name]) => ({ code, name, residential: areaStats(p => p.pref === code) }));
+  const targetCodes = new Set(targets.map(t => t.code));
   const regions = REGION_ORDER.map(r => {
-    const set = codeSet(targets.filter(t => t.region === r));
+    const set = new Set(targets.filter(t => t.region === r).map(t => t.code));
     return { id: REGION_IDS[r], name: r, residential: areaStats(p => set.has(p.cityCode)) };
   });
-
-  const cityByCode = new Map(targets.map(t => [t.code, t]));
+  const regionByCode = new Map(targets.map(t => [t.code, t.region]));
   const groups = new Map();
-  for (const p of resLatest) {
+  for (const p of points.filter(p => targetCodes.has(p.cityCode) && res(p))) {
     if (!p.station) continue;
-    const region = cityByCode.get(p.cityCode)?.region || '';
-    const k = p.station + '|' + region;
+    const k = p.station + '|' + regionByCode.get(p.cityCode);
     if (!groups.has(k)) groups.set(k, []);
     groups.get(k).push(p);
   }
   const stations = [...groups.entries()].map(([k, pts]) => {
-    const [name, region] = k.split('|');
-    const counts = {};
+    const [name, region] = k.split('|'), counts = {};
     for (const p of pts) counts[p.cityCode] = (counts[p.cityCode] || 0) + 1;
-    const cityCode = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
     const s = priceStats(pts);
-    return { name, region, cityCode, avgSqm: s.avgSqm, count: s.count, chg: s.chg };
+    return { name, region, cityCode: Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0], avgSqm: s.avgSqm, count: s.count, chg: s.chg };
   }).sort((a, b) => b.avgSqm - a.avgSqm);
-
-  const pastAny = back => new Map(['koji', 'chosa'].flatMap(kind => [...pastIdx[kind + back].entries()]));
-  const past5 = pastAny(5);
-  const points = [...resLatest, ...comLatest].map(p => {
-    const q = past5.get(p.key);
-    const ok = q && q.priceSqm && !(p.lat != null && q.lat != null && haversineKm(p, q) > 0.3);
-    return {
-      id: p.key, lot: p.lot, cityCode: p.cityCode, kind: p.kind, use: p.use, address: p.address,
-      station: p.station, priceSqm: p.priceSqm, chg: p.chg, chg5y: ok ? round1((p.priceSqm / q.priceSqm - 1) * 100) : null,
-      lat: p.lat, lon: p.lon
-    };
+  const outPoints = points.filter(p => targetCodes.has(p.cityCode) && (res(p) || com(p))).map(p => {
+    const past = p.hist?.[latest[p.kind] - 5];
+    return { id: p.key, lot: p.lot, cityCode: p.cityCode, kind: p.kind, use: p.use, address: p.address, station: p.station,
+      priceSqm: p.priceSqm, chg: p.chg, chg5y: past > 0 ? round1((p.priceSqm / past - 1) * 100) : null, lat: p.lat, lon: p.lon };
   }).sort((a, b) => b.priceSqm - a.priceSqm);
-
   return {
-    generatedAt: now.toISOString(),
-    seed: false,
+    generatedAt: now.toISOString(), seed: false, tradeAvailable: !!trade,
     sources: {
-      koji: { year: latest.koji, baseDate: latest.koji + '-01-01' },
-      chosa: { year: latest.chosa, baseDate: latest.chosa + '-07-01' },
+      koji: { year: latest.koji, baseDate: latest.koji + '-01-01', from: '国土数値情報（地価公示）' },
+      chosa: { year: latest.chosa, baseDate: latest.chosa + '-07-01', from: '国土数値情報（都道府県地価調査）' },
       trade: trade ? { latestPeriod: trade.latestPeriod, period: trade.period4, period8: trade.period8 } : null
     },
-    prefs, regions, cities, points, stations
+    prefs, regions, cities, points: outPoints, stations
   };
 }
-
 export function validate(out) {
-  const results = [];
-  for (const e of EXPECTED) {
-    let actual = null;
+  return EXPECTED.map(e => {
     const kindYear = out.sources?.[e.kind]?.year;
-    if (kindYear !== e.year) { results.push({ ...e, actual: null, diffPct: null, ok: null, note: 'データ年が異なる（' + kindYear + '年）' }); continue; }
-    if (e.scope === 'pref') actual = out.prefs.find(p => p.code === e.code)?.residential?.[e.kind];
-    else actual = out.cities.find(c => c.name === e.name)?.residential?.[e.kind];
-    const v = actual?.avgSqm ?? null;
-    const diff = v == null ? null : round1((v / e.avgSqm - 1) * 100);
-    results.push({ label: e.label, expected: e.avgSqm, actual: v, diffPct: diff, chgExpected: e.chg, chgActual: actual?.chg ?? null, ok: diff == null ? null : Math.abs(diff) <= 5, partial: !!e.partial });
+    if (kindYear !== e.year) return { label: e.label, expected: e.avgSqm, actual: null, diffPct: null, ok: null, note: 'データ年が異なる（' + kindYear + '年）' };
+    const s = e.scope === 'pref' ? out.prefs.find(p => p.code === e.code)?.residential?.[e.kind] : out.cities.find(c => c.name === e.name)?.residential?.[e.kind];
+    const v = s?.avgSqm ?? null, diff = v == null ? null : round1((v / e.avgSqm - 1) * 100);
+    return { label: e.label, expected: e.avgSqm, actual: v, diffPct: diff, chgExpected: e.chg, chgActual: s?.chg ?? null, ok: diff == null ? null : Math.abs(diff) <= 5 };
+  });
+}
+export function stripVolatile(obj) {
+  const { generatedAt, stats, ...rest } = obj || {};
+  return JSON.stringify(rest);
+}
+
+/* ---------- ダウンロード ---------- */
+
+function defaultUnzip(zip, dir) { execFileSync('unzip', ['-o', '-qq', zip, '-d', dir], { stdio: 'ignore' }); }
+export async function downloadKsj({ dataset, year, pref, fetchImpl = globalThis.fetch, workDir, unzip = defaultUnzip }) {
+  const url = ksjUrl(dataset, year, pref);
+  let res;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try { res = await fetchImpl(url); break; }
+    catch (err) { if (attempt === 2) throw new Error(url + ' に接続できません: ' + err.message); await new Promise(r => setTimeout(r, 2000 * 2 ** attempt)); }
   }
-  return results;
+  if (res.status === 404 || res.status === 403) return null;
+  if (!res.ok) throw new Error(url + ' HTTP ' + res.status);
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (buf.length < 100 || buf.readUInt32LE(0) !== 0x04034b50) return null; // zip 以外（未公開時のHTMLなど）
+  const dir = fs.mkdtempSync(path.join(workDir, dataset + '-' + year + '-' + pref + '-'));
+  const zip = path.join(dir, 'data.zip');
+  fs.writeFileSync(zip, buf);
+  unzip(zip, dir);
+  return { url, features: readFeaturesFromDir(dir), bytes: buf.length };
 }
 
 /* ---------- メイン ---------- */
 
-// テストから dataDir / fetchImpl / now を差し替えられるように run() として公開
-export async function run({ key, args = [], dataDir, fetchImpl, now = new Date(), gapMs = 250, logger } = {}) {
-  if (dataDir) { DATA = dataDir; ARCHIVE = path.join(DATA, 'archive'); }
-  if (logger) log = logger;
-  args = new Set(args);
-  const started = Date.now();
-  const thisYear = new Date(now.getTime() + 9 * 3600e3).getUTCFullYear();
-  const client = createClient({ key, log, gapMs, fetchImpl: fetchImpl || globalThis.fetch });
+const here = path.dirname(fileURLToPath(import.meta.url));
+const readJson = (file, fallback) => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) { return fallback; } };
 
-  log('1) 市区町村コード（XIT002）');
-  const targets = await loadTargets(client);
-  const targetSet = new Set(targets.map(t => t.code));
+export async function run({ key = '', dataDir = path.resolve(here, '..', 'data'), fetchImpl = globalThis.fetch, now = new Date(), logger = console.log, unzip } = {}) {
+  const log = logger, started = Date.now();
+  const nowJst = new Date(now.getTime() + 9 * 3600e3), thisYear = nowJst.getUTCFullYear();
+  const workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'landprice-'));
+  const targets = targetList(), targetSet = new Set(targets.map(t => t.code));
 
-  log('2) 最新年の判定（XPT002）');
-  const { latest, mapping } = await probe(client, thisYear);
-  log('  地価公示 ' + latest.koji + '年 / 地価調査 ' + latest.chosa + '年 / 区分の判別: ' + (mapping ? 'レスポンスで判別' : '区分ごとに取得'));
-
-  const allTiles = tilesFor();
-  const cacheFile = path.join(DATA, 'tile-cache.json');
-  const cache = readJson(cacheFile, null);
-  const ageDays = cache?.fullScanAt ? (Date.now() - Date.parse(cache.fullScanAt)) / 864e5 : Infinity;
-  const full = args.has('--full') || !cache || cache.zoom !== ZOOM || !Array.isArray(cache.empty) || ageDays > 365;
-  const empty = new Set(full ? [] : cache.empty);
-  const hasData = new Set(full ? [] : allTiles.filter(t => !empty.has(t)));
-  log('  タイル ' + allTiles.length + '枚' + (full ? '（全タイル走査）' : '（空タイル ' + empty.size + '枚をスキップ）'));
-
-  const maxYear = Math.max(latest.koji, latest.chosa), minLatest = Math.min(latest.koji, latest.chosa);
-  const needYears = [];
-  for (let y = maxYear; y >= minLatest - 10; y--) needYears.push(y);
-  const years = {};
-  let scannedAll = false;
-  const touched = new Set();
-  for (const year of needYears) {
-    const file = path.join(ARCHIVE, 'xpt002-' + year + '.json');
-    const archived = readJson(file, null);
-    const need = ['koji', 'chosa'].filter(k => year <= latest[k] && year >= latest[k] - 10);
-    const have = new Set(archived?.kinds || []);
-    let missing = need.filter(k => !have.has(k));
-    const isLatest = year === latest.koji || year === latest.chosa;
-    if (full && isLatest) missing = need.filter(k => year === latest[k] || !have.has(k));
-    let points = unpackRows(archived?.rows, year);
-    if (missing.length) {
-      const scanAll = full && !scannedAll;
-      const tiles = scanAll ? allTiles : [...hasData];
-      log('3) ' + year + '年 ' + missing.map(k => k === 'koji' ? '地価公示' : '地価調査').join('・') + ' を取得（' + tiles.length + 'タイル）');
-      const fresh = await fetchYear(client, {
-        year, kinds: missing, tiles, mapping, targetSet,
-        onTile: (tile, hits) => { if (hits) hasData.add(tile); else if (scanAll) empty.add(tile); }
-      });
-      if (scanAll) { scannedAll = true; for (const t of hasData) empty.delete(t); }
-      points = dedupe([...points.filter(p => !missing.includes(p.kind)), ...fresh]);
-      writeJson(file, { year, kinds: [...new Set([...have, ...missing])].sort(), fetchedAt: now.toISOString(), rows: packRows(points) });
-      touched.add(file);
-      log('  → ' + points.length + '地点');
+  log('1) 国土数値情報をダウンロード（登録不要）');
+  const latest = {}, points = [];
+  for (const [kind, dataset, label] of [['koji', 'L01', '地価公示'], ['chosa', 'L02', '地価調査']]) {
+    for (let y = thisYear; y >= thisYear - 2 && !latest[kind]; y--) {
+      const got = [];
+      for (const pref of ['23', '21']) {
+        const file = await downloadKsj({ dataset, year: y, pref, fetchImpl, workDir, unzip });
+        if (!file) break;
+        got.push([pref, file]);
+      }
+      if (got.length < 2) { log('  ' + label + ' ' + y + '年: まだ公開されていません'); continue; }
+      for (const [pref, file] of got) {
+        const schema = detectSchema(file.features, { pref, year: y });
+        const pts = pointsFromFeatures(file.features, schema, { kind, year: y });
+        log('  ' + label + ' ' + y + '年 ' + PREFS[pref] + ': ' + pts.length + '地点（価格=' + schema.priceKey + ' 変動率=' + schema.chgKey +
+          ' 推移=' + schema.history.length + '年分 駅=' + (schema.stationKey || 'なし') + ' 地点名=' + (schema.nameKey || 'なし') + '）');
+        points.push(...pts);
+      }
+      latest[kind] = y;
     }
-    years[year] = points;
+    if (!latest[kind]) throw new Error(label + 'のデータが見つかりませんでした（' + ksjUrl(dataset, thisYear, '23') + ' など）');
   }
-  if (scannedAll) {
-    writeJson(cacheFile, { zoom: ZOOM, bbox: BBOX, fullScanAt: now.toISOString(), tiles: allTiles.length, empty: [...empty].sort() }, true);
-    log('  空タイル ' + empty.size + '枚を記録（次回からスキップ、年1回は全走査）');
-  }
+  const found = new Set(points.map(p => p.cityCode));
+  const missing = targets.filter(t => !found.has(t.code));
+  if (missing.length) log('  ⚠ 地点が見つからない市区町村: ' + missing.map(t => t.name).join('、'));
 
-  log('4) 取引価格（XIT001）');
-  const trade = await fetchTrade(client, targetSet, new Date(now.getTime() + 9 * 3600e3));
+  let trade = null;
+  if (key) {
+    log('2) 取引価格（不動産情報ライブラリAPI）');
+    const client = createClient({ key, fetchImpl });
+    try {
+      for (const area of ['23', '21']) {
+        const list = await client.get('XIT002', { area });
+        const names = new Map((list?.data || []).map(x => [String(x.id), String(x.name)]));
+        for (const t of targets.filter(t => t.prefCode === area)) {
+          const n = names.get(t.code);
+          if (n && !n.endsWith(t.name.replace(/^名古屋市/, ''))) log('  ⚠ 市区町村名の不一致: ' + t.code + ' ' + t.name + ' / ' + n);
+        }
+      }
+      trade = await fetchTrade(client, targetSet, nowJst, log);
+    } catch (err) { log('  ⚠ 取引価格は取得できませんでした: ' + err.message); }
+  } else log('2) 取引価格: APIキー未設定のためスキップ（実勢・中古戸建は表示しません）');
 
-  log('5) 集計');
-  const out = aggregate({ targets, years, latest, trade, now });
+  log('3) 集計');
+  const out = aggregate({ targets, points, latest, trade, now });
   out.validation = validate(out);
-  out.stats = { requests: client.stats.requests, retries: client.stats.retries, seconds: Math.round((Date.now() - started) / 1000), fullScan: full };
+  out.stats = { seconds: Math.round((Date.now() - started) / 1000), points: points.length };
   for (const v of out.validation) {
-    if (v.ok === null && v.note) log('  検算 ' + v.label + ': ' + v.note);
-    else if (v.actual != null) log('  検算 ' + v.label + ': ' + v.actual + ' / 目安 ' + v.expected + '（' + (v.diffPct > 0 ? '+' : '') + v.diffPct + '%）' + (v.ok ? ' ✓' : v.partial ? ' （県の一部のみ集計）' : ' ⚠ ±5%超。集計ロジックを確認'));
+    if (v.actual == null) log('  検算 ' + v.label + ': ' + (v.note || 'データなし'));
+    else log('  検算 ' + v.label + ': ' + v.actual + ' / 目安 ' + v.expected + '（' + (v.diffPct > 0 ? '+' : '') + v.diffPct + '%）' + (v.ok ? ' ✓' : ' ⚠ ±5%超'));
   }
-
-  const target = path.join(DATA, 'landprice.json');
+  const target = path.join(dataDir, 'landprice.json');
   const previous = readJson(target, null);
   const changed = !previous || stripVolatile(previous) !== stripVolatile(out);
   if (changed) {
-    writeJson(target, out);
+    fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(target, JSON.stringify(out) + '\n');
     log('✓ data/landprice.json を更新（市区町村 ' + out.cities.length + '・地点 ' + out.points.length + '・駅 ' + out.stations.length + '）');
   } else log('変更なし（前回と同じ内容のため書き込みません）');
   if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'changed=' + changed + '\n');
-  log('APIリクエスト ' + client.stats.requests + '回・' + out.stats.seconds + '秒');
+  fs.rmSync(workDir, { recursive: true, force: true });
   return { out, changed };
 }
 
-async function main() {
-  const key = process.env.REINFOLIB_API_KEY;
-  if (!key) { console.error('REINFOLIB_API_KEY が設定されていません'); process.exit(2); }
-  await run({ key, args: process.argv.slice(2) });
-}
-
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main().catch(err => { console.error('✗ ' + err.message); process.exit(1); });
+  run({ key: process.env.REINFOLIB_API_KEY || '' }).catch(err => { console.error('✗ ' + err.message); process.exit(1); });
 }

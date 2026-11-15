@@ -1,0 +1,88 @@
+name: 地価データ更新
+
+# アプリの「🔄 最新にする」ボタン（workflow_dispatch）と、毎週月曜の朝（JST 6:17）に実行。
+# 公表されていない期間は過去分をキャッシュから使うため、数分で終わります。
+on:
+  workflow_dispatch:
+    inputs:
+      full:
+        description: '全タイルを再走査する'
+        type: boolean
+        default: false
+  schedule:
+    - cron: '17 21 * * 0'   # UTC 日曜 21:17 = JST 月曜 6:17
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: update-landprice
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check API key
+        env:
+          REINFOLIB_API_KEY: ${{ secrets.REINFOLIB_API_KEY }}
+        run: |
+          if [ -z "$REINFOLIB_API_KEY" ]; then
+            echo "::error::REINFOLIB_API_KEY が未登録です。Settings → Secrets and variables → Actions に登録してください。"
+            exit 1
+          fi
+
+      - name: Fetch and aggregate land prices
+        id: fetch
+        env:
+          REINFOLIB_API_KEY: ${{ secrets.REINFOLIB_API_KEY }}
+        run: |
+          if [ "${{ inputs.full }}" = "true" ]; then
+            node scripts/fetch-landprice.mjs --full
+          else
+            node scripts/fetch-landprice.mjs
+          fi
+
+      - name: Commit when the data changed
+        id: commit
+        if: steps.fetch.outputs.changed == 'true'
+        run: |
+          git config user.name "hoppy-landprice-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git commit -m "地価データ更新 $(TZ=Asia/Tokyo date +%Y-%m-%d)"
+          git pull --rebase origin main
+          git push origin HEAD:main
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      # GITHUB_TOKEN による push では他のワークフローが起動しないため、
+      # 既存の GitHub Pages デプロイ（deploy-pages.yml）を明示的に起動する。
+      - name: Publish to GitHub Pages
+        if: steps.commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages.yml --ref main
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### 地価データ更新"
+            echo "- 変更: ${{ steps.fetch.outputs.changed || 'なし' }}"
+            echo "- 公開: ${{ steps.commit.outputs.pushed || 'false' }}"
+          } >> "$GITHUB_STEP_SUMMARY"

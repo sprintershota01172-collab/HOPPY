@@ -5938,3 +5938,161 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  #app .fp-meta-overline>span{font-size:9px!important}
  #app .fp-meta-period-note{font-size:8px}
 }
+
+/* r73: 地価ランキング（愛知県全域＋多治見周辺）。スクロールなし・1画面完結。 */
+#app nav.bottom{grid-template-columns:repeat(7,minmax(0,1fr))!important}
+#app .lp-screen{gap:6px!important;padding-top:2px!important}
+#app .lp-head{flex:none;height:32px;display:flex;align-items:center;justify-content:space-between;padding:0 2px 0 3px}
+#app .lp-head-actions{display:flex;gap:6px;align-items:center}
+#app .lp-icon{width:32px;height:32px;min-width:32px;border-radius:50%;border:1px solid #dce8e1;background:#fff;color:#53806a;font-size:15px;display:grid;place-items:center;padding:0}
+#app .lp-refresh{position:relative;height:32px;padding:0 12px 0 9px;border-radius:16px;border:1px solid #1c795f;background:linear-gradient(125deg,#1a735d,#2c9274);color:#fff;font-size:12px;font-weight:850;display:flex;align-items:center;gap:5px;box-shadow:0 3px 12px #1a735d26;white-space:nowrap}
+#app .lp-refresh-icon{font-size:12px;display:inline-block;line-height:1}
+#app .lp-refresh.is-busy{opacity:.85}
+#app .lp-refresh.is-busy .lp-refresh-icon{animation:lp-spin 1.1s linear infinite}
+#app .lp-refresh.lp-glow{animation:lp-glow 2.6s ease-in-out infinite}
+#app .lp-refresh.lp-glow::after{content:'';position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;background:#f0a35e;border:2px solid #f5f5f7}
+@keyframes lp-glow{0%,100%{box-shadow:0 3px 12px #1a735d26}50%{box-shadow:0 0 0 5px #f6c99a66,0 3px 18px #e08a3a55}}
+@keyframes lp-spin{to{transform:rotate(360deg)}}
+@keyframes lp-pulse{0%,100%{opacity:1}50%{opacity:.6}}
+@keyframes lp-row-in{from{opacity:0;transform:translate3d(12px,0,0)}to{opacity:1;transform:none}}
+#app .lp-stamp{flex:none;width:100%;min-height:22px;display:flex;align-items:center;gap:6px;padding:2px 8px;border:0;border-radius:11px;background:#eef4f1;color:#5d7a6b;font-size:10px;font-weight:750;text-align:left;white-space:nowrap;overflow:hidden}
+#app .lp-stamp>span{overflow:hidden;text-overflow:ellipsis;min-width:0}
+#app .lp-stamp .lp-when{margin-left:auto;flex:none;color:#86998e}
+#app .lp-badge{flex:none;background:#fde7d3;color:#a8551c;border-radius:8px;padding:1px 6px;font-size:9.5px;font-weight:850}
+#app .lp-progress{justify-content:center;background:#e2f4eb;color:#9bb3a7;gap:4px}
+#app .lp-progress span{padding:1px 6px;border-radius:8px}
+#app .lp-progress span.done{color:#1a735d}
+#app .lp-progress span.now{color:#fff;background:#1a735d;animation:lp-pulse 1.4s ease-in-out infinite}
+#app .lp-progress i{font-style:normal;color:#b5c9bf}
+#app .lp-progress em{font-style:normal;margin-left:6px;color:#5d7a6b;font-variant-numeric:tabular-nums}
+#app .lp-error{background:#fbe9e7;color:#9d4136;white-space:normal;line-height:1.3;padding:3px 9px}
+#app .lp-error>span{white-space:normal}
+#app .lp-types{flex:none;display:flex;gap:2px;background:#fff;border:1px solid #e2ebe7;border-radius:12px;padding:3px}
+#app .lp-types>button{flex:1 1 auto;min-width:0;height:28px;padding:0 3px;border:0;border-radius:9px;background:transparent;color:#5f7a6c;font-size:11px;font-weight:800;white-space:nowrap;letter-spacing:-.02em;transition:background .3s,color .3s}
+#app .lp-types>button.active{background:#1a735d;color:#fff;box-shadow:0 2px 8px #1a735d33}
+#app .lp-chips{flex:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+#app .lp-chips>button{height:26px;min-width:0;border-radius:13px;border:1px solid #e2ebe7;background:#fff;color:#4d6b5c;font-size:11px;font-weight:800;padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .3s}
+#app .lp-chips>button.active{background:#e2f4eb;border-color:#b5dfca;color:#14785c}
+#app .lp-toggles{flex:none;display:flex;gap:5px;align-items:center;min-height:28px;min-width:0}
+#app .lp-seg{display:flex;background:#e9efec;border-radius:9px;padding:2px;gap:1px;flex:none}
+#app .lp-seg>button{height:24px;padding:0 8px;border:0;border-radius:7px;background:transparent;color:#5f7a6c;font-size:11px;font-weight:800;white-space:nowrap}
+#app .lp-seg>button.active{background:#fff;color:#173e32;box-shadow:0 1px 4px #12382a1f}
+#app .lp-pin{width:28px;height:28px;min-width:28px;border-radius:9px;border:1px solid #e2ebe7;background:#fff;color:#c0c9c4;font-size:14px;padding:0;flex:none}
+#app .lp-pin.active{color:#e0a43b;border-color:#f1dcb1;background:#fff8ea}
+#app .lp-mini{margin-left:auto;height:28px;min-width:0;border-radius:9px;border:1px dashed #b5dfca;background:#f6fbf8;color:#14785c;font-size:10.5px;font-weight:800;padding:0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-list{flex:1;min-height:0;display:grid;grid-template-rows:repeat(var(--lp-rows),minmax(0,1fr));gap:4px;overflow:hidden}
+#app .lp-row{display:flex;align-items:stretch;min-height:0;background:#fff;border:1px solid #e6eeea;border-radius:12px;overflow:hidden;animation:lp-row-in .5s cubic-bezier(.22,.61,.36,1) both;animation-delay:calc(var(--i,0) * 40ms)}
+#app .lp-row.is-fav{border-color:#f1dcb1;background:linear-gradient(90deg,#fffaf0,#fff 45%)}
+#app .lp-row-main{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:0 4px 0 8px;border:0;background:transparent;text-align:left;color:#173e32;border-radius:0}
+#app .lp-rank{flex:0 0 22px;height:22px;border-radius:7px;display:grid;place-items:center;background:#eef3f0;color:#6d8778;font-size:11px;font-weight:900;font-variant-numeric:tabular-nums}
+#app .lp-rank.is-top{background:#1a735d;color:#fff}
+#app .lp-name{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+#app .lp-name b{font-size:13px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.02em}
+#app .lp-name small{font-size:9.5px;color:#7b9286;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
+#app .lp-val{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:1px;max-width:54%}
+#app .lp-val>b{font-size:15px;font-weight:900;letter-spacing:-.03em;white-space:nowrap;font-variant-numeric:tabular-nums}
+#app .lp-val>b small{font-size:9px;font-weight:800;color:#7b9286;margin-left:1px}
+#app .lp-extra{font-size:10px;font-weight:800;color:#7b9286;white-space:nowrap;display:flex;align-items:center;gap:3px;font-variant-numeric:tabular-nums}
+#app .lp-extra small{font-size:8.5px}
+#app .lp-star{flex:0 0 30px;width:30px;min-width:30px;border:0;background:transparent;color:#c5cfca;font-size:15px;padding:0}
+#app .lp-star.on{color:#e0a43b}
+#app .full-header .lp-star{flex:none;font-size:18px}
+#app .lp-ref{font-style:normal;font-size:8.5px;font-weight:850;color:#9a6a12;background:#fbf0d6;border-radius:5px;padding:0 4px;margin:0 4px 0 0;display:inline-block;line-height:1.5}
+#app .lp-up{color:#c8693f}
+#app .lp-down{color:#3f7fae}
+#app .lp-flat{color:#7b9286}
+#app .lp-grade{font-size:15px!important;line-height:1}
+#app .lp-empty{grid-row:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#6d8778;font-size:12px;text-align:center;padding:0 20px;line-height:1.5}
+#app .lp-empty strong{color:#26483b;font-size:14px}
+#app .lp-foot{flex:none}
+#app .lp-foot .pager{min-height:32px;gap:8px}
+#app .lp-foot .page-arrow{width:36px;height:30px;min-height:30px}
+#app .lp-source{flex:none;border:0;background:transparent;color:#8a9c92;font-size:9.5px;font-weight:700;padding:0;height:14px;line-height:14px}
+#app .lp-detail-body{gap:7px!important}
+#app .lp-hero{flex:none;display:flex;justify-content:space-between;gap:10px;background:linear-gradient(125deg,#1a735d,#2c9274);color:#fff;border-radius:16px;padding:9px 12px;box-shadow:0 4px 16px #1a735d24}
+#app .lp-hero-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+#app .lp-hero-main>span{font-size:10px;font-weight:800;color:#d8f0e4}
+#app .lp-hero-main>strong{font-size:27px;font-weight:900;letter-spacing:-.04em;line-height:1.05;white-space:nowrap}
+#app .lp-hero-main>strong small{font-size:11px;margin-left:2px;color:#d8f0e4}
+#app .lp-hero-main>small{font-size:10px;color:#d8f0e4;font-weight:700}
+#app .lp-hero-side{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;font-size:10px;font-weight:750;color:#e4f5ec;text-align:right;white-space:nowrap}
+#app .lp-hero-side b{background:#ffffff2b;border-radius:9px;padding:2px 8px;font-size:12px;color:#fff!important}
+#app .lp-spark{flex:none;background:#fff;border:1px solid #e2ebe7;border-radius:13px;padding:6px 8px 4px}
+#app .lp-spark svg{display:block;width:100%;height:44px;overflow:visible}
+#app .lp-spark-line{fill:none;stroke-width:2;stroke:currentColor;stroke-linejoin:round}
+#app .lp-spark-fill{opacity:.13;fill:currentColor;stroke:none}
+#app .lp-spark-dot{fill:currentColor}
+#app .lp-spark-axis{display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#7b9286;font-weight:700;margin-top:2px;white-space:nowrap;gap:4px}
+#app .lp-spark-axis b{font-size:10px}
+#app .lp-spark.is-empty{display:grid;place-items:center;height:40px;font-size:10px;color:#8a9c92;font-weight:700}
+#app .lp-cells{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:5px}
+#app .lp-cell{background:#fff;border:1px solid #e2ebe7;border-radius:12px;padding:5px 9px;display:flex;flex-direction:column;gap:1px;min-width:0}
+#app .lp-cell>span{font-size:9.5px;color:#6d8778;font-weight:800;white-space:nowrap}
+#app .lp-cell>b{font-size:15px;font-weight:900;color:#173e32;letter-spacing:-.03em;white-space:nowrap}
+#app .lp-cell>b small{font-size:9px;color:#7b9286}
+#app .lp-cell>small{font-size:9.5px;color:#7b9286;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-rates{flex:none;display:flex;align-items:center;gap:5px;font-size:10px;font-weight:800;color:#6d8778;padding:0 2px;white-space:nowrap;overflow:hidden}
+#app .lp-rates b{background:#fff;border:1px solid #e2ebe7;border-radius:8px;padding:2px 6px;font-size:10.5px}
+#app .lp-rates em{margin-left:auto;font-style:normal;color:#4d6b5c}
+#app .lp-points{flex:1;min-height:0;background:#fff;border:1px solid #e2ebe7;border-radius:13px;padding:5px 9px;display:flex;flex-direction:column;gap:1px;overflow:hidden}
+#app .lp-points-title{font-size:9.5px;color:#6d8778;font-weight:850}
+#app .lp-points>div{display:flex;align-items:center;gap:6px;font-size:11px;min-height:21px;flex:none}
+#app .lp-points>div>span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:750;color:#26483b}
+#app .lp-points>div>span small{font-size:9px;color:#8a9c92;margin-left:4px}
+#app .lp-points>div>b{font-size:11.5px;font-weight:900;white-space:nowrap;color:#173e32}
+#app .lp-points>div>em{font-style:normal;font-size:10px;font-weight:800;min-width:44px;text-align:right}
+#app .lp-points .lp-points-empty{color:#8a9c92;font-size:10px;justify-content:center;flex:1}
+#app .lp-budget-line{flex:none;width:100%;display:flex;align-items:center;gap:7px;border:1px solid #e2ebe7;background:#f7fbf9;border-radius:12px;padding:5px 10px;font-size:10.5px;color:#4d6b5c;font-weight:800;text-align:left;min-height:34px}
+#app .lp-budget-line b{font-size:15px;color:#173e32;font-weight:900;white-space:nowrap}
+#app .lp-budget-line .rating-face{font-size:17px}
+#app .lp-budget-line small{margin-left:auto;font-size:9.5px;color:#7b9286;text-align:right;line-height:1.3}
+#app .lp-detail-actions{flex:none;display:flex;gap:7px}
+#app .lp-detail-actions .btn{min-height:38px}
+#app .lp-disclaimer{flex:none;margin:0;font-size:8.5px;line-height:1.35;color:#8a9c92}
+#app .lp-settings{gap:8px!important;justify-content:flex-start!important}
+#app .lp-set-group{display:flex;flex-direction:column;gap:6px;background:#fff;border:1px solid #e2ebe7;border-radius:14px;padding:9px 11px}
+#app .lp-field{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:800;color:#26483b}
+#app .lp-input{display:flex;align-items:center;gap:4px}
+#app .lp-input input{width:96px;height:32px;border:1px solid #d6e3dc;border-radius:9px;text-align:right;padding:0 8px;font-size:14px;font-weight:800;background:#fff}
+#app .lp-input i{font-style:normal;font-size:11px;color:#6d8778;min-width:24px}
+#app .lp-note{margin:0;font-size:10.5px;line-height:1.45;color:#6d8778}
+#app .lp-token-row{display:flex;gap:6px}
+#app .lp-token-row input{flex:1;min-width:0;height:34px;border:1px solid #d6e3dc;border-radius:9px;padding:0 9px;font-size:13px;background:#fff}
+#app .lp-about{gap:6px!important;justify-content:flex-start!important}
+#app .lp-about-block{background:#fff;border:1px solid #e2ebe7;border-radius:13px;padding:6px 10px}
+#app .lp-about-block p{margin:2px 0 0;font-size:10.5px;line-height:1.45;color:#3f5d50}
+#app .lp-checks{display:grid;grid-template-columns:1fr auto;gap:0 10px;font-size:10px;color:#3f5d50;margin-top:3px}
+#app .lp-checks b{font-variant-numeric:tabular-nums}
+#app .lp-checks b.ok{color:#297c62}
+#app .lp-checks b.ng{color:#b65c56}
+#app .lp-prop-line{flex:none;width:100%;display:flex;align-items:center;gap:6px;border:1px solid #e2ebe7;background:#f7fbf9;border-radius:11px;padding:5px 9px;font-size:11px;font-weight:750;color:#3f5d50;text-align:left;min-height:34px}
+#app .lp-prop-line>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#app .lp-prop-line .rating-face{font-size:14px}
+#app .lp-prop-line>em{font-style:normal;color:#14785c;font-weight:850;flex:none}
+#app .lp-form-note{grid-column:1/-1;font-size:10.5px;color:#6d8778;line-height:1.45;margin:0}
+@media(max-width:400px){
+ #app .lp-long{display:none}
+ #app .lp-seg>button{padding:0 6px}
+}
+@media(max-width:360px){#app .lp-hide-narrow{display:none!important}}
+@media(max-width:374px){
+ #app .lp-types>button{font-size:10px;padding:0 2px}
+ #app .lp-chips>button{font-size:10px}
+ #app .lp-seg>button{padding:0 6px;font-size:10.5px}
+ #app .lp-long{display:none}
+ #app .lp-name b{font-size:12px}
+ #app .lp-val>b{font-size:13.5px}
+ #app .lp-refresh{padding:0 10px 0 8px;font-size:11px}
+ #app .lp-hero-main>strong{font-size:23px}
+ #app .lp-rates em{display:none}
+}
+@media(max-height:700px){
+ #app .lp-screen{gap:5px!important}
+ #app .lp-name small{font-size:9px}
+ #app .lp-hero{padding:7px 11px}
+ #app .lp-hero-main>strong{font-size:23px}
+ #app .lp-spark svg{height:34px}
+ #app .lp-cell{padding:4px 8px}
+ #app .lp-cell>b{font-size:13.5px}
+}
+@media(prefers-reduced-motion:reduce){#app .lp-row,#app .lp-refresh,#app .lp-progress span.now{animation:none!important}}

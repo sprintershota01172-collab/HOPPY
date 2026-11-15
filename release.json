@@ -1,10 +1,10 @@
 {
-  "version": "r72",
+  "version": "r73",
   "ui": "compact-visual",
-  "revised": "2026-10-28",
+  "revised": "2026-11-15",
   "data_schema": "hoppy-phase1-v1",
-  "entrypoint": "visual-r72.html",
+  "entrypoint": "visual-r73.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Fix property budget to purchase benchmark; year selector changes cashflow only"
+  "release_note": "Add land price ranking (Aichi + Tajimi area) with one-tap GitHub Actions refresh"
 }

@@ -1,0 +1,388 @@
+{
+ "generatedAt": "2026-11-15T00:00:00Z",
+ "seed": true,
+ "note": "初回のActions実行前に表示する初期データ（公表資料の住宅地平均・円/㎡）。本番JSONが取れたら置き換わります。距離は市役所付近からの概算。",
+ "sources": {
+  "koji": {
+   "year": 2026,
+   "baseDate": "2026-01-01"
+  },
+  "chosa": {
+   "year": 2026,
+   "baseDate": "2026-07-01"
+  },
+  "trade": null
+ },
+ "prefs": [
+  {
+   "code": "23",
+   "name": "愛知県",
+   "residential": {
+    "avgSqm": 127418,
+    "chg": null,
+    "count": null,
+    "koji": {
+     "avgSqm": 132130,
+     "medianSqm": null,
+     "count": null,
+     "chg": 1.79
+    },
+    "chosa": {
+     "avgSqm": 122706,
+     "medianSqm": null,
+     "count": null,
+     "chg": 1.32
+    }
+   }
+  },
+  {
+   "code": "21",
+   "name": "岐阜県",
+   "residential": {
+    "avgSqm": 39989,
+    "chg": null,
+    "count": null,
+    "koji": {
+     "avgSqm": 46640,
+     "medianSqm": null,
+     "count": null,
+     "chg": -0.22
+    },
+    "chosa": {
+     "avgSqm": 33337,
+     "medianSqm": null,
+     "count": null,
+     "chg": -0.73
+    }
+   }
+  }
+ ],
+ "regions": [],
+ "cities": [
+  {
+   "code": "21204",
+   "name": "多治見市",
+   "pref": "岐阜県",
+   "region": "東濃",
+   "distFromTajimiKm": 1,
+   "distApprox": true,
+   "residential": {
+    "koji": {
+     "avgSqm": 38937,
+     "medianSqm": null,
+     "count": null,
+     "chg": 0.32
+    },
+    "chosa": {
+     "avgSqm": 36461,
+     "medianSqm": null,
+     "count": null,
+     "chg": -0.09
+    },
+    "all": {
+     "avgSqm": 37699,
+     "count": null,
+     "chg": 0.12
+    },
+    "chg5y": null,
+    "chg10y": null,
+    "history": []
+   },
+   "commercial": {
+    "avgSqm": null,
+    "count": 0,
+    "chg": null
+   },
+   "trade": null
+  },
+  {
+   "code": "21214",
+   "name": "可児市",
+   "pref": "岐阜県",
+   "region": "中濃",
+   "distFromTajimiKm": 11.6,
+   "distApprox": true,
+   "residential": {
+    "koji": {
+     "avgSqm": 31600,
+     "medianSqm": null,
+     "count": null,
+     "chg": -0.27
+    },
+    "chosa": {
+     "avgSqm": null,
+     "medianSqm": null,
+     "count": 0,
+     "chg": null
+    },
+    "all": {
+     "avgSqm": 31600,
+     "count": null,
+     "chg": -0.27
+    },
+    "chg5y": null,
+    "chg10y": null,
+    "history": []
+   },
+   "commercial": {
+    "avgSqm": null,
+    "count": 0,
+    "chg": null
+   },
+   "trade": null
+  },
+  {
+   "code": "23219",
+   "name": "小牧市",
+   "pref": "愛知県",
+   "region": "尾張",
+   "distFromTajimiKm": 19.5,
+   "distApprox": true,
+   "residential": {
+    "koji": {
+     "avgSqm": 92195,
+     "medianSqm": null,
+     "count": null,
+     "chg": 1.9
+    },
+    "chosa": {
+     "avgSqm": null,
+     "medianSqm": null,
+     "count": 0,
+     "chg": null
+    },
+    "all": {
+     "avgSqm": 92195,
+     "count": null,
+     "chg": 1.9
+    },
+    "chg5y": null,
+    "chg10y": null,
+    "history": []
+   },
+   "commercial": {
+    "avgSqm": null,
+    "count": 0,
+    "chg": null
+   },
+   "trade": null
+  },
+  {
+   "code": "23206",
+   "name": "春日井市",
+   "pref": "愛知県",
+   "region": "尾張",
+   "distFromTajimiKm": 16.6,
+   "distApprox": true,
+   "residential": {
+    "koji": {
+     "avgSqm": null,
+     "medianSqm": null,
+     "count": 0,
+     "chg": null
+    },
+    "chosa": {
+     "avgSqm": 118381,
+     "medianSqm": null,
+     "count": null,
+     "chg": 2.67,
+     "year": 2025
+    },
+    "all": {
+     "avgSqm": 118381,
+     "count": null,
+     "chg": 2.67
+    },
+    "chg5y": null,
+    "chg10y": null,
+    "history": []
+   },
+   "commercial": {
+    "avgSqm": null,
+    "count": 0,
+    "chg": null
+   },
+   "trade": null
+  },
+  {
+   "code": "23204",
+   "name": "瀬戸市",
+   "pref": "愛知県",
+   "region": "尾張",
+   "distFromTajimiKm": 12.7,
+   "distApprox": true,
+   "residential": {
+    "koji": {
+     "avgSqm": null,
+     "medianSqm": null,
+     "count": 0,
+     "chg": null
+    },
+    "chosa": {
+     "avgSqm": 60678,
+     "medianSqm": null,
+     "count": null,
+     "chg": 1.06,
+     "year": 2025
+    },
+    "all": {
+     "avgSqm": 60678,
+     "count": null,
+     "chg": 1.06
+    },
+    "chg5y": null,
+    "chg10y": null,
+    "history": []
+   },
+   "commercial": {
+    "avgSqm": null,
+    "count": 0,
+    "chg": null
+   },
+   "trade": null
+  }
+ ],
+ "points": [
+  {
+   "id": "koji|21|多治見-6",
+   "lot": "多治見-6",
+   "cityCode": "21204",
+   "kind": "koji",
+   "use": "住宅地",
+   "address": "多治見市音羽町1丁目",
+   "station": "",
+   "priceSqm": 97800,
+   "chg": 3.9,
+   "chg5y": null,
+   "lat": null,
+   "lon": null
+  },
+  {
+   "id": "koji|21|多治見-2",
+   "lot": "多治見-2",
+   "cityCode": "21204",
+   "kind": "koji",
+   "use": "住宅地",
+   "address": "多治見市宝町3丁目",
+   "station": "",
+   "priceSqm": 66400,
+   "chg": 2.3,
+   "chg5y": null,
+   "lat": null,
+   "lon": null
+  },
+  {
+   "id": "koji|21|多治見-11",
+   "lot": "多治見-11",
+   "cityCode": "21204",
+   "kind": "koji",
+   "use": "住宅地",
+   "address": "多治見市大正町1丁目",
+   "station": "",
+   "priceSqm": 65400,
+   "chg": 1.9,
+   "chg5y": null,
+   "lat": null,
+   "lon": null
+  },
+  {
+   "id": "koji|21|多治見-3",
+   "lot": "多治見-3",
+   "cityCode": "21204",
+   "kind": "koji",
+   "use": "住宅地",
+   "address": "多治見市幸町5丁目",
+   "station": "",
+   "priceSqm": 35800,
+   "chg": 0.3,
+   "chg5y": null,
+   "lat": null,
+   "lon": null
+  },
+  {
+   "id": "koji|21|多治見-1",
+   "lot": "多治見-1",
+   "cityCode": "21204",
+   "kind": "koji",
+   "use": "住宅地",
+   "address": "多治見市陶元町",
+   "station": "",
+   "priceSqm": 35300,
+   "chg": -0.3,
+   "chg5y": null,
+   "lat": null,
+   "lon": null
+  },
+  {
+   "id": "koji|21|多治見-10",
+   "lot": "多治見-10",
+   "cityCode": "21204",
+   "kind": "koji",
+   "use": "住宅地",
+   "address": "多治見市脇之島町7丁目",
+   "station": "",
+   "priceSqm": 27000,
+   "chg": -1.1,
+   "chg5y": null,
+   "lat": null,
+   "lon": null
+  },
+  {
+   "id": "koji|21|多治見-9",
+   "lot": "多治見-9",
+   "cityCode": "21204",
+   "kind": "koji",
+   "use": "住宅地",
+   "address": "多治見市北丘町7丁目",
+   "station": "",
+   "priceSqm": 22500,
+   "chg": -0.4,
+   "chg5y": null,
+   "lat": null,
+   "lon": null
+  },
+  {
+   "id": "koji|21|多治見-4",
+   "lot": "多治見-4",
+   "cityCode": "21204",
+   "kind": "koji",
+   "use": "住宅地",
+   "address": "多治見市市之倉町9丁目",
+   "station": "",
+   "priceSqm": 18800,
+   "chg": -1.6,
+   "chg5y": null,
+   "lat": null,
+   "lon": null
+  },
+  {
+   "id": "koji|21|多治見-8",
+   "lot": "多治見-8",
+   "cityCode": "21204",
+   "kind": "koji",
+   "use": "住宅地",
+   "address": "多治見市山吹町2丁目",
+   "station": "",
+   "priceSqm": 17200,
+   "chg": -1.1,
+   "chg5y": null,
+   "lat": null,
+   "lon": null
+  }
+ ],
+ "stations": [],
+ "reference": {
+  "koji2026AichiTop": [
+   "名古屋市",
+   "長久手市",
+   "刈谷市",
+   "安城市",
+   "知立市"
+  ],
+  "koji2026AichiChgTop": {
+   "name": "長久手市",
+   "chg": 5.24
+  },
+  "note": "愛知県2026年地価公示（全用途）の市町村平均"
+ }
+}

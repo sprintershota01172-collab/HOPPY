@@ -6708,3 +6708,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .lp-my-verdict.v-fair b,#app .lp-my-verdict.v-wide b{color:#2f6fb5}
 #app .lp-my-sum{flex:none;display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
 #app .lp-my-sum span{font-size:11px;font-weight:850;background:#e3f4ec;color:#14785c;border-radius:9px;padding:3px 8px}
+
+/* r95: 初心者向けの目安 */
+#app .lp-my-guide{display:flex;gap:8px;align-items:flex-start;background:#fff8ee;border-radius:12px;padding:9px 10px}
+#app .lp-my-guide p{margin:0;font-size:12px;font-weight:800;color:#5c3d1e;line-height:1.55}
+#app .lp-my-guide b{color:#c2561f}
+#app .lp-my-guess{color:#14785c!important;font-weight:900!important;text-decoration:underline}
+#app .lp-pct-presets{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+#app .lp-pct-presets button{display:flex;flex-direction:column;align-items:center;gap:0;border:1.5px solid #cfe2d8;background:#fff;border-radius:12px;padding:4px 2px}
+#app .lp-pct-presets button.active{border-color:#1a735d;background:#e3f4ec}
+#app .lp-pct-presets span{font-size:16px;line-height:1.1}
+#app .lp-pct-presets b{font-size:11.5px;font-weight:900;color:#173e32}
+#app .lp-pct-presets small{font-size:9px;font-weight:750;color:#6d8778;white-space:nowrap}
+#app .lp-pct-fine .lp-ratio small{display:none}
+#app .lp-pct-fine .lp-range-input{height:18px}
+#app .lp-pct-fine .lp-ratio-bar{height:16px}

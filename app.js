@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r94';
+  const BUILD = 'r95';
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
@@ -912,7 +912,8 @@
         '<label class="lp-sim-field"><span>市区町村</span><select data-lp-sim="city">'+cityOpts+'</select></label>'+
         '<label class="lp-sim-field"><span>総予算（諸費用込み）</span><span class="lp-sim-num"><input type="number" inputmode="numeric" min="500" max="30000" step="100" data-lp-sim="budgetMan" value="'+esc(S.budgetMan)+'"><i>万円</i></span></label>'+
         condBlock+landSizeHint()+
-        '<label class="lp-sim-field lp-sim-wide"><span>土地と建物の割合（スライドで変更）</span><input class="lp-range-input" type="range" min="5" max="70" step="1" data-lp-sim="landPct" value="'+S.landPct+'" aria-label="土地の割合">'+landRatioBar(S.landPct)+'</label>'+
+        '<div class="lp-sim-field lp-sim-wide"><span>予算をどう分ける？（東海では土地に約3割が平均）</span><div class="lp-pct-presets">'+[[40,'🚉','場所重視','駅近・便利な所'],[27,'⚖️','ふつう','東海の平均'],[18,'🏠','家重視','広い家・良い会社']].map(([v,ic,t,d])=>'<button class="'+(Math.abs(S.landPct-v)<=2?'active':'')+'" data-act="lp-ratio-fit" data-value="'+v+'"><span>'+ic+'</span><b>'+t+'</b><small>'+d+'</small></button>').join('')+'</div></div>'+
+        (ui.lpPctFine?'<label class="lp-sim-field lp-sim-wide lp-pct-fine"><span>細かく調整（土地 '+S.landPct+'%）</span><input class="lp-range-input" type="range" min="5" max="70" step="1" data-lp-sim="landPct" value="'+S.landPct+'" aria-label="土地の割合">'+landRatioBar(S.landPct)+'</label>':'<button class="lp-cond-toggle lp-sim-wide" data-act="lp-pct-fine">いまは 土地'+S.landPct+'%・建物'+(100-S.landPct)+'%　細かく調整する ▾</button>')+
         '<label class="lp-sim-field lp-sim-wide"><span>ハウスメーカー（建物本体の坪単価）</span><select data-lp-sim="maker">'+makerOpts.map(([v,l])=>'<option value="'+esc(v)+'"'+(S.maker===v?' selected':'')+'>'+esc(l)+'</option>').join('')+'</select></label>'+
         '<div class="lp-sim-field lp-sim-wide"><span>仕様のグレード</span>'+landSeg('lp-sim-grade',S.grade,[['low','下限 '+r.maker.low+'万'],['mid','目安 '+r.maker.mid+'万'],['high','上限 '+r.maker.high+'万']],'lp-seg-fill')+'</div>'+
       '</div>'+
@@ -935,7 +936,7 @@
         '<div class="lp-sim-field lp-sim-wide"><span>仕様のグレード</span>'+landSeg('lp-sim-grade',S.grade,[['low','下限 '+r.maker.low+'万'],['mid','目安 '+r.maker.mid+'万'],['high','上限 '+r.maker.high+'万']],'lp-seg-fill')+'</div>'+
       '</div>'+
       '<div class="lp-sim-result">'+
-        '<div class="lp-sim-total"><div><span>総額の目安</span><strong>'+landMan(r.total)+'</strong>'+(r.pct!=null?'<em class="lp-sim-pct">土地'+Math.round(r.pct)+'%：建物'+(100-Math.round(r.pct))+'%（東海圏の平均 '+LAND_TOKAI_PCT+':'+(100-LAND_TOKAI_PCT)+'）</em>':'')+'</div>'+
+        '<div class="lp-sim-total"><div><span>総額の目安</span><strong>'+landMan(r.total)+'</strong>'+(r.pct!=null?'<em class="lp-sim-pct">このうち土地は'+Math.round(r.pct)+'%（東海の平均は約'+LAND_TOKAI_PCT+'%）</em>':'')+'</div>'+
           (r.grade===null?'<button class="lp-mini" data-act="lp-settings">予算を設定</button>':'<div class="lp-sim-judge"><span class="rating-face '+faceClass(r.grade)+'">'+mark(r.grade)+'</span><small>'+'予算'+' '+landMan(r.budget)+'</small></div>')+'</div>'+
         '<p class="lp-sim-unit">土地 <b>'+landPriceHtml(r.sqm,{unit:'tsubo',small:false})+'</b>（'+esc(r.how)+(r.estimated?'<i class="lp-ref">推計</i>':'')+'）</p>'+
         bar('土地代（'+S.landTsubo+'坪）',r.land,'land')+
@@ -1634,6 +1635,7 @@
   }
   function landV6Action(action,v){
     const L=state.land;
+    if(action==='lp-pct-fine')return step(()=>{ui.lpPctFine=!ui.lpPctFine;});
     if(action==='lp-sim-more')return step(()=>{ui.lpSimMore=!ui.lpSimMore;});
     if(action==='lp-sim-mode')return step(()=>{L.sim=landSimNormalize({...L.sim,mode:v});save();});
     if(action==='lp-ratio-fit')return step(()=>{L.sim=landSimNormalize({...L.sim,landPct:Number(v)});save();});
@@ -2287,13 +2289,17 @@
         (verdict?'<div class="lp-my-verdict v-'+verdict[0]+'">'+landMascot(verdict[0]==='narrow'?'think':'happy',30,false)+'<p>'+state.land.size.people+'人・車'+state.land.size.cars+'台の目安は約'+need+'坪（'+Math.round(need*LAND_TSUBO)+'㎡）→ <b>'+verdict[1]+'</b></p></div>':'');
       if(!size)next=null;
     }else if(st===3){
-      q='土地の値段は？';
+      q='広告の「価格」はいくら？';
       let prev='';
+      const ref0=c&&size?landMyRef({city:d.city,town:d.town}):null,mk=ref0?ref0.sqm*size.sqm:null;
+      const guess=mk?Math.round(mk*1.1/100000)*10:null;
+      const guide=mk?'<div class="lp-my-guide">'+landMascot('normal',30,false)+'<div><p>家は入らない<b>土地だけ</b>の値段だよ。</p><p>'+esc(c.name.replace(/^名古屋市/,'')+(d.town?' '+d.town:''))+'で'+Math.round(size.sqm)+'㎡なら、だいたい <b>'+landMan(mk)+'〜'+landMan(mk*1.25)+'</b></p></div></div>'+
+        (!(price>0)?'<button class="lp-fs-sub lp-my-guess" data-act="lp-my-guess" data-value="'+guess+'">まだ決まってなければ 相場の約'+guess.toLocaleString()+'万円で入れる ›</button>':''):'';
       if(c&&size&&price>0){const ref=landMyRef({city:d.city,town:d.town}),unit=price*10000/size.tsubo,ratio=ref?unit/(ref.sqm*LAND_TSUBO):null;
         const tone=ratio==null?null:ratio<0.95?['cheap','割安']:ratio<=1.25?['fair','相場なみ']:['high','高め'];
         prev='<p class="lp-fs-hint">坪 <b>'+(unit/10000).toFixed(1)+'万円</b>（1㎡あたり'+(unit/LAND_TSUBO/10000).toFixed(1)+'万円）</p>'+
           (tone?'<div class="lp-my-verdict v-'+tone[0]+'">'+landMascot(tone[0]==='high'?'think':'happy',30,false)+'<p>この辺りの目安 坪'+(ref.sqm*LAND_TSUBO/10000).toFixed(1)+'万円 → <b>'+tone[1]+'</b></p></div>':'');}
-      body='<div class="lp-fs-big"><label><input type="number" inputmode="decimal" data-lp-my="price" value="'+esc(d.price??'')+'" placeholder="0"><i>万円</i></label></div>'+prev;
+      body='<div class="lp-fs-big"><label><input type="number" inputmode="decimal" data-lp-my="price" value="'+esc(d.price??'')+'" placeholder="0"><i>万円</i></label></div>'+(price>0?prev:guide);
       if(!(price>0))next=null;
     }else{
       q='わかればもっと正確に（なくてもOK）';next='save';label='保存して評価 ›';
@@ -2331,6 +2337,7 @@
       return step(()=>{ui.lpMyEdit={...d,step:to};});}
     if(action==='lp-my-mode')return step(()=>{ui.lpMyEdit={...d,mode:v};});
     if(action==='lp-my-city')return step(()=>{ui.lpMyEdit={...d,city:v};});
+    if(action==='lp-my-guess')return step(()=>{ui.lpMyEdit={...d,price:Number(v)};});
     if(action==='lp-my-parse'){
       const ta=app.querySelector('[data-lp-my="ad"]'),txt=ta?ta.value:d.ad,got=landParseAd(txt||'');
       const keys=Object.keys(got);

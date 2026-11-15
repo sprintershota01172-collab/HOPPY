@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r96';
+  const BUILD = 'r97';
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
@@ -2284,8 +2284,8 @@
       const cityOpts='<option value="">市区町村を選ぶ</option>'+LAND_REGION_ORDER.map(region=>{const cs=(landData?.cities||[]).filter(x=>x.region===region);return cs.length?'<optgroup label="'+esc(region)+'">'+cs.map(x=>'<option value="'+esc(x.code)+'"'+(d.city===x.code?' selected':'')+'>'+esc(x.name)+'</option>').join('')+'</optgroup>':'';}).join('');
       body=(quick.length?'<div class="lp-fs-chips lp-my-quick">'+quick.map(x=>'<button class="'+(d.city===x.code?'active':'')+'" data-act="lp-my-city" data-value="'+x.code+'">'+esc(x.name.replace(/^名古屋市/,''))+'</button>').join('')+'</div>':'')+
         '<select class="lp-my-big-select" data-lp-my="city">'+cityOpts+'</select>'+
-        '<label class="lp-my-line"><span>町名（わかれば）</span><input type="text" data-lp-my="town" value="'+esc(d.town||'')+'" placeholder="例：音羽町3丁目"></label>'+
-        '<label class="lp-my-line"><span>最寄駅（わかれば）</span><input type="text" list="lp-stations" data-lp-my="station" value="'+esc(d.station||'')+'" placeholder="例：多治見"></label>'+landStationOptions(d.city)+
+        '<label class="lp-my-line"><span>町名（わかれば）</span><input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" data-lp-my="town" value="'+esc(d.town||'')+'" placeholder="例：音羽町3丁目"></label>'+
+        '<label class="lp-my-line"><span>最寄駅（わかれば）</span><input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" list="lp-stations" data-lp-my="station" value="'+esc(d.station||'')+'" placeholder="例：多治見"></label>'+landStationOptions(d.city)+
         (()=>{const st=landStationFind(d.station),R=landRail();return st&&R?'<p class="lp-my-line-hit">🚉 '+esc(st.name)+'駅：'+esc(R.lineOf(st).join('・'))+'</p>':(d.station?'<p class="lp-my-line-hit is-miss">駅名が見つかりません（候補から選んでね）</p>':'');})();
       if(!d.city)next=null;
     }else if(st===2){
@@ -2478,6 +2478,12 @@
     const i=box.querySelector('i'),em=box.querySelector('em');if(i){i.style.width=p+'%';i.querySelector('b').textContent='土地 '+p+'%';}if(em)em.querySelector('b').textContent='建物 '+(100-p)+'%';});
   // iPhoneでキーボードを閉じたあと画面が上下にずれたままになるのを戻す
   document.addEventListener('focusout',()=>setTimeout(()=>{const a=document.activeElement;if(!a||!/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)){try{window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0;}catch(_){}}},80));
+  // キーボードが出たら、見えている高さにアプリを合わせる（画面全体が上に押し上げられないように）
+  (()=>{const vv=window.visualViewport;if(!vv)return;let raf=0;
+    const fit=()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{document.documentElement.style.setProperty('--vvh',Math.round(vv.height)+'px');if(window.scrollY||vv.offsetTop){try{window.scrollTo(0,0);}catch(_){}}});};
+    vv.addEventListener('resize',fit);vv.addEventListener('scroll',fit);fit();})();
+  document.addEventListener('focusin',e=>{const el=e.target;if(!el||!/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))return;
+    setTimeout(()=>{try{window.scrollTo(0,0);el.scrollIntoView({block:'nearest'});}catch(_){}},320);});
   app.addEventListener('pointerdown',landMapDown);
   window.addEventListener('pointermove',landMapMove,{passive:false});
   window.addEventListener('pointerup',landMapUp);window.addEventListener('pointercancel',landMapUp);

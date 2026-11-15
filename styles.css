@@ -6734,3 +6734,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .lp-line-group>div{display:flex;flex-wrap:wrap;gap:5px}
 #app .lp-line-group button{height:34px;border-radius:17px;border:1.5px solid #cfe2d8;background:#fff;font-size:12.5px;font-weight:850;color:#2d5a49;padding:0 11px}
 #app .lp-line-group button.active{background:#1a735d;border-color:#1a735d;color:#fff}
+
+/* r97: キーボード表示時に画面が動かないように */
+html,body{height:var(--vvh,100dvh)!important}
+.app-shell{height:var(--vvh,100dvh)!important}
+#app .lp-fs-body{justify-content:flex-start;padding-top:6px}
+#app .lp-my-wiz .lp-fs-body{gap:10px}

@@ -2759,7 +2759,7 @@ function fpMetaDashboard(){
       {version:'r76',date:'2026.11.15',title:'相場シミュレーター・メーカー図鑑・土地ガイド',
         details:['市区町村・駅距離・用途地域・道路の向きと幅・角地・広さ・メーカー・延床で総額の相場を計算','主要ハウスメーカー17社の坪単価・構造・特徴・注意点・保証','地域の特徴と、土地の条件で価格がどう変わるかを実データで表示']},
       {version:'r75',date:'2026.11.15',title:'アプリ名を「地価調べ君」に変更',
-        details:['アプリ名・ホーム画面の名前を「地価調べ君」に変更','公開先を '+'https://sprintershota01172-collab.github.io/chika-shirabe-kun/ に移動','登録した物件・家計のデータはそのまま']},
+        details:['アプリ名・ホーム画面の名前を「地価調べ君」に変更','公開先のURLは今まで通り','登録した物件・家計のデータはそのまま']},
       {version:'r74',date:'2026.11.15',title:'地価データをAPIキーなしで自動取得',
         details:['国土数値情報（国土交通省）の地価公示・地価調査を毎週自動で取り込み（登録不要）','愛知県・岐阜県の公表平均と一致することを確認','実勢・中古戸建はAPIキーを登録した場合だけ表示']},
       {version:'r73',date:'2026.11.15',title:'地価ランキングを追加（愛知県全域＋多治見周辺）',
@@ -2987,7 +2987,7 @@ function fpMetaDashboard(){
 
   /* --- GitHub Actions をボタンから起動 --- */
   function landRepo(){
-    let owner='sprintershota01172-collab',repo='chika-shirabe-kun';
+    let owner='sprintershota01172-collab',repo='HOPPY';
     try{
       const m=location.hostname.match(/^([^.]+)\.github\.io$/i);
       if(m){owner=m[1];const seg=location.pathname.split('/').filter(Boolean)[0];if(seg&&!/\.html?$/i.test(seg))repo=seg;}
@@ -3002,7 +3002,7 @@ function fpMetaDashboard(){
   function landGhError(status){
     return status===401?'GitHubトークンの期限が切れています。⚙設定から入れ直してください':
       status===403?'トークンの権限が足りません。Actions：Read and write を付けて作り直してください':
-      status===404?'リポジトリかワークフローが見つかりません。トークンの対象が chika-shirabe-kun か確認してください':
+      status===404?'リポジトリかワークフローが見つかりません。トークンの対象が HOPPY か確認してください':
       status===422?'ワークフローを起動できませんでした。mainにワークフローがあるか確認してください':
       'GitHubに接続できませんでした（HTTP '+status+'）。少し待ってからもう一度押してください';
   }
@@ -3345,7 +3345,7 @@ function fpMetaDashboard(){
         field('割安判定のしきい値','threshold','%','min="1" max="50" step="1"')+
         '<p class="lp-note">物件比較の「土地の割安度」：相場より'+L.threshold+'%以上安い○／±'+L.threshold+'%以内△／'+L.threshold+'%以上高い×</p></div>'+
       '<div class="lp-set-group"><span class="kicker">ワンタップ更新（GitHub）</span>'+
-        '<p class="lp-note">'+(token?'✓ トークン設定済み（この端末だけに保存）':'Fine-grained トークン（対象：chika-shirabe-kun のみ／Actions：Read and write／Contents：Read）を一度だけ入力します')+'</p>'+
+        '<p class="lp-note">'+(token?'✓ トークン設定済み（この端末だけに保存）':'Fine-grained トークン（対象：HOPPYのみ／Actions：Read and write／Contents：Read）を一度だけ入力します')+'</p>'+
         '<div class="lp-token-row"><input type="password" autocomplete="off" autocapitalize="off" spellcheck="false" data-lp-token placeholder="'+(token?'新しいトークンで置き換え':'github_pat_…')+'" aria-label="GitHubトークン">'+
         '<button class="btn compact primary" data-act="lp-token-save">保存</button>'+(token?'<button class="btn compact" data-act="lp-token-clear">削除</button>':'')+'</div></div>'+
       '</div><button class="btn wide" data-act="lp-about">データの時点・出典・算出方法</button>');

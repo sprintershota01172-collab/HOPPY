@@ -1,6 +1,6 @@
-# 地価調べ君 / chika-shirabe-kun
+# 地価調べ君（リポジトリ名：HOPPY）
 
-（旧名：ほっぴーくん / HOPPY。2026年11月に改名）
+（旧名：ほっぴーくん。2026年11月にアプリ名だけ改名。URL・リポジトリ名はそのまま）
 
 夫婦で使う家探し・比較・人生設計のためのスマートフォン向けPWA。
 
@@ -10,7 +10,7 @@
 
 GitHub Pages のデプロイが有効な場合:
 
-https://sprintershota01172-collab.github.io/chika-shirabe-kun/
+https://sprintershota01172-collab.github.io/HOPPY/
 
 Pagesの公開には、GitHubリポジトリの **Settings → Pages → Build and deployment → Source: GitHub Actions** の設定が必要な場合があります。.github/workflows/pages.ymlは main 更新時に静的ファイルを配信します。公開できない場合は Actions タブからデプロイ結果を確認してください。
 
@@ -69,8 +69,8 @@ SafariでURLを開き、「共有」→「ホーム画面に追加」。最初�
 ### 使い方
 
 - **何もしなくてOK**：毎週月曜の朝に自動で最新になります。アプリは開くたびに新しいデータがあるか確認します。
-- **今すぐ更新したいとき**：GitHub の [Actions → 地価データ更新](https://github.com/sprintershota01172-collab/chika-shirabe-kun/actions/workflows/update-landprice.yml) → **Run workflow** → 緑の **Run workflow**。1〜2分で終わり、数分後にアプリへ反映されます。
-- **アプリのボタンから更新したいとき（任意）**：GitHub で Fine-grained トークンを作成（右上アイコン → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token。Repository access：Only select repositories → chika-shirabe-kun、Permissions：Actions＝Read and write、Contents＝Read-only）→ 地価画面の ⚙ に貼って保存。トークンはその端末だけに保存され、バックアップJSONにも含まれません。未設定でも「最新にする」は公開中のデータを読み直します。
+- **今すぐ更新したいとき**：GitHub の [Actions → 地価データ更新](https://github.com/sprintershota01172-collab/HOPPY/actions/workflows/update-landprice.yml) → **Run workflow** → 緑の **Run workflow**。1〜2分で終わり、数分後にアプリへ反映されます。
+- **アプリのボタンから更新したいとき（任意）**：GitHub で Fine-grained トークンを作成（右上アイコン → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token。Repository access：Only select repositories → HOPPY、Permissions：Actions＝Read and write、Contents＝Read-only）→ 地価画面の ⚙ に貼って保存。トークンはその端末だけに保存され、バックアップJSONにも含まれません。未設定でも「最新にする」は公開中のデータを読み直します。
 - **実勢・中古戸建も見たいとき（任意）**：[不動産情報ライブラリ](https://www.reinfolib.mlit.go.jp/api/request/) でAPIキーを申請し、このリポジトリの Settings → Secrets and variables → Actions に `REINFOLIB_API_KEY` として登録すると、取引価格（XIT001）も集計されます。
 - パソコンから：`node scripts/fetch-landprice.mjs`（Node 20以上、`unzip` コマンドが必要）
 

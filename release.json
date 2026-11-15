@@ -1,10 +1,10 @@
 {
-  "version": "r86",
+  "version": "r87",
   "ui": "land-only",
   "revised": "2026-11-15",
   "data_schema": "chika-shirabe-v1",
-  "entrypoint": "visual-r86.html",
+  "entrypoint": "visual-r87.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Plain-language performance labels and help"
+  "release_note": "Find places and makers from your budget"
 }

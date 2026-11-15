@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r87';
+  const BUILD = 'r88';
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
@@ -586,7 +586,7 @@
     if(action==='lp-about')return openOverlay('land-about');
     if(action==='lp-refresh'){landRefresh();return;}
     if(action==='lp-view')return step(()=>{if(LAND_VIEWS.some(x=>x[0]===v)){L.view=v;if(landGroup(v)==='calc')ui.lastCalc=v;if(landGroup(v)==='learn')ui.lastLearn=v;}save();});
-    if(action==='lp-nav')return step(()=>{L.view=v==='calc'?(ui.lastCalc||'sim'):v==='learn'?(ui.lastLearn||'maker'):(['rank','map','compare'].includes(v)?v:'rank');save();});
+    if(action==='lp-nav')return step(()=>{L.view=v==='calc'?(ui.lastCalc||'find'):v==='learn'?(ui.lastLearn||'maker'):(['rank','map','compare'].includes(v)?v:'rank');save();});
     if(action==='lp-learn')return step(()=>{if(v==='maker')L.view='maker';else{L.view='guide';L.guideTab=['cond','words'].includes(v)?v:'region';ui.lpGuidePage=0;}ui.lastLearn=L.view;save();});
     if(action==='lp-sim-grade')return step(()=>{L.sim.grade=['low','mid','high'].includes(v)?v:'mid';save();});
     if(action==='lp-maker-type')return step(()=>{L.makerType=['all','全国','愛知','岐阜','鉄骨'].includes(v)?v:'all';ui.lpMakerPage=0;save();});
@@ -1711,12 +1711,19 @@
       '<p class="lp-note">'+LAND_HELP_MARKS+'（メーカー詳細の5つの評価）</p></div>');
   }
   /* ===== 予算から探す（r87） ===== */
-  function landFindDefaults(){return {budget:5000,landTsubo:0,floorTsubo:0,grade:'mid',tab:'place',sort:'best'};}
+  function landFindDefaults(){return {budget:5000,landTsubo:0,floorTsubo:0,grade:'mid',tab:'place',sort:'best',mode:'monthly',monthly:12,open:0};}
   function landFindNormalize(x){
     const d=landFindDefaults();x=x&&typeof x==='object'?x:{};
     const n=(k,lo,hi)=>{const v=Math.round(Number(x[k]));return Number.isFinite(v)?Math.min(hi,Math.max(lo,v)):d[k];};
     return {budget:n('budget',500,30000),landTsubo:n('landTsubo',0,300),floorTsubo:n('floorTsubo',0,150),
-      grade:['low','mid','high'].includes(x.grade)?x.grade:'mid',tab:x.tab==='maker'?'maker':'place',sort:['best','room','commute','cheap'].includes(x.sort)?x.sort:'best'};
+      grade:['low','mid','high'].includes(x.grade)?x.grade:'mid',tab:x.tab==='maker'?'maker':'place',sort:['best','room','commute','cheap'].includes(x.sort)?x.sort:'best',
+      mode:x.mode==='total'?'total':'monthly',monthly:(v=>Number.isFinite(v)?Math.min(100,Math.max(1,Math.round(v*10)/10)):d.monthly)(Number(x.monthly)),open:x.open?1:0};
+  }
+  function landFindBudget(){
+    const F=state.land.find,M=state.land.money;
+    if(F.mode==='total')return {total:F.budget,loan:Math.max(0,F.budget-M.own),own:M.own};
+    const loan=Math.round(landPV(F.monthly*10000,M.rate,M.years)/10000);
+    return {total:loan+M.own,loan,own:M.own};
   }
   function landFindSizes(){
     const F=state.land.find,z=landSizeCalc();
@@ -1725,7 +1732,7 @@
   const LAND_FIT=[[100,'大手の上位も','top'],[85,'大手も','big'],[70,'中堅まで','mid'],[55,'ローコスト','low'],[40,'ギリギリ','min']];
   const landFitOf=u=>LAND_FIT.find(f=>u>=f[0])||null;
   function landFindCities(){
-    const F=state.land.find,sz=landFindSizes(),net=F.budget*10000/(1+LAND_COST_RATE),cent=landCentroids();
+    const F=state.land.find,sz=landFindSizes(),net=landFindBudget().total*10000/(1+LAND_COST_RATE),cent=landCentroids();
     return (landData?.cities||[]).filter(landCityIn).map(c=>{
       const sqm=c.residential?.all?.avgSqm||c.residential?.koji?.avgSqm||c.residential?.chosa?.avgSqm;
       if(!sqm)return null;
@@ -1737,17 +1744,25 @@
   function landPerfSum(m){const s=landSpecScore(m);return (s.seis||0)+(s.ins||0)+(s.air||0)+(s.war||0);}
   function landFindScreen(){
     const F=state.land.find,sz=landFindSizes(),all=landFindCities(),ok=all.filter(x=>x.fit);
+    const M=state.land.money,B=landFindBudget();
+    const numIn=(label,attr,val,unit,step)=>'<label class="lp-sim-field"><span>'+label+'</span><span class="lp-sim-num"><input type="number" inputmode="decimal" step="'+step+'" '+attr+' value="'+esc(val)+'"><i>'+unit+'</i></span></label>';
     const head='<div class="lp-find-form">'+
-      '<label class="lp-sim-field"><span>買える値段（総額）</span><span class="lp-sim-num"><input type="number" inputmode="numeric" min="500" max="30000" step="100" data-lp-find="budget" value="'+esc(F.budget)+'"><i>万円</i></span></label>'+
-      '<button class="lp-find-size" data-act="lp-size-open"><span>広さ'+(sz.auto?'（目安）':'')+'</span><b>土地'+sz.land+'坪・建物'+sz.floor+'坪</b></button>'+
+      (F.mode==='monthly'?numIn('月々払える額','data-lp-find="monthly" min="1" max="100"',F.monthly,'万円','0.5'):numIn('買える値段（総額）','data-lp-find="budget" min="500" max="30000"',F.budget,'万円','100'))+
+      numIn('頭金（自己資金）','data-lp-money="own" min="0" max="50000"',M.own||0,'万円','10')+
+      (F.open?'<div class="lp-find-more">'+landSeg('lp-money-rate',M.rate===1.2?'v':M.rate===3.81?'f':'',[['v','変動 1.2%'],['f','固定 3.81%']],'lp-seg-fill')+
+        numIn('金利','data-lp-money="rate" min="0" max="10"',M.rate,'%','0.05')+numIn('返済年数','data-lp-money="years" min="5" max="50"',M.years,'年','1')+'</div>':'')+
+      '<div class="lp-find-chips"><button class="lp-find-chip" data-act="lp-find-open">'+(F.mode==='monthly'?'金利'+M.rate+'%・'+M.years+'年':'')+(F.open?' ▴':' ▾')+'</button>'+
+        '<button class="lp-find-chip" data-act="lp-size-open">土地'+sz.land+'坪・建物'+sz.floor+'坪'+(sz.auto?'（目安）':'')+' ›</button>'+
+        '<button class="lp-find-chip lp-find-mode" data-act="lp-find-mode">'+(F.mode==='monthly'?'総額で入れる':'月々で入れる')+'</button></div>'+
+      '<div class="lp-find-total"><span>'+(F.mode==='monthly'?'借りられる額 '+landMan(B.loan*10000)+' ＋ 頭金 '+landMan(B.own*10000):'借入 '+landMan(B.loan*10000)+' → 月々 '+landYenText(landPay(B.loan*10000,M.rate,M.years)))+'</span><b>総額 '+landMan(B.total*10000)+'</b></div>'+
       '<div class="lp-find-row">'+landAreaSelect()+landSeg('lp-find-tab',F.tab,[['place','おすすめの場所'],['maker','おすすめのメーカー']],'lp-seg-fill')+'</div></div>';
     if(F.tab==='maker'){
       const makers=LAND_MAKERS.map(m=>{const cs=ok.filter(x=>x.makers.includes(m));return {m,cs,perf:landPerfSum(m)};}).filter(x=>x.cs.length)
         .sort((a,b)=>b.perf-a.perf||a.m.mid-b.m.mid);
-      const per=Math.max(5,landPerPage()-2),total=Math.max(1,Math.ceil(makers.length/per));
+      const per=Math.max(4,landPerPage()-4),total=Math.max(1,Math.ceil(makers.length/per));
       ui.lpFindPage=Math.max(0,Math.min(ui.lpFindPage||0,total-1));
       const page=makers.slice(ui.lpFindPage*per,(ui.lpFindPage+1)*per);
-      return head+'<div class="lp-find-row"><p class="lp-find-sum">'+F.budget.toLocaleString()+'万円で建てられるメーカー <b>'+makers.length+'社</b>（性能の高い順）</p></div>'+
+      return head+'<div class="lp-find-row"><p class="lp-find-sum">'+landFindBudget().total.toLocaleString()+'万円で建てられるメーカー <b>'+makers.length+'社</b>（性能の高い順）</p></div>'+
         '<div class="lp-list swipe-zone" data-swipe="lp-find" style="--lp-rows:'+per+'">'+(page.length?page.map((x,i)=>
           '<div class="lp-row" style="--i:'+i+'"><button class="lp-row-main" data-act="lp-find-maker" data-value="'+x.m.id+'">'+
           '<span class="lp-maker-band b-'+(x.m.band==='ハイ'?'hi':x.m.band==='ミドル上'?'mu':x.m.band==='ミドル'?'mid':x.m.band==='地元'?'local':'lo')+'">'+esc(x.m.band)+'</span>'+
@@ -1757,7 +1772,7 @@
         '<div class="lp-foot">'+navPager(ui.lpFindPage,total,'lp-find-page')+'</div>';
     }
     const sorted=ok.slice().sort(F.sort==='commute'&&landHasWork()?(a,b)=>(a.cm?.minutes??9999)-(b.cm?.minutes??9999):F.sort==='cheap'?(a,b)=>a.sqm-b.sqm:F.sort==='room'?(a,b)=>b.unit-a.unit:(a,b)=>((b.unit>=70)-(a.unit>=70))||b.sqm-a.sqm);
-    const per=Math.max(5,landPerPage()-3),total=Math.max(1,Math.ceil(sorted.length/per));
+    const per=Math.max(4,landPerPage()-5),total=Math.max(1,Math.ceil(sorted.length/per));
     ui.lpFindPage=Math.max(0,Math.min(ui.lpFindPage||0,total-1));
     const page=sorted.slice(ui.lpFindPage*per,(ui.lpFindPage+1)*per);
     const sorts=[['best','おすすめ順（便利な所から）'],['room','建物にお金をかけられる順'],['cheap','土地が安い順']].concat(landHasWork()?[['commute','通勤が近い順']]:[]);
@@ -1793,15 +1808,17 @@
     const list=cs.slice().sort(landHasWork()?(a,b)=>(a.cm?.minutes??9999)-(b.cm?.minutes??9999):(a,b)=>b.sqm-a.sqm).slice(0,(window.innerHeight||800)<700?5:6);
     return modalFrame(m.name+'で建てるなら','<div class="panel detail grow lp-find-detail">'+
       '<div class="lp-size-result"><div><span>建物本体の坪単価（'+({low:'下限',mid:'目安',high:'上限'})[F.grade]+'）</span><strong>'+m[F.grade]+'<small>万/坪</small></strong><em>'+esc(m.band)+'・'+esc(m.type)+'</em></div>'+
-        '<div><span>予算内で建てられる場所</span><strong>'+cs.length+'<small>か所</small></strong><em>'+F.budget.toLocaleString()+'万円の場合</em></div></div>'+
+        '<div><span>予算内で建てられる場所</span><strong>'+cs.length+'<small>か所</small></strong><em>総額'+landFindBudget().total.toLocaleString()+'万円の場合</em></div></div>'+
       '<span class="kicker">おすすめの場所（'+(landHasWork()?'通勤が近い順':'便利な＝地価が高い順')+'）</span>'+
       '<div class="lp-find-list">'+list.map(x=>'<button class="lp-find-item" data-act="lp-find-go" data-value="'+esc(x.c.code+'|'+m.id)+'"><span><b>'+esc(x.c.name)+'</b><small>土地'+landMan(x.land)+(x.cm?'・通勤'+x.cm.minutes+'分':'・'+esc(x.c.region))+'</small></span><em>残り坪'+Math.floor(x.unit)+'万 ›</em></button>').join('')+'</div>'+
       '<p class="lp-note">「残り坪◯万」はその場所で建物本体にかけられる坪単価。この会社の坪単価より大きいほどゆとりがあります。</p></div>');
   }
   function landV9Action(action,v){
     const L=state.land;
+    if(action==='lp-find-open')return step(()=>{L.find=landFindNormalize({...L.find,open:L.find.open?0:1});save();});
+    if(action==='lp-find-mode')return step(()=>{const B=landFindBudget();L.find=landFindNormalize({...L.find,mode:L.find.mode==='monthly'?'total':'monthly',budget:B.total});ui.lpFindPage=0;save();});
     if(action==='lp-find-tab')return step(()=>{L.find=landFindNormalize({...L.find,tab:v});ui.lpFindPage=0;save();});
-    if(action==='lp-find-page'){const ok=landFindCities().filter(x=>x.fit),n=state.land.find.tab==='maker'?LAND_MAKERS.filter(m=>ok.some(x=>x.makers.includes(m))).length:ok.length;const per=Math.max(5,landPerPage()-(state.land.find.tab==='maker'?2:3));return step(()=>changePage('lpFindPage',Math.max(1,Math.ceil(n/per)),Number(v)));}
+    if(action==='lp-find-page'){const ok=landFindCities().filter(x=>x.fit),n=state.land.find.tab==='maker'?LAND_MAKERS.filter(m=>ok.some(x=>x.makers.includes(m))).length:ok.length;const per=Math.max(4,landPerPage()-(state.land.find.tab==='maker'?4:5));return step(()=>changePage('lpFindPage',Math.max(1,Math.ceil(n/per)),Number(v)));}
     if(action==='lp-find-city')return openOverlay('land-find-city',()=>{ui.lpFindCity=v;});
     if(action==='lp-find-maker')return openOverlay('land-find-maker',()=>{ui.lpFindMaker=v;});
     if(action==='lp-help-find')return message('総額から諸費用7%を引き、土地代を引いた残りを建物（本体＋付帯工事25%）に使う計算です');

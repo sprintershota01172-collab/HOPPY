@@ -6480,3 +6480,15 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .lp-find-towns{margin:0;font-size:11px;font-weight:750;color:#2d5a49;background:#f4f8f6;border-radius:10px;padding:6px 9px;line-height:1.5}
 #app .lp-v-find>.lp-find-row{flex:none}
 #app .lp-fit{width:54px;white-space:nowrap}
+
+/* r88: 月々から探す */
+#app .lp-find-more{grid-column:1/-1;display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:6px;align-items:end}
+#app .lp-find-more .lp-seg{height:30px}
+#app .lp-find-chips{grid-column:1/-1;display:flex;gap:5px;min-width:0}
+#app .lp-find-chip{flex:none;height:26px;border:1px solid #d6e3dc;background:#f6fbf8;border-radius:13px;padding:0 9px;font-size:10.5px;font-weight:850;color:#2d5a49;white-space:nowrap}
+#app .lp-find-chip:nth-child(2){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;border-color:#f0c79c;background:#fff8f0;color:#b4601d}
+#app .lp-find-mode{color:#14785c}
+#app .lp-find-total{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;background:linear-gradient(125deg,#1a735d,#2c9274);color:#fff;border-radius:10px;padding:6px 10px}
+#app .lp-find-total span{font-size:10px;font-weight:800;opacity:.92;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-find-total b{flex:none;font-size:16px;font-weight:900}
+#app .lp-find-form .lp-find-size{display:none}

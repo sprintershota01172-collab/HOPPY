@@ -1,10 +1,10 @@
 {
-  "version": "r87",
+  "version": "r88",
   "ui": "land-only",
   "revised": "2026-11-15",
   "data_schema": "chika-shirabe-v1",
-  "entrypoint": "visual-r87.html",
+  "entrypoint": "visual-r88.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Find places and makers from your budget"
+  "release_note": "Find by monthly payment"
 }

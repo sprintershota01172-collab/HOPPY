@@ -165,6 +165,22 @@ export function detectSchema(features, { pref, year }) {
     if (distinct > best) { best = distinct; stationKey = k; }
   }
   if (best < 0.15) stationKey = null;
+  // 土地の条件：駅までの距離・前面道路の方位と幅員・側道（角地など）・用途地域・地積
+  const DIRS = new Set(['北', '北東', '東', '南東', '南', '南西', '西', '北西']);
+  const isDir = v => typeof v === 'string' && DIRS.has(v.trim());
+  const emptyish = v => v === null || v === undefined || v === '' || v === '_' || v === '0';
+  const startAt = addressKey ? keys.indexOf(addressKey) + 1 : 0;
+  const near = (from, n, pred, min) => from < 0 ? null : keys.slice(from, from + n).find(k => frac(k, pred) >= min) || null;
+  const areaKey = near(startAt, 4, v => isNum(v) && Number(v) >= 20 && Number(v) <= 200000, 0.9);
+  const dirKey = keys.slice(startAt).find(k => frac(k, isDir) >= 0.6) || null;
+  const roadWidthKey = dirKey ? near(keys.indexOf(dirKey) + 1, 2, v => isNum(v) && Number(v) >= 0 && Number(v) <= 80, 0.85) : null;
+  let sideDirKey = null;
+  if (dirKey) for (const k of keys.slice(keys.indexOf(dirKey) + 1, keys.indexOf(dirKey) + 8)) {
+    const share = frac(k, isDir);
+    if (share >= 0.02 && share < 0.7 && frac(k, v => isDir(v) || emptyish(v)) >= 0.97) { sideDirKey = k; break; }
+  }
+  const stationDistKey = stationKey ? near(keys.indexOf(stationKey) + 1, 3, v => isNum(v) && Number(v) >= 0 && Number(v) <= 40000, 0.9) : null;
+  const zoneKey = keys.slice(startAt).find(k => frac(k, v => typeof v === 'string' && /(低専|中専|住居|近商|商業|準工|工業|工専|田園)/.test(v)) >= 0.6) || null;
   // 価格の推移列：当年価格と同じ値が入っている列（価格列より後ろ）を当年とし、その前を過去年とみなす
   let histIndex = -1;
   for (let i = keys.indexOf(priceKey) + 2; i < keys.length; i++) {
@@ -177,7 +193,8 @@ export function detectSchema(features, { pref, year }) {
     history.push([y, keys[i]]);
   }
   return { cityKey, useKey, seqKey: seqOk ? seqKey : null, yearKey, priceKey, chgKey: chgOk ? chgKey : null,
-    addressKey: addressKey || null, nameKey: nameOk ? nameKey : null, stationKey, history };
+    addressKey: addressKey || null, nameKey: nameOk ? nameKey : null, stationKey, history,
+    areaKey, dirKey, roadWidthKey, sideDirKey, stationDistKey, zoneKey };
 }
 export function pointsFromFeatures(features, schema, { kind, year }) {
   const s = schema, out = [];
@@ -203,11 +220,31 @@ export function pointsFromFeatures(features, schema, { kind, year }) {
       chg: s.chgKey ? parseRate(p[s.chgKey]) : null,
       lat: Number.isFinite(+c[1]) ? Math.round(c[1] * 1e5) / 1e5 : null,
       lon: Number.isFinite(+c[0]) ? Math.round(c[0] * 1e5) / 1e5 : null,
-      hist
+      hist,
+      area: s.areaKey && isNum(p[s.areaKey]) ? Number(p[s.areaKey]) : null,
+      dir: s.dirKey ? String(p[s.dirKey] ?? '').trim() || null : null,
+      road: s.roadWidthKey && isNum(p[s.roadWidthKey]) && Number(p[s.roadWidthKey]) > 0 ? Number(p[s.roadWidthKey]) : null,
+      side: s.sideDirKey ? ['北', '北東', '東', '南東', '南', '南西', '西', '北西'].includes(String(p[s.sideDirKey] ?? '').trim()) : null,
+      dist: s.stationDistKey && isNum(p[s.stationDistKey]) ? Number(p[s.stationDistKey]) : null,
+      zone: s.zoneKey ? zoneGroup(p[s.zoneKey]) : null
     });
   }
   return out;
 }
+
+// 用途地域をざっくり5つに分ける（相場の条件・土地ガイド用）
+export function zoneGroup(v) {
+  const s = String(v ?? '');
+  if (/低専|田園/.test(s)) return '低層住居';
+  if (/中専/.test(s)) return '中高層住居';
+  if (/住居/.test(s)) return '住居';
+  if (/近商|商業/.test(s)) return '商業';
+  if (/準工|工業|工専/.test(s)) return '工業';
+  return s.trim() ? 'その他' : null;
+}
+export const distBand = m => m == null ? null : m < 500 ? '〜500m' : m < 1000 ? '500m〜1km' : m < 2000 ? '1〜2km' : '2km〜';
+export const dirGroup = d => !d ? null : /南/.test(d) ? '南' : /北/.test(d) ? '北' : d === '東' ? '東' : d === '西' ? '西' : null;
+export const roadBand = w => w == null ? null : w < 4 ? '4m未満' : w < 6 ? '4〜6m' : '6m以上';
 
 // シェープファイル（.dbf/.shp）の最小限の読み取り。zip に GeoJSON が無い場合に使う。
 export function parseDbf(buf, encoding = 'utf-8') {
@@ -404,8 +441,10 @@ export function aggregate({ targets, points, latest, trade, now }) {
   const outPoints = points.filter(p => targetCodes.has(p.cityCode) && (res(p) || com(p))).map(p => {
     const past = p.hist?.[latest[p.kind] - 5];
     return { id: p.key, lot: p.lot, cityCode: p.cityCode, kind: p.kind, use: p.use, address: p.address, station: p.station,
-      priceSqm: p.priceSqm, chg: p.chg, chg5y: past > 0 ? round1((p.priceSqm / past - 1) * 100) : null, lat: p.lat, lon: p.lon };
+      priceSqm: p.priceSqm, chg: p.chg, chg5y: past > 0 ? round1((p.priceSqm / past - 1) * 100) : null, lat: p.lat, lon: p.lon,
+      dist: p.dist, dir: p.dir, road: p.road, side: p.side, zone: p.zone, area: p.area };
   }).sort((a, b) => b.priceSqm - a.priceSqm);
+  const conditions = conditionEffects(points.filter(p => targetCodes.has(p.cityCode) && res(p)), regionByCode);
   return {
     generatedAt: now.toISOString(), seed: false, tradeAvailable: !!trade,
     sources: {
@@ -413,8 +452,38 @@ export function aggregate({ targets, points, latest, trade, now }) {
       chosa: { year: latest.chosa, baseDate: latest.chosa + '-07-01', from: '国土数値情報（都道府県地価調査）' },
       trade: trade ? { latestPeriod: trade.latestPeriod, period: trade.period4, period8: trade.period8 } : null
     },
-    prefs, regions, cities, points: outPoints, stations
+    prefs, regions, cities, points: outPoints, stations, conditions
   };
+}
+// 条件ごとの価格差：同じ市区町村の住宅地平均を100としたときの各地点の価格比を、条件ごとに平均する
+export function conditionEffects(points, regionByCode) {
+  const cityAvg = new Map();
+  for (const p of points) { const a = cityAvg.get(p.cityCode) || [0, 0]; a[0] += p.priceSqm; a[1]++; cityAvg.set(p.cityCode, a); }
+  const ratio = p => { const a = cityAvg.get(p.cityCode); return a && a[1] >= 3 ? p.priceSqm / (a[0] / a[1]) : null; };
+  const dims = {
+    dist: { label: '駅からの距離', order: ['〜500m', '500m〜1km', '1〜2km', '2km〜'], of: p => distBand(p.dist) },
+    dir: { label: '前面道路の向き', order: ['南', '東', '西', '北'], of: p => dirGroup(p.dir) },
+    corner: { label: '角地・二方道路', order: ['角地・二方道路', '一方道路'], of: p => p.side == null ? null : p.side ? '角地・二方道路' : '一方道路' },
+    road: { label: '前面道路の幅', order: ['4m未満', '4〜6m', '6m以上'], of: p => roadBand(p.road) },
+    zone: { label: '用途地域', order: ['低層住居', '中高層住居', '住居', '商業', '工業'], of: p => p.zone },
+    area: { label: '土地の広さ', order: ['〜50坪', '50〜80坪', '80坪〜'], of: p => p.area == null ? null : p.area / TSUBO < 50 ? '〜50坪' : p.area / TSUBO < 80 ? '50〜80坪' : '80坪〜' }
+  };
+  const scopes = [['all', () => true], ...REGION_ORDER.map(r => [REGION_IDS[r], p => regionByCode.get(p.cityCode) === r])];
+  const out = {};
+  for (const [dim, d] of Object.entries(dims)) {
+    out[dim] = { label: d.label, order: d.order, scopes: {} };
+    for (const [scope, inScope] of scopes) {
+      const groups = {};
+      for (const p of points) {
+        if (!inScope(p)) continue;
+        const g = d.of(p), r = ratio(p);
+        if (!g || r == null) continue;
+        (groups[g] ||= []).push(r);
+      }
+      out[dim].scopes[scope] = Object.fromEntries(d.order.filter(g => groups[g]?.length).map(g => [g, { pct: round1((mean(groups[g]) - 1) * 100), n: groups[g].length }]));
+    }
+  }
+  return out;
 }
 export function validate(out) {
   return EXPECTED.map(e => {
@@ -478,6 +547,10 @@ export async function run({ key = '', dataDir = path.resolve(here, '..', 'data')
         const pts = pointsFromFeatures(file.features, schema, { kind, year: y });
         log('  ' + label + ' ' + y + '年 ' + PREFS[pref] + ': ' + pts.length + '地点（価格=' + schema.priceKey + ' 変動率=' + schema.chgKey +
           ' 推移=' + schema.history.length + '年分 駅=' + (schema.stationKey || 'なし') + ' 地点名=' + (schema.nameKey || 'なし') + '）');
+        log('    条件の列: 地積=' + schema.areaKey + ' 道路方位=' + schema.dirKey + ' 幅員=' + schema.roadWidthKey + ' 側道=' + schema.sideDirKey +
+          ' 駅距離=' + schema.stationDistKey + ' 用途地域=' + schema.zoneKey);
+        const sample = pts.find(p => p.use === RESIDENTIAL);
+        if (sample) log('    例: ' + sample.lot + ' ' + JSON.stringify({ area: sample.area, dir: sample.dir, road: sample.road, side: sample.side, dist: sample.dist, zone: sample.zone }));
         points.push(...pts);
       }
       latest[kind] = y;

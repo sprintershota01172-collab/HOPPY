@@ -61,6 +61,8 @@ function ksjFeatures({ prefix = 'L01', year = 2026, pref, offset = 0, firstYear 
       for (let n = 10; n <= 23; n++) p[k(n)] = '0';
       p[k(24)] = name; p[k(25)] = addr + (i + 1) + '丁目' + (100 + i) + '番'; p[k(26)] = '_'; p[k(27)] = 165;
       p[k(28)] = ['住宅', '店舗,共同住宅'][i % 2]; p[k(31)] = 'W2';
+      p[k(40)] = '市道'; p[k(41)] = ['南', '北', '東'][i]; p[k(42)] = [6, 4.5, 12][i]; p[k(43)] = '_'; p[k(44)] = '舗装';
+      p[k(45)] = i === 0 ? '側道' : '_'; p[k(46)] = i === 0 ? '東' : '_';
       p[k(47)] = '中規模一般住宅が多い閑静な住宅地域'; p[k(48)] = station; p[k(49)] = '近接'; p[k(50)] = 800 + i * 100;
       p[k(51)] = '1中専'; p[k(53)] = '市街化';
       for (let y = firstYear; y <= year; y++) p[k(62 + (y - firstYear))] = y >= 2009 ? Math.round(base * factor * growth ** (y - 2016)) : 0;
@@ -81,6 +83,12 @@ test('列番号が変わっても、中身から価格・変動率・推移・�
   assert.equal(s.nameKey, 'L01_024');
   assert.equal(s.addressKey, 'L01_025');
   assert.equal(s.stationKey, 'L01_048');
+  assert.equal(s.areaKey, 'L01_027');
+  assert.equal(s.dirKey, 'L01_041');
+  assert.equal(s.roadWidthKey, 'L01_042');
+  assert.equal(s.sideDirKey, 'L01_046');
+  assert.equal(s.stationDistKey, 'L01_050');
+  assert.equal(s.zoneKey, 'L01_051');
   assert.deepEqual(s.history[0], [2026, 'L01_105']);
   assert.ok(s.history.some(([y, k]) => y === 2016 && k === 'L01_095'));
   const s2 = m.detectSchema(ksjFeatures({ prefix: 'L02', pref: '21', offset: -2 }), { pref: '21', year: 2026 });
@@ -93,6 +101,8 @@ test('列番号が変わっても、中身から価格・変動率・推移・�
   assert.equal(pts[2].use, '商業地');
   assert.equal(pts[0].station, '栄');
   assert.ok(pts[0].hist[2021] > 0);
+  assert.deepEqual([pts[0].dir, pts[0].road, pts[0].side, pts[0].dist, pts[0].zone, pts[0].area], ['南', 6, true, 800, '中高層住居', 165]);
+  assert.equal(pts[1].side, false);
 });
 
 test('シェープファイル（.dbf/.shp）も読める', async () => {
@@ -167,6 +177,9 @@ test('通し実行：APIキーなしで集計し、同じ内容なら書き換�
   assert.ok(out.stations.some(s => s.name === '栄' && s.region === '名古屋市'));
   assert.ok(out.points.some(p => p.lot === '多治見-1'));
   assert.ok(out.points.find(p => p.lot === '多治見-1' && p.kind === 'koji').chg5y > 9);
+  assert.ok(out.conditions.dir.scopes.all['南'].pct > out.conditions.dir.scopes.all['北'].pct, '南道路の方が高い（模擬データ）');
+  assert.ok(out.conditions.corner.scopes.all['角地・二方道路'].n > 0);
+  assert.ok(out.points.every(p => 'dist' in p && 'zone' in p));
   const mtime = fs.statSync(path.join(dir, 'landprice.json')).mtimeMs;
   const second = await m.run({ dataDir: dir, fetchImpl: k.fetchImpl, unzip: k.unzip, now: new Date('2026-11-16T05:00:00Z'), logger: () => {} });
   assert.equal(second.changed, false);

@@ -6615,3 +6615,36 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #app .lp-ready-vs b{font-size:14px;font-weight:900;color:#173e32}
 #app .lp-ready-vs small{font-size:10.5px;font-weight:750;color:#4d6b5c;line-height:1.4}
 @media(max-height:700px){#app .lp-fs{gap:8px}#app .lp-fs-big input{font-size:30px;width:96px}#app .lp-fs-types button{padding:7px 10px}#app .lp-fs-say .lp-mascot{width:46px;height:46px}}
+
+/* r91: 登録した土地 */
+#app .lp-my-add{margin-left:auto;height:30px}
+#app .lp-my-list{flex:1;min-height:0;display:flex;flex-direction:column;gap:7px;overflow:hidden}
+#app .lp-my-card{flex:none;display:flex;flex-direction:column;gap:3px;text-align:left;background:#fff;border:1px solid #e2ebe7;border-left:4px solid #e0763a;border-radius:14px;padding:9px 11px;animation:lp-row-in .35s calc(var(--i)*50ms) both}
+#app .lp-my-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+#app .lp-my-top b{font-size:14.5px;font-weight:900;color:#173e32;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-my-top strong{flex:none;font-size:16px;font-weight:900;color:#173e32}
+#app .lp-my-card>small{font-size:10.5px;color:#6d8778;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .lp-my-tags{display:flex;gap:4px;flex-wrap:wrap}
+#app .lp-my-tags i{font-style:normal;font-size:10px;font-weight:850;background:#eef4f1;color:#2d5a49;border-radius:7px;padding:2px 6px}
+#app .lp-my-tags i.t-cheap{background:#e6f6ee;color:#0f7a53}
+#app .lp-my-tags i.t-fair{background:#e8f1fb;color:#2f6fb5}
+#app .lp-my-tags i.t-high{background:#fdecea;color:#b5452a}
+#app .lp-my-detail{gap:7px}
+#app .lp-my-gauge{flex:none;display:flex;flex-direction:column;gap:3px}
+#app .lp-my-gauge-bar{position:relative;display:grid;grid-template-columns:30% 50% 20%;height:24px;border-radius:12px;overflow:visible}
+#app .lp-my-gauge-bar span{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:#fff}
+#app .lp-my-gauge-bar span:nth-child(1){background:#2aa173;border-radius:12px 0 0 12px}
+#app .lp-my-gauge-bar span:nth-child(2){background:#5b8fd0}
+#app .lp-my-gauge-bar span:nth-child(3){background:#d0503c;border-radius:0 12px 12px 0}
+#app .lp-my-gauge-bar u{position:absolute;top:-5px;bottom:-5px;width:6px;margin-left:-3px;background:#173e32;border:2px solid #fff;border-radius:4px;box-shadow:0 1px 4px #0005;animation:lp-row-in .5s both}
+#app .lp-my-gauge small{font-size:10px;font-weight:750;color:#6d8778;text-align:center}
+#app .lp-my-notes{flex:none}
+#app .lp-my-notes .lp-tip{padding:6px 9px}
+#app .lp-my-notes .lp-tip p{font-size:11px;line-height:1.45}
+#app .lp-my-url{align-self:center;font-size:11.5px;font-weight:850;color:#14785c}
+#app .lp-my-edit{display:flex;flex-direction:column;gap:6px;overflow-y:auto;overscroll-behavior:contain}
+#app .lp-my-form{flex:none}
+#app .lp-my-form .is-need>span:first-child::after{content:" ＊";color:#d0503c}
+#app .lp-my-form input[type=text],#app .lp-my-form input[type=url]{text-align:left}
+#app .lp-danger{color:#b5452a!important;border-color:#f2c0b8!important}
+#app .lp-mk-my{position:absolute;z-index:3;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:2px solid #fff;background:#e0763a;color:#fff;font-size:14px;font-weight:900;display:grid;place-items:center;padding:0;box-shadow:0 2px 6px #0006}

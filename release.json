@@ -1,10 +1,10 @@
 {
-  "version": "r90",
+  "version": "r91",
   "ui": "land-only",
   "revised": "2026-11-15",
   "data_schema": "chika-shirabe-v1",
-  "entrypoint": "visual-r90.html",
+  "entrypoint": "visual-r91.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "4-step budget finder with ready-built homes"
+  "release_note": "Register candidate lands and evaluate them"
 }

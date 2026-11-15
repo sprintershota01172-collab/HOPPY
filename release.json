@@ -1,10 +1,10 @@
 {
-  "version": "r88",
+  "version": "r89",
   "ui": "land-only",
   "revised": "2026-11-15",
   "data_schema": "chika-shirabe-v1",
-  "entrypoint": "visual-r88.html",
+  "entrypoint": "visual-r89.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Find by monthly payment"
+  "release_note": "Loan and interest details, mascot character and illustrations"
 }

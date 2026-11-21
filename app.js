@@ -1,8 +1,16 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r103';
-  try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
+  const BUILD = 'r104';
+  // 前回開いたときの版（更新されたかを知らせるため）
+  const PREV_BUILD = (() => { try { return localStorage.getItem('chika-shirabe-build'); } catch (_) { return null; } })();
+  try { localStorage.setItem('hoppy-last-build', BUILD); localStorage.setItem('chika-shirabe-build', BUILD); } catch (_) {}
+  // この版で変わったこと（更新したときに表示）
+  const RELEASE_NOTES_JA = {
+    r104: ['新しい版が出たら「更新しますか？」と聞くように','更新したら、変わったことをお知らせ','⚙設定に「最新か確認」ボタン'],
+    r103: ['住友不動産のデータを更新'],
+    r102: ['テンキーを押したときの点滅を修正']
+  };
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
   const LEGACY_STORE = 'hoppy-phase1-v1';
@@ -16,17 +24,25 @@
   function renderToast(){let old=app.querySelector('.toast');if(old)old.remove();if(ui.toast)app.insertAdjacentHTML('beforeend','<div class="toast" role="status">'+esc(ui.toast)+'</div>');}
   function closeOverlay(){step(()=>{ui.overlay='';ui.draft=null;});}
   function openOverlay(kind, setup){step(()=>{ui.overlay=kind;if(setup)setup();});}
-  const remoteRelease={latest:null,notice:''};
+  const remoteRelease={latest:null,notice:'',dismissed:null,done:!!(PREV_BUILD&&PREV_BUILD!==BUILD&&/^r\d+$/.test(PREV_BUILD))};
+  // 新しい版のお知らせ（「更新しますか？」）と、更新後の「更新しました」
   function renderReleaseBanner(){
-    const existing=app.querySelector('.hoppo-version-banner');
-    if(existing)existing.remove();
-    if(!remoteRelease.notice)return;
-    app.insertAdjacentHTML('beforeend',
-      '<div class="hoppo-version-banner" role="status"><span>'+esc(remoteRelease.notice)+'</span>'+
-      '<button type="button" data-act="hoppo-hard-refresh">更新する ↗</button>'+
-      '<button type="button" data-act="hoppo-update-dismiss" aria-label="閉じる">×</button></div>');
+    app.querySelectorAll('.hoppo-version-banner,.lp-upd-wrap').forEach(n=>n.remove());
+    const face=typeof landMascot==='function'?landMascot('happy',56):'';
+    if(remoteRelease.notice&&remoteRelease.dismissed!==remoteRelease.latest){
+      app.insertAdjacentHTML('beforeend','<div class="lp-upd-wrap"><div class="lp-upd" role="dialog" aria-label="更新のお知らせ">'+face+
+        '<b>新しい版があります</b><p>いま '+esc(BUILD)+' → 最新 '+esc(remoteRelease.latest)+'<br>更新しますか？（入れたデータはそのまま残ります）</p>'+
+        '<div class="lp-upd-btns"><button type="button" data-act="hoppo-update-dismiss">あとで</button><button type="button" class="is-main" data-act="hoppo-hard-refresh">更新する</button></div></div></div>');
+      return;
+    }
+    if(remoteRelease.done){
+      const notes=[];Object.keys(RELEASE_NOTES_JA).filter(v=>Number(v.slice(1))>Number(String(PREV_BUILD).slice(1))&&Number(v.slice(1))<=Number(BUILD.slice(1))).sort((a,b)=>b.slice(1)-a.slice(1)).forEach(v=>notes.push(...RELEASE_NOTES_JA[v]));
+      app.insertAdjacentHTML('beforeend','<div class="lp-upd-wrap"><div class="lp-upd" role="dialog" aria-label="更新しました">'+face+
+        '<b>'+esc(BUILD)+' に更新しました</b>'+(notes.length?'<ul>'+notes.slice(0,5).map(n=>'<li>'+esc(n)+'</li>').join('')+'</ul>':'<p>新しい版になりました。</p>')+
+        '<div class="lp-upd-btns"><button type="button" class="is-main" data-act="hoppo-update-done">OK</button></div></div></div>');
+    }
   }
-  async function verifyPublishedRelease(){
+  async function verifyPublishedRelease(manual){
     if(typeof fetch!=='function')return;
     try{
       const url='./release.json?check='+Date.now();
@@ -39,8 +55,8 @@
       if(live>loaded){
         remoteRelease.notice='新しい版 '+published.version+' を公開中';
         renderReleaseBanner();
-      }
-    }catch(_){/* Offline is supported. Keep the existing app available. */}
+      }else if(manual)message('最新の版です（'+BUILD+'）');
+    }catch(_){if(manual)message('確認できませんでした（通信を確認）');}
   }
   function empty(icon,title,desc,action,label){return '<section class="panel grow empty"><div class="big">'+icon+'</div><h2 class="section-title">'+esc(title)+'</h2><p>'+esc(desc)+'</p>'+ (action?'<button class="btn primary" data-act="'+action+'">'+esc(label)+'</button>':'')+'</section>';}
   function navPager(index,total,act){return '<div class="pager"><button class="page-arrow" data-act="'+act+'" data-value="-1" '+(total<2?'disabled':'')+' aria-label="前へ">‹</button><div class="counter">'+(total?index+1:0)+' / '+total+'</div>'+dots(index,Math.max(total,1))+'<button class="page-arrow" data-act="'+act+'" data-value="1" '+(total<2?'disabled':'')+' aria-label="次へ">›</button></div>';}
@@ -543,6 +559,7 @@
     const field=(label,key,unit,attrs)=>'<label class="lp-field"><span>'+label+'</span><span class="lp-input"><input type="number" inputmode="decimal" data-lp-setting="'+key+'" value="'+esc(L[key])+'" '+attrs+'><i>'+unit+'</i></span></label>';
     const st=landStale();
     return modalFrame('設定','<div class="panel detail grow lp-settings">'+
+      '<div class="lp-set-group"><span class="kicker">アプリの版</span><div class="lp-set-row"><span>いまの版 '+esc(BUILD)+(remoteRelease.latest&&remoteRelease.latest!==BUILD?'（最新 '+esc(remoteRelease.latest)+'）':'')+'</span><button class="btn compact" data-act="lp-check-update">最新か確認</button></div></div>'+
       '<div class="lp-set-group"><span class="kicker">地価データ</span>'+landStampHtml()+
         '<button class="btn primary wide lp-refresh'+(landBusy()?' is-busy':'')+'" data-act="lp-refresh"><span class="lp-refresh-icon" aria-hidden="true">🔄</span> 最新の地価にする</button>'+
         (st.stale?'<p class="lp-note">'+esc(st.reasons.join('・'))+'が新しく公表されているかもしれません</p>':'')+'</div>'+
@@ -2541,7 +2558,9 @@
   }
   function handler(action,button){
     const v=button.dataset.value;
-    if(action==='hoppo-update-dismiss'){remoteRelease.notice='';renderReleaseBanner();return;}
+    if(action==='hoppo-update-dismiss'){remoteRelease.dismissed=remoteRelease.latest;renderReleaseBanner();return;}
+    if(action==='hoppo-update-done'){remoteRelease.done=false;renderReleaseBanner();return;}
+    if(action==='lp-check-update'){remoteRelease.dismissed=null;verifyPublishedRelease(true);return;}
     if(action==='hoppo-hard-refresh'){window.location.assign('./refresh.html?new='+encodeURIComponent(remoteRelease.latest||BUILD));return;}
     if(action==='overlay-close'){if(ui.overlay==='land-help'&&ui.lpHelpBack){const b=ui.lpHelpBack;ui.lpHelpBack=null;return step(()=>{ui.overlay=b;});}return closeOverlay();}
     if(action.startsWith('lp-'))return landAction(action,v);
@@ -2622,6 +2641,7 @@
   save();render();
   Promise.resolve().then(verifyPublishedRelease).catch(()=>{});
   try{document.addEventListener('visibilitychange',()=>{if(!document.hidden)verifyPublishedRelease();});}catch(_){}
+  try{setInterval(()=>{if(!document.hidden)verifyPublishedRelease();},10*60*1000);}catch(_){}
   const launch=document.getElementById('hoppo-launch');
   if(launch?.id==='hoppo-launch'){
     const reduceMotion=!!reduced.matches;

@@ -6792,3 +6792,14 @@ html,body{height:100dvh!important}
 /* r102: テンキーを押したときに点滅しないように */
 .kp-keys button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:background .08s}
 .kp-head button,.kp-clear{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+
+/* r104: 更新のお知らせ */
+#app .lp-upd-wrap{position:absolute;inset:0;z-index:1500;display:grid;place-items:center;background:#0f2a2040;padding:24px;animation:kp-fade .2s both}
+#app .lp-upd{width:100%;max-width:340px;background:#fff;border-radius:22px;padding:18px 18px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;box-shadow:0 14px 40px #0f2a2040;animation:lp-row-in .3s both}
+#app .lp-upd>b{font-size:18px;font-weight:900;color:#173e32}
+#app .lp-upd p{margin:0;font-size:13px;font-weight:750;color:#4d6b5c;line-height:1.6}
+#app .lp-upd ul{margin:0;padding:0 0 0 18px;text-align:left;align-self:stretch;display:flex;flex-direction:column;gap:3px}
+#app .lp-upd li{font-size:12.5px;font-weight:800;color:#2d5a49;line-height:1.5}
+#app .lp-upd-btns{align-self:stretch;display:flex;gap:8px;margin-top:4px}
+#app .lp-upd-btns button{flex:1;height:46px;border-radius:14px;border:1.5px solid #cfe2d8;background:#fff;font-size:15px;font-weight:900;color:#4d6b5c}
+#app .lp-upd-btns .is-main{background:#1a735d;border-color:#1a735d;color:#fff}

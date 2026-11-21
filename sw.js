@@ -1,8 +1,8 @@
-// 地価調べ君 r102: small, reliable cache. Always prefer server files when online.
-const CACHE = 'hopposan-static-r102';
-const SCRIPT = './app.js?v=fp-20261028-r102';
-const STYLE = './styles.css?v=fp-20261028-r102';
-const PRECACHE = ['./index.html','./visual-r102.html','./data/landprice-seed.json','./visual-r64.html','./fp-r60.html',SCRIPT,STYLE,'./manifest.webmanifest','./icon.svg'];
+// 地価調べ君 r103: small, reliable cache. Always prefer server files when online.
+const CACHE = 'hopposan-static-r103';
+const SCRIPT = './app.js?v=fp-20261028-r103';
+const STYLE = './styles.css?v=fp-20261028-r103';
+const PRECACHE = ['./index.html','./visual-r103.html','./data/landprice-seed.json','./visual-r64.html','./fp-r60.html',SCRIPT,STYLE,'./manifest.webmanifest','./icon.svg'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -63,7 +63,7 @@ self.addEventListener('fetch', event => {
         if(refreshPage)return Response.error();
         if(navigation){
           return await caches.match(request) || await caches.match('./index.html') ||
-            await caches.match('./visual-r102.html') || Response.error();
+            await caches.match('./visual-r103.html') || Response.error();
         }
         if(url.pathname.endsWith('/app.js')){
           return await caches.match(request) || await caches.match(SCRIPT) || Response.error();

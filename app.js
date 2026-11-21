@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r102';
+  const BUILD = 'r103';
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
@@ -664,6 +664,8 @@
     crexGifu:['岐阜のおすすめ工務店ランキング20選（2025年。岐阜県の坪単価相場は50万〜90万円程度）','https://crexgroup.com/ja/home-building/region/gifu-builder-ranking-guide/'],
     crex20:['ハウスメーカー坪単価ランキングTOP20（2025年）','https://crexgroup.com/ja/home-building/cost/house-maker-unit-price-ranking/'],
     crex40:['主要ハウスメーカー40社の比較一覧','https://crexgroup.com/ja/home-building/builder/house-maker-list-comparison/'],
+    crexSF:['住友不動産の注文住宅の坪単価・評判（家づくり比較なび）','https://crexgroup.com/ja/home-building/builder/sumitomo-fudosan-reviews/'],
+    oriconSF:['住友不動産ハウジング（オリコン顧客満足度 2026年 総合11位）','https://life.oricon.co.jp/rank-house-maker/company/sumitomo-rd/'],
     oriconSw:['スウェーデンハウス（オリコン顧客満足度 2026年 総合1位）','https://life.oricon.co.jp/rank-house-maker/company/swedenhouse/'],
     yamato:['ヤマト住建 最長60年保証のお知らせ（2025年1月）','https://yamatojk.co.jp/wordpress/wp-content/uploads/2024/12/release_60years_support.pdf'],
     iezukuri:['ハウスメーカー坪単価ランキング33社（2026年）','https://iezukuri.blog/housemaker-tsubotanka/']
@@ -714,10 +716,10 @@
       points:['1mm単位の自由設計','スキップフロア・吹き抜けなどの空間提案','「適質価格」でコストと性能のバランス型'],
       cautions:['標準仕様とオプションの範囲を確認','保証は初期20年・最長30年'],
       warranty:'初期20年／最長30年',fit:'自由設計で個性的な間取りを予算内で叶えたい人',src:['asuka','crexW']},
-    {id:'sumifu',name:'住友不動産',band:'ミドル',type:'木造',struct:'木造（ウッドパネル・2×4・2×6）',low:75,mid:88,high:100,
-      points:['マンション事業のノウハウを生かした設備・デザイン','高級感のある標準仕様','木造でも工法を選べる'],
-      cautions:['地域によって展示場が少ない','保証は初期20年'],
-      warranty:'初期20年（延長条件あり）',fit:'マンションのような設備・デザインを戸建てでも欲しい人',src:['okayama','crex15']},
+    {id:'sumifu',name:'住友不動産',band:'ミドル上',type:'木造',struct:'木造（ウッドパネル工法・2×4・2×6のモノコック構造）',low:65,mid:82,high:100,
+      points:['グッドデザイン賞の常連。都会的で洗練されたデザイン（J・URBANなど）','食洗機付きキッチン・Low-E複層ガラス・浴室換気乾燥暖房機など標準設備のグレードが高い','耐震等級3が標準（プランや敷地で異なる場合あり）','商品：J・URBAN／J・RESIDENCE／PREMIANCE／World Design。愛知・岐阜にもモデルハウスあり'],
+      cautions:['坪単価はやや高め。こだわるとオプション費用がかさみやすい','規格に近い設計で、間取りの自由度は低めという声','営業担当やアフター対応にばらつきがあるという声','保証延長は10年目・20年目の有料メンテナンスが条件'],
+      warranty:'初期10年（最長60年：10年目・20年目に有料メンテナンス）',fit:'デザインと設備の良さを、大手の安心感の中で選びたい人',src:['crexSF','oriconSF','crex15']},
     {id:'yamada',name:'ヤマダホームズ',band:'ミドル',type:'木造',struct:'木造',low:60,mid:78,high:95,
       points:['ヤマダ電機グループ。家具・家電・照明をまとめやすい','住宅設備10年の無料メンテナンス','60年長期保証'],
       cautions:['商品で価格帯の幅が広い','標準仕様を必ず確認'],
@@ -974,7 +976,7 @@
     mitsui:{s:3,d:'制震デバイス「G-WALL」',i:6,ua:0.43,h:'全館空調「スマートブリーズ」',l:1},
     ichijo:{s:3,d:'免震住宅も選べる',i:7,ua:0.25,a:'all',h:'全館床暖房が標準・大容量の太陽光',l:1},
     ai:{s:3,d:'2.5倍耐力壁・剛床',i:6},
-    sumifu:{i:6},
+    sumifu:{s:3,d:'制震「パワーコラム」（オプション）',i:5,h:'アルミ樹脂複合サッシ＋Low-E複層ガラス、食洗機付きキッチン、浴室換気乾燥暖房機が標準',l:0},
     yamada:{s:3,d:'制震「SxLシグマデバイス」',i:6},
     tama:{s:3,d:'耐力面材・ベタ基礎',i:6,l:1},
     aqura:{i:6,h:'「超断熱の家」の商品あり'},

@@ -1,10 +1,10 @@
 {
-  "version": "r102",
+  "version": "r103",
   "ui": "land-only",
   "revised": "2026-11-15",
   "data_schema": "chika-shirabe-v1",
-  "entrypoint": "visual-r102.html",
+  "entrypoint": "visual-r103.html",
   "diagnostics": "diagnose.html",
   "layout": "unified-compact",
-  "release_note": "Number pad no longer flickers on each key"
+  "release_note": "Sumitomo Realty maker data updated"
 }

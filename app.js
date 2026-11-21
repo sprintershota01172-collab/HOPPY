@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // 地価調べ君：愛知県全域＋多治見周辺の地価ランキング・相場シミュレーター・メーカー図鑑・土地ガイド
-  const BUILD = 'r101';
+  const BUILD = 'r102';
   try { localStorage.setItem('hoppy-last-build', BUILD); } catch (_) {}
   const STORE = 'chika-shirabe-v1';
   // r76以前（家探しノート時代）の保存データ。地価の設定だけ引き継ぎ、元データは消さずに残す。
@@ -2477,7 +2477,9 @@
   function kpRender(){
     if(!kp)return;
     const disp=kp.type==='num'?(kp.val===''?'0':kp.val):'';
-    if(kp.type==='num'){
+    // 2回目以降は数字の表示だけ書き換える（毎回作り直すと、出てくる動きがくり返されて一瞬消えて見えるため）
+    if(kp.type==='num'&&kp.built){const b=kp.node.querySelector('.kp-val b');if(b){b.textContent=disp;return;}}
+    if(kp.type==='num'){kp.built=true;
       kp.node.innerHTML='<div class="kp-dim" data-kp="cancel"></div><div class="kp-sheet" role="dialog" aria-label="'+esc(kp.label)+'">'+
         '<div class="kp-head"><button data-kp="cancel">キャンセル</button><span>'+esc(kp.label)+'</span><button class="kp-ok" data-kp="ok">決定</button></div>'+
         '<div class="kp-val"><b>'+esc(disp)+'</b><i>'+esc(kp.unit)+'</i></div>'+
